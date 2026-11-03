@@ -1,0 +1,40 @@
+version: "2"
+
+linters:
+  enable:
+    - govet
+    - errcheck
+    - staticcheck
+    - contextcheck
+    - ineffassign
+    - misspell
+    - gocritic
+    - revive
+    - gosec
+    - nolintlint
+    - gocyclo
+    - forbidigo
+  settings:
+    forbidigo:
+      analyze-types: true
+      forbid:
+        # Whoever sets the user in a context acts as that user (ADR 0013).
+        - pattern: ^tenancy\.WithUser$
+          pkg: ^github\.com/logicorg/ivfs/internal/pkg/tenancy$
+          msg: only the gateway's authentication middleware may set the user; elsewhere take it from the context you were given
+        - pattern: ^tenancy\.Static$
+          pkg: ^github\.com/logicorg/ivfs/internal/pkg/tenancy$
+          msg: Static hands every user the same database; outside tests use tenancy.NewRegistryPools
+  exclusions:
+    warn-unused: true
+    presets:
+      - std-error-handling
+      - common-false-positives
+    rules:
+      - path: _test\.go$
+        linters:
+          - forbidigo
+      # The session middleware is where a verified user enters the context.
+      - path: ^web/auth/require\.go$
+        linters:
+          - forbidigo

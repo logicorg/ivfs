@@ -1,0 +1,268 @@
+openapi: 3.1.0
+info:
+  title: ivfs asset value provider
+  version: 1.0.0
+  description: |
+    The API a service implements to give ivfs, on each day of a range, the
+    value of one unit of an asset, such as a share or a fund unit, the rate
+    between two currencies, or both (ADR 0014).
+
+    A provider implements either endpoint or both. One it does not implement
+    answers 404, as any HTTP server does for a path it does not serve, which
+    ivfs reads as "no value here" and not as a failure.
+
+    A provider is told what identifiers the asset has, exactly as the person
+    entered them, and maps them to its own symbols. It answers 404 for an
+    asset or a currency pair it does not cover, which is an ordinary answer:
+    ivfs asks the next provider.
+
+    Days are UTC days. The value of a date is the latest one observed before
+    the day ends, so a day with no observation of its own, such as a
+    Saturday, repeats the last one before it.
+
+    An answer has one item per interval, dated the interval's last day, from
+    from to to: every day, every Sunday (weeks run Monday to Sunday, as in
+    ISO 8601), or the last day of every month. When to is not the last day of
+    an interval, the last item is dated to, so the latest value is always
+    there. The items start at the first of those dates the provider has a
+    value for, oldest first, with none missing. A single day is asked for
+    with from and to equal.
+
+    A provider is reached on the network ivfs runs on and has no
+    authentication of its own.
+servers:
+  - url: "{baseURL}"
+    description: The base URL ivfs is configured with for this provider.
+    variables:
+      baseURL:
+        default: http://localhost:8080
+security: []
+paths:
+  /v1/values:
+    get:
+      operationId: get-values
+      summary: The value of one unit of an asset over a range of dates
+      parameters:
+        - name: isin
+          in: query
+          description: ISO 6166 identifier, such as US0378331005.
+          schema:
+            type: string
+            pattern: "^[A-Z]{2}[A-Z0-9]{9}[0-9]$"
+        - name: ticker
+          in: query
+          description: The symbol the asset trades under, such as AAPL or VWCE, without any provider-specific suffix.
+          schema:
+            type: string
+        - name: exchange
+          in: query
+          description: The exchange as the person entered it, such as NASDAQ or XETRA. Free text.
+          schema:
+            type: string
+        - name: kind
+          in: query
+          description: The kind of asset, to tell apart a ticker that is both a stock and a crypto.
+          schema:
+            type: string
+            enum: [equity, stock, etf, fund, bond, crypto, commodity, other]
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/Interval"
+      responses:
+        "200":
+          description: The value on each date, oldest first. Never empty.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Values"
+              example:
+                values:
+                  - date: "2026-10-09"
+                    value: "231.45"
+                    currency: USD
+                    observedAt: "2026-10-09T20:00:00Z"
+                  - date: "2026-10-10"
+                    value: "231.45"
+                    currency: USD
+                    observedAt: "2026-10-09T20:00:00Z"
+        "400":
+          description: |
+            The request cannot be answered as asked, for example with neither
+            an isin nor a ticker, a to before from, or a range longer than
+            the provider serves.
+          $ref: "#/components/responses/Problem"
+        "404":
+          description: |
+            The provider has no value for this asset on any day of the range:
+            it does not know the asset, does not cover its kind, has no value
+            that old, or does not implement this endpoint.
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Failure"
+  /v1/rates:
+    get:
+      operationId: get-rates
+      summary: The rate between two currencies over a range of dates
+      parameters:
+        - name: base
+          in: query
+          required: true
+          description: ISO 4217 code of the currency one unit of which is priced, such as EUR.
+          schema:
+            $ref: "#/components/schemas/CurrencyCode"
+        - name: quote
+          in: query
+          required: true
+          description: ISO 4217 code of the currency the rate is in, such as USD. Not the same as base.
+          schema:
+            $ref: "#/components/schemas/CurrencyCode"
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/Interval"
+      responses:
+        "200":
+          description: The rate on each date, oldest first. Never empty.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Rates"
+              example:
+                rates:
+                  - date: "2026-10-09"
+                    rate: "1.0921"
+                    observedAt: "2026-10-09T16:00:00Z"
+                  - date: "2026-10-10"
+                    rate: "1.0921"
+                    observedAt: "2026-10-09T16:00:00Z"
+        "400":
+          description: |
+            The request cannot be answered as asked, for example with base
+            and quote the same, a to before from, or a range longer than the
+            provider serves.
+          $ref: "#/components/responses/Problem"
+        "404":
+          description: |
+            The provider has no rate for this pair on any day of the range: it
+            does not cover one of the currencies, has no rate that old, or
+            does not implement this endpoint.
+          $ref: "#/components/responses/Problem"
+        default:
+          $ref: "#/components/responses/Failure"
+components:
+  parameters:
+    From:
+      name: from
+      in: query
+      required: true
+      description: The first day, included.
+      schema:
+        type: string
+        format: date
+    To:
+      name: to
+      in: query
+      required: true
+      description: The last day, included. Not before from.
+      schema:
+        type: string
+        format: date
+    Interval:
+      name: interval
+      in: query
+      description: How far apart the dates of the answer are.
+      schema:
+        type: string
+        enum: [day, week, month]
+        default: day
+  responses:
+    Problem:
+      description: A problem.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    Failure:
+      description: The provider failed, for example because its upstream is unreachable or rate limited.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  schemas:
+    CurrencyCode:
+      type: string
+      description: ISO 4217 code.
+      pattern: "^[A-Z]{3}$"
+    Values:
+      type: object
+      required: [values]
+      properties:
+        values:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/DayValue"
+    DayValue:
+      type: object
+      additionalProperties: false
+      required: [date, value, currency, observedAt]
+      properties:
+        date:
+          type: string
+          format: date
+          description: The date this is the value on.
+        value:
+          type: string
+          description: |
+            The value of one unit, as a decimal string so that it stays exact.
+            Not negative, with at most 8 decimal places.
+          pattern: "^[0-9]+(\\.[0-9]{1,8})?$"
+        currency:
+          $ref: "#/components/schemas/CurrencyCode"
+        observedAt:
+          $ref: "#/components/schemas/ObservedAt"
+    Rates:
+      type: object
+      required: [rates]
+      properties:
+        rates:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/DayRate"
+    DayRate:
+      type: object
+      additionalProperties: false
+      required: [date, rate, observedAt]
+      properties:
+        date:
+          type: string
+          format: date
+          description: The date this is the rate on.
+        rate:
+          type: string
+          description: |
+            How many units of quote one unit of base is worth, as a decimal
+            string so that it stays exact. Greater than zero, with at most 18
+            decimal places.
+          pattern: "^[0-9]+(\\.[0-9]{1,18})?$"
+        observedAt:
+          $ref: "#/components/schemas/ObservedAt"
+    ObservedAt:
+      type: string
+      format: date-time
+      description: When the value was observed, such as the time of a close. Before the end of date.
+    Problem:
+      type: object
+      description: An RFC 9457 problem.
+      required: [title]
+      properties:
+        type:
+          type: string
+          format: uri-reference
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+          description: What went wrong, in words ivfs can show to the person.

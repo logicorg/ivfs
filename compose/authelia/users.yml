@@ -1,0 +1,19 @@
+# The development users, each with their name as their password. alice and
+# bob are in the group the gateway requires (OIDC_GROUP), eve is not, so she
+# shows what a refused sign-in looks like.
+users:
+  alice:
+    displayname: 'Alice'
+    email: 'alice@ivfs.test'
+    groups: ['ivfs']
+    password: '$argon2id$v=19$m=65536,t=3,p=4$pAMbQpjF+H48298BZapoWQ$XuIwxrvEQNIt5igGTGkLfLczTBJ0+kzRA8ZeqbqTZ7o'
+  bob:
+    displayname: 'Bob'
+    email: 'bob@ivfs.test'
+    groups: ['ivfs']
+    password: '$argon2id$v=19$m=65536,t=3,p=4$IhrllPkiLlZ4vgfSnDRRNw$qi5W8lc+r3h7oni2sx3occ7MV23men0ujNUGi+IUikc'
+  eve:
+    displayname: 'Eve'
+    email: 'eve@ivfs.test'
+    groups: []
+    password: '$argon2id$v=19$m=65536,t=3,p=4$p2IBHbteVOT4YbtxnPVvAQ$UWMu2SYhbBrPyBucFmxzybGAhAB0rZjNwMDa8/3u6Do'

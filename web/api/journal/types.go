@@ -1,0 +1,136 @@
+package journal
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/logicorg/ivfs/pkg/model"
+	"github.com/logicorg/ivfs/web/api/gateway"
+)
+
+// Posting is one line of a journal entry: an amount debited or credited to a
+// ledger account.
+type Posting struct {
+	LineNumber        int    `json:"lineNumber"`
+	LedgerAccountID   int64  `json:"ledgerAccountId"`
+	LedgerAccountName string `json:"ledgerAccountName"`
+	Kind              string `json:"kind" enum:"asset,liability,equity,income,expense"`
+	// CurrencyID is the ledger account's currency, which the amount is in.
+	CurrencyID int64          `json:"currencyId"`
+	Amount     gateway.Amount `json:"amount"`
+	Side       string         `json:"side" enum:"debit,credit"`
+}
+
+// Entry is a journal entry with its postings, in line order.
+type Entry struct {
+	ID          int64     `json:"id"`
+	OccurredAt  time.Time `json:"occurredAt"`
+	Description string    `json:"description,omitempty"`
+	ExternalID  string    `json:"externalId,omitempty"`
+	Status      string    `json:"status" enum:"draft,posted"`
+	// ReversalOfEntryID is the entry this one reverses, if it is a reversal.
+	ReversalOfEntryID *int64    `json:"reversalOfEntryId,omitempty"`
+	Postings          []Posting `json:"postings"`
+}
+
+// EntryPage is one page of journal entries.
+type EntryPage struct {
+	Entries []Entry `json:"entries"`
+	// Next is the after of the next page, and is absent on the last one.
+	Next string `json:"next,omitempty"`
+}
+
+// EntryDetail is a journal entry with what only its detail shows.
+type EntryDetail struct {
+	Entry
+	CounterpartyID   *int64     `json:"counterpartyId,omitempty"`
+	CounterpartyName string     `json:"counterpartyName,omitempty"`
+	PostedAt         *time.Time `json:"postedAt,omitempty"`
+	CreatedAt        time.Time  `json:"createdAt"`
+}
+
+// Reversal is the entry that reverses another.
+type Reversal struct {
+	JournalEntryID int64 `json:"journalEntryId"`
+	// Warnings are the positions the reversal leaves negative at some point in
+	// time. The reversal is made all the same (ADR 0010).
+	Warnings []gateway.NegativeHolding `json:"warnings,omitempty"`
+}
+
+// ListJournalEntriesInput is the request of GET /api/journal-entries.
+type ListJournalEntriesInput struct {
+	LedgerAccountID int64     `query:"ledgerAccountId" minimum:"1" doc:"only entries with a posting on this ledger account"`
+	CounterpartyID  int64     `query:"counterpartyId" minimum:"1" doc:"only entries with this counterparty"`
+	Statuses        []string  `query:"status,explode" enum:"draft,posted" doc:"only entries in any of these states; every state if omitted"`
+	From            time.Time `query:"from" doc:"only entries that occurred at or after this instant"`
+	To              time.Time `query:"to" doc:"only entries that occurred before this instant"`
+	Descending      bool      `query:"descending" doc:"newest first"`
+	Limit           int       `query:"limit" minimum:"1" maximum:"500" doc:"the size of the page; 100 if omitted"`
+	After           string    `query:"after" doc:"the next of the previous page; the first page if omitted"`
+}
+
+// ListJournalEntriesOutput is the response of GET /api/journal-entries.
+type ListJournalEntriesOutput struct {
+	Body EntryPage
+}
+
+// RetrieveJournalEntryInput is the request of GET /api/journal-entries/{id}.
+type RetrieveJournalEntryInput struct {
+	ID int64 `path:"id" minimum:"1"`
+}
+
+// RetrieveJournalEntryOutput is the response of GET
+// /api/journal-entries/{id}.
+type RetrieveJournalEntryOutput struct {
+	Body EntryDetail
+}
+
+// ReverseJournalEntryInput is the request of POST
+// /api/journal-entries/{id}/reverse.
+type ReverseJournalEntryInput struct {
+	ID int64 `path:"id" minimum:"1"`
+}
+
+// ReverseJournalEntryOutput is the response of POST
+// /api/journal-entries/{id}/reverse.
+type ReverseJournalEntryOutput struct {
+	Body Reversal
+}
+
+// DeleteJournalEntryInput is the request of DELETE /api/journal-entries/{id}.
+type DeleteJournalEntryInput struct {
+	ID int64 `path:"id" minimum:"1"`
+}
+
+// DeleteJournalEntryOutput is the response of DELETE
+// /api/journal-entries/{id}.
+type DeleteJournalEntryOutput struct {
+	Body gateway.Deletion
+}
+
+// newEntry is entry as the API returns it. Every workflow that
+// returns entries loads each posting's ledger account, so one missing is a
+// bug.
+func newEntry(entry *model.JournalEntry) (Entry, error) {
+	out := Entry{
+		ID: entry.ID, OccurredAt: entry.OccurredAt, Status: string(entry.Status),
+		ReversalOfEntryID: entry.ReversalOfEntryID, Postings: make([]Posting, 0, len(entry.Postings)),
+	}
+	if entry.Description != nil {
+		out.Description = *entry.Description
+	}
+	if entry.ExternalID != nil {
+		out.ExternalID = *entry.ExternalID
+	}
+	for _, posting := range entry.Postings {
+		if posting.LedgerAccount == nil {
+			return Entry{}, fmt.Errorf("posting %d of journal entry %d has no ledger account loaded", posting.ID, entry.ID)
+		}
+		out.Postings = append(out.Postings, Posting{
+			LineNumber: posting.LineNumber, LedgerAccountID: posting.LedgerAccountID,
+			LedgerAccountName: posting.LedgerAccount.Name, Kind: string(posting.LedgerAccount.Kind),
+			CurrencyID: posting.LedgerAccount.CurrencyID, Amount: gateway.NewAmount(posting.Amount), Side: string(posting.Side),
+		})
+	}
+	return out, nil
+}

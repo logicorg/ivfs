@@ -1,0 +1,5568 @@
+{
+  "components": {
+    "schemas": {
+      "AccountBalances": {
+        "additionalProperties": false,
+        "properties": {
+          "balances": {
+            "items": {
+              "$ref": "#/components/schemas/Balance"
+            },
+            "type": "array"
+          },
+          "financialAccountId": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "financialAccountId",
+          "balances"
+        ],
+        "type": "object"
+      },
+      "AccountDeletion": {
+        "additionalProperties": false,
+        "properties": {
+          "warnings": {
+            "items": {
+              "$ref": "#/components/schemas/NegativeHolding"
+            },
+            "type": "array"
+          },
+          "workflowId": {
+            "description": "the deletion still running, with 202 Accepted; deleting again waits on it",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "AccountDeletionPreview": {
+        "additionalProperties": false,
+        "properties": {
+          "conflicts": {
+            "description": "why the deletion would be refused",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "deletedEntries": {
+            "description": "journal entries deleted with the account",
+            "type": "integer"
+          },
+          "deletedMovementGroups": {
+            "description": "position movement groups deleted with the account",
+            "type": "integer"
+          },
+          "keptEntries": {
+            "description": "journal entries kept, with the account's lines moved to the untracked accounts",
+            "type": "integer"
+          },
+          "keptMovementGroups": {
+            "description": "position movement groups kept, with the account's legs moved to the untracked accounts",
+            "type": "integer"
+          },
+          "strayAmounts": {
+            "items": {
+              "$ref": "#/components/schemas/StrayAmount"
+            },
+            "type": "array"
+          },
+          "strayUnits": {
+            "items": {
+              "$ref": "#/components/schemas/StrayUnits"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "deletedEntries",
+          "keptEntries",
+          "deletedMovementGroups",
+          "keptMovementGroups"
+        ],
+        "type": "object"
+      },
+      "AccountForm": {
+        "additionalProperties": false,
+        "properties": {
+          "accountName": {
+            "description": "the account's name; the institution's name, or Wallet for cash, if omitted",
+            "type": "string"
+          },
+          "createInstitution": {
+            "description": "create the institution if it does not exist, once the person has confirmed its name",
+            "type": "boolean"
+          },
+          "currencies": {
+            "items": {
+              "$ref": "#/components/schemas/OpeningCurrency"
+            },
+            "minItems": 1,
+            "type": "array"
+          },
+          "institutionName": {
+            "description": "the institution that holds the account, such as Revolut; left out for a cash account",
+            "type": "string"
+          },
+          "openingBalancesAt": {
+            "description": "the instant the opening balances hold at; now if omitted",
+            "format": "date-time",
+            "type": "string"
+          },
+          "type": {
+            "description": "bank holds money, card a credit card's debt, brokerage assets and money, cash a wallet",
+            "enum": [
+              "bank",
+              "card",
+              "brokerage",
+              "cash"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "currencies"
+        ],
+        "type": "object"
+      },
+      "AccountName": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "AddedBalance": {
+        "additionalProperties": false,
+        "properties": {
+          "ledgerAccountId": {
+            "type": "integer"
+          },
+          "ledgerAccountName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "ledgerAccountId",
+          "ledgerAccountName"
+        ],
+        "type": "object"
+      },
+      "Asset": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "exchange": {
+            "type": "string"
+          },
+          "id": {
+            "type": "integer"
+          },
+          "isin": {
+            "description": "ISO 6166 identifier",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "equity",
+              "stock",
+              "etf",
+              "fund",
+              "bond",
+              "crypto",
+              "commodity",
+              "other"
+            ],
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "ticker": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "kind"
+        ],
+        "type": "object"
+      },
+      "AssetForm": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "equity",
+              "stock",
+              "etf",
+              "fund",
+              "bond",
+              "crypto",
+              "commodity",
+              "other"
+            ],
+            "type": "string"
+          },
+          "name": {
+            "description": "the asset's name; an asset with this name already is returned as it is",
+            "minLength": 1,
+            "type": "string"
+          },
+          "ticker": {
+            "description": "the symbol it trades under, such as VWCE",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "kind"
+        ],
+        "type": "object"
+      },
+      "AssetList": {
+        "additionalProperties": false,
+        "properties": {
+          "assets": {
+            "items": {
+              "$ref": "#/components/schemas/Asset"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "assets"
+        ],
+        "type": "object"
+      },
+      "AssetValue": {
+        "additionalProperties": false,
+        "properties": {
+          "currencyId": {
+            "type": "integer"
+          },
+          "date": {
+            "format": "date",
+            "type": "string"
+          },
+          "observedAt": {
+            "description": "when the value was really observed: before date on a day that repeats an earlier one, such as a Saturday",
+            "format": "date-time",
+            "type": "string"
+          },
+          "value": {
+            "description": "a decimal amount, as a string so it stays exact",
+            "examples": [
+              "1234.56"
+            ],
+            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "date",
+          "value",
+          "currencyId",
+          "observedAt"
+        ],
+        "type": "object"
+      },
+      "AssetValues": {
+        "additionalProperties": false,
+        "properties": {
+          "errors": {
+            "items": {
+              "$ref": "#/components/schemas/ProviderError"
+            },
+            "type": "array"
+          },
+          "values": {
+            "items": {
+              "$ref": "#/components/schemas/ProviderValues"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "values",
+          "errors"
+        ],
+        "type": "object"
+      },
+      "Balance": {
+        "additionalProperties": false,
+        "properties": {
+          "balance": {
+            "description": "a decimal amount, as a string so it stays exact",
+            "examples": [
+              "1234.56"
+            ],
+            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+            "type": "string"
+          },
+          "closed": {
+            "type": "boolean"
+          },
+          "currencyCode": {
+            "type": "string"
+          },
+          "currencyId": {
+            "type": "integer"
+          },
+          "kind": {
+            "enum": [
+              "asset",
+              "liability",
+              "equity",
+              "income",
+              "expense"
+            ],
+            "type": "string"
+          },
+          "ledgerAccountId": {
+            "type": "integer"
+          },
+          "ledgerAccountName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "ledgerAccountId",
+          "ledgerAccountName",
+          "kind",
+          "currencyId",
+          "currencyCode",
+          "balance",
+          "closed"
+        ],
+        "type": "object"
+      },
+      "BalanceForm": {
+        "additionalProperties": false,
+        "properties": {
+          "currencyCode": {
+            "description": "ISO 4217 code, such as EUR",
+            "minLength": 1,
+            "type": "string"
+          },
+          "name": {
+            "description": "the balance's name, such as Savings vault",
+            "minLength": 1,
+            "type": "string"
+          },
+          "openingBalance": {
+            "description": "the money in it today; nothing is posted if omitted",
+            "examples": [
+              "1234.56"
+            ],
+            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+            "type": "string"
+          },
+          "openingBalanceAt": {
+            "description": "the instant the opening balance holds at; now if omitted",
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "currencyCode"
+        ],
+        "type": "object"
+      },
+      "BuyForm": {
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "description": "the price paid for the units, before the fee, greater than zero",
+            "examples": [
+              "1234.56"
+            ],
+            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+            "type": "string"
+          },
+          "assetId": {
+            "description": "the asset bought",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "currencyCode": {
+            "description": "the currency paid in, such as EUR, in which the account has its Cash and Investments balances",
+            "minLength": 1,
+            "type": "string"
+          },
+          "description": {
+            "description": "a note on the entry",
+            "type": "string"
+          },
+          "fee": {
+            "description": "the broker's fee, paid on top of the amount and part of the cost; zero if omitted",
+            "examples": [
+              "1234.56"
+            ],
+            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+            "type": "string"
+          },
+          "financialAccountId": {
+            "description": "the brokerage account bought in",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "idempotencyKey": {
+            "description": "one per buy meant, such as one per opening of the form; a repeated key returns the buy first recorded with it",
+            "minLength": 1,
+            "type": "string"
+          },
+          "occurredAt": {
+            "description": "the instant of the buy",
+            "format": "date-time",
+            "type": "string"
+          },
+          "units": {
+            "description": "the units bought, greater than zero",
+            "examples": [
+              "1234.56"
+            ],
+            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "idempotencyKey",
+          "financialAccountId",
+          "assetId",
+          "units",
+          "amount",
+          "currencyCode",
+          "occurredAt"
+        ],
+        "type": "object"
+      },
+      "Category": {
+        "additionalProperties": false,
+        "properties": {
+          "closed": {
+            "type": "boolean"
+          },
+          "currencyCode": {
+            "type": "string"
+          },
+          "currencyId": {
+            "type": "integer"
+          },
+          "id": {
+            "type": "integer"
+          },
+          "kind": {
+            "enum": [
+              "income",
+              "expense"
+            ],
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "parentId": {
+            "description": "the parent category, of the same kind and currency; none for a top-level one",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "currencyId",
+          "currencyCode",
+          "closed"
+        ],
+        "type": "object"
+      },
+      "CategoryList": {
+        "additionalProperties": false,
+        "properties": {
+          "categories": {
+            "items": {
+              "$ref": "#/components/schemas/Category"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "categories"
+        ],
+        "type": "object"
+      },
+      "CategoryName": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "CategoryParent": {
+        "additionalProperties": false,
+        "properties": {
+          "parentId": {
+            "description": "the new parent, of the same kind and currency; top level if omitted",
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "CategoryResult": {
+        "additionalProperties": false,
+        "properties": {
+          "ledgerAccountId": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "ledgerAccountId"
+        ],
+        "type": "object"
+      },
+      "CategoryTotal": {
+        "additionalProperties": false,
+        "properties": {
+          "currencyCode": {
+            "type": "string"
+          },
+          "currencyId": {
+            "type": "integer"
+          },
+          "id": {
+            "description": "the category",
+            "type": "integer"
+          },
+          "kind": {
+            "enum": [
+              "income",
+              "expense"
+            ],
+            "type": "string"
+          },
+          "total": {
+            "description": "earned for income, spent for an expense; negative when refunds outweigh the spending",
+            "examples": [
+              "1234.56"
+            ],
+            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "currencyId",
+          "currencyCode",
+          "total"
+        ],
+        "type": "object"
+      },
+      "CategoryTotalList": {
+        "additionalProperties": false,
+        "properties": {
+          "totals": {
+            "items": {
+              "$ref": "#/components/schemas/CategoryTotal"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "totals"
+        ],
+        "type": "object"
+      },
+      "ConversionRate": {
+        "additionalProperties": false,
+        "properties": {
+          "date": {
+            "format": "date",
+            "type": "string"
+          },
+          "observedAt": {
+            "description": "when the rate was really observed: before date on a day that repeats an earlier one, such as a Saturday",
+            "format": "date-time",
+            "type": "string"
+          },
+          "rate": {
+            "description": "a decimal amount, as a string so it stays exact",
+            "examples": [
+              "1234.56"
+            ],
+            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "date",
+          "rate",
+          "observedAt"
+        ],
+        "type": "object"
+      },
+      "ConversionRates": {
+        "additionalProperties": false,
+        "properties": {
+          "errors": {
+            "items": {
+              "$ref": "#/components/schemas/ProviderError"
+            },
+            "type": "array"
+          },
+          "rates": {
+            "items": {
+              "$ref": "#/components/schemas/ProviderRates"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "rates",
+          "errors"
+        ],
+        "type": "object"
+      },
+      "CostBasis": {
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "description": "a decimal amount, as a string so it stays exact",
+            "examples": [
+              "1234.56"
+            ],
+            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+            "type": "string"
+          },
+          "currencyId": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "currencyId",
+          "amount"
+        ],
+        "type": "object"
+      },
+      "Counterparty": {
+        "additionalProperties": false,
+        "properties": {
+          "externalId": {
+            "description": "how an external source, such as a bank export, identifies it",
+            "type": "string"
+          },
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "type": "object"
+      },
+      "CounterpartyList": {
+        "additionalProperties": false,
+        "properties": {
+          "counterparties": {
+            "items": {
+              "$ref": "#/components/schemas/Counterparty"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "counterparties"
+        ],
+        "type": "object"
+      },
+      "CounterpartyName": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "CreatedAsset": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "type": "object"
+      },
+      "CreatedCounterparty": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "type": "object"
+      },
+      "Currency": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "description": "ISO 4217 code, such as EUR",
+            "type": "string"
+          },
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "precision": {
+            "description": "number of decimal places, such as 2 for EUR or 0 for JPY",
+            "type": "integer"
+          },
+          "symbol": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "precision"
+        ],
+        "type": "object"
+      },
+      "CurrencyChanges": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "description": "ISO 4217 code, stored upper-cased",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "symbol": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "CurrencyList": {
+        "additionalProperties": false,
+        "properties": {
+          "currencies": {
+            "items": {
+              "$ref": "#/components/schemas/Currency"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "currencies"
+        ],
+        "type": "object"
+      },
+      "Deletion": {
+        "additionalProperties": false,
+        "properties": {
+          "warnings": {
+            "items": {
+              "$ref": "#/components/schemas/NegativeHolding"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "Entry": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "externalId": {
+            "type": "string"
+          },
+          "id": {
+            "type": "integer"
+          },
+          "occurredAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "postings": {
+            "items": {
+              "$ref": "#/components/schemas/Posting"
+            },
+            "type": "array"
+          },
+          "reversalOfEntryId": {
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "posted"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "occurredAt",
+          "status",
+          "postings"
+        ],
+        "type": "object"
+      },
+      "EntryDetail": {
+        "additionalProperties": false,
+        "properties": {
+          "counterpartyId": {
+            "type": "integer"
+          },
+          "counterpartyName": {
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "externalId": {
+            "type": "string"
+          },
+          "id": {
+            "type": "integer"
+          },
+          "occurredAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "postedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "postings": {
+            "items": {
+              "$ref": "#/components/schemas/Posting"
+            },
+            "type": "array"
+          },
+          "reversalOfEntryId": {
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "posted"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "createdAt",
+          "id",
+          "occurredAt",
+          "status",
+          "postings"
+        ],
+        "type": "object"
+      },
+      "EntryPage": {
+        "additionalProperties": false,
+        "properties": {
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/Entry"
+            },
+            "type": "array"
+          },
+          "next": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "entries"
+        ],
+        "type": "object"
+      },
+      "ErrorDetail": {
+        "additionalProperties": false,
+        "properties": {
+          "location": {
+            "description": "Where the error occurred, e.g. 'body.items[3].tags' or 'path.thing-id'",
+            "type": "string"
+          },
+          "message": {
+            "description": "Error message text",
+            "type": "string"
+          },
+          "value": {
+            "description": "The value at the given location"
+          }
+        },
+        "type": "object"
+      },
+      "ErrorModel": {
+        "additionalProperties": false,
+        "properties": {
+          "detail": {
+            "description": "A human-readable explanation specific to this occurrence of the problem.",
+            "examples": [
+              "Property foo is required but is missing."
+            ],
+            "type": "string"
+          },
+          "errors": {
+            "description": "Optional list of individual error details",
+            "items": {
+              "$ref": "#/components/schemas/ErrorDetail"
+            },
+            "type": "array"
+          },
+          "instance": {
+            "description": "A URI reference that identifies the specific occurrence of the problem.",
+            "examples": [
+              "https://example.com/error-log/abc123"
+            ],
+            "format": "uri",
+            "type": "string"
+          },
+          "status": {
+            "description": "HTTP status code",
+            "examples": [
+              400
+            ],
+            "type": "integer"
+          },
+          "title": {
+            "description": "A short, human-readable summary of the problem type. This value should not change between occurrences of the error.",
+            "examples": [
+              "Bad Request"
+            ],
+            "type": "string"
+          },
+          "type": {
+            "default": "about:blank",
+            "description": "A URI reference to human-readable documentation for the error.",
+            "examples": [
+              "https://example.com/errors/example"
+            ],
+            "format": "uri",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "ExpenseForm": {
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "description": "the amount spent, greater than zero",
+            "examples": [
+              "1234.56"
+            ],
+            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+            "type": "string"
+          },
+          "balanceLedgerAccountId": {
+            "description": "the balance the money leaves",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "categoryLedgerAccountId": {
+            "description": "the expense category it is spent on, in the balance's currency",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "description": {
+            "description": "a note on the entry",
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "description": "one per transaction meant, such as one per opening of the form; a repeated key returns the entry first recorded with it",
+            "minLength": 1,
+            "type": "string"
+          },
+          "occurredAt": {
+            "description": "the instant the money was spent",
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "idempotencyKey",
+          "balanceLedgerAccountId",
+          "categoryLedgerAccountId",
+          "amount",
+          "occurredAt"
+        ],
+        "type": "object"
+      },
+      "FinancialAccount": {
+        "additionalProperties": false,
+        "properties": {
+          "closed": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "integer"
+          },
+          "institutionClosed": {
+            "type": "boolean"
+          },
+          "institutionId": {
+            "type": "integer"
+          },
+          "institutionName": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "institutionId",
+          "institutionName",
+          "institutionClosed",
+          "closed"
+        ],
+        "type": "object"
+      },
+      "FinancialAccountList": {
+        "additionalProperties": false,
+        "properties": {
+          "financialAccounts": {
+            "items": {
+              "$ref": "#/components/schemas/FinancialAccount"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "financialAccounts"
+        ],
+        "type": "object"
+      },
+      "Health": {
+        "additionalProperties": false,
+        "properties": {
+          "status": {
+            "description": "ok when the gateway can reach Temporal",
+            "enum": [
+              "ok"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "type": "object"
+      },
+      "Holding": {
+        "additionalProperties": false,
+        "properties": {
+          "assetId": {
+            "type": "integer"
+          },
+          "averageCost": {
+            "$ref": "#/components/schemas/CostBasis",
+            "description": "the cost of one unit; absent with no units, an unknown basis, or several currencies"
+          },
+          "costBasis": {
+            "description": "the cost of the units held, in each currency it was paid in",
+            "items": {
+              "$ref": "#/components/schemas/CostBasis"
+            },
+            "type": "array"
+          },
+          "financialAccountId": {
+            "type": "integer"
+          },
+          "units": {
+            "description": "a decimal amount, as a string so it stays exact",
+            "examples": [
+              "1234.56"
+            ],
+            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+            "type": "string"
+          },
+          "unknownCostBasis": {
+            "description": "some units came without a cost, so costBasis is only part of it",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "financialAccountId",
+          "assetId",
+          "units",
+          "costBasis",
+          "unknownCostBasis"
+        ],
+        "type": "object"
+      },
+      "HoldingList": {
+        "additionalProperties": false,
+        "properties": {
+          "holdings": {
+            "items": {
+              "$ref": "#/components/schemas/Holding"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "holdings"
+        ],
+        "type": "object"
+      },
+      "IncomeForm": {
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "description": "the amount earned, greater than zero",
+            "examples": [
+              "1234.56"
+            ],
+            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+            "type": "string"
+          },
+          "balanceLedgerAccountId": {
+            "description": "the balance the money reaches",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "categoryLedgerAccountId": {
+            "description": "the income category it is earned on, in the balance's currency",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "description": {
+            "description": "a note on the entry",
+            "type": "string"
+          },
+          "idempotencyKey": {
+            "description": "one per transaction meant, such as one per opening of the form; a repeated key returns the entry first recorded with it",
+            "minLength": 1,
+            "type": "string"
+          },
+          "occurredAt": {
+            "description": "the instant the money was earned",
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "idempotencyKey",
+          "balanceLedgerAccountId",
+          "categoryLedgerAccountId",
+          "amount",
+          "occurredAt"
+        ],
+        "type": "object"
+      },
+      "InsertCurrencyParams": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "precision": {
+            "type": "integer"
+          },
+          "symbol": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "name"
+        ],
+        "type": "object"
+      },
+      "InsertCurrencyResult": {
+        "additionalProperties": false,
+        "properties": {
+          "currencyId": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "currencyId"
+        ],
+        "type": "object"
+      },
+      "Movement": {
+        "additionalProperties": false,
+        "properties": {
+          "assetId": {
+            "type": "integer"
+          },
+          "costBasis": {
+            "$ref": "#/components/schemas/CostBasis",
+            "description": "the change to the cost of the units held, if the movement states it"
+          },
+          "description": {
+            "type": "string"
+          },
+          "externalId": {
+            "type": "string"
+          },
+          "financialAccountId": {
+            "type": "integer"
+          },
+          "id": {
+            "type": "integer"
+          },
+          "journalEntryId": {
+            "description": "the entry of a trade or a vest, which moved the cash",
+            "type": "integer"
+          },
+          "kind": {
+            "enum": [
+              "trade",
+              "vest",
+              "split",
+              "transfer",
+              "adjustment"
+            ],
+            "type": "string"
+          },
+          "occurredAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "reversalOfMovementId": {
+            "type": "integer"
+          },
+          "unitsDelta": {
+            "description": "the units added, or taken away when negative",
+            "examples": [
+              "1234.56"
+            ],
+            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "financialAccountId",
+          "assetId",
+          "unitsDelta",
+          "occurredAt"
+        ],
+        "type": "object"
+      },
+      "MovementPage": {
+        "additionalProperties": false,
+        "properties": {
+          "movements": {
+            "items": {
+              "$ref": "#/components/schemas/Movement"
+            },
+            "type": "array"
+          },
+          "next": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "movements"
+        ],
+        "type": "object"
+      },
+      "NegativeHolding": {
+        "additionalProperties": false,
+        "properties": {
+          "assetId": {
+            "type": "integer"
+          },
+          "assetName": {
+            "type": "string"
+          },
+          "at": {
+            "description": "when the holding first goes negative",
+            "format": "date-time",
+            "type": "string"
+          },
+          "financialAccountId": {
+            "type": "integer"
+          },
+          "financialAccountName": {
+            "type": "string"
+          },
+          "units": {
+            "description": "the units held then",
+            "examples": [
+              "1234.56"
+            ],
+            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "financialAccountId",
+          "financialAccountName",
+          "assetId",
+          "assetName",
+          "at",
+          "units"
+        ],
+        "type": "object"
+      },
+      "NetWorthBalance": {
+        "additionalProperties": false,
+        "properties": {
+          "assets": {
+            "description": "leaves out brokerages' Investments balances, which the units stand for",
+            "examples": [
+              "1234.56"
+            ],
+            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+            "type": "string"
+          },
+          "currencyId": {
+            "type": "integer"
+          },
+          "date": {
+            "format": "date",
+            "type": "string"
+          },
+          "liabilities": {
+            "description": "what is owed, positive",
+            "examples": [
+              "1234.56"
+            ],
+            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "date",
+          "currencyId",
+          "assets",
+          "liabilities"
+        ],
+        "type": "object"
+      },
+      "NetWorthSeries": {
+        "additionalProperties": false,
+        "properties": {
+          "balances": {
+            "items": {
+              "$ref": "#/components/schemas/NetWorthBalance"
+            },
+            "type": "array"
+          },
+          "units": {
+            "items": {
+              "$ref": "#/components/schemas/NetWorthUnits"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "balances",
+          "units"
+        ],
+        "type": "object"
+      },
+      "NetWorthUnits": {
+        "additionalProperties": false,
+        "properties": {
+          "assetId": {
+            "type": "integer"
+          },
+          "date": {
+            "format": "date",
+            "type": "string"
+          },
+          "units": {
+            "description": "negative for a short position",
+            "examples": [
+              "1234.56"
+            ],
+            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "date",
+          "assetId",
+          "units"
+        ],
+        "type": "object"
+      },
+      "NewCategory": {
+        "additionalProperties": false,
+        "properties": {
+          "currencyId": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "kind": {
+            "enum": [
+              "income",
+              "expense"
+            ],
+            "type": "string"
+          },
+          "name": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "parentId": {
+            "description": "the parent category, of the same kind and currency; top level if omitted",
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "kind",
+          "currencyId"
+        ],
+        "type": "object"
+      },
+      "NewCounterparty": {
+        "additionalProperties": false,
+        "properties": {
+          "externalId": {
+            "description": "how an external source, such as a bank export, identifies it",
+            "minLength": 1,
+            "type": "string"
+          },
+          "name": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "OpenedAccount": {
+        "additionalProperties": false,
+        "properties": {
+          "financialAccountId": {
+            "type": "integer"
+          },
+          "financialAccountName": {
+            "type": "string"
+          },
+          "institutionId": {
+            "type": "integer"
+          },
+          "institutionName": {
+            "type": "string"
+          },
+          "outcome": {
+            "enum": [
+              "opened",
+              "institution_not_found"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "outcome",
+          "institutionName"
+        ],
+        "type": "object"
+      },
+      "OpeningCurrency": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "description": "ISO 4217 code, such as EUR",
+            "minLength": 1,
+            "type": "string"
+          },
+          "openingBalance": {
+            "description": "the balance today: money held, or owed on a card; negative for an overdraft; nothing is posted if omitted",
+            "examples": [
+              "1234.56"
+            ],
+            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "type": "object"
+      },
+      "Posting": {
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "description": "a decimal amount, as a string so it stays exact",
+            "examples": [
+              "1234.56"
+            ],
+            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+            "type": "string"
+          },
+          "currencyId": {
+            "type": "integer"
+          },
+          "kind": {
+            "enum": [
+              "asset",
+              "liability",
+              "equity",
+              "income",
+              "expense"
+            ],
+            "type": "string"
+          },
+          "ledgerAccountId": {
+            "type": "integer"
+          },
+          "ledgerAccountName": {
+            "type": "string"
+          },
+          "lineNumber": {
+            "type": "integer"
+          },
+          "side": {
+            "enum": [
+              "debit",
+              "credit"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "lineNumber",
+          "ledgerAccountId",
+          "ledgerAccountName",
+          "kind",
+          "currencyId",
+          "amount",
+          "side"
+        ],
+        "type": "object"
+      },
+      "ProviderError": {
+        "additionalProperties": false,
+        "properties": {
+          "detail": {
+            "description": "why, such as no answer within 5s",
+            "type": "string"
+          },
+          "provider": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "provider",
+          "detail"
+        ],
+        "type": "object"
+      },
+      "ProviderRates": {
+        "additionalProperties": false,
+        "properties": {
+          "provider": {
+            "type": "string"
+          },
+          "rates": {
+            "items": {
+              "$ref": "#/components/schemas/ConversionRate"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "provider",
+          "rates"
+        ],
+        "type": "object"
+      },
+      "ProviderValues": {
+        "additionalProperties": false,
+        "properties": {
+          "provider": {
+            "type": "string"
+          },
+          "values": {
+            "description": "oldest first, from the first date the provider has a value for",
+            "items": {
+              "$ref": "#/components/schemas/AssetValue"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "provider",
+          "values"
+        ],
+        "type": "object"
+      },
+      "RecordedTrade": {
+        "additionalProperties": false,
+        "properties": {
+          "journalEntryId": {
+            "type": "integer"
+          },
+          "positionMovementId": {
+            "type": "integer"
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/components/schemas/NegativeHolding"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "journalEntryId",
+          "positionMovementId"
+        ],
+        "type": "object"
+      },
+      "RecordedTransaction": {
+        "additionalProperties": false,
+        "properties": {
+          "journalEntryId": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "journalEntryId"
+        ],
+        "type": "object"
+      },
+      "Reversal": {
+        "additionalProperties": false,
+        "properties": {
+          "journalEntryId": {
+            "type": "integer"
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/components/schemas/NegativeHolding"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "journalEntryId"
+        ],
+        "type": "object"
+      },
+      "SellForm": {
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "description": "the price received for the units, before the fee, greater than zero",
+            "examples": [
+              "1234.56"
+            ],
+            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+            "type": "string"
+          },
+          "assetId": {
+            "description": "the asset sold",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "currencyCode": {
+            "description": "the currency received, such as EUR, in which the account has its Cash and Investments balances",
+            "minLength": 1,
+            "type": "string"
+          },
+          "description": {
+            "description": "a note on the entry",
+            "type": "string"
+          },
+          "fee": {
+            "description": "the broker's fee, taken from the proceeds and less than the amount; zero if omitted",
+            "examples": [
+              "1234.56"
+            ],
+            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+            "type": "string"
+          },
+          "financialAccountId": {
+            "description": "the brokerage account sold in",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "idempotencyKey": {
+            "description": "one per sale meant, such as one per opening of the form; a repeated key returns the sale first recorded with it",
+            "minLength": 1,
+            "type": "string"
+          },
+          "occurredAt": {
+            "description": "the instant of the sale",
+            "format": "date-time",
+            "type": "string"
+          },
+          "units": {
+            "description": "the units sold, greater than zero",
+            "examples": [
+              "1234.56"
+            ],
+            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "idempotencyKey",
+          "financialAccountId",
+          "assetId",
+          "units",
+          "amount",
+          "currencyCode",
+          "occurredAt"
+        ],
+        "type": "object"
+      },
+      "StrayAmount": {
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "description": "debits minus credits",
+            "examples": [
+              "1234.56"
+            ],
+            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+            "type": "string"
+          },
+          "currencyCode": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "kind",
+          "currencyCode",
+          "amount"
+        ],
+        "type": "object"
+      },
+      "StrayUnits": {
+        "additionalProperties": false,
+        "properties": {
+          "assetId": {
+            "type": "integer"
+          },
+          "assetName": {
+            "type": "string"
+          },
+          "units": {
+            "description": "a decimal amount, as a string so it stays exact",
+            "examples": [
+              "1234.56"
+            ],
+            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "assetId",
+          "assetName",
+          "units"
+        ],
+        "type": "object"
+      },
+      "TransferForm": {
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "description": "the amount that leaves, greater than zero",
+            "examples": [
+              "1234.56"
+            ],
+            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+            "type": "string"
+          },
+          "description": {
+            "description": "a note on the entry",
+            "type": "string"
+          },
+          "fromLedgerAccountId": {
+            "description": "the balance the money leaves",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "idempotencyKey": {
+            "description": "one per transaction meant, such as one per opening of the form; a repeated key returns the entry first recorded with it",
+            "minLength": 1,
+            "type": "string"
+          },
+          "occurredAt": {
+            "description": "the instant the money moved",
+            "format": "date-time",
+            "type": "string"
+          },
+          "toAmount": {
+            "description": "the amount that arrives: required between currencies, else omitted or equal to amount",
+            "examples": [
+              "1234.56"
+            ],
+            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+            "type": "string"
+          },
+          "toLedgerAccountId": {
+            "description": "the balance the money reaches",
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "idempotencyKey",
+          "fromLedgerAccountId",
+          "toLedgerAccountId",
+          "amount",
+          "occurredAt"
+        ],
+        "type": "object"
+      },
+      "UserSettings": {
+        "additionalProperties": false,
+        "properties": {
+          "defaultCurrencyId": {
+            "description": "the currency the net worth dashboard values in when the URL names none; omitted when the user has not chosen one",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "gapPolicy": {
+            "description": "how a holding with no value on a date is counted: exclude leaves it out of the total and flags the date",
+            "enum": [
+              "exclude"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "gapPolicy"
+        ],
+        "type": "object"
+      },
+      "VestForm": {
+        "additionalProperties": false,
+        "properties": {
+          "assetId": {
+            "description": "the asset vested",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "currencyCode": {
+            "description": "the currency of the value, such as EUR, in which the account has its Cash and Investments balances and the categories are",
+            "minLength": 1,
+            "type": "string"
+          },
+          "description": {
+            "description": "a note on the entry",
+            "type": "string"
+          },
+          "fairMarketValue": {
+            "description": "the value of one unit at the vest, greater than zero",
+            "examples": [
+              "1234.56"
+            ],
+            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+            "type": "string"
+          },
+          "financialAccountId": {
+            "description": "the brokerage account the units are delivered to",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "idempotencyKey": {
+            "description": "one per vest meant, such as one per opening of the form; a repeated key returns the vest first recorded with it",
+            "minLength": 1,
+            "type": "string"
+          },
+          "incomeCategoryLedgerAccountId": {
+            "description": "the income category credited with the value of the units vested",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "occurredAt": {
+            "description": "the instant of the vest",
+            "format": "date-time",
+            "type": "string"
+          },
+          "taxCategoryLedgerAccountId": {
+            "description": "the expense category debited with the value of the units withheld; required when units are withheld",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "unitsVested": {
+            "description": "every unit vested, those withheld included, greater than zero",
+            "examples": [
+              "1234.56"
+            ],
+            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+            "type": "string"
+          },
+          "unitsWithheld": {
+            "description": "the units the employer kept for tax, fewer than those vested; zero if omitted",
+            "examples": [
+              "1234.56"
+            ],
+            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "idempotencyKey",
+          "financialAccountId",
+          "assetId",
+          "unitsVested",
+          "fairMarketValue",
+          "currencyCode",
+          "incomeCategoryLedgerAccountId",
+          "occurredAt"
+        ],
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "title": "ivfs",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/accounts/open": {
+      "post": {
+        "description": "Finds or creates the account and gives it the balances its type needs in each currency, with their opening balances. A missing institution is created only when createInstitution is set; otherwise the outcome is institution_not_found and nothing is written. Opening an account that exists adds the currencies it does not hold yet.",
+        "operationId": "open-account",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountForm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenedAccount"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Open a financial account with its balances",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/api/assets": {
+      "get": {
+        "description": "Both filters given must match. At most 500 assets are listed.",
+        "operationId": "list-assets",
+        "parameters": [
+          {
+            "description": "only assets whose name contains this, in any case",
+            "explode": false,
+            "in": "query",
+            "name": "nameContains",
+            "schema": {
+              "description": "only assets whose name contains this, in any case",
+              "type": "string"
+            }
+          },
+          {
+            "description": "only assets whose ticker contains this, in any case",
+            "explode": false,
+            "in": "query",
+            "name": "tickerContains",
+            "schema": {
+              "description": "only assets whose ticker contains this, in any case",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "List the assets, by name",
+        "tags": [
+          "assets"
+        ]
+      },
+      "post": {
+        "description": "An asset with the name already is returned as it is, its kind, ticker, and description unchanged.",
+        "operationId": "create-asset",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssetForm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedAsset"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Create an asset, or find the one with its name",
+        "tags": [
+          "assets"
+        ]
+      }
+    },
+    "/api/assets/{id}/values": {
+      "get": {
+        "description": "Every configured provider is asked at once (ADR 0014). One with no value on any date is left out; one that fails, or does not answer in time, is listed in errors. Both lists are in the configured order, so the first values are the default.",
+        "operationId": "list-asset-values",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "the first date, such as 2026-10-01",
+            "explode": false,
+            "in": "query",
+            "name": "from",
+            "required": true,
+            "schema": {
+              "description": "the first date, such as 2026-10-01",
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "description": "the last date, included; from itself for a single day",
+            "explode": false,
+            "in": "query",
+            "name": "to",
+            "required": true,
+            "schema": {
+              "description": "the last date, included; from itself for a single day",
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "description": "one value a day, a week, dated its Sunday, or a month, dated its last day; the last value is dated to",
+            "explode": false,
+            "in": "query",
+            "name": "interval",
+            "schema": {
+              "default": "day",
+              "description": "one value a day, a week, dated its Sunday, or a month, dated its last day; the last value is dated to",
+              "enum": [
+                "day",
+                "week",
+                "month"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetValues"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "List the asset's values over a range, from every provider",
+        "tags": [
+          "assets"
+        ]
+      }
+    },
+    "/api/categories": {
+      "get": {
+        "operationId": "list-categories",
+        "parameters": [
+          {
+            "description": "also list closed categories",
+            "explode": false,
+            "in": "query",
+            "name": "includeClosed",
+            "schema": {
+              "description": "also list closed categories",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoryList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "List the income and expense categories",
+        "tags": [
+          "categories"
+        ]
+      },
+      "post": {
+        "operationId": "create-category",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewCategory"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoryResult"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Create a category, or find the one with its name under the same parent",
+        "tags": [
+          "categories"
+        ]
+      }
+    },
+    "/api/categories/totals": {
+      "get": {
+        "description": "The period is half-open: an entry that occurred at its start counts, one at its end does not, so consecutive periods neither overlap nor leave a gap. Only posted entries count.",
+        "operationId": "get-category-totals",
+        "parameters": [
+          {
+            "description": "count entries that occurred at or after this instant",
+            "explode": false,
+            "in": "query",
+            "name": "from",
+            "required": true,
+            "schema": {
+              "description": "count entries that occurred at or after this instant",
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "description": "count entries that occurred before this instant",
+            "explode": false,
+            "in": "query",
+            "name": "to",
+            "required": true,
+            "schema": {
+              "description": "count entries that occurred before this instant",
+              "format": "date-time",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoryTotalList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Total what each category earned or spent over a period",
+        "tags": [
+          "categories"
+        ]
+      }
+    },
+    "/api/categories/{id}": {
+      "delete": {
+        "description": "An entry that also moves money in a financial account is kept, with this category's lines moved to the untracked accounts. A category with categories under it cannot be deleted until they are. Deleting a category that does not exist changes nothing. A deletion still running after a while is answered with 202 Accepted, and deleting again waits on it.",
+        "operationId": "delete-category",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "the category to merge this one into; merging is not supported yet",
+            "explode": false,
+            "in": "query",
+            "name": "replacementId",
+            "schema": {
+              "description": "the category to merge this one into; merging is not supported yet",
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountDeletion"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountDeletion"
+                }
+              }
+            },
+            "description": "The deletion is still running; deleting again waits on it"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Delete a category with the entries recorded on it",
+        "tags": [
+          "categories"
+        ]
+      }
+    },
+    "/api/categories/{id}/close": {
+      "post": {
+        "description": "A category with open categories under it cannot be closed until they are. Closing keeps its history; to remove it, delete it.",
+        "operationId": "close-category",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Close a category",
+        "tags": [
+          "categories"
+        ]
+      }
+    },
+    "/api/categories/{id}/deletion-preview": {
+      "get": {
+        "description": "Reports what DELETE /api/categories/{id} would do to the category as it is now, and changes nothing.",
+        "operationId": "preview-category-deletion",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountDeletionPreview"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Preview deleting a category",
+        "tags": [
+          "categories"
+        ]
+      }
+    },
+    "/api/categories/{id}/move": {
+      "post": {
+        "description": "A category can move only while it and the categories under it have no postings.",
+        "operationId": "move-category",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CategoryParent"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Move a category under another, or to the top level",
+        "tags": [
+          "categories"
+        ]
+      }
+    },
+    "/api/categories/{id}/rename": {
+      "post": {
+        "operationId": "rename-category",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CategoryName"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Rename a category",
+        "tags": [
+          "categories"
+        ]
+      }
+    },
+    "/api/counterparties": {
+      "get": {
+        "operationId": "list-counterparties",
+        "parameters": [
+          {
+            "description": "only counterparties whose name contains this, ignoring case; every one if omitted",
+            "explode": false,
+            "in": "query",
+            "name": "nameContains",
+            "schema": {
+              "description": "only counterparties whose name contains this, ignoring case; every one if omitted",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CounterpartyList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "List the counterparties, sorted by name",
+        "tags": [
+          "counterparties"
+        ]
+      },
+      "post": {
+        "description": "Names are compared ignoring case and surrounding space. A counterparty that exists is returned unchanged, whatever its external id.",
+        "operationId": "create-counterparty",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewCounterparty"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedCounterparty"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Create a counterparty, or find the one with its name",
+        "tags": [
+          "counterparties"
+        ]
+      }
+    },
+    "/api/counterparties/{id}/rename": {
+      "post": {
+        "description": "The journal entries that name it show the new name.",
+        "operationId": "rename-counterparty",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CounterpartyName"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Rename a counterparty",
+        "tags": [
+          "counterparties"
+        ]
+      }
+    },
+    "/api/currencies": {
+      "get": {
+        "operationId": "list-currencies",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrencyList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "List every currency",
+        "tags": [
+          "currencies"
+        ]
+      },
+      "post": {
+        "operationId": "create-currency",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InsertCurrencyParams"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InsertCurrencyResult"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Create a currency, or find the one with its code",
+        "tags": [
+          "currencies"
+        ]
+      }
+    },
+    "/api/currencies/{id}": {
+      "delete": {
+        "description": "A currency that anything, such as an account, still uses cannot be deleted. Deleting a currency that does not exist changes nothing.",
+        "operationId": "delete-currency",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Delete a currency that nothing uses",
+        "tags": [
+          "currencies"
+        ]
+      },
+      "patch": {
+        "operationId": "update-currency",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CurrencyChanges"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Change a currency's code, name, or symbol",
+        "tags": [
+          "currencies"
+        ]
+      }
+    },
+    "/api/currencies/{id}/rates/{quoteId}": {
+      "get": {
+        "description": "Every configured provider is asked at once (ADR 0014). One with no rate on any date is left out; one that fails, or does not answer in time, is listed in errors. Both lists are in the configured order, so the first rates are the default.",
+        "operationId": "list-conversion-rates",
+        "parameters": [
+          {
+            "description": "the base currency",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "the base currency",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "the quote currency",
+            "in": "path",
+            "name": "quoteId",
+            "required": true,
+            "schema": {
+              "description": "the quote currency",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "the first date, such as 2026-10-01",
+            "explode": false,
+            "in": "query",
+            "name": "from",
+            "required": true,
+            "schema": {
+              "description": "the first date, such as 2026-10-01",
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "description": "the last date, included; from itself for a single day",
+            "explode": false,
+            "in": "query",
+            "name": "to",
+            "required": true,
+            "schema": {
+              "description": "the last date, included; from itself for a single day",
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "description": "one value a day, a week, dated its Sunday, or a month, dated its last day; the last value is dated to",
+            "explode": false,
+            "in": "query",
+            "name": "interval",
+            "schema": {
+              "default": "day",
+              "description": "one value a day, a week, dated its Sunday, or a month, dated its last day; the last value is dated to",
+              "enum": [
+                "day",
+                "week",
+                "month"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversionRates"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "List how many units of the quote currency one of the base was worth over a range, from every provider",
+        "tags": [
+          "currencies"
+        ]
+      }
+    },
+    "/api/financial-accounts": {
+      "get": {
+        "operationId": "list-financial-accounts",
+        "parameters": [
+          {
+            "description": "also list closed accounts",
+            "explode": false,
+            "in": "query",
+            "name": "includeClosed",
+            "schema": {
+              "description": "also list closed accounts",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinancialAccountList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "List the financial accounts, with their institutions",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/api/financial-accounts/{id}": {
+      "delete": {
+        "description": "An entry or a movement that also involves other financial accounts is kept, with this account's lines moved to the untracked accounts. Deleting an account that does not exist changes nothing. A deletion still running after a while is answered with 202 Accepted, and deleting again waits on it.",
+        "operationId": "delete-financial-account",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "the account to merge this one into; merging is not supported yet",
+            "explode": false,
+            "in": "query",
+            "name": "replacementId",
+            "schema": {
+              "description": "the account to merge this one into; merging is not supported yet",
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountDeletion"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountDeletion"
+                }
+              }
+            },
+            "description": "The deletion is still running; deleting again waits on it"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Delete a financial account with its ledger accounts, entries, and movements",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/api/financial-accounts/{id}/balances": {
+      "get": {
+        "operationId": "get-account-balances",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "count only entries that occurred at or before this instant; now if omitted",
+            "explode": false,
+            "in": "query",
+            "name": "at",
+            "schema": {
+              "description": "count only entries that occurred at or before this instant; now if omitted",
+              "format": "date-time",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountBalances"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Get the balance of each of a financial account's ledger accounts",
+        "tags": [
+          "accounts"
+        ]
+      },
+      "post": {
+        "description": "Adds an asset balance, such as a savings vault, in a currency, and books its opening balance. A balance with the same name and currency in the account is returned unchanged, with no second opening entry.",
+        "operationId": "add-balance",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BalanceForm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddedBalance"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Add a named balance to a financial account",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/api/financial-accounts/{id}/close": {
+      "post": {
+        "description": "A financial account can be closed only once each of its ledger accounts is, and it holds no units of an asset. Closing a closed account changes nothing.",
+        "operationId": "close-financial-account",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Close a financial account",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/api/financial-accounts/{id}/deletion-preview": {
+      "get": {
+        "description": "Reports what DELETE /api/financial-accounts/{id} would do to the account as it is now, and changes nothing.",
+        "operationId": "preview-financial-account-deletion",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountDeletionPreview"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Preview deleting a financial account",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/api/financial-accounts/{id}/rename": {
+      "post": {
+        "description": "A financial account can be renamed even once closed, but not to the name of another account at the same institution.",
+        "operationId": "rename-financial-account",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountName"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Rename a financial account",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/api/health": {
+      "get": {
+        "operationId": "get-health",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Check that the gateway can reach Temporal",
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/api/holdings": {
+      "get": {
+        "description": "The cost basis is replayed from the movements at average cost (ADR 0009). A holding sold to zero is listed with no units.",
+        "operationId": "list-holdings",
+        "parameters": [
+          {
+            "description": "only the holdings of this financial account",
+            "explode": false,
+            "in": "query",
+            "name": "financialAccountId",
+            "schema": {
+              "description": "only the holdings of this financial account",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "only the holdings of this asset",
+            "explode": false,
+            "in": "query",
+            "name": "assetId",
+            "schema": {
+              "description": "only the holdings of this asset",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "count only movements that occurred at or before this instant; now if omitted",
+            "explode": false,
+            "in": "query",
+            "name": "at",
+            "schema": {
+              "description": "count only movements that occurred at or before this instant; now if omitted",
+              "format": "date-time",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HoldingList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "List the units held of each asset in each financial account, and what they cost",
+        "tags": [
+          "holdings"
+        ]
+      }
+    },
+    "/api/holdings/movements": {
+      "get": {
+        "description": "Only the movements that count towards holdings are listed: those without a journal entry, and those of a posted one. Their units add up to the holding's.",
+        "operationId": "list-holding-movements",
+        "parameters": [
+          {
+            "description": "only the movements of this financial account",
+            "explode": false,
+            "in": "query",
+            "name": "financialAccountId",
+            "schema": {
+              "description": "only the movements of this financial account",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "only the movements of this asset",
+            "explode": false,
+            "in": "query",
+            "name": "assetId",
+            "schema": {
+              "description": "only the movements of this asset",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "only movements of any of these kinds; every kind if omitted",
+            "explode": true,
+            "in": "query",
+            "name": "kind",
+            "schema": {
+              "description": "only movements of any of these kinds; every kind if omitted",
+              "items": {
+                "enum": [
+                  "trade",
+                  "vest",
+                  "split",
+                  "transfer",
+                  "adjustment"
+                ],
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          {
+            "description": "only movements that occurred at or after this instant",
+            "explode": false,
+            "in": "query",
+            "name": "from",
+            "schema": {
+              "description": "only movements that occurred at or after this instant",
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "description": "only movements that occurred before this instant",
+            "explode": false,
+            "in": "query",
+            "name": "to",
+            "schema": {
+              "description": "only movements that occurred before this instant",
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "description": "the size of the page; 100 if omitted",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "description": "the size of the page; 100 if omitted",
+              "maximum": 500,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "the next of the previous page; the first page if omitted",
+            "explode": false,
+            "in": "query",
+            "name": "after",
+            "schema": {
+              "description": "the next of the previous page; the first page if omitted",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MovementPage"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "List a page of the movements of holdings, by the date they occurred and then by id",
+        "tags": [
+          "holdings"
+        ]
+      }
+    },
+    "/api/institutions/{id}": {
+      "delete": {
+        "description": "Each financial account is deleted as DELETE /api/financial-accounts/{id} deletes it. Deleting an institution that does not exist changes nothing. A deletion still running after a while is answered with 202 Accepted, and deleting again waits on it.",
+        "operationId": "delete-institution",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountDeletion"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountDeletion"
+                }
+              }
+            },
+            "description": "The deletion is still running; deleting again waits on it"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Delete an institution with its financial accounts",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/api/institutions/{id}/close": {
+      "post": {
+        "description": "An institution can be closed only once each of its financial accounts is. Closing a closed institution changes nothing.",
+        "operationId": "close-institution",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Close an institution",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/api/institutions/{id}/deletion-preview": {
+      "get": {
+        "description": "Reports what DELETE /api/institutions/{id} would do to its financial accounts as they are now, and changes nothing.",
+        "operationId": "preview-institution-deletion",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountDeletionPreview"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Preview deleting an institution",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/api/investments/buys": {
+      "post": {
+        "description": "Cash pays the amount and the fee, Investments receives them, and the units are added at that cost. A repeated idempotency key returns the buy first recorded with it, recording nothing. A buy that leaves a holding negative at some point in time is recorded all the same, and the response warns about it.",
+        "operationId": "buy-asset",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BuyForm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordedTrade"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Record units of an asset bought with a brokerage account's cash",
+        "tags": [
+          "investments"
+        ]
+      }
+    },
+    "/api/investments/sells": {
+      "post": {
+        "description": "Investments pays the amount less the fee and Cash receives it, and the units are removed. The sale stores no basis: the average cost it removes, and its gain, are worked out when read. A repeated idempotency key returns the sale first recorded with it, recording nothing. A sale of more units than are held is recorded all the same, and the response warns about the negative holding.",
+        "operationId": "sell-asset",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SellForm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordedTrade"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Record units of an asset sold for a brokerage account's cash",
+        "tags": [
+          "investments"
+        ]
+      }
+    },
+    "/api/investments/vests": {
+      "post": {
+        "description": "The income category is credited with the value of every unit vested, Investments with that of the units delivered, and the tax category with that of the units withheld; the delivered units are added at their value. Shares sold to cover the tax are a separate sale. A repeated idempotency key returns the vest first recorded with it, recording nothing.",
+        "operationId": "vest-asset",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VestForm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordedTrade"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Record units of an asset received as compensation in a brokerage account",
+        "tags": [
+          "investments"
+        ]
+      }
+    },
+    "/api/journal-entries": {
+      "get": {
+        "operationId": "list-journal-entries",
+        "parameters": [
+          {
+            "description": "only entries with a posting on this ledger account",
+            "explode": false,
+            "in": "query",
+            "name": "ledgerAccountId",
+            "schema": {
+              "description": "only entries with a posting on this ledger account",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "only entries with this counterparty",
+            "explode": false,
+            "in": "query",
+            "name": "counterpartyId",
+            "schema": {
+              "description": "only entries with this counterparty",
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "only entries in any of these states; every state if omitted",
+            "explode": true,
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "description": "only entries in any of these states; every state if omitted",
+              "items": {
+                "enum": [
+                  "draft",
+                  "posted"
+                ],
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          {
+            "description": "only entries that occurred at or after this instant",
+            "explode": false,
+            "in": "query",
+            "name": "from",
+            "schema": {
+              "description": "only entries that occurred at or after this instant",
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "description": "only entries that occurred before this instant",
+            "explode": false,
+            "in": "query",
+            "name": "to",
+            "schema": {
+              "description": "only entries that occurred before this instant",
+              "format": "date-time",
+              "type": "string"
+            }
+          },
+          {
+            "description": "newest first",
+            "explode": false,
+            "in": "query",
+            "name": "descending",
+            "schema": {
+              "description": "newest first",
+              "type": "boolean"
+            }
+          },
+          {
+            "description": "the size of the page; 100 if omitted",
+            "explode": false,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "description": "the size of the page; 100 if omitted",
+              "maximum": 500,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "the next of the previous page; the first page if omitted",
+            "explode": false,
+            "in": "query",
+            "name": "after",
+            "schema": {
+              "description": "the next of the previous page; the first page if omitted",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntryPage"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "List a page of journal entries, by the date they occurred and then by id",
+        "tags": [
+          "journal"
+        ]
+      }
+    },
+    "/api/journal-entries/{id}": {
+      "delete": {
+        "description": "The ledger is left as if the entry had never been recorded, and its idempotency key is free again. Deleting an entry that does not exist changes nothing. A deletion that leaves a holding negative at some point in time is made all the same, and the response warns about it.",
+        "operationId": "delete-journal-entry",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Deletion"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Delete a journal entry with its postings, position movements, and reversals",
+        "tags": [
+          "journal"
+        ]
+      },
+      "get": {
+        "operationId": "get-journal-entry",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntryDetail"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Get a journal entry with its postings and counterparty",
+        "tags": [
+          "journal"
+        ]
+      }
+    },
+    "/api/journal-entries/{id}/reverse": {
+      "post": {
+        "description": "An entry is reversed at most once: reversing it again is a 409. A reversal that leaves a holding negative at some point in time is made all the same, and the response warns about it.",
+        "operationId": "reverse-journal-entry",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Reversal"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Reverse a posted journal entry with a new entry that undoes it, now",
+        "tags": [
+          "journal"
+        ]
+      }
+    },
+    "/api/ledger-accounts/{id}": {
+      "delete": {
+        "description": "An entry that also moves money in other financial accounts is kept, with this account's lines moved to the untracked accounts. Deleting an account that does not exist changes nothing. A deletion still running after a while is answered with 202 Accepted, and deleting again waits on it.",
+        "operationId": "delete-ledger-account",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "the account to merge this one into; merging is not supported yet",
+            "explode": false,
+            "in": "query",
+            "name": "replacementId",
+            "schema": {
+              "description": "the account to merge this one into; merging is not supported yet",
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountDeletion"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountDeletion"
+                }
+              }
+            },
+            "description": "The deletion is still running; deleting again waits on it"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Delete a ledger account with the entries and movements recorded on it",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/api/ledger-accounts/{id}/balance": {
+      "get": {
+        "operationId": "get-ledger-account-balance",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "description": "count only entries that occurred at or before this instant; now if omitted",
+            "explode": false,
+            "in": "query",
+            "name": "at",
+            "schema": {
+              "description": "count only entries that occurred at or before this instant; now if omitted",
+              "format": "date-time",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Balance"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Get the balance of a ledger account, with its name, kind, and currency",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/api/ledger-accounts/{id}/close": {
+      "post": {
+        "description": "An asset or liability ledger account can be closed only without a balance, and none can be closed with open accounts under it. Closing a closed account changes nothing.",
+        "operationId": "close-ledger-account",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Close a ledger account",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/api/ledger-accounts/{id}/deletion-preview": {
+      "get": {
+        "description": "Reports what DELETE /api/ledger-accounts/{id} would do to the account as it is now, and changes nothing.",
+        "operationId": "preview-ledger-account-deletion",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountDeletionPreview"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Preview deleting a ledger account",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/api/ledger-accounts/{id}/rename": {
+      "post": {
+        "description": "A ledger account can be renamed even once closed, but not to the name another ledger account in its currency has under the same financial account or parent.",
+        "operationId": "rename-ledger-account",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountName"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Rename a ledger account",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/api/net-worth/series": {
+      "get": {
+        "description": "Days are UTC days. A day counts every posted entry, and every movement in effect, that occurred before it ended. Values are not applied: value the units with the asset values and convert with the rates (ADR 0015). A range of more than 10,000 changes is refused; shorten it.",
+        "operationId": "get-net-worth-series",
+        "parameters": [
+          {
+            "description": "the first day, such as 2026-01-01",
+            "explode": false,
+            "in": "query",
+            "name": "from",
+            "required": true,
+            "schema": {
+              "description": "the first day, such as 2026-01-01",
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "description": "the last day, included; from itself for a single day",
+            "explode": false,
+            "in": "query",
+            "name": "to",
+            "required": true,
+            "schema": {
+              "description": "the last day, included; from itself for a single day",
+              "format": "date",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NetWorthSeries"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "List the balances and the units behind net worth over a range of days",
+        "tags": [
+          "net worth"
+        ]
+      }
+    },
+    "/api/position-movements/{id}": {
+      "delete": {
+        "description": "Any movement of a split, a transfer, or an adjustment deletes all of it, and its idempotency key is free again. A movement of a journal entry, a trade or a vest, is a 422: it is deleted with its entry. Deleting a movement that does not exist changes nothing. A deletion that leaves a holding negative at some point in time is made all the same, and the response warns about it.",
+        "operationId": "delete-position-movement",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Deletion"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Delete a position movement with the rest of its group and the group's reversals",
+        "tags": [
+          "positions"
+        ]
+      }
+    },
+    "/api/settings": {
+      "get": {
+        "operationId": "retrieve-user-settings",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserSettings"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Retrieve the user's settings, the defaults if they have never changed them",
+        "tags": [
+          "settings"
+        ]
+      },
+      "put": {
+        "description": "Every setting is replaced: a body without defaultCurrencyId clears the default currency.",
+        "operationId": "update-user-settings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserSettings"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserSettings"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Replace the user's settings",
+        "tags": [
+          "settings"
+        ]
+      }
+    },
+    "/api/transactions/expenses": {
+      "post": {
+        "description": "A repeated idempotency key returns the entry first recorded with it, posting nothing.",
+        "operationId": "record-expense",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExpenseForm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordedTransaction"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Record money spent from a balance on an expense category",
+        "tags": [
+          "transactions"
+        ]
+      }
+    },
+    "/api/transactions/incomes": {
+      "post": {
+        "description": "A repeated idempotency key returns the entry first recorded with it, posting nothing.",
+        "operationId": "record-income",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IncomeForm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordedTransaction"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Record money earned on an income category into a balance",
+        "tags": [
+          "transactions"
+        ]
+      }
+    },
+    "/api/transactions/transfers": {
+      "post": {
+        "description": "Between currencies, toAmount is the amount that arrives, and the transfer is an exchange with no fee. A repeated idempotency key returns the entry first recorded with it, posting nothing.",
+        "operationId": "record-transfer",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransferForm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordedTransaction"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Record money moved from one balance to another, possibly into another currency",
+        "tags": [
+          "transactions"
+        ]
+      }
+    }
+  }
+}

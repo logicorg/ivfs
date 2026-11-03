@@ -1,0 +1,14 @@
+.vscode/*
+
+cover.out
+
+# The web UI (ADR 0007): its dependencies, and its build, which the gateway
+# embeds from web/ui/dist next to a committed placeholder.
+web/ui/node_modules/
+web/ui/dist/app/
+web/ui/*.tsbuildinfo
+
+# The development Authelia's generated keys and secrets, and its database
+# (ADR 0013).
+compose/authelia/secrets/
+compose/authelia/data/

@@ -1,0 +1,77 @@
+# The development identity provider (ADR 0013), on https://127.0.0.1:9091.
+# authelia-init generates the keys and secrets into secrets/, which git
+# ignores, and the template filter reads them in here.
+server:
+  address: 'tcp://:9091/'
+  tls:
+    key: '/secrets/tls.key'
+    certificate: '/secrets/tls.crt'
+
+log:
+  level: 'info'
+
+identity_validation:
+  reset_password:
+    jwt_secret: {{ secret "/secrets/jwt_secret" | msquote }}
+
+authentication_backend:
+  # The users are a committed file, so there is nothing to reset a password in.
+  password_reset:
+    disable: true
+  file:
+    path: '/etc/authelia/users.yml'
+
+access_control:
+  default_policy: 'one_factor'
+
+# Authelia only takes an https URL for itself, and accepts an IP as its
+# cookie domain, which spares the development setup a hosts entry.
+session:
+  secret: {{ secret "/secrets/session_secret" | msquote }}
+  cookies:
+    - domain: '127.0.0.1'
+      authelia_url: 'https://127.0.0.1:9091'
+
+# Besides Authelia's sessions, this holds the subject each user signs in to
+# ivfs with: delete data/ and every user comes back as a new ivfs user.
+storage:
+  encryption_key: {{ secret "/secrets/storage_key" | msquote }}
+  local:
+    path: '/data/db.sqlite3'
+
+notifier:
+  filesystem:
+    filename: '/data/notification.txt'
+
+identity_providers:
+  oidc:
+    hmac_secret: {{ secret "/secrets/hmac_secret" | msquote }}
+    jwks:
+      - key_id: 'ivfs-dev'
+        algorithm: 'RS256'
+        use: 'sig'
+        key: {{ secret "/secrets/oidc.key" | mindent 10 "|" | msquote }}
+    # Authelia leaves groups out of the ID token unless a policy puts them
+    # there, and the gateway reads them only from the ID token.
+    claims_policies:
+      ivfs:
+        id_token: ['groups']
+    clients:
+      - client_id: 'ivfs'
+        client_name: 'ivfs'
+        # The hash of ivfs-dev-client-secret, the Makefile's OIDC_CLIENT_SECRET.
+        client_secret: '$pbkdf2-sha512$310000$j3Vd9qz.0EHjGrn7bW2FGw$JL.hcf00foySIRimlfwmLeQq8s161IBIJLaMpv2A2Zk3vEs2.UnRGNvH0HTE31DAeqwonELTAcOmW0Ikh/JFng'
+        public: false
+        authorization_policy: 'one_factor'
+        claims_policy: 'ivfs'
+        require_pkce: true
+        pkce_challenge_method: 'S256'
+        # make web, and make web behind make ui-dev.
+        redirect_uris:
+          - 'http://localhost:8080/auth/callback'
+          - 'http://localhost:5173/auth/callback'
+        scopes: ['openid', 'groups']
+        response_types: ['code']
+        grant_types: ['authorization_code']
+        token_endpoint_auth_method: 'client_secret_basic'
+        consent_mode: 'implicit'

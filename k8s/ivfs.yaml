@@ -1,0 +1,35 @@
+apiVersion: cuestomize.dev/v1alpha1
+kind: Cuestomization
+metadata:
+  name: example-ivfs
+  annotations:
+    config.kubernetes.io/function: |
+      container:
+        image: ghcr.io/logicorg/cuestomize:latest
+        network: true
+        mounts:
+          - type: bind
+            src: ./cuestomize
+            dst: /tmp/cue-resources
+input:
+  hostname: ivfs.example.com
+
+  image:
+    tag: main
+
+  temporal:
+    hostPort: "temporal-frontend.temporal:7233"
+
+  oidc:
+    issuer: https://auth.example.com
+    clientID: ivfs
+    group: ivfs
+
+  secrets:
+    gateway: ivfs-gateway
+
+  route:
+    parentRefs:
+      - name: public
+        namespace: gateway
+        sectionName: https

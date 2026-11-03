@@ -1,0 +1,11 @@
+# Only sources reach a build: the local databases, the UI's dependencies and
+# build, and the editors' and agents' files are rebuilt or irrelevant there.
+**/.git
+.claude
+.vscode
+compose
+cover.out
+k8s
+web/ui/node_modules
+web/ui/dist/app
+web/ui/*.tsbuildinfo
