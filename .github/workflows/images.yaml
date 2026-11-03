@@ -1,18 +1,66 @@
-# Builds every image for every platform on a pull request, and publishes them
-# to GHCR from main and from version tags (see ci/main.go).
+# Builds and checks everything on a pull request, publishing nothing. A v*
+# tag, or a manual run from main, publishes the images and the cuestomize
+# module to GHCR (see ci/).
 name: images
 
 on:
   pull_request:
   push:
-    branches: [main]
     tags: ["v*"]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+env:
+  DAGGER_VERSION: "0.21.10"
+
 jobs:
+  check:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Build the images
+        uses: dagger/dagger-for-github@27b130bf0f79a7f6fbbbe0fbca6760dc9bb40a77 # v8.4.1
+        with:
+          version: ${{ env.DAGGER_VERSION }}
+          verb: call
+          args: build-all
+
+      - name: Check the module
+        uses: dagger/dagger-for-github@27b130bf0f79a7f6fbbbe0fbca6760dc9bb40a77 # v8.4.1
+        with:
+          version: ${{ env.DAGGER_VERSION }}
+          verb: call
+          args: check-module
+
+  # A tag v1.2.0 publishes the images as 1.2.0 and the module as v1.2.0, the
+  # semver its consumers expect; a manual run publishes both as main and as
+  # the commit, so a deployment can pin one.
+  tags:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    outputs:
+      images: ${{ steps.tags.outputs.images }}
+      module: ${{ steps.tags.outputs.module }}
+    steps:
+      - id: tags
+        run: |
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            echo "images=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+            echo "module=$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"
+          elif [ "$GITHUB_REF" = refs/heads/main ]; then
+            echo "images=main,sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+            echo "module=main,sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          else
+            echo "::error::Publish from main or a v* tag, not $GITHUB_REF: run the workflow again on main."
+            exit 1
+          fi
+
   images:
+    needs: tags
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -20,37 +68,39 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Build
-        if: github.event_name == 'pull_request'
-        uses: dagger/dagger-for-github@27b130bf0f79a7f6fbbbe0fbca6760dc9bb40a77 # v8.4.1
-        with:
-          version: "0.21.10"
-          verb: call
-          args: build-all
-
-      # A version tag is published as itself; main as main, and as its
-      # commit so a deployment can pin one.
-      - name: Tags
-        if: github.event_name == 'push'
-        id: tags
-        run: |
-          if [ "$GITHUB_REF_TYPE" = tag ]; then
-            echo "tags=$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"
-          else
-            echo "tags=main,sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Publish
-        if: github.event_name == 'push'
         uses: dagger/dagger-for-github@27b130bf0f79a7f6fbbbe0fbca6760dc9bb40a77 # v8.4.1
         env:
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          version: "0.21.10"
+          version: ${{ env.DAGGER_VERSION }}
           verb: call
           args: >-
             publish
-            --tags=${{ steps.tags.outputs.tags }}
+            --tags=${{ needs.tags.outputs.images }}
+            --revision=${{ github.sha }}
+            --username=${{ github.actor }}
+            --password=env://GHCR_TOKEN
+
+  module:
+    needs: tags
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Publish
+        uses: dagger/dagger-for-github@27b130bf0f79a7f6fbbbe0fbca6760dc9bb40a77 # v8.4.1
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          version: ${{ env.DAGGER_VERSION }}
+          verb: call
+          args: >-
+            publish-module
+            --tags=${{ needs.tags.outputs.module }}
             --revision=${{ github.sha }}
             --username=${{ github.actor }}
             --password=env://GHCR_TOKEN

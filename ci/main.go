@@ -31,6 +31,8 @@ var platforms = []dagger.Platform{"linux/amd64", "linux/arm64"}
 type Ivfs struct {
 	// The repository, as the Dockerfiles expect it for their context.
 	Source *dagger.Directory
+	// The cuestomize module, published apart from the images.
+	Module *dagger.Directory
 }
 
 func New(
@@ -39,8 +41,10 @@ func New(
 	// +defaultPath="/"
 	// +ignore=["**/.git", ".claude", ".vscode", "compose", "cover.out", "k8s", "ci", "web/ui/node_modules", "web/ui/dist/app", "web/ui/*.tsbuildinfo"]
 	source *dagger.Directory,
+	// +defaultPath="/k8s/cuestomize"
+	module *dagger.Directory,
 ) *Ivfs {
-	return &Ivfs{Source: source}
+	return &Ivfs{Source: source, Module: module}
 }
 
 // Build builds one image for one platform.
