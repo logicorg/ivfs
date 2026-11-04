@@ -1,4 +1,10 @@
+@experiment(try)
+
 package main
+
+import (
+	batchv1 "cue.dev/x/k8s.io/api/batch/v1"
+)
 
 // The worker cannot start a Temporal worker in a namespace that does not
 // exist, and registering one is an admin call it should not need at runtime.
@@ -29,8 +35,13 @@ outputs: "job-ensure-namespace": {
 				enableServiceLinks:           false
 				securityContext:              _podSecurity
 				containers: [_container & {
-					name:  "ensure-namespace"
-					image: "\(input.image.registry)/worker:\(input.image.tag)"
+					imagePullPolicy: input.job.imagePullPolicy
+					try {
+						image: input.job.image?
+					}
+					image: string | *_componentDefaultImage["ensure-namespace"]
+				} & {
+					name: "ensure-namespace"
 					args: ["ensure-namespace", "--retention=\(input.temporal.retention)"]
 					env: _temporalEnv
 					resources: {requests: {cpu: "10m", memory: "32Mi"}, limits: memory: "64Mi"}
@@ -38,4 +49,4 @@ outputs: "job-ensure-namespace": {
 			}
 		}
 	}
-}
+} & batchv1.#Job

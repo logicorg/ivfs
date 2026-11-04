@@ -1,6 +1,13 @@
+@experiment(try)
+
 package main
 
 import "strings"
+
+_#ImageOptions: {
+	image?:          string
+	imagePullPolicy: #_ImagePullPolicy
+}
 
 // #Input is what a Cuestomization's input may set. It is closed, so a typo
 // fails the build instead of silently falling back to a default.
@@ -12,11 +19,41 @@ import "strings"
 	// session cookie is Secure.
 	hostname: string & =~"^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$"
 
+	commonLabels: [string]: string | *{}
+
 	image: {
 		registry: string | *"ghcr.io/logicorg/ivfs"
 		// tag is required: a moving default would upgrade on any re-render.
-		tag: string & =~"^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$"
+		tag: =~"^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$" | *""
 	}
+
+	// if image.tag is unset, all images must be set explicitly
+	if image.tag == "" {
+		worker: image:  strings.MinRunes(1)
+		job: image:     strings.MinRunes(1)
+		gateway: image: strings.MinRunes(1)
+		if providers.yahoo.enabled {
+			providers: yahoo: image!: strings.MinRunes(1)
+		}
+	}
+
+	try {
+		if len(worker.image?) > 0 && len(job.image?) > 0 && len(gateway.image?) > 0 && (
+			!providers.yahoo.enabled || len(providers.yahoo.image?) > 0) {
+			image: tag: "" | error("image.tag must be unset when all images are set explicitly")
+		}
+	}
+
+	worker: {
+		_#ImageOptions
+
+		// replicas is how many workers run; the Job queue balances them.
+		replicas: int & >=1 | *1
+	}
+
+	job: {_#ImageOptions}
+
+	gateway: {_#ImageOptions}
 
 	temporal: {
 		// hostPort is the frontend, in Temporal's own Kubernetes namespace,
@@ -77,6 +114,7 @@ import "strings"
 	// networkPolicy says where the peers outside this namespace run, for the
 	// CiliumNetworkPolicies that deny everything else.
 	networkPolicy: {
+		enabled: bool | *true
 		dns: #Peer | *{namespace: "kube-system", podLabels: {"k8s-app": "kube-dns"}}
 		temporal: #Peer | *{namespace: "temporal", podLabels: {"app.kubernetes.io/name": "temporal", "app.kubernetes.io/component": "frontend"}}
 		// cnpgOperator reaches the instances' status endpoint.
@@ -84,7 +122,11 @@ import "strings"
 	}
 
 	providers: {
-		yahoo: {enabled: bool | *true}
+		yahoo: {
+			_#ImageOptions
+
+			enabled: bool | *true
+		}
 	}
 
 	resources: {

@@ -1,3 +1,5 @@
+@experiment(try)
+
 package main
 
 if input.providers.yahoo.enabled {
@@ -5,7 +7,10 @@ if input.providers.yahoo.enabled {
 		#name: "yahoo-provider"
 		#port: 8080
 		#container: {
-			image: "\(input.image.registry)/yahoo-provider:\(input.image.tag)"
+			imagePullPolicy: input.providers.yahoo.imagePullPolicy
+			try {
+				image: input.providers.yahoo.image?
+			}
 			env: [_goMemLimit]
 			ports: [{name: "http", containerPort: 8080}]
 			// It serves no health endpoint, and an answer depends on Yahoo, so

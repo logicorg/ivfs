@@ -1,3 +1,5 @@
+@experiment(try)
+
 package main
 
 _components: worker: {
@@ -7,7 +9,10 @@ _components: worker: {
 		secret: {secretName: "\(_dbCluster)-ca", items: [{key: "ca.crt", path: "ca.crt"}]}
 	}]
 	#container: {
-		image: "\(input.image.registry)/worker:\(input.image.tag)"
+		imagePullPolicy: input.worker.imagePullPolicy
+		try {
+			image: input.worker.image?
+		}
 		env: [
 			{name: "IVFS_APP_ROLE", value: input.database.role},
 			{name: "IVFS_APP_PASSWORD", valueFrom: secretKeyRef: {name: "\(_dbCluster)-app", key: "password"}},

@@ -1,5 +1,10 @@
 package main
 
+import (
+	api "cue.dev/x/k8s.io/api/core/v1"
+	appsv1 "cue.dev/x/k8s.io/api/apps/v1"
+)
+
 apiVersion: "cuestomize.dev/v1alpha1"
 kind:       "Cuestomization"
 
@@ -14,13 +19,14 @@ outputs: [string]: {
 	metadata: name: string
 }
 
+#_ImagePullPolicy: "Never" | "Always" | *"IfNotPresent"
+
 // _dbCluster is the CNPG Cluster's name; its -rw Service, -app and -ca
 // Secrets follow from it.
 _dbCluster: "ivfs-db"
 
-_labels: {
-	"app.kubernetes.io/part-of":    "ivfs"
-	"app.kubernetes.io/managed-by": "cuestomize"
+_labels: input.commonLabels & {
+	"app.kubernetes.io/part-of": string | *"ivfs"
 }
 
 _temporalEnv: [
@@ -35,7 +41,7 @@ _goMemLimit: {name: "GOMEMLIMIT", valueFrom: resourceFieldRef: resource: "limits
 // _container is what every container shares: the images are distroless,
 // nonroot and need no writable filesystem.
 _container: {
-	imagePullPolicy: "IfNotPresent"
+	imagePullPolicy: #_ImagePullPolicy
 	securityContext: {
 		allowPrivilegeEscalation: false
 		readOnlyRootFilesystem:   true
@@ -50,11 +56,20 @@ _podSecurity: {
 	seccompProfile: type: "RuntimeDefault"
 }
 
+_componentDefaultImage: {
+	"ensure-namespace": "\(input.image.registry)/worker:\(input.image.tag)"
+	"worker":           "\(input.image.registry)/worker:\(input.image.tag)"
+	"gateway":          "\(input.image.registry)/gateway:\(input.image.tag)"
+	"yahoo-provider":   "\(input.image.registry)/yahoo-provider:\(input.image.tag)"
+}
+
 // _component is a Deployment, its ServiceAccount and, with a port, its
 // Service, for one ivfs program.
 _component: {
 	X=#name: string
-	#container: {...}
+	#container: api.#Container & {
+		image: string | *_componentDefaultImage[X]
+	}
 	#port?: int
 	#volumes: [...{...}] | *[]
 
@@ -71,7 +86,7 @@ _component: {
 		metadata:   meta
 		// None of them calls the Kubernetes API.
 		automountServiceAccountToken: false
-	}
+	} & api.#ServiceAccount
 
 	deployment: {
 		apiVersion: "apps/v1"
@@ -94,7 +109,7 @@ _component: {
 				}
 			}
 		}
-	}
+	} & appsv1.#Deployment
 
 	if #port != _|_ {
 		service: {
@@ -105,7 +120,7 @@ _component: {
 				selector: podSelector
 				ports: [{name: "http", port: #port, targetPort: "http"}]
 			}
-		}
+		} & api.#Service
 	}
 }
 

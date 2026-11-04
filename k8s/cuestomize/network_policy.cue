@@ -141,6 +141,8 @@ _policies: database: spec: {
 	]
 }
 
-for name, p in _policies {
-	outputs: "ciliumnetworkpolicy-\(name)": p
+if np.enabled {
+	for name, p in _policies {
+		outputs: "ciliumnetworkpolicy-\(name)": p
+	}
 }

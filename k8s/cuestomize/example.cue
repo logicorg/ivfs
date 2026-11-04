@@ -2,6 +2,8 @@
 
 package main
 
+includes: {}
+
 // The input `cue export -t example .` renders, as a Cuestomization would set it.
 input: {
 	hostname: "ivfs.example.com"

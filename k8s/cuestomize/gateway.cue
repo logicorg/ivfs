@@ -1,3 +1,5 @@
+@experiment(try)
+
 package main
 
 _components: gateway: {
@@ -10,7 +12,11 @@ _components: gateway: {
 		}]
 	}
 	#container: {
-		image: "\(input.image.registry)/web:\(input.image.tag)"
+		try {
+			image: input.gateway.image?
+		}
+		imagePullPolicy: input.gateway.imagePullPolicy
+
 		// The default listens on loopback alone, for development.
 		args: ["--addr=:8080"]
 		env: [
