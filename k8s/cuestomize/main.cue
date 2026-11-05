@@ -59,7 +59,7 @@ _podSecurity: {
 _componentDefaultImage: {
 	"ensure-namespace": "\(input.image.registry)/worker:\(input.image.tag)"
 	"worker":           "\(input.image.registry)/worker:\(input.image.tag)"
-	"gateway":          "\(input.image.registry)/gateway:\(input.image.tag)"
+	"gateway":          "\(input.image.registry)/web:\(input.image.tag)"
 	"yahoo-provider":   "\(input.image.registry)/yahoo-provider:\(input.image.tag)"
 }
 
