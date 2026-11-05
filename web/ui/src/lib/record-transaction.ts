@@ -34,12 +34,15 @@ export type Choice = { ledgerAccountId: number; label: string; currencyCode: str
 export type Picker = { label: string; choices: Choice[] }
 
 // balanceChoices lists the open balances of the open financial accounts,
-// sorted by account then balance. balances holds what each account's balances
-// endpoint returned, in any order. A balance named as its account is labelled
-// once.
+// sorted by institution, account, then balance. balances holds what each
+// account's balances endpoint returned, in any order. The institution leads the
+// label because accounts at different institutions can share a name. A balance
+// named as its account is labelled once.
 export function balanceChoices(accounts: FinancialAccount[], balances: AccountBalances[]): Choice[] {
   const byAccount = new Map(balances.map((account) => [account.financialAccountId, account.balances]))
-  const open = accounts.filter((account) => !account.closed).sort((a, b) => a.name.localeCompare(b.name))
+  const open = accounts
+    .filter((account) => !account.closed)
+    .sort((a, b) => a.institutionName.localeCompare(b.institutionName) || a.name.localeCompare(b.name))
   return open.flatMap((account) =>
     (byAccount.get(account.id) ?? [])
       .filter((balance) => !balance.closed && (balance.kind === "asset" || balance.kind === "liability"))
@@ -48,8 +51,8 @@ export function balanceChoices(accounts: FinancialAccount[], balances: AccountBa
         ledgerAccountId: balance.ledgerAccountId,
         label:
           balance.ledgerAccountName === account.name
-            ? account.name
-            : `${account.name} · ${balance.ledgerAccountName}`,
+            ? `${account.institutionName} · ${account.name}`
+            : `${account.institutionName} · ${account.name} · ${balance.ledgerAccountName}`,
         currencyCode: balance.currencyCode,
       })),
   )

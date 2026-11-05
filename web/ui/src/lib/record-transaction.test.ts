@@ -15,8 +15,8 @@ import {
   type TransactionRequest,
 } from "./record-transaction"
 
-function account(id: number, name: string, closed = false): FinancialAccount {
-  return { id, name, closed, institutionId: 1, institutionName: "Revolut", institutionClosed: false }
+function account(id: number, name: string, closed = false, institutionName = "Revolut"): FinancialAccount {
+  return { id, name, closed, institutionId: 1, institutionName, institutionClosed: false }
 }
 
 function balance(ledgerAccountId: number, ledgerAccountName: string, currencyCode: string, extra?: Partial<Balance>): Balance {
@@ -72,22 +72,34 @@ describe("balanceChoices", () => {
   const cases: { name: string; accounts: FinancialAccount[]; balances: AccountBalances[]; want: Choice[] }[] = [
     {
       name: "sorted by account then balance, a balance named as its account labelled once",
-      accounts: [account(2, "Revolut"), account(1, "Cash")],
+      accounts: [account(2, "Personal"), account(1, "Joint")],
       balances: [
-        { financialAccountId: 2, balances: [balance(102, "Vault", "EUR"), balance(101, "Revolut", "EUR")] },
-        { financialAccountId: 1, balances: [balance(100, "Cash", "EUR")] },
+        { financialAccountId: 2, balances: [balance(102, "Vault", "EUR"), balance(101, "Personal", "EUR")] },
+        { financialAccountId: 1, balances: [balance(100, "Joint", "EUR")] },
       ],
       want: [
-        { ledgerAccountId: 100, label: "Cash", currencyCode: "EUR" },
-        { ledgerAccountId: 101, label: "Revolut", currencyCode: "EUR" },
-        { ledgerAccountId: 102, label: "Revolut · Vault", currencyCode: "EUR" },
+        { ledgerAccountId: 100, label: "Revolut · Joint", currencyCode: "EUR" },
+        { ledgerAccountId: 101, label: "Revolut · Personal", currencyCode: "EUR" },
+        { ledgerAccountId: 102, label: "Revolut · Personal · Vault", currencyCode: "EUR" },
+      ],
+    },
+    {
+      name: "accounts sharing a name told apart and sorted by institution",
+      accounts: [account(1, "Personal", false, "Revolut"), account(2, "Personal", false, "N26")],
+      balances: [
+        { financialAccountId: 1, balances: [balance(100, "Cash", "EUR")] },
+        { financialAccountId: 2, balances: [balance(101, "Cash", "EUR")] },
+      ],
+      want: [
+        { ledgerAccountId: 101, label: "N26 · Personal · Cash", currencyCode: "EUR" },
+        { ledgerAccountId: 100, label: "Revolut · Personal · Cash", currencyCode: "EUR" },
       ],
     },
     {
       name: "a card's balance that is owed",
       accounts: [account(3, "Amex")],
       balances: [{ financialAccountId: 3, balances: [balance(103, "Amex", "USD", { kind: "liability" })] }],
-      want: [{ ledgerAccountId: 103, label: "Amex", currencyCode: "USD" }],
+      want: [{ ledgerAccountId: 103, label: "Revolut · Amex", currencyCode: "USD" }],
     },
     {
       name: "closed accounts and balances left out",
@@ -96,7 +108,7 @@ describe("balanceChoices", () => {
         { financialAccountId: 1, balances: [balance(100, "Cash", "EUR"), balance(104, "Old vault", "EUR", { closed: true })] },
         { financialAccountId: 2, balances: [balance(105, "Old bank", "EUR")] },
       ],
-      want: [{ ledgerAccountId: 100, label: "Cash", currencyCode: "EUR" }],
+      want: [{ ledgerAccountId: 100, label: "Revolut · Cash", currencyCode: "EUR" }],
     },
     {
       name: "an account whose balances have not loaded",
