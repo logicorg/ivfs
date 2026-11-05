@@ -6,6 +6,14 @@ if input.providers.yahoo.enabled {
 	_components: "yahoo-provider": {
 		#name: "yahoo-provider"
 		#port: 8080
+		#podSpec: {
+			try {
+				affinity: input.providers.yahoo.affinity?
+			}
+			try {
+				runtimeClassName: input.providers.yahoo.runtimeClassName?
+			}
+		}
 		#container: {
 			imagePullPolicy: input.providers.yahoo.imagePullPolicy
 			try {

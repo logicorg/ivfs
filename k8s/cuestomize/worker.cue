@@ -4,6 +4,14 @@ package main
 
 _components: worker: {
 	#name: "worker"
+	#podSpec: {
+		try {
+			affinity: input.worker.affinity?
+		}
+		try {
+			runtimeClassName: input.worker.runtimeClassName?
+		}
+	}
 	#volumes: [{
 		name: "postgres-ca"
 		secret: {secretName: "\(_dbCluster)-ca", items: [{key: "ca.crt", path: "ca.crt"}]}
@@ -13,6 +21,7 @@ _components: worker: {
 		try {
 			image: input.worker.image?
 		}
+
 		env: [
 			{name: "IVFS_APP_ROLE", value: input.database.role},
 			{name: "IVFS_APP_PASSWORD", valueFrom: secretKeyRef: {name: "\(_dbCluster)-app", key: "password"}},

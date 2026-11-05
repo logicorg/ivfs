@@ -2,7 +2,10 @@
 
 package main
 
-import "strings"
+import (
+	"strings"
+	api "cue.dev/x/k8s.io/api/core/v1"
+)
 
 _#ImageOptions: {
 	image?:          string
@@ -49,11 +52,25 @@ _#ImageOptions: {
 
 		// replicas is how many workers run; the Job queue balances them.
 		replicas: int & >=1 | *1
+
+		runtimeClassName?: string
+
+		affinity?: api.#Affinity
 	}
 
-	job: {_#ImageOptions}
+	job: {
+		_#ImageOptions
 
-	gateway: {_#ImageOptions}
+		affinity?: api.#Affinity
+	}
+
+	gateway: {
+		_#ImageOptions
+
+		runtimeClassName?: string
+
+		affinity?: api.#Affinity
+	}
 
 	temporal: {
 		// hostPort is the frontend, in Temporal's own Kubernetes namespace,
@@ -123,9 +140,13 @@ _#ImageOptions: {
 
 	providers: {
 		yahoo: {
+			enabled: bool | *true
+
 			_#ImageOptions
 
-			enabled: bool | *true
+			affinity?: api.#Affinity
+
+			runtimeClassName?: string
 		}
 	}
 

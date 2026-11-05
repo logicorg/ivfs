@@ -11,6 +11,14 @@ _components: gateway: {
 			configMap: {name: input.oidc.ca.configMap, items: [{key: input.oidc.ca.key, path: "ca.crt"}]}
 		}]
 	}
+	#podSpec: {
+		try {
+			affinity: input.gateway.affinity?
+		}
+		try {
+			runtimeClassName: input.gateway.runtimeClassName?
+		}
+	}
 	#container: {
 		try {
 			image: input.gateway.image?

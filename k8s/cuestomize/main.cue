@@ -72,6 +72,7 @@ _component: {
 	}
 	#port?: int
 	#volumes: [...{...}] | *[]
+	#podSpec: api.#PodSpec
 
 	let podLabels = _labels & {
 		"app.kubernetes.io/name":      X
@@ -106,7 +107,7 @@ _component: {
 					if len(#volumes) > 0 {
 						volumes: #volumes
 					}
-				}
+				} & #podSpec
 			}
 		}
 	} & appsv1.#Deployment

@@ -34,6 +34,9 @@ outputs: "job-ensure-namespace": {
 				automountServiceAccountToken: false
 				enableServiceLinks:           false
 				securityContext:              _podSecurity
+				try {
+					runtimeClassName: input.job.runtimeClassName?
+				}
 				containers: [_container & {
 					imagePullPolicy: input.job.imagePullPolicy
 					try {
@@ -46,6 +49,9 @@ outputs: "job-ensure-namespace": {
 					env: _temporalEnv
 					resources: {requests: {cpu: "10m", memory: "32Mi"}, limits: memory: "64Mi"}
 				}]
+				try {
+					affinity: input.job.affinity?
+				}
 			}
 		}
 	}
