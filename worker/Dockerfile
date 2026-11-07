@@ -3,7 +3,7 @@
 #
 # The builder runs on the build machine's platform and cross-compiles, which
 # is faster than emulating the target's.
-FROM --platform=$BUILDPLATFORM golang:1.26.5-trixie@sha256:f1a132429b98724a904e9b3bdbaed399d8f923203c3e5170e6def66d0a7cc04c AS builder
+FROM --platform=$BUILDPLATFORM golang:1.27.3-trixie@sha256:af1bfc2614ebb1dbd31af514b78740fd678850e76498762b425ecee4c5c6ea80
 
 ARG TARGETOS TARGETARCH
 
