@@ -5,6 +5,8 @@ name: images
 
 on:
   pull_request:
+    paths-ignore:
+      - "docs/**"
   push:
     tags: ["v*"]
   workflow_dispatch:
