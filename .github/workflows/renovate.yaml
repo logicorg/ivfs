@@ -10,12 +10,16 @@ env:
 
 jobs:
   renovate:
-    permissions: write-all
-
     name: Renovate dependencies
     runs-on: ubuntu-latest
 
     steps:
+      - name: Generate token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ secrets.GH_APP_RENOVATE_CLIENT_ID }}
+          private-key: ${{ secrets.GH_APP_RENOVATE_PRIVATE_KEY }}
+    
       - uses: actions/checkout@v7
 
       - name: Renovate
