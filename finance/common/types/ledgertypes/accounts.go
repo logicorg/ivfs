@@ -318,3 +318,8 @@ func (i *DeleteCounterpartyInput) Validate() error {
 	}
 	return nil
 }
+
+type DeleteCounterpartyResult struct {
+	// Cleared is the number of journal entries that lost the counterparty.
+	Cleared int64 `json:"cleared"`
+}
