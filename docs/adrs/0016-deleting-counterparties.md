@@ -32,10 +32,9 @@ Two things stand in the way:
   entry that is not a draft, so the reference cannot be cleared from a posted
   entry either.
 
-There is one user, who runs one operation at a time. A counterparty is
-low-value data, and a short window in which it is half deleted is acceptable.
-Bundling the steps into one transaction to rule out a concurrent post that will
-almost never happen is not worth it.
+A counterparty is low-value data, and a short window in which it is half deleted
+is acceptable. Bundling the steps into one transaction to rule out a concurrent 
+post that will almost never happen is not worth it.
 
 ## Decision
 
@@ -76,7 +75,7 @@ entry is ever left pointing at a missing one.
 
 | Activity | Does | When nothing matches |
 | --- | --- | --- |
-| `ClearCounterpartyReferences` | `UPDATE ledger.journal_entry SET counterparty_id = NULL WHERE counterparty_id = ?` | succeeds |
+| `ClearCounterpartyReferences` | `UPDATE ledger.journal_entry SET counterparty_id = NULL, updated_at = now() WHERE counterparty_id = ?` | succeeds |
 | `DeleteCounterparty` | `DELETE FROM ledger.counterparty WHERE id = ?` | succeeds |
 
 Each is one statement and is idempotent. `DeleteCounterparty` turns a foreign
@@ -88,13 +87,12 @@ Temporal does not retry the delete alone, which would fail every time.
 The `DeleteCounterparty` workflow runs the two in order. When the delete
 returns `ErrResourceConflict`, an entry referring to the counterparty was
 recorded between the two, and the workflow runs both again. It does this at
-most 3 times and then returns the conflict. Any other failure follows the
+most N times and then returns the conflict. Any other failure follows the
 default activity retries.
 
 The two activities are separate operations, so neither wraps the other in a
 transaction. A failure between them leaves the references cleared and the
-counterparty in place. That is harmless, and running the workflow again
-finishes it.
+counterparty in place. That is harmless.
 
 ### Reversals
 
@@ -117,7 +115,7 @@ counterparty. It survives, and is deleted on its own, as ADR 0012 describes.
 
 Retrying an earlier `PostJournalEntry` with the same idempotency key returns
 the stored entry, which no longer has a counterparty. The retry returns what is
-stored, as it always does (AGENTS.md), and does not set it again.
+stored, as it always does, and does not set it again.
 
 ### The command
 
@@ -144,9 +142,7 @@ second delete succeeds.
   deleted (ADR 0011, ADR 0012), and a counterparty is the least valuable of the
   three.
 - **One activity in one transaction.** It closes the window between the two
-  steps, at the cost of a bundled operation for a race that a single user does
-  not produce. The `RESTRICT` key and the workflow's retry already keep the
-  data consistent.
+  steps, at the cost of a bundled operation for a race that is unlikely.
 - **Deleting the counterparty first.** `RESTRICT` refuses it while any entry
   refers to it, and without the key nothing would stop dangling references.
 - **`ON DELETE SET NULL`.** One statement clears and deletes atomically, but it
