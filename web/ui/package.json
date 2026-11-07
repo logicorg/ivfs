@@ -33,7 +33,7 @@
   },
   "devDependencies": {
     "@hey-api/openapi-ts": "0.99.0",
-    "@tailwindcss/vite": "4.3.4",
+    "@tailwindcss/vite": "4.3.5",
     "@tanstack/router-plugin": "1.168.42",
     "@types/node": "24.19.1",
     "@types/react": "19.3.0",
