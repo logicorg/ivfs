@@ -43,7 +43,8 @@ category table (see ADR 0003). `LedgerAccount` also has an optional
 **`Counterparty`** (`pkg/model/ledger.go`) is optional descriptive metadata
 on a `JournalEntry` — a merchant, an employer, a person. It is attached via
 `JournalEntry.CounterpartyID` and is **never a posting target**; postings
-only ever point at a `LedgerAccountID`.
+only ever point at a `LedgerAccountID`. It can be deleted: the entries that
+name it keep their postings and lose the counterparty, so no balance moves.
 
 **`JournalEntry` + `Posting`** (`pkg/model/ledger.go`) are the actual
 double-entry record and the one thing every example below produces.
@@ -311,6 +312,7 @@ use `ListPostings`, and for what an account holds, `LedgerAccountBalance` or
 | Add a spending/income category | `LedgerAccount` (income/expense kind, no `FinancialAccountID`) | `CreateCategory` (facade) or `CreateLedgerAccount` |
 | Correct a posted entry | new balanced `JournalEntry` referencing the original | `ReverseJournalEntry` |
 | Page through entries by account, counterparty, external ID, status or date | `JournalEntry` + `Posting` | `ListJournalEntries` |
+| Delete a counterparty, clearing it from its entries | `Counterparty`, the `JournalEntry` rows naming it | `DeleteCounterparty` |
 
 ## Common mistake to avoid
 

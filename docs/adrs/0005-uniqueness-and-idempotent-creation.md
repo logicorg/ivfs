@@ -4,6 +4,7 @@
 - Date: 2026-09-27
 - Depends on: [ADR 0002](0002-ledger-domain-and-application-api.md) and [ADR 0003](0003-categories-and-tags.md)
 - Amends: ADR 0002 (persistence invariants and creation semantics) and ADR 0003 (category names)
+- Amended by: [ADR 0016](0016-deleting-counterparties.md)
 
 ## Context
 
@@ -76,7 +77,8 @@ compared exactly.
 ### Names are reserved forever
 
 Every key applies to closed rows as well as open ones. A name used by a closed
-financial account or ledger account cannot be reused by a new one.
+financial account or ledger account cannot be reused by a new one. Deleting a
+counterparty frees its name (ADR 0016), as deleting an account does (ADR 0012).
 
 ### Creation is retrieve-or-insert on the key
 
@@ -126,10 +128,11 @@ CREATE UNIQUE INDEX ON ledger.ledger_account (financial_account_id, currency_id,
 CREATE UNIQUE INDEX ON ledger.ledger_account (parent_id, kind, currency_id, lower(name))
     NULLS NOT DISTINCT WHERE financial_account_id IS NULL;
 CREATE UNIQUE INDEX ON ledger.counterparty (lower(name));
+CREATE UNIQUE INDEX ON tag.tag (lower(name));
 ```
 
-The case-sensitive unique constraints on `institution.name` and
-`counterparty.name` are replaced by the indexes above. Two `NULL` values are
+The case-sensitive unique constraints on `institution.name`,
+`counterparty.name` and `tag.name` are replaced by the indexes above. Two `NULL` values are
 never equal in a unique index by default, so without `NULLS NOT DISTINCT` two
 top-level accounts with the same name would not collide. `NULLS NOT DISTINCT`
 makes a missing parent count as one value. A missing `external_id` is `NULL` and

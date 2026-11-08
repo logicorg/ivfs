@@ -2,9 +2,19 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useForm } from "react-hook-form"
 
-import { createCounterpartyMutation } from "@/api/@tanstack/react-query.gen"
+import { createCounterpartyMutation, deleteCounterpartyMutation } from "@/api/@tanstack/react-query.gen"
 import { zNewCounterparty } from "@/api/zod.gen"
 import { ProblemMessages, TextField } from "@/components/form-fields"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -67,5 +77,63 @@ function CreateCounterpartyForm({ onDone }: { onDone: () => void }) {
         </Button>
       </DialogFooter>
     </form>
+  )
+}
+
+type DeleteCounterpartyDialogProps = DialogProps & {
+  counterparty: { id: number; name: string }
+  // onDeleted runs once it is deleted, to leave a page it no longer has.
+  onDeleted: () => void
+}
+
+// DeleteCounterpartyDialog deletes a counterparty once confirmed. The entries
+// that name it stay, without it (ADR 0016).
+export function DeleteCounterpartyDialog({ counterparty, open, onOpenChange, onDeleted }: DeleteCounterpartyDialogProps) {
+  const queryClient = useQueryClient()
+  const remove = useMutation({
+    ...deleteCounterpartyMutation(),
+    onSuccess: () => {
+      // Lists of entries anywhere may have shown it.
+      void queryClient.invalidateQueries()
+      onOpenChange(false)
+      onDeleted()
+    },
+  })
+
+  return (
+    <AlertDialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) {
+          remove.reset()
+        }
+        onOpenChange(next)
+      }}
+    >
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete {counterparty.name}?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This cannot be undone. Its entries stay, without a counterparty, and no balance changes.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <ProblemMessages error={remove.error} />
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            variant="destructive"
+            disabled={remove.isPending}
+            onClick={(event) => {
+              // Keep the dialog open until the gateway answers, to show why
+              // it refused.
+              event.preventDefault()
+              remove.mutate({ path: { id: counterparty.id } })
+            }}
+          >
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   )
 }

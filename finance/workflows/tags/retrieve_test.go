@@ -55,7 +55,8 @@ func (s *UnitTestSuite) Test_ListTags() {
 
 	env.OnActivity(ta.ListTags, mock.Anything).Return(activityResult, nil)
 
-	env.ExecuteWorkflow(ListTags)
+	in := new(tagtypes.ListTagsParams)
+	env.ExecuteWorkflow(ListTags, in)
 
 	s.True(env.IsWorkflowCompleted())
 	s.NoError(env.GetWorkflowError())

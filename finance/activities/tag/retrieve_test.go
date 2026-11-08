@@ -33,6 +33,18 @@ func (s *UnitTestSuite) Test_RetrieveTag() {
 			},
 			expResp: tag,
 		},
+		"by name in another casing": {
+			params: tt.RetrieveTagParams{
+				Name: "TEST TAG",
+			},
+			expResp: tag,
+		},
+		"by name with surrounding space": {
+			params: tt.RetrieveTagParams{
+				Name: "  test tag  ",
+			},
+			expResp: tag,
+		},
 		"not found": {
 			params: tt.RetrieveTagParams{
 				ID: 999,

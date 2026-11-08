@@ -114,6 +114,14 @@ func ensureLedgerConstraints(ctx context.Context, db *bun.DB) error {
 			IF TG_OP = 'DELETE' AND current_setting('ivfs.deleting_journal_entry', true) = OLD.id::text THEN
 				RETURN OLD;
 			END IF;
+			-- The counterparty carries no money, so a posted entry may change it as
+			-- long as nothing else changes (ADR 0016). Comparing whole rows also
+			-- covers columns added later.
+			IF TG_OP = 'UPDATE'
+			   AND to_jsonb(NEW) - 'counterparty_id' - 'updated_at'
+			     = to_jsonb(OLD) - 'counterparty_id' - 'updated_at' THEN
+				RETURN NEW;
+			END IF;
 			IF OLD.status <> 'draft' THEN
 				RAISE EXCEPTION 'journal entry % is % and cannot be changed or deleted', OLD.id, OLD.status;
 			END IF;

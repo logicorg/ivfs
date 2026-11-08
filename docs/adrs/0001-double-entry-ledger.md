@@ -2,8 +2,9 @@
 
 - Status: Implemented
 - Date: 2026-08-26
-- Amended by: [ADR 0004](0004-position-subledger.md) and
-  [ADR 0011](0011-deleting-journal-entries.md)
+- Amended by: [ADR 0004](0004-position-subledger.md),
+  [ADR 0011](0011-deleting-journal-entries.md), and
+  [ADR 0016](0016-deleting-counterparties.md)
 
 ## Context
 
@@ -130,8 +131,8 @@ they are not the source of truth for balances or positions.
 Draft entries may be edited.  Once posted, entries and their postings are
 immutable.  A correction is recorded as a new, balanced reversing entry whose
 `reversal_of_entry_id` references the original.  Posted entries are never
-updated.  A posted entry can be deleted whole, with its postings and its
-reversals (ADR 0011).
+updated, except their counterparty (ADR 0016).  A posted entry can be deleted
+whole, with its postings and its reversals (ADR 0011).
 
 ### Transaction naming
 

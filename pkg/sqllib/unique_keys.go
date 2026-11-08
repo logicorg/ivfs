@@ -31,6 +31,7 @@ var uniqueKeys = []string{
 		ON ledger.ledger_account (parent_id, kind, currency_id, lower(name)) NULLS NOT DISTINCT
 		WHERE financial_account_id IS NULL`,
 	`CREATE UNIQUE INDEX IF NOT EXISTS counterparty_name_lower_key ON ledger.counterparty (lower(name))`,
+	`CREATE UNIQUE INDEX IF NOT EXISTS tag_name_lower_key ON tag.tag (lower(name))`,
 }
 
 func ensureUniqueKeys(ctx context.Context, db *bun.DB) error {
@@ -57,4 +58,12 @@ func AlreadyExists(err error, resourceType string) error {
 		return nil
 	}
 	return internalerrors.ErrResourceConflict{ResourceType: resourceType, Reason: pgErr.Field('D')}
+}
+
+func IsAlreadyExists(err error) bool {
+	var pgErr pgdriver.Error
+	if !errors.As(err, &pgErr) || pgErr.Field('C') != uniqueViolationCode {
+		return false
+	}
+	return true
 }

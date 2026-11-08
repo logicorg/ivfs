@@ -13,4 +13,5 @@ func Register(api huma.API, c client.Client) {
 	registerList(api, c)
 	registerCreate(api, c)
 	registerRename(api, c)
+	registerDelete(api, c)
 }

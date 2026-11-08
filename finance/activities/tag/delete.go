@@ -2,6 +2,7 @@ package tag
 
 import (
 	"context"
+	"strings"
 
 	tt "github.com/logicorg/ivfs/finance/common/types/tagtypes"
 	"github.com/logicorg/ivfs/internal/pkg/errors"
@@ -24,7 +25,7 @@ func (t *Tag) DeleteTag(ctx context.Context, params tt.DeleteTagParams) error {
 	if params.ID != 0 {
 		query.Where("id = ?", params.ID)
 	} else {
-		query.Where("name = ?", params.Name)
+		query.Where("lower(name) = lower(?)", strings.TrimSpace(params.Name))
 	}
 	_, err = query.Exec(ctx)
 
