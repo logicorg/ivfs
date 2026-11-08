@@ -128,10 +128,11 @@ CREATE UNIQUE INDEX ON ledger.ledger_account (financial_account_id, currency_id,
 CREATE UNIQUE INDEX ON ledger.ledger_account (parent_id, kind, currency_id, lower(name))
     NULLS NOT DISTINCT WHERE financial_account_id IS NULL;
 CREATE UNIQUE INDEX ON ledger.counterparty (lower(name));
+CREATE UNIQUE INDEX ON tag.tag (lower(name));
 ```
 
-The case-sensitive unique constraints on `institution.name` and
-`counterparty.name` are replaced by the indexes above. Two `NULL` values are
+The case-sensitive unique constraints on `institution.name`,
+`counterparty.name` and `tag.name` are replaced by the indexes above. Two `NULL` values are
 never equal in a unique index by default, so without `NULLS NOT DISTINCT` two
 top-level accounts with the same name would not collide. `NULLS NOT DISTINCT`
 makes a missing parent count as one value. A missing `external_id` is `NULL` and
