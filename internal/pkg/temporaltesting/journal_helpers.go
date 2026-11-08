@@ -2,6 +2,7 @@ package temporaltesting
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -52,6 +53,26 @@ func InsertPostedJournalEntryWithMovements(t *testing.T, db *bun.DB, entry *mode
 		now := time.Now().UTC()
 		entry.Status, entry.PostedAt = model.JournalEntryPosted, &now
 		_, err := tx.NewUpdate().Model(entry).Column("status", "posted_at", "updated_at").WherePK().Exec(ctx)
+		return err
+	})
+	require.NoError(t, err)
+}
+
+// DeleteJournalEntry deletes an entry of any status with its postings, so a
+// test can remove what it posted. A posted entry can only be deleted by a
+// transaction that declares it (ADR 0011). An entry with movements, or one
+// that another entry reverses, is refused.
+func DeleteJournalEntry(t *testing.T, db *bun.DB, id int64) {
+	t.Helper()
+
+	err := db.RunInTx(t.Context(), nil, func(ctx context.Context, tx bun.Tx) error {
+		if _, err := tx.ExecContext(ctx, `SELECT set_config('ivfs.deleting_journal_entry', ?, true)`, fmt.Sprint(id)); err != nil {
+			return err
+		}
+		if _, err := tx.NewDelete().Model((*model.Posting)(nil)).Where("journal_entry_id = ?", id).Exec(ctx); err != nil {
+			return err
+		}
+		_, err := tx.NewDelete().Model((*model.JournalEntry)(nil)).Where("id = ?", id).Exec(ctx)
 		return err
 	})
 	require.NoError(t, err)

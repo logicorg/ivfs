@@ -67,16 +67,15 @@ func (e ErrResourceConflict) Error() string {
 
 // ErrResourceClosed indicates that an operation could not be completed
 // because its target resource is closed, archived, or otherwise inactive
-// (for example a closed Institution or FinancialAccount, or an archived
-// Counterparty). It is a nonretryable precondition failure: retrying the
-// same operation will not succeed until the resource's state changes, so
-// callers should register its type name in a workflow's
-// NonRetryableErrorTypes rather than retrying.
+// (for example a closed Institution or FinancialAccount). It is a
+// nonretryable precondition failure: retrying the same operation will not
+// succeed until the resource's state changes, so callers should register its
+// type name in a workflow's NonRetryableErrorTypes rather than retrying.
 type ErrResourceClosed struct {
 	ResourceType string
 	ID           interface{}
 
-	// Reason optionally overrides the generated message, e.g. "counterparty is archived".
+	// Reason optionally overrides the generated message, e.g. "institution is closed".
 	Reason string
 }
 

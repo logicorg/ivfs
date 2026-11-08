@@ -190,6 +190,10 @@ export const zCurrencyList = z.object({
     currencies: z.array(zCurrency)
 });
 
+export const zDeletedCounterparty = z.object({
+    cleared: z.int()
+});
+
 export const zErrorDetail = z.object({
     location: z.string().optional(),
     message: z.string().optional(),
@@ -670,6 +674,15 @@ export const zCreateCounterpartyBody = zNewCounterparty;
  * OK
  */
 export const zCreateCounterpartyResponse = zCreatedCounterparty;
+
+export const zDeleteCounterpartyPath = z.object({
+    id: z.int().gte(1)
+});
+
+/**
+ * OK
+ */
+export const zDeleteCounterpartyResponse = zDeletedCounterparty;
 
 export const zRenameCounterpartyBody = zCounterpartyName;
 

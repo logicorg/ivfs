@@ -4,6 +4,7 @@
 - Date: 2026-09-27
 - Depends on: [ADR 0002](0002-ledger-domain-and-application-api.md) and [ADR 0003](0003-categories-and-tags.md)
 - Amends: ADR 0002 (persistence invariants and creation semantics) and ADR 0003 (category names)
+- Amended by: [ADR 0016](0016-deleting-counterparties.md)
 
 ## Context
 
@@ -76,7 +77,8 @@ compared exactly.
 ### Names are reserved forever
 
 Every key applies to closed rows as well as open ones. A name used by a closed
-financial account or ledger account cannot be reused by a new one.
+financial account or ledger account cannot be reused by a new one. Deleting a
+counterparty frees its name (ADR 0016), as deleting an account does (ADR 0012).
 
 ### Creation is retrieve-or-insert on the key
 

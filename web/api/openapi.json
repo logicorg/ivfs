@@ -811,6 +811,19 @@
         ],
         "type": "object"
       },
+      "DeletedCounterparty": {
+        "additionalProperties": false,
+        "properties": {
+          "cleared": {
+            "description": "how many journal entries lost the counterparty",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "cleared"
+        ],
+        "type": "object"
+      },
       "Deletion": {
         "additionalProperties": false,
         "properties": {
@@ -2971,6 +2984,69 @@
           }
         },
         "summary": "Create a counterparty, or find the one with its name",
+        "tags": [
+          "counterparties"
+        ]
+      }
+    },
+    "/api/counterparties/{id}": {
+      "delete": {
+        "description": "The journal entries that name it keep their postings and lose the counterparty, and its name can be used again. Deleting a counterparty that does not exist changes nothing. Entries that keep being recorded with it while it is deleted are answered with a conflict, and deleting again is safe.",
+        "operationId": "delete-counterparty",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeletedCounterparty"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Delete a counterparty",
         "tags": [
           "counterparties"
         ]

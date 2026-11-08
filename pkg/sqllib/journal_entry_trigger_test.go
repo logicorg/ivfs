@@ -14,7 +14,7 @@ import (
 )
 
 // Test_JournalEntryImmutability checks that only a draft entry can change or be
-// deleted, and that posting or voiding it is the only way it ever leaves the
+// deleted, apart from the counterparty of a posted entry (ADR 0016), and that posting or voiding it is the only way it ever leaves the
 // draft state. It runs the statements directly, as anything other than the
 // activities would.
 func (s *UnitTestSuite) Test_JournalEntryImmutability() {
@@ -24,9 +24,13 @@ func (s *UnitTestSuite) Test_JournalEntryImmutability() {
 	credit := &model.LedgerAccount{CurrencyID: eur.ID, Name: "income", Kind: model.LedgerAccountIncome}
 	temporaltesting.Insert(s.T(), s.DB, debit)
 	temporaltesting.Insert(s.T(), s.DB, credit)
+	payee := &model.Counterparty{Name: "Tesco"}
+	other := &model.Counterparty{Name: "Lidl"}
+	temporaltesting.Insert(s.T(), s.DB, payee)
+	temporaltesting.Insert(s.T(), s.DB, other)
 
 	newEntry := func(status model.JournalEntryStatus) *model.JournalEntry {
-		entry := &model.JournalEntry{OccurredAt: time.Now().UTC()}
+		entry := &model.JournalEntry{OccurredAt: time.Now().UTC(), CounterpartyID: &payee.ID}
 		if status == model.JournalEntryPosted {
 			temporaltesting.InsertPostedJournalEntry(s.T(), s.DB, entry,
 				model.Posting{LedgerAccountID: debit.ID, Amount: decimal.NewFromInt(10), Side: model.PostingDebit},
@@ -60,6 +64,18 @@ func (s *UnitTestSuite) Test_JournalEntryImmutability() {
 		"edit a posted entry":   {status: model.JournalEntryPosted, operation: update("description = ?", "edited"), expErr: true},
 		"reopen a posted entry": {status: model.JournalEntryPosted, operation: update("status = 'draft'"), expErr: true},
 		"delete a posted entry": {status: model.JournalEntryPosted, operation: remove, expErr: true},
+		"clear the counterparty of a posted entry": {
+			status: model.JournalEntryPosted, operation: update("counterparty_id = NULL, updated_at = now()"),
+		},
+		"change the counterparty of a posted entry": {
+			status: model.JournalEntryPosted, operation: update("counterparty_id = ?", other.ID),
+		},
+		"change the counterparty and description of a posted entry": {
+			status: model.JournalEntryPosted, operation: update("counterparty_id = NULL, description = ?", "edited"), expErr: true,
+		},
+		"change the counterparty of a draft": {
+			status: model.JournalEntryDraft, operation: update("counterparty_id = ?", other.ID),
+		},
 	}
 
 	for name, tc := range tests {
