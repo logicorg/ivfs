@@ -27,6 +27,9 @@ func (t *Tag) InsertTag(ctx context.Context, params tt.InsertTagParams) (*tt.Ins
 	}
 
 	tag := &model.Tag{Name: name}
+	if params.Description != nil {
+		tag.Description = *params.Description
+	}
 
 	_, err = db.NewInsert().Model(tag).Returning("id").Exec(ctx)
 	switch {

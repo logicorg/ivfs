@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 
 	tt "github.com/logicorg/ivfs/finance/common/types/tagtypes"
 	"github.com/logicorg/ivfs/internal/pkg/errors"
@@ -18,7 +19,8 @@ func (t *Tag) RetrieveTag(ctx context.Context, params tt.RetrieveTagParams) (*tt
 		return nil, err
 	}
 
-	if params.ID == 0 && params.Name == "" {
+	name := strings.TrimSpace(params.Name)
+	if params.ID == 0 && name == "" {
 		return nil, errors.ErrMissingRequiredParameter{Parameters: []string{"ID", "Name"}}
 	}
 
@@ -26,7 +28,7 @@ func (t *Tag) RetrieveTag(ctx context.Context, params tt.RetrieveTagParams) (*tt
 	if params.ID != 0 {
 		query = model.FindTagByIDQuery(db, params.ID)
 	} else {
-		query = model.FindTagByNameQuery(db, params.Name)
+		query = model.FindTagByNameQuery(db, name)
 	}
 
 	tag := &model.Tag{}
@@ -37,7 +39,7 @@ func (t *Tag) RetrieveTag(ctx context.Context, params tt.RetrieveTagParams) (*tt
 	case sql.ErrNoRows:
 		return nil, errors.ErrNotFound{
 			ResourceType: "Tag",
-			ID:           fmt.Sprintf("ID: %d, Name: '%s'", params.ID, params.Name),
+			ID:           fmt.Sprintf("ID: %d, Name: '%s'", params.ID, name),
 		}
 	default:
 		return nil, fmt.Errorf("failed to retrieve tag: %w", err)
