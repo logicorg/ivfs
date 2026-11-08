@@ -36,17 +36,17 @@ func (a *AssetValueActivity) RetrieveAssetValue(ctx context.Context, params avt.
 	}
 
 	err = query.Scan(ctx)
-	if err != nil {
-		if sqllib.IsNotFound(err) {
-			return nil, errors.ErrNotFound{
-				ResourceType: "AssetValue",
-				Err:          err,
-			}
+	switch {
+	case err == nil:
+		return &avt.RetrieveAssetValueResult{AssetValue: &assetValue}, nil
+	case sqllib.IsNotFound(err):
+		return nil, errors.ErrNotFound{
+			ResourceType: "AssetValue",
+			Err:          err,
 		}
+	default:
 		return nil, fmt.Errorf("error retrieving asset value: %w", err)
 	}
-
-	return &avt.RetrieveAssetValueResult{AssetValue: &assetValue}, nil
 }
 
 // RetrieveAssetValues is the activity to retrieve multiple AssetValues
@@ -68,17 +68,17 @@ func (a *AssetValueActivity) RetrieveAssetValues(ctx context.Context, params avt
 	}
 
 	err = query.Order("observed_at ASC").Scan(ctx)
-	if err != nil {
-		if sqllib.IsNotFound(err) {
-			return &avt.RetrieveAssetValuesResult{AssetValues: []*model.AssetValue{}}, nil
+	switch {
+	case err == nil:
+		resultAssetValues := make([]*model.AssetValue, len(assetValues))
+		for i := range assetValues {
+			resultAssetValues[i] = &assetValues[i]
 		}
+
+		return &avt.RetrieveAssetValuesResult{AssetValues: resultAssetValues}, nil
+	case sqllib.IsNotFound(err):
+		return &avt.RetrieveAssetValuesResult{AssetValues: []*model.AssetValue{}}, nil
+	default:
 		return nil, fmt.Errorf("error retrieving asset values: %w", err)
 	}
-
-	resultAssetValues := make([]*model.AssetValue, len(assetValues))
-	for i := range assetValues {
-		resultAssetValues[i] = &assetValues[i]
-	}
-
-	return &avt.RetrieveAssetValuesResult{AssetValues: resultAssetValues}, nil
 }
