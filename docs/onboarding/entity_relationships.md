@@ -162,8 +162,9 @@ erDiagram
 A `JournalEntry` is one financial event. Once posted it has at least two
 `Posting` rows, each a debit or a credit on one ledger account, and they
 balance per currency. A counterparty is optional descriptive metadata on the
-entry, not an account. A correction is a new entry that points back at the one
-it reverses, and an entry is reversed at most once.
+entry, not an account, and deleting one leaves its entries in place without it.
+A correction is a new entry that points back at the one it reverses, and an
+entry is reversed at most once.
 
 ## Units of an asset
 

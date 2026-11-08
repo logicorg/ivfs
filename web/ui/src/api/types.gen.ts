@@ -321,6 +321,13 @@ export type CurrencyList = {
     currencies: Array<Currency>;
 };
 
+export type DeletedCounterparty = {
+    /**
+     * how many journal entries lost the counterparty
+     */
+    cleared: number;
+};
+
 export type Deletion = {
     warnings?: Array<NegativeHolding>;
 };
@@ -1316,6 +1323,41 @@ export type CreateCounterpartyResponses = {
 };
 
 export type CreateCounterpartyResponse = CreateCounterpartyResponses[keyof CreateCounterpartyResponses];
+
+export type DeleteCounterpartyData = {
+    body?: never;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/api/counterparties/{id}';
+};
+
+export type DeleteCounterpartyErrors = {
+    /**
+     * Conflict
+     */
+    409: ErrorModel;
+    /**
+     * Unprocessable Entity
+     */
+    422: ErrorModel;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorModel;
+};
+
+export type DeleteCounterpartyError = DeleteCounterpartyErrors[keyof DeleteCounterpartyErrors];
+
+export type DeleteCounterpartyResponses = {
+    /**
+     * OK
+     */
+    200: DeletedCounterparty;
+};
+
+export type DeleteCounterpartyResponse = DeleteCounterpartyResponses[keyof DeleteCounterpartyResponses];
 
 export type RenameCounterpartyData = {
     body: CounterpartyName;
