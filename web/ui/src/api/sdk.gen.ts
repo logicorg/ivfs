@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AddBalanceData, AddBalanceErrors, AddBalanceResponses, BuyAssetData, BuyAssetErrors, BuyAssetResponses, CloseCategoryData, CloseCategoryErrors, CloseCategoryResponses, CloseFinancialAccountData, CloseFinancialAccountErrors, CloseFinancialAccountResponses, CloseInstitutionData, CloseInstitutionErrors, CloseInstitutionResponses, CloseLedgerAccountData, CloseLedgerAccountErrors, CloseLedgerAccountResponses, CreateAssetData, CreateAssetErrors, CreateAssetResponses, CreateCategoryData, CreateCategoryErrors, CreateCategoryResponses, CreateCounterpartyData, CreateCounterpartyErrors, CreateCounterpartyResponses, CreateCurrencyData, CreateCurrencyErrors, CreateCurrencyResponses, DeleteCategoryData, DeleteCategoryErrors, DeleteCategoryResponses, DeleteCurrencyData, DeleteCurrencyErrors, DeleteCurrencyResponses, DeleteFinancialAccountData, DeleteFinancialAccountErrors, DeleteFinancialAccountResponses, DeleteInstitutionData, DeleteInstitutionErrors, DeleteInstitutionResponses, DeleteJournalEntryData, DeleteJournalEntryErrors, DeleteJournalEntryResponses, DeleteLedgerAccountData, DeleteLedgerAccountErrors, DeleteLedgerAccountResponses, DeletePositionMovementData, DeletePositionMovementErrors, DeletePositionMovementResponses, GetAccountBalancesData, GetAccountBalancesErrors, GetAccountBalancesResponses, GetCategoryTotalsData, GetCategoryTotalsErrors, GetCategoryTotalsResponses, GetHealthData, GetHealthErrors, GetHealthResponses, GetJournalEntryData, GetJournalEntryErrors, GetJournalEntryResponses, GetLedgerAccountBalanceData, GetLedgerAccountBalanceErrors, GetLedgerAccountBalanceResponses, GetNetWorthSeriesData, GetNetWorthSeriesErrors, GetNetWorthSeriesResponses, ListAssetsData, ListAssetsErrors, ListAssetsResponses, ListAssetValuesData, ListAssetValuesErrors, ListAssetValuesResponses, ListCategoriesData, ListCategoriesErrors, ListCategoriesResponses, ListConversionRatesData, ListConversionRatesErrors, ListConversionRatesResponses, ListCounterpartiesData, ListCounterpartiesErrors, ListCounterpartiesResponses, ListCurrenciesData, ListCurrenciesErrors, ListCurrenciesResponses, ListFinancialAccountsData, ListFinancialAccountsErrors, ListFinancialAccountsResponses, ListHoldingMovementsData, ListHoldingMovementsErrors, ListHoldingMovementsResponses, ListHoldingsData, ListHoldingsErrors, ListHoldingsResponses, ListJournalEntriesData, ListJournalEntriesErrors, ListJournalEntriesResponses, MoveCategoryData, MoveCategoryErrors, MoveCategoryResponses, OpenAccountData, OpenAccountErrors, OpenAccountResponses, PreviewCategoryDeletionData, PreviewCategoryDeletionErrors, PreviewCategoryDeletionResponses, PreviewFinancialAccountDeletionData, PreviewFinancialAccountDeletionErrors, PreviewFinancialAccountDeletionResponses, PreviewInstitutionDeletionData, PreviewInstitutionDeletionErrors, PreviewInstitutionDeletionResponses, PreviewLedgerAccountDeletionData, PreviewLedgerAccountDeletionErrors, PreviewLedgerAccountDeletionResponses, RecordExpenseData, RecordExpenseErrors, RecordExpenseResponses, RecordIncomeData, RecordIncomeErrors, RecordIncomeResponses, RecordTransferData, RecordTransferErrors, RecordTransferResponses, RenameCategoryData, RenameCategoryErrors, RenameCategoryResponses, RenameCounterpartyData, RenameCounterpartyErrors, RenameCounterpartyResponses, RenameFinancialAccountData, RenameFinancialAccountErrors, RenameFinancialAccountResponses, RenameLedgerAccountData, RenameLedgerAccountErrors, RenameLedgerAccountResponses, RetrieveUserSettingsData, RetrieveUserSettingsErrors, RetrieveUserSettingsResponses, ReverseJournalEntryData, ReverseJournalEntryErrors, ReverseJournalEntryResponses, SellAssetData, SellAssetErrors, SellAssetResponses, UpdateCurrencyData, UpdateCurrencyErrors, UpdateCurrencyResponses, UpdateUserSettingsData, UpdateUserSettingsErrors, UpdateUserSettingsResponses, VestAssetData, VestAssetErrors, VestAssetResponses } from './types.gen';
+import type { AddBalanceData, AddBalanceErrors, AddBalanceResponses, BuyAssetData, BuyAssetErrors, BuyAssetResponses, CloseCategoryData, CloseCategoryErrors, CloseCategoryResponses, CloseFinancialAccountData, CloseFinancialAccountErrors, CloseFinancialAccountResponses, CloseInstitutionData, CloseInstitutionErrors, CloseInstitutionResponses, CloseLedgerAccountData, CloseLedgerAccountErrors, CloseLedgerAccountResponses, CreateAssetData, CreateAssetErrors, CreateAssetResponses, CreateCategoryData, CreateCategoryErrors, CreateCategoryResponses, CreateCounterpartyData, CreateCounterpartyErrors, CreateCounterpartyResponses, CreateCurrencyData, CreateCurrencyErrors, CreateCurrencyResponses, CreateTagData, CreateTagErrors, CreateTagResponses, DeleteCategoryData, DeleteCategoryErrors, DeleteCategoryResponses, DeleteCurrencyData, DeleteCurrencyErrors, DeleteCurrencyResponses, DeleteFinancialAccountData, DeleteFinancialAccountErrors, DeleteFinancialAccountResponses, DeleteInstitutionData, DeleteInstitutionErrors, DeleteInstitutionResponses, DeleteJournalEntryData, DeleteJournalEntryErrors, DeleteJournalEntryResponses, DeleteLedgerAccountData, DeleteLedgerAccountErrors, DeleteLedgerAccountResponses, DeletePositionMovementData, DeletePositionMovementErrors, DeletePositionMovementResponses, DeleteTagData, DeleteTagErrors, DeleteTagResponses, GetAccountBalancesData, GetAccountBalancesErrors, GetAccountBalancesResponses, GetCategoryTotalsData, GetCategoryTotalsErrors, GetCategoryTotalsResponses, GetHealthData, GetHealthErrors, GetHealthResponses, GetJournalEntryData, GetJournalEntryErrors, GetJournalEntryResponses, GetLedgerAccountBalanceData, GetLedgerAccountBalanceErrors, GetLedgerAccountBalanceResponses, GetNetWorthSeriesData, GetNetWorthSeriesErrors, GetNetWorthSeriesResponses, ListAssetsData, ListAssetsErrors, ListAssetsResponses, ListAssetValuesData, ListAssetValuesErrors, ListAssetValuesResponses, ListCategoriesData, ListCategoriesErrors, ListCategoriesResponses, ListConversionRatesData, ListConversionRatesErrors, ListConversionRatesResponses, ListCounterpartiesData, ListCounterpartiesErrors, ListCounterpartiesResponses, ListCurrenciesData, ListCurrenciesErrors, ListCurrenciesResponses, ListFinancialAccountsData, ListFinancialAccountsErrors, ListFinancialAccountsResponses, ListHoldingMovementsData, ListHoldingMovementsErrors, ListHoldingMovementsResponses, ListHoldingsData, ListHoldingsErrors, ListHoldingsResponses, ListJournalEntriesData, ListJournalEntriesErrors, ListJournalEntriesResponses, ListTagsData, ListTagsErrors, ListTagsResponses, MoveCategoryData, MoveCategoryErrors, MoveCategoryResponses, OpenAccountData, OpenAccountErrors, OpenAccountResponses, PreviewCategoryDeletionData, PreviewCategoryDeletionErrors, PreviewCategoryDeletionResponses, PreviewFinancialAccountDeletionData, PreviewFinancialAccountDeletionErrors, PreviewFinancialAccountDeletionResponses, PreviewInstitutionDeletionData, PreviewInstitutionDeletionErrors, PreviewInstitutionDeletionResponses, PreviewLedgerAccountDeletionData, PreviewLedgerAccountDeletionErrors, PreviewLedgerAccountDeletionResponses, RecordExpenseData, RecordExpenseErrors, RecordExpenseResponses, RecordIncomeData, RecordIncomeErrors, RecordIncomeResponses, RecordTransferData, RecordTransferErrors, RecordTransferResponses, RenameCategoryData, RenameCategoryErrors, RenameCategoryResponses, RenameCounterpartyData, RenameCounterpartyErrors, RenameCounterpartyResponses, RenameFinancialAccountData, RenameFinancialAccountErrors, RenameFinancialAccountResponses, RenameLedgerAccountData, RenameLedgerAccountErrors, RenameLedgerAccountResponses, RetrieveUserSettingsData, RetrieveUserSettingsErrors, RetrieveUserSettingsResponses, ReverseJournalEntryData, ReverseJournalEntryErrors, ReverseJournalEntryResponses, SellAssetData, SellAssetErrors, SellAssetResponses, UpdateCurrencyData, UpdateCurrencyErrors, UpdateCurrencyResponses, UpdateTagData, UpdateTagErrors, UpdateTagResponses, UpdateUserSettingsData, UpdateUserSettingsErrors, UpdateUserSettingsResponses, VestAssetData, VestAssetErrors, VestAssetResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -438,6 +438,44 @@ export const retrieveUserSettings = <ThrowOnError extends boolean = false>(optio
  */
 export const updateUserSettings = <ThrowOnError extends boolean = false>(options: Options<UpdateUserSettingsData, ThrowOnError>): RequestResult<UpdateUserSettingsResponses, UpdateUserSettingsErrors, ThrowOnError> => (options.client ?? client).put<UpdateUserSettingsResponses, UpdateUserSettingsErrors, ThrowOnError>({
     url: '/api/settings',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * List the tags, sorted by name
+ */
+export const listTags = <ThrowOnError extends boolean = false>(options?: Options<ListTagsData, ThrowOnError>): RequestResult<ListTagsResponses, ListTagsErrors, ThrowOnError> => (options?.client ?? client).get<ListTagsResponses, ListTagsErrors, ThrowOnError>({ url: '/api/tags', ...options });
+
+/**
+ * Create a tag, or find the one with its name
+ *
+ * Names are compared ignoring case and surrounding space. A tag that exists is returned unchanged, whatever its description.
+ */
+export const createTag = <ThrowOnError extends boolean = false>(options: Options<CreateTagData, ThrowOnError>): RequestResult<CreateTagResponses, CreateTagErrors, ThrowOnError> => (options.client ?? client).post<CreateTagResponses, CreateTagErrors, ThrowOnError>({
+    url: '/api/tags',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Delete a tag
+ *
+ * Deleting a tag that does not exist changes nothing.
+ */
+export const deleteTag = <ThrowOnError extends boolean = false>(options: Options<DeleteTagData, ThrowOnError>): RequestResult<DeleteTagResponses, DeleteTagErrors, ThrowOnError> => (options.client ?? client).delete<DeleteTagResponses, DeleteTagErrors, ThrowOnError>({ url: '/api/tags/{id}', ...options });
+
+/**
+ * Change a tag's name or description
+ */
+export const updateTag = <ThrowOnError extends boolean = false>(options: Options<UpdateTagData, ThrowOnError>): RequestResult<UpdateTagResponses, UpdateTagErrors, ThrowOnError> => (options.client ?? client).patch<UpdateTagResponses, UpdateTagErrors, ThrowOnError>({
+    url: '/api/tags/{id}',
     ...options,
     headers: {
         'Content-Type': 'application/json',

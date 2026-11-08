@@ -8,6 +8,7 @@ import (
 	tt "github.com/logicorg/ivfs/finance/common/types/tagtypes"
 	"github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/logicorg/ivfs/pkg/model"
+	"github.com/uptrace/bun"
 )
 
 // RetrieveTag retrives a tag
@@ -21,25 +22,26 @@ func (t *Tag) RetrieveTag(ctx context.Context, params tt.RetrieveTagParams) (*tt
 		return nil, errors.ErrMissingRequiredParameter{Parameters: []string{"ID", "Name"}}
 	}
 
-	query := db.NewSelect().Model((*model.Tag)(nil))
+	var query *bun.SelectQuery
 	if params.ID != 0 {
-		query.Where("id = ?", params.ID)
+		query = model.FindTagByIDQuery(db, params.ID)
 	} else {
-		query.Where("name = ?", params.Name)
+		query = model.FindTagByNameQuery(db, params.Name)
 	}
 
 	tag := &model.Tag{}
-	if err := query.Scan(ctx, tag); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, errors.ErrNotFound{
-				ResourceType: "Tag",
-				ID:           fmt.Sprintf("ID: %d, Name: '%s'", params.ID, params.Name),
-			}
+	err = query.Scan(ctx, tag)
+	switch err {
+	case nil:
+		return &tt.RetrieveTagResult{Tag: tag}, nil
+	case sql.ErrNoRows:
+		return nil, errors.ErrNotFound{
+			ResourceType: "Tag",
+			ID:           fmt.Sprintf("ID: %d, Name: '%s'", params.ID, params.Name),
 		}
+	default:
 		return nil, fmt.Errorf("failed to retrieve tag: %w", err)
 	}
-
-	return &tt.RetrieveTagResult{Tag: tag}, nil
 }
 
 // ListTags list the tags available in the DB

@@ -97,7 +97,11 @@ func Register(r worker.Registry, pools tenancy.Pools) {
 	r.RegisterWorkflow(currencies.RetrieveCurrency)
 	r.RegisterWorkflow(currencies.UpdateCurrency)
 
+	r.RegisterWorkflow(tags.DeleteTag)
+	r.RegisterWorkflow(tags.UpdateTag)
 	r.RegisterWorkflow(tags.InsertTag)
+	r.RegisterWorkflow(tags.ListTags)
+	r.RegisterWorkflow(tags.RetrieveTag)
 
 	r.RegisterWorkflow(settingswf.RetrieveUserSettings)
 	r.RegisterWorkflow(settingswf.UpdateUserSettings)
