@@ -1,6 +1,6 @@
 # ADR 0016: Deleting counterparties
 
-- Status: Proposed
+- Status: Implemented
 - Date: 2026-11-07
 - Depends on: [ADR 0011](0011-deleting-journal-entries.md) (deleting journal
   entries), [ADR 0012](0012-deleting-accounts.md) (deleting accounts)
@@ -86,8 +86,8 @@ Temporal does not retry the delete alone, which would fail every time.
 
 The `DeleteCounterparty` workflow runs the two in order. When the delete
 returns `ErrResourceConflict`, an entry referring to the counterparty was
-recorded between the two, and the workflow runs both again. It does this at
-most N times and then returns the conflict. Any other failure follows the
+recorded between the two, and the workflow runs both again. It makes at most
+two rounds and then returns the conflict. Any other failure follows the
 default activity retries.
 
 The two activities are separate operations, so neither wraps the other in a
