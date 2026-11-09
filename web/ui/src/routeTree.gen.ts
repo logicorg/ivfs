@@ -16,6 +16,7 @@ import { Route as CurrenciesRouteImport } from './routes/currencies'
 import { Route as InvestmentsRouteImport } from './routes/investments'
 import { Route as NetWorthRouteImport } from './routes/net-worth'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as StatusRouteImport } from './routes/status'
 import { Route as TagsRouteImport } from './routes/tags'
 import { Route as CounterpartiesIndexRouteImport } from './routes/counterparties.index'
 import { Route as CounterpartiesIdRouteImport } from './routes/counterparties.$id'
@@ -58,6 +59,11 @@ const NetWorthRoute = NetWorthRouteImport.update({
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StatusRoute = StatusRouteImport.update({
+  id: '/status',
+  path: '/status',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TagsRoute = TagsRouteImport.update({
@@ -110,6 +116,7 @@ export interface FileRoutesByFullPath {
   '/investments': typeof InvestmentsRoute
   '/net-worth': typeof NetWorthRoute
   '/settings': typeof SettingsRoute
+  '/status': typeof StatusRoute
   '/tags': typeof TagsRoute
   '/counterparties/$id': typeof CounterpartiesIdRoute
   '/ledger-accounts/$id': typeof LedgerAccountsIdRoute
@@ -127,6 +134,7 @@ export interface FileRoutesByTo {
   '/investments': typeof InvestmentsRoute
   '/net-worth': typeof NetWorthRoute
   '/settings': typeof SettingsRoute
+  '/status': typeof StatusRoute
   '/tags': typeof TagsRoute
   '/counterparties/$id': typeof CounterpartiesIdRoute
   '/ledger-accounts/$id': typeof LedgerAccountsIdRoute
@@ -145,6 +153,7 @@ export interface FileRoutesById {
   '/investments': typeof InvestmentsRoute
   '/net-worth': typeof NetWorthRoute
   '/settings': typeof SettingsRoute
+  '/status': typeof StatusRoute
   '/tags': typeof TagsRoute
   '/counterparties/$id': typeof CounterpartiesIdRoute
   '/ledger-accounts/$id': typeof LedgerAccountsIdRoute
@@ -164,6 +173,7 @@ export interface FileRouteTypes {
     | '/investments'
     | '/net-worth'
     | '/settings'
+    | '/status'
     | '/tags'
     | '/counterparties/$id'
     | '/ledger-accounts/$id'
@@ -181,6 +191,7 @@ export interface FileRouteTypes {
     | '/investments'
     | '/net-worth'
     | '/settings'
+    | '/status'
     | '/tags'
     | '/counterparties/$id'
     | '/ledger-accounts/$id'
@@ -198,6 +209,7 @@ export interface FileRouteTypes {
     | '/investments'
     | '/net-worth'
     | '/settings'
+    | '/status'
     | '/tags'
     | '/counterparties/$id'
     | '/ledger-accounts/$id'
@@ -216,6 +228,7 @@ export interface RootRouteChildren {
   InvestmentsRoute: typeof InvestmentsRoute
   NetWorthRoute: typeof NetWorthRoute
   SettingsRoute: typeof SettingsRoute
+  StatusRoute: typeof StatusRoute
   TagsRoute: typeof TagsRoute
   CounterpartiesIdRoute: typeof CounterpartiesIdRoute
   LedgerAccountsIdRoute: typeof LedgerAccountsIdRoute
@@ -275,6 +288,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/status': {
+      id: '/status'
+      path: '/status'
+      fullPath: '/status'
+      preLoaderRoute: typeof StatusRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/tags': {
@@ -344,6 +364,7 @@ const rootRouteChildren: RootRouteChildren = {
   InvestmentsRoute: InvestmentsRoute,
   NetWorthRoute: NetWorthRoute,
   SettingsRoute: SettingsRoute,
+  StatusRoute: StatusRoute,
   TagsRoute: TagsRoute,
   CounterpartiesIdRoute: CounterpartiesIdRoute,
   LedgerAccountsIdRoute: LedgerAccountsIdRoute,
