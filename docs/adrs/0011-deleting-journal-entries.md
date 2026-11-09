@@ -5,6 +5,7 @@
 - Depends on: [ADR 0010](0010-negative-holdings.md) (holdings that go negative)
 - Amends: ADR 0001 (posted entries are never deleted), ADR 0004 (movements
   are append-only, and the `voided` status)
+- Amended by: [ADR 0016](0016-deleting-counterparties.md)
 - Related: [RFC 0003](../rfcs/0003-deleting-journal-entries.md) (the
   discussion this ADR decides), [ADR 0006](0006-intent-level-account-setup.md)
   (opening balances), [ADR 0008](0008-intent-level-transactions.md)
@@ -142,8 +143,9 @@ It is set with `set_config(name, value, true)`, the parameterisable form of
 a pooled connection. Each trigger lets a delete through when the setting names
 the row: the entry's id on `ledger.journal_entry`, the posting's entry on
 `ledger.posting`, and on `asset.position_movement` the movement's entry, or its
-idempotency key when it has no entry. Updates stay forbidden, and so does any
-delete made without the setting.
+idempotency key when it has no entry. Updates stay forbidden, apart from an
+update of the counterparty alone (ADR 0016), and so does any delete made
+without the setting.
 
 The foreign keys stay `ON DELETE RESTRICT`, with no cascade. The activity
 deletes in order, from the last reversal of a chain back to the entry asked for,

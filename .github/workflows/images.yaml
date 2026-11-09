@@ -5,6 +5,8 @@ name: images
 
 on:
   pull_request:
+    paths-ignore:
+      - "docs/**"
   push:
     tags: ["v*"]
   workflow_dispatch:
@@ -21,6 +23,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Run Unit tests
+        uses: dagger/dagger-for-github@27b130bf0f79a7f6fbbbe0fbca6760dc9bb40a77 # v8.4.1
+        with:
+          version: ${{ env.DAGGER_VERSION }}
+          verb: call
+          args: unit-tests
 
       - name: Build the images
         uses: dagger/dagger-for-github@27b130bf0f79a7f6fbbbe0fbca6760dc9bb40a77 # v8.4.1

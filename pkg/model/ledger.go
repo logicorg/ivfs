@@ -165,7 +165,8 @@ type Counterparty struct {
 }
 
 // JournalEntry is the header for one financial event. Posted entries are
-// immutable; corrections are represented by a separate reversing entry.
+// immutable, apart from their counterparty (ADR 0016); corrections are
+// represented by a separate reversing entry.
 type JournalEntry struct {
 	bun.BaseModel `bun:"table:ledger.journal_entry,alias:je"`
 

@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router"
 import {
+  Activity,
   ArrowDownLeft,
   ArrowLeftRight,
   ArrowUpRight,
@@ -8,6 +9,7 @@ import {
   LayoutDashboard,
   LogOut,
   Settings,
+  Tag,
   Tags,
   TrendingUp,
   Users,
@@ -37,8 +39,10 @@ const screens = [
   { to: "/accounts", label: "Accounts", icon: Wallet },
   { to: "/investments", label: "Investments", icon: ChartLine },
   { to: "/categories", label: "Categories", icon: Tags },
+  { to: "/tags", label: "Tags", icon: Tag },
   { to: "/counterparties", label: "Counterparties", icon: Users },
   { to: "/currencies", label: "Currencies", icon: Coins },
+  { to: "/status", label: "System status", icon: Activity },
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const
 
