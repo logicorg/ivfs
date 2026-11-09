@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router"
 import {
+  Activity,
   ArrowDownLeft,
   ArrowLeftRight,
   ArrowUpRight,
@@ -41,6 +42,7 @@ const screens = [
   { to: "/tags", label: "Tags", icon: Tag },
   { to: "/counterparties", label: "Counterparties", icon: Users },
   { to: "/currencies", label: "Currencies", icon: Coins },
+  { to: "/status", label: "System status", icon: Activity },
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const
 
