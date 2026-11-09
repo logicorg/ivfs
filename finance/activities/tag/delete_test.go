@@ -24,6 +24,12 @@ func (s *UnitTestSuite) Test_DeleteTag() {
 		"nominal by Name": {
 			params: tt.DeleteTagParams{Name: tag.Name},
 		},
+		"nominal by Name in another casing": {
+			params: tt.DeleteTagParams{Name: "TEST TAG"},
+		},
+		"nominal by Name with surrounding space": {
+			params: tt.DeleteTagParams{Name: "  test tag  "},
+		},
 		"should succeed not found": {
 			params: tt.DeleteTagParams{ID: 999},
 		},
@@ -60,7 +66,7 @@ func (s *UnitTestSuite) Test_DeleteTag() {
 				if tc.params.ID > 0 {
 					query.Where("id = ?", tc.params.ID)
 				} else if tc.params.Name != "" {
-					query.Where("name = ?", tc.params.Name)
+					query.Where("lower(name) = lower(trim(?))", tc.params.Name)
 				}
 				exists, errExists = query.Exists(s.T().Context())
 				require.NoError(t, errExists)

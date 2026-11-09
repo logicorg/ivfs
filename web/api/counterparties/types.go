@@ -55,3 +55,18 @@ type RenameCounterpartyInput struct {
 	ID   int64 `path:"id" minimum:"1"`
 	Body CounterpartyName
 }
+
+// DeleteCounterpartyInput is the request of DELETE /api/counterparties/{id}.
+type DeleteCounterpartyInput struct {
+	ID int64 `path:"id" minimum:"1"`
+}
+
+// DeletedCounterparty is what deleting a counterparty changed.
+type DeletedCounterparty struct {
+	Cleared int64 `json:"cleared" doc:"how many journal entries lost the counterparty"`
+}
+
+// DeleteCounterpartyOutput is the response of DELETE /api/counterparties/{id}.
+type DeleteCounterpartyOutput struct {
+	Body DeletedCounterparty
+}

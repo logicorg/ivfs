@@ -32,7 +32,7 @@ func RetrieveTag(ctx workflow.Context, params *tagtypes.RetrieveTagParams) (*tag
 }
 
 // ListTags retrieves all tags in the DB
-func ListTags(ctx workflow.Context) (*tagtypes.ListTagsResult, error) {
+func ListTags(ctx workflow.Context, _ *tagtypes.ListTagsParams) (*tagtypes.ListTagsResult, error) {
 	ctx = workflow.WithActivityOptions(ctx, workflows.DefaultActivityOptions)
 
 	var activityResult []*model.Tag

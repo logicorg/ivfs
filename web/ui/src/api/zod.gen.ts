@@ -168,6 +168,10 @@ export const zCreatedCounterparty = z.object({
     id: z.int()
 });
 
+export const zCreatedTag = z.object({
+    id: z.int()
+});
+
 export const zCurrency = z.object({
     code: z.string(),
     id: z.int(),
@@ -184,6 +188,10 @@ export const zCurrencyChanges = z.object({
 
 export const zCurrencyList = z.object({
     currencies: z.array(zCurrency)
+});
+
+export const zDeletedCounterparty = z.object({
+    cleared: z.int()
 });
 
 export const zErrorDetail = z.object({
@@ -333,6 +341,11 @@ export const zNewCounterparty = z.object({
     name: z.string().min(1)
 });
 
+export const zNewTag = z.object({
+    description: z.string().optional(),
+    name: z.string().min(1)
+});
+
 export const zOpenedAccount = z.object({
     financialAccountId: z.int().optional(),
     financialAccountName: z.string().optional(),
@@ -478,6 +491,21 @@ export const zAccountDeletionPreview = z.object({
     keptMovementGroups: z.int(),
     strayAmounts: z.array(zStrayAmount).optional(),
     strayUnits: z.array(zStrayUnits).optional()
+});
+
+export const zTag = z.object({
+    description: z.string(),
+    id: z.int(),
+    name: z.string()
+});
+
+export const zTagChanges = z.object({
+    description: z.string().optional(),
+    name: z.string().min(1).optional()
+});
+
+export const zTagList = z.object({
+    tags: z.array(zTag)
 });
 
 export const zTransferForm = z.object({
@@ -646,6 +674,15 @@ export const zCreateCounterpartyBody = zNewCounterparty;
  * OK
  */
 export const zCreateCounterpartyResponse = zCreatedCounterparty;
+
+export const zDeleteCounterpartyPath = z.object({
+    id: z.int().gte(1)
+});
+
+/**
+ * OK
+ */
+export const zDeleteCounterpartyResponse = zDeletedCounterparty;
 
 export const zRenameCounterpartyBody = zCounterpartyName;
 
@@ -998,6 +1035,38 @@ export const zUpdateUserSettingsBody = zUserSettings;
  * OK
  */
 export const zUpdateUserSettingsResponse = zUserSettings;
+
+/**
+ * OK
+ */
+export const zListTagsResponse = zTagList;
+
+export const zCreateTagBody = zNewTag;
+
+/**
+ * OK
+ */
+export const zCreateTagResponse = zCreatedTag;
+
+export const zDeleteTagPath = z.object({
+    id: z.int().gte(1)
+});
+
+/**
+ * No Content
+ */
+export const zDeleteTagResponse = z.void();
+
+export const zUpdateTagBody = zTagChanges;
+
+export const zUpdateTagPath = z.object({
+    id: z.int().gte(1)
+});
+
+/**
+ * No Content
+ */
+export const zUpdateTagResponse = z.void();
 
 export const zRecordExpenseBody = zExpenseForm;
 

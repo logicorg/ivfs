@@ -100,12 +100,12 @@ func (s *HistoryWorkflowUnitTestSuite) TestRetrieveAssetValueHistory() {
 				if tc.carriedIn != nil {
 					result = &avt.RetrieveAssetValueResult{AssetValue: tc.carriedIn}
 				}
-				env.OnActivity(ava.RetrieveAssetValue, mock.Anything, retrieveAt).Return(result, tc.carriedInErr)
+				env.OnActivity(ava.RetrieveAssetValue, mock.Anything, retrieveAt).Return(result, tc.carriedInErr).Maybe()
 				var values *avt.RetrieveAssetValuesResult
 				if tc.since != nil {
 					values = &avt.RetrieveAssetValuesResult{AssetValues: tc.since}
 				}
-				env.OnActivity(ava.RetrieveAssetValues, mock.Anything, retrieveSince).Return(values, tc.sinceErr)
+				env.OnActivity(ava.RetrieveAssetValues, mock.Anything, retrieveSince).Return(values, tc.sinceErr).Maybe()
 			}
 
 			env.ExecuteWorkflow(RetrieveAssetValueHistory, tc.params)
