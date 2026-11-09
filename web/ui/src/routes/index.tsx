@@ -5,7 +5,6 @@ import { ChevronLeft, ChevronRight } from "lucide-react"
 import {
   getAccountBalancesOptions,
   getCategoryTotalsOptions,
-  getHealthOptions,
   listCategoriesOptions,
   listCurrenciesOptions,
   listFinancialAccountsOptions,
@@ -35,7 +34,6 @@ function Overview() {
       <h1 className="text-2xl font-semibold">Overview</h1>
       <NetWorth />
       <IncomeAndExpenses />
-      <SystemStatus />
     </div>
   )
 }
@@ -183,31 +181,6 @@ function IncomeAndExpenses() {
               </Table>
             )
           })
-        )}
-      </CardContent>
-    </Card>
-  )
-}
-
-// SystemStatus shows whether the gateway reaches Temporal, which every
-// screen needs to load anything.
-function SystemStatus() {
-  const health = useQuery(getHealthOptions())
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>System</CardTitle>
-        <CardDescription>The gateway runs every request as a workflow on Temporal.</CardDescription>
-      </CardHeader>
-      <CardContent className="flex items-center gap-2">
-        Temporal
-        {health.isPending ? (
-          <Badge variant="outline">checking…</Badge>
-        ) : health.isSuccess ? (
-          <Badge variant="secondary">reachable</Badge>
-        ) : (
-          <Badge variant="destructive">{health.error.detail ?? "the gateway is unreachable"}</Badge>
         )}
       </CardContent>
     </Card>
