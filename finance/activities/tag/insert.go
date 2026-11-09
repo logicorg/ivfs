@@ -2,47 +2,49 @@ package tag
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
+	"strings"
 
 	tt "github.com/logicorg/ivfs/finance/common/types/tagtypes"
 	"github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/logicorg/ivfs/pkg/model"
+	"github.com/logicorg/ivfs/pkg/sqllib"
 )
 
-// InsertTag inserts a tag
+// InsertTag returns the tag with the given name, compared case-insensitively,
+// creating it when there is none (ADR 0005). A tag that already exists is
+// returned unchanged, whatever description the input carries. The name is
+// stored trimmed, in the casing it was first given.
 func (t *Tag) InsertTag(ctx context.Context, params tt.InsertTagParams) (*tt.InsertTagResult, error) {
 	db, err := t.Pools.For(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	if params.Name == "" {
+	name := strings.TrimSpace(params.Name)
+	if name == "" {
 		return nil, errors.ErrMissingRequiredParameter{Parameters: []string{"Name"}}
 	}
 
-	tag := &model.Tag{
-		Name: params.Name,
-	}
+	tag := &model.Tag{Name: name}
 	if params.Description != nil {
 		tag.Description = *params.Description
 	}
 
-	existing := &model.Tag{}
-	err = model.FindTagByNameQuery(db, tag.Name).Scan(ctx, existing)
-	switch err {
-	case sql.ErrNoRows:
-	case nil:
-		return &tt.InsertTagResult{ID: existing.ID}, nil
-	default:
-		return nil, fmt.Errorf("failed to check for existing tag: %w", err)
-	}
-
 	_, err = db.NewInsert().Model(tag).Returning("id").Exec(ctx)
-	if err != nil {
+	switch {
+	case err == nil:
+		return &tt.InsertTagResult{ID: tag.ID}, nil
+	case sqllib.IsAlreadyExists(err):
+		tag := &model.Tag{}
+		err := model.FindTagByNameQuery(db, name).Scan(ctx, tag)
+		if err == nil {
+			return &tt.InsertTagResult{ID: tag.ID}, err
+		}
+		return nil, fmt.Errorf("detected conflict but failed to retrieve tag: %w", err)
+	default:
 		return nil, fmt.Errorf("failed to insert tag: %w", err)
 	}
-	return &tt.InsertTagResult{ID: tag.ID}, nil
 }
 
 // InsertTags inserts multiple tags

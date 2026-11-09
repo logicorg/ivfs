@@ -3,7 +3,8 @@
 - Status: Implemented
 - Date: 2026-08-26
 - Depends on: [ADR 0001](0001-double-entry-ledger.md)
-- Amended by: [ADR 0004](0004-position-subledger.md)
+- Amended by: [ADR 0004](0004-position-subledger.md) and
+  [ADR 0016](0016-deleting-counterparties.md)
 
 ## Context
 
@@ -87,7 +88,8 @@ type Counterparty struct {
 }
 
 // JournalEntry is the header for one financial event. A posted entry is
-// immutable; corrections use a new entry that references it.
+// immutable, apart from its counterparty (ADR 0016); corrections use a new
+// entry that references it.
 type JournalEntry struct {
 	ID                   int64
 	CounterpartyID       *int64
@@ -159,7 +161,7 @@ constraints in ADR 0001:
 - For every currency in a posted entry, debit and credit amounts total to the
   same value.
 - A posted entry, its postings, and its linked monetary position movements
-  cannot be changed or deleted.
+  cannot be changed or deleted, apart from the entry's counterparty (ADR 0016).
 - Only a draft entry may be voided. A posted entry is corrected only by a
   distinct, balanced reversal entry.
 - A monetary purchase or sale position movement references the journal entry
@@ -192,7 +194,7 @@ The backend should provide these activity groups.
 | Reference data | Create, retrieve, list, update, and archive `Currency`, `Institution`, and `Asset` | Assets are instruments; prices and analytics remain outside this core. |
 | Financial accounts | Create, retrieve, list, update metadata, close `FinancialAccount` | Creation may create its first requested single-currency cash ledger account in the same transaction. No delete after use. |
 | Chart of accounts | Create, retrieve, list tree, rename, and close `LedgerAccount` | Kinds and financial-account links are immutable after postings exist. |
-| Counterparties | Create, retrieve, list/search, rename, archive `Counterparty` | Counterparties may be created from imports. |
+| Counterparties | Create, retrieve, list/search, rename, delete `Counterparty` | Counterparties may be created from imports. |
 | Journal entries | Create draft, retrieve, list/filter, update draft, post, void draft, reverse posted entry | `Post` validates balance. `Reverse` creates and posts the opposite lines atomically. |
 | Ledger queries | List postings for an account, calculate account balance at a time, trial balance, list entries by counterparty/external ID | Queries include only posted entries by default. |
 | Positions | Record a non-monetary position movement, register an investment trade, list movements, calculate units held at a time | `RegisterInvestmentTrade` creates the entry, postings, and position movement atomically. |
@@ -241,7 +243,7 @@ The initial workflow surface is:
 | `CreateFinancialAccount` | Creates a financial account and, when requested, its first single-currency cash ledger account atomically. |
 | `CloseFinancialAccount` | Validates closure policy and closes the account. |
 | `CreateLedgerAccount` / `CloseLedgerAccount` | Maintains the chart of accounts. |
-| `CreateCounterparty` / `ArchiveCounterparty` | Maintains optional entry metadata. |
+| `CreateCounterparty` / `DeleteCounterparty` | Maintains optional entry metadata. |
 | `CreateDraftJournalEntry` | Creates an editable, unposted entry. |
 | `PostJournalEntry` | Calls the atomic post activity for a balanced generic entry. |
 | `VoidDraftJournalEntry` | Discards an unposted entry without changing balances. |

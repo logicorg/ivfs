@@ -294,6 +294,10 @@ export type CreatedCounterparty = {
     id: number;
 };
 
+export type CreatedTag = {
+    id: number;
+};
+
 export type Currency = {
     /**
      * ISO 4217 code, such as EUR
@@ -319,6 +323,13 @@ export type CurrencyChanges = {
 
 export type CurrencyList = {
     currencies: Array<Currency>;
+};
+
+export type DeletedCounterparty = {
+    /**
+     * how many journal entries lost the counterparty
+     */
+    cleared: number;
 };
 
 export type Deletion = {
@@ -594,6 +605,11 @@ export type NewCounterparty = {
     name: string;
 };
 
+export type NewTag = {
+    description?: string;
+    name: string;
+};
+
 export type OpenedAccount = {
     financialAccountId?: number;
     financialAccountName?: string;
@@ -718,6 +734,24 @@ export type StrayUnits = {
      * a decimal amount, as a string so it stays exact
      */
     units: string;
+};
+
+export type Tag = {
+    description: string;
+    id: number;
+    name: string;
+};
+
+export type TagChanges = {
+    /**
+     * empty clears it
+     */
+    description?: string;
+    name?: string;
+};
+
+export type TagList = {
+    tags: Array<Tag>;
 };
 
 export type TransferForm = {
@@ -1316,6 +1350,41 @@ export type CreateCounterpartyResponses = {
 };
 
 export type CreateCounterpartyResponse = CreateCounterpartyResponses[keyof CreateCounterpartyResponses];
+
+export type DeleteCounterpartyData = {
+    body?: never;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/api/counterparties/{id}';
+};
+
+export type DeleteCounterpartyErrors = {
+    /**
+     * Conflict
+     */
+    409: ErrorModel;
+    /**
+     * Unprocessable Entity
+     */
+    422: ErrorModel;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorModel;
+};
+
+export type DeleteCounterpartyError = DeleteCounterpartyErrors[keyof DeleteCounterpartyErrors];
+
+export type DeleteCounterpartyResponses = {
+    /**
+     * OK
+     */
+    200: DeletedCounterparty;
+};
+
+export type DeleteCounterpartyResponse = DeleteCounterpartyResponses[keyof DeleteCounterpartyResponses];
 
 export type RenameCounterpartyData = {
     body: CounterpartyName;
@@ -2648,6 +2717,130 @@ export type UpdateUserSettingsResponses = {
 };
 
 export type UpdateUserSettingsResponse = UpdateUserSettingsResponses[keyof UpdateUserSettingsResponses];
+
+export type ListTagsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/tags';
+};
+
+export type ListTagsErrors = {
+    /**
+     * Error
+     */
+    default: ErrorModel;
+};
+
+export type ListTagsError = ListTagsErrors[keyof ListTagsErrors];
+
+export type ListTagsResponses = {
+    /**
+     * OK
+     */
+    200: TagList;
+};
+
+export type ListTagsResponse = ListTagsResponses[keyof ListTagsResponses];
+
+export type CreateTagData = {
+    body: NewTag;
+    path?: never;
+    query?: never;
+    url: '/api/tags';
+};
+
+export type CreateTagErrors = {
+    /**
+     * Unprocessable Entity
+     */
+    422: ErrorModel;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorModel;
+};
+
+export type CreateTagError = CreateTagErrors[keyof CreateTagErrors];
+
+export type CreateTagResponses = {
+    /**
+     * OK
+     */
+    200: CreatedTag;
+};
+
+export type CreateTagResponse = CreateTagResponses[keyof CreateTagResponses];
+
+export type DeleteTagData = {
+    body?: never;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/api/tags/{id}';
+};
+
+export type DeleteTagErrors = {
+    /**
+     * Unprocessable Entity
+     */
+    422: ErrorModel;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorModel;
+};
+
+export type DeleteTagError = DeleteTagErrors[keyof DeleteTagErrors];
+
+export type DeleteTagResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type DeleteTagResponse = DeleteTagResponses[keyof DeleteTagResponses];
+
+export type UpdateTagData = {
+    body: TagChanges;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/api/tags/{id}';
+};
+
+export type UpdateTagErrors = {
+    /**
+     * Not Found
+     */
+    404: ErrorModel;
+    /**
+     * Conflict
+     */
+    409: ErrorModel;
+    /**
+     * Unprocessable Entity
+     */
+    422: ErrorModel;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorModel;
+};
+
+export type UpdateTagError = UpdateTagErrors[keyof UpdateTagErrors];
+
+export type UpdateTagResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type UpdateTagResponse = UpdateTagResponses[keyof UpdateTagResponses];
 
 export type RecordExpenseData = {
     body: ExpenseForm;

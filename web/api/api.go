@@ -35,6 +35,7 @@ import (
 	"github.com/logicorg/ivfs/web/api/networth"
 	"github.com/logicorg/ivfs/web/api/positions"
 	"github.com/logicorg/ivfs/web/api/settings"
+	"github.com/logicorg/ivfs/web/api/tags"
 	"github.com/logicorg/ivfs/web/api/transactions"
 	"github.com/logicorg/ivfs/web/auth"
 	"go.temporal.io/sdk/client"
@@ -101,6 +102,7 @@ func newAPI(router chi.Router, c client.Client, sources assetvalue.Sources) huma
 	holdings.Register(api, c)
 	settings.Register(api, c)
 	networth.Register(api, c)
+	tags.Register(api, c)
 
 	gateway.PlainIntegers(api.OpenAPI())
 	return api
