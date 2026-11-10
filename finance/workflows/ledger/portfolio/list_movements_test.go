@@ -15,7 +15,9 @@ import (
 func (s *WorkflowUnitTestSuite) TestListPositionMovements() {
 	page := &lt.ListPositionMovementsResult{
 		Movements: []model.PositionMovement{{ID: 10, FinancialAccountID: 1, AssetID: 2, UnitsDelta: decimal.NewFromInt(3)}},
-		Next:      &lt.PositionMovementCursor{OccurredAt: time.Date(2026, 3, 1, 12, 0, 0, 0, time.UTC), ID: 10},
+		Next: &lt.PositionMovementCursor{
+			OccurredAt: time.Date(2026, 3, 1, 12, 0, 0, 0, time.UTC), CreatedAt: time.Date(2026, 3, 2, 9, 0, 0, 0, time.UTC), ID: 10,
+		},
 	}
 
 	tests := []struct {

@@ -12,9 +12,9 @@ import (
 
 // ListPositionMovements returns one page of the history of position movements,
 // oldest first, over the movements that count towards holdings. Movements that
-// happened at the same instant are ordered by id, the order the holdings check
-// uses, so a page boundary can fall between them without skipping or repeating
-// any.
+// happened at the same instant are ordered by when they were recorded and then
+// by id, the order the holdings check uses, so a page boundary can fall between
+// them without skipping or repeating any.
 func (a *Activities) ListPositionMovements(ctx context.Context, params lt.ListPositionMovementsParams) (*lt.ListPositionMovementsResult, error) {
 	db, err := a.Pools.For(ctx)
 	if err != nil {
@@ -25,7 +25,7 @@ func (a *Activities) ListPositionMovements(ctx context.Context, params lt.ListPo
 		return nil, err
 	}
 
-	query := positions.EffectiveMovementsQuery(db).OrderExpr("pm.occurred_at, pm.id")
+	query := positions.EffectiveMovementsQuery(db).OrderExpr("pm.occurred_at, pm.created_at, pm.id")
 	if params.FinancialAccountID > 0 {
 		query = query.Where("pm.financial_account_id = ?", params.FinancialAccountID)
 	}
@@ -42,7 +42,8 @@ func (a *Activities) ListPositionMovements(ctx context.Context, params lt.ListPo
 		query = query.Where("pm.kind IN (?)", bun.List(params.Kinds))
 	}
 	if params.After != nil {
-		query = query.Where("(pm.occurred_at, pm.id) > (?, ?)", params.After.OccurredAt, params.After.ID)
+		query = query.Where("(pm.occurred_at, pm.created_at, pm.id) > (?, ?, ?)",
+			params.After.OccurredAt, params.After.CreatedAt, params.After.ID)
 	}
 
 	// One more than the page is read to know whether there is a next page.
@@ -56,7 +57,7 @@ func (a *Activities) ListPositionMovements(ctx context.Context, params lt.ListPo
 	if len(movements) > pageSize {
 		result.Movements = movements[:pageSize]
 		last := result.Movements[pageSize-1]
-		result.Next = &lt.PositionMovementCursor{OccurredAt: last.OccurredAt, ID: last.ID}
+		result.Next = &lt.PositionMovementCursor{OccurredAt: last.OccurredAt, CreatedAt: last.CreatedAt, ID: last.ID}
 	}
 	return result, nil
 }

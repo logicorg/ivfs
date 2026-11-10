@@ -605,7 +605,7 @@ export const listHoldingsOptions = (options?: Options<ListHoldingsData>) => quer
 export const listHoldingMovementsQueryKey = (options?: Options<ListHoldingMovementsData>) => createQueryKey('listHoldingMovements', options);
 
 /**
- * List a page of the movements of holdings, by the date they occurred and then by id
+ * List a page of the movements of holdings, by the date they occurred and then by when they were recorded
  *
  * Only the movements that count towards holdings are listed: those without a journal entry, and those of a posted one. Their units add up to the holding's.
  */
@@ -654,7 +654,7 @@ const createInfiniteParams = <K extends Pick<QueryKey<Options>[0], 'body' | 'hea
 export const listHoldingMovementsInfiniteQueryKey = (options?: Options<ListHoldingMovementsData>): QueryKey<Options<ListHoldingMovementsData>> => createQueryKey('listHoldingMovements', options, true);
 
 /**
- * List a page of the movements of holdings, by the date they occurred and then by id
+ * List a page of the movements of holdings, by the date they occurred and then by when they were recorded
  *
  * Only the movements that count towards holdings are listed: those without a journal entry, and those of a posted one. Their units add up to the holding's.
  */

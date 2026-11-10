@@ -286,7 +286,7 @@ export const getHealth = <ThrowOnError extends boolean = false>(options?: Option
 export const listHoldings = <ThrowOnError extends boolean = false>(options?: Options<ListHoldingsData, ThrowOnError>): RequestResult<ListHoldingsResponses, ListHoldingsErrors, ThrowOnError> => (options?.client ?? client).get<ListHoldingsResponses, ListHoldingsErrors, ThrowOnError>({ url: '/api/holdings', ...options });
 
 /**
- * List a page of the movements of holdings, by the date they occurred and then by id
+ * List a page of the movements of holdings, by the date they occurred and then by when they were recorded
  *
  * Only the movements that count towards holdings are listed: those without a journal entry, and those of a posted one. Their units add up to the holding's.
  */

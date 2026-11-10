@@ -85,18 +85,19 @@ func CheckHoldingsTx(ctx context.Context, tx bun.Tx, pairs []Pair) error {
 		// is valid only if none of those balances is negative, so a backdated sale
 		// is judged against what was held on its own date rather than against the
 		// current total, and a movement that only pushes a later point below zero
-		// is refused as well. Ties on occurred_at fall back to id, which is the
-		// order of insertion. The frame is spelled out so that each row adds only
+		// is refused as well. Ties on occurred_at fall back to created_at, the
+		// order the movements were recorded in, which a movement written again
+		// with its entry keeps (ADR 0017), and then to id. The frame is spelled out so that each row adds only
 		// its own delta. Only the earliest negative balance is fetched, since it is
 		// all the error needs to name. Movements of draft entries are left out by
 		// the same predicate the reports use.
 		err := tx.NewRaw(`WITH ordered AS (
-				SELECT pm.id, pm.occurred_at,
-					SUM(pm.units_delta) OVER (ORDER BY pm.occurred_at, pm.id ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS running
+				SELECT pm.id, pm.occurred_at, pm.created_at,
+					SUM(pm.units_delta) OVER (ORDER BY pm.occurred_at, pm.created_at, pm.id ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS running
 				FROM asset.position_movement pm
 				LEFT JOIN ledger.journal_entry je ON je.id = pm.journal_entry_id
 				WHERE pm.financial_account_id = ? AND pm.asset_id = ? AND `+effectiveMovement+`)
-			SELECT occurred_at, running FROM ordered WHERE running < 0 ORDER BY occurred_at, id LIMIT 1`,
+			SELECT occurred_at, running FROM ordered WHERE running < 0 ORDER BY occurred_at, created_at, id LIMIT 1`,
 			pair.FinancialAccountID, pair.AssetID).Scan(ctx, &firstNegative)
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
@@ -153,8 +154,8 @@ func NegativeHoldingsTx(ctx context.Context, tx bun.Tx, pairs []Pair) ([]lt.Nega
 		// fetched, since a warning names one point per position, together with the
 		// names of the account and the asset so the warning can be read as it is.
 		err := tx.NewRaw(`WITH ordered AS (
-				SELECT pm.id, pm.occurred_at,
-					SUM(pm.units_delta) OVER (ORDER BY pm.occurred_at, pm.id ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS running
+				SELECT pm.id, pm.occurred_at, pm.created_at,
+					SUM(pm.units_delta) OVER (ORDER BY pm.occurred_at, pm.created_at, pm.id ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS running
 				FROM asset.position_movement pm
 				LEFT JOIN ledger.journal_entry je ON je.id = pm.journal_entry_id
 				WHERE pm.financial_account_id = ? AND pm.asset_id = ? AND `+effectiveMovement+`)
@@ -162,7 +163,7 @@ func NegativeHoldingsTx(ctx context.Context, tx bun.Tx, pairs []Pair) ([]lt.Nega
 			FROM ordered o
 			JOIN account.financial_account fa ON fa.id = ?
 			JOIN asset.asset a ON a.id = ?
-			WHERE o.running < 0 ORDER BY o.occurred_at, o.id LIMIT 1`,
+			WHERE o.running < 0 ORDER BY o.occurred_at, o.created_at, o.id LIMIT 1`,
 			pair.FinancialAccountID, pair.AssetID, pair.FinancialAccountID, pair.AssetID).Scan(ctx, &firstNegative)
 		switch {
 		case errors.Is(err, sql.ErrNoRows):

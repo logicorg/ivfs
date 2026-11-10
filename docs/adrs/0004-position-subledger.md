@@ -126,7 +126,7 @@ The activity enforces this inside its transaction:
 3. Insert the entry, postings, and movements.
 4. Mark the entry posted.
 5. For each affected account and asset, compute the running sum ordered by
-   `(occurred_at, id)` over effective movements. If it is negative anywhere the
+   `(occurred_at, created_at, id)` over effective movements (ADR 0017). If it is negative anywhere the
    transaction rolls back with `ErrResourceConflict{ResourceType: "Position"}`
    that names the first negative point.
 
@@ -139,7 +139,7 @@ while any position it holds is non-zero.
 - `PositionAt` counts effective movements with `occurred_at <= At`.
 - `ListPositionMovements` filters by financial account, asset, kinds, and a
   half-open date range (`From` inclusive, `To` exclusive), ordered by
-  `(occurred_at, id)` with a keyset cursor. The sum of the history up to a
+  `(occurred_at, created_at, id)` with a keyset cursor (ADR 0017). The sum of the history up to a
   time equals `PositionAt` at that time.
 
 ### Write order and the movement guard

@@ -202,9 +202,10 @@ const (
 
 // PositionMovementCursor is where a page of the history ends, and the next one
 // starts after it. It is the position of the last movement returned in the order
-// of the history, which is by date and then by id.
+// of the history, which is by date, then by when it was recorded, then by id.
 type PositionMovementCursor struct {
 	OccurredAt time.Time `json:"occurredAt"`
+	CreatedAt  time.Time `json:"createdAt"`
 	ID         int64     `json:"id"`
 }
 
@@ -258,8 +259,8 @@ func (p *ListPositionMovementsParams) Validate() error {
 			return internalerrors.ErrInvalidParameter{Description: "invalid position movement kind"}
 		}
 	}
-	if p.After != nil && (p.After.ID <= 0 || p.After.OccurredAt.IsZero()) {
-		return internalerrors.ErrInvalidParameter{Description: "the cursor needs the date and the id of a movement"}
+	if p.After != nil && (p.After.ID <= 0 || p.After.OccurredAt.IsZero() || p.After.CreatedAt.IsZero()) {
+		return internalerrors.ErrInvalidParameter{Description: "the cursor needs the date, the creation time, and the id of a movement"}
 	}
 	return nil
 }

@@ -330,5 +330,5 @@ func FindPositionMovementsByAssetAndFinancialAccountQuery(db *bun.DB, assetID, f
 	return db.NewSelect().Model((*PositionMovement)(nil)).
 		Where("pm.asset_id = ?", assetID).
 		Where("pm.financial_account_id = ?", financialAccountID).
-		OrderExpr("pm.occurred_at ASC, pm.id ASC")
+		OrderExpr("pm.occurred_at ASC, pm.created_at ASC, pm.id ASC")
 }

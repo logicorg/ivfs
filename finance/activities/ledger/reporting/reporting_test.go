@@ -322,6 +322,20 @@ func (s *UnitTestSuite) TestPositionsAt_CostBasis() {
 			},
 			units: 5, costBasis: map[string]int64{"EUR": 50}, average: map[string]int64{"EUR": 10},
 		},
+		// A movement written again with its entry has a later id and keeps when
+		// it was recorded (ADR 0017), so the id must not decide the order.
+		"a sale is replayed after the buy of the same instant recorded before it": {
+			movements: func(asset *model.Asset) {
+				date, datePlus1h := january.AddDate(0, 0, 10), january.AddDate(0, 0, 10).Add(time.Hour)
+				sale := movement(asset, -5, 0)
+				sale.CreatedAt = datePlus1h
+				temporaltesting.InsertPositionMovement(s.T(), s.DB, sale)
+				buy := withBasis(movement(asset, 10, 0), 100, fixture.Currency)
+				buy.CreatedAt = date
+				temporaltesting.InsertPositionMovement(s.T(), s.DB, buy)
+			},
+			units: 5, costBasis: map[string]int64{"EUR": 50}, average: map[string]int64{"EUR": 10},
+		},
 		"a sale after At removes nothing": {
 			movements: func(asset *model.Asset) {
 				temporaltesting.InsertPositionMovement(s.T(), s.DB, withBasis(movement(asset, 10, 0), 100, fixture.Currency))
