@@ -8,8 +8,8 @@ import (
 	"go.temporal.io/sdk/workflow"
 )
 
-// DeletePositionMovement deletes an entry-less movement group and its reversals
-// in one atomic activity. The activity is idempotent, so a retry needs no key.
+// DeletePositionMovement deletes an entry-less movement group in one atomic
+// activity. The activity is idempotent, so a retry needs no key.
 func DeletePositionMovement(ctx workflow.Context, input lt.DeletePositionMovementInput) (*lt.DeletePositionMovementResult, error) {
 	ctx = workflow.WithActivityOptions(ctx, workflows.GetDefaultActivityOptions())
 

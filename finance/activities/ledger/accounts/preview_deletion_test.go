@@ -82,10 +82,11 @@ func (s *UnitTestSuite) TestPreviewAccountDeletion() {
 				return ledgerInput(coffee), previewOutcome{keptEntries: 1, amounts: []string{"Uncategorized expense EUR 100"}}
 			},
 		},
-		"a kept entry and its reversal land nothing": {
+		"a kept entry and one undoing it land nothing": {
 			setup: func(t *testing.T) (lt.PreviewAccountDeletionInput, previewOutcome) {
 				loan := f.ledgerAccount(t, "Loan cash", model.LedgerAccountAsset, nil)
-				f.reversal(t, f.entry(t, loan, f.bank), loan, f.bank)
+				f.entry(t, loan, f.bank)
+				f.entry(t, f.bank, loan)
 				return ledgerInput(loan), previewOutcome{keptEntries: 2}
 			},
 		},
@@ -132,7 +133,8 @@ func (s *UnitTestSuite) TestPreviewAccountDeletion() {
 			setup: func(t *testing.T) (lt.PreviewAccountDeletionInput, previewOutcome) {
 				account := f.financialAccount(t, "IBKR")
 				g.group(t, model.PositionMovementTransfer, leg{account, -5}, leg{f.broker, 5})
-				g.reversal(t, g.group(t, model.PositionMovementTransfer, leg{account, -3}, leg{f.broker, 3}))
+				g.group(t, model.PositionMovementTransfer, leg{account, -3}, leg{f.broker, 3})
+				g.group(t, model.PositionMovementTransfer, leg{account, 3}, leg{f.broker, -3})
 				g.group(t, model.PositionMovementSplit, leg{account, 10})
 				g.group(t, model.PositionMovementSplit, leg{account, 2}, leg{f.broker, 2})
 				return financialInput(account), previewOutcome{

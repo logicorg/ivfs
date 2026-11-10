@@ -1,43 +1,16 @@
 // Package deletion holds the steps shared by the activities that delete
-// recorded history: a journal entry or a movement group with its reversals
-// (ADR 0011), and the batches that empty an account being deleted (ADR 0012).
+// recorded history: a journal entry or a movement group (ADR 0011), and the
+// batches that empty an account being deleted (ADR 0012).
 package deletion
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"fmt"
 
 	"github.com/logicorg/ivfs/finance/activities/ledger/internal/positions"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/uptrace/bun"
 )
-
-// ReversalChainTx returns the ids of the entry, of the entry that reverses it,
-// of the one that reverses that, and so on, or nothing when the entry does not
-// exist.
-func ReversalChainTx(ctx context.Context, tx bun.Tx, entryID int64) ([]int64, error) {
-	var chain []int64
-	next := entryID
-	for {
-		var entry model.JournalEntry
-		query := tx.NewSelect().Model(&entry).Column("id")
-		if len(chain) == 0 {
-			query = query.Where("je.id = ?", next)
-		} else {
-			query = query.Where("je.reversal_of_entry_id = ?", next)
-		}
-		if err := query.Limit(1).Scan(ctx); err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
-				return chain, nil
-			}
-			return nil, fmt.Errorf("load journal entry: %w", err)
-		}
-		chain = append(chain, entry.ID)
-		next = entry.ID
-	}
-}
 
 // LockAccountsOfTx locks the accounts the entries touch, as LockAccountsTx
 // does.

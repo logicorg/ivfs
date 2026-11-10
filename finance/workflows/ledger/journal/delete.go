@@ -8,9 +8,8 @@ import (
 	"go.temporal.io/sdk/workflow"
 )
 
-// DeleteJournalEntry deletes a journal entry with its postings, movements, and
-// reversals in one atomic activity. The activity is idempotent, so a retry needs
-// no key.
+// DeleteJournalEntry deletes a journal entry with its postings and movements in
+// one atomic activity. The activity is idempotent, so a retry needs no key.
 func DeleteJournalEntry(ctx workflow.Context, input lt.DeleteJournalEntryInput) (*lt.DeleteJournalEntryResult, error) {
 	ctx = workflow.WithActivityOptions(ctx, workflows.GetDefaultActivityOptions())
 

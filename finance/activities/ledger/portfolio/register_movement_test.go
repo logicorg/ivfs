@@ -544,22 +544,3 @@ func (s *UnitTestSuite) Test_RegisterPositionMovement_RetryWaitsForConcurrentWri
 	require.Equal(s.T(), 1, s.Count[model.PositionMovement]())
 	require.Equal(s.T(), []int64{s.movementsWithKey(key)[0].ID}, outcome.result.PositionMovementIDs)
 }
-
-// Test_RegisterPositionMovement_KeyOfReversal checks that a key that belongs to
-// a reversal is not taken for the retry of a registration.
-func (s *UnitTestSuite) Test_RegisterPositionMovement_KeyOfReversal() {
-	originals := s.seedTransfer("transfer-1", s.asset)
-	for n, original := range originals {
-		temporaltesting.Insert(s.T(), s.DB, &model.PositionMovement{
-			Kind: original.Kind, FinancialAccountID: original.FinancialAccountID, AssetID: s.asset.ID,
-			UnitsDelta: original.UnitsDelta.Neg(), OccurredAt: movementDay.AddDate(0, 0, 6),
-			IdempotencyKey: ptr.NewPtr("reversal-1"), LineNumber: n + 1, ReversalOfMovementID: &original.ID,
-		})
-	}
-	rows := s.Count[model.PositionMovement]()
-
-	_, err := s.Env.ExecuteActivity(s.pa.RegisterPositionMovement, s.adjustment("reversal-1", s.asset, 1))
-
-	require.ErrorContains(s.T(), err, "belongs to a reversal")
-	require.Equal(s.T(), rows, s.Count[model.PositionMovement]())
-}
