@@ -212,7 +212,7 @@ func (s *UnitTestSuite) Test_PositionMovementDeleteDeclaration() {
 				return
 			}
 			require.ErrorContains(s.T(), err, tc.failure)
-			require.Equal(s.T(), 1, count, "a refused statement must leave the movement in place")
+			require.EqualValues(s.T(), 1, count, "a refused statement must leave the movement in place")
 		})
 	}
 }

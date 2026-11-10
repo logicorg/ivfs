@@ -128,7 +128,7 @@ func (s *UnitTestSuite) Test_DeletePositionMovement() {
 			var result lt.DeletePositionMovementResult
 			require.NoError(s.T(), activityResult.Get(&result))
 			require.Zero(s.T(), s.movementsExist(gone))
-			require.Equal(s.T(), len(kept), s.movementsExist(kept))
+			require.EqualValues(s.T(), len(kept), s.movementsExist(kept))
 			if tc.wantUnits == nil {
 				require.Empty(s.T(), result.Warnings)
 				return
@@ -204,7 +204,7 @@ func (s *UnitTestSuite) Test_DeletePositionMovement_Idempotent() {
 	require.NoError(s.T(), second.Get(&retried))
 	require.Empty(s.T(), retried.Warnings, "a delete that finds nothing touches no position")
 	require.Equal(s.T(), 1, s.Count[model.PositionMovement]())
-	require.Equal(s.T(), 1, s.movementsExist([]*model.PositionMovement{sale}))
+	require.EqualValues(s.T(), 1, s.movementsExist([]*model.PositionMovement{sale}))
 
 	// The insert fails on the unique key unless the delete freed it.
 	s.seedAdjustment("purchase", s.asset, 7, 1, nil)

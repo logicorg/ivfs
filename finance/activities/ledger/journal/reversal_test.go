@@ -117,7 +117,7 @@ func (s *UnitTestSuite) TestReverseJournalEntry_InvertsEveryMovement() {
 	require.Empty(s.T(), retryResult.Warnings)
 	count, err := s.DB.NewSelect().Model((*model.PositionMovement)(nil)).Where("journal_entry_id = ?", result.JournalEntryID).Count(s.T().Context())
 	require.NoError(s.T(), err)
-	require.Equal(s.T(), 2, count)
+	require.EqualValues(s.T(), 2, count)
 }
 
 // held is a financial account holding an asset, with the ledger accounts that

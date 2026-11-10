@@ -65,17 +65,17 @@ func (s *UnitTestSuite) newAsset(name string) *model.Asset {
 	return asset
 }
 
-func (s *UnitTestSuite) rowsOfEntry(entryID int64) (entries, postings, movements int64) {
+func (s *UnitTestSuite) rowsOfEntry(entryID int64) (int, int, int) {
 	s.T().Helper()
 
 	var err error
-	entries, err = s.DB.NewSelect().Model((*model.JournalEntry)(nil)).Where("id = ?", entryID).Count(s.T().Context())
+	entries, err := s.DB.NewSelect().Model((*model.JournalEntry)(nil)).Where("id = ?", entryID).Count(s.T().Context())
 	require.NoError(s.T(), err)
-	postings, err = s.DB.NewSelect().Model((*model.Posting)(nil)).Where("journal_entry_id = ?", entryID).Count(s.T().Context())
+	postings, err := s.DB.NewSelect().Model((*model.Posting)(nil)).Where("journal_entry_id = ?", entryID).Count(s.T().Context())
 	require.NoError(s.T(), err)
-	movements, err = s.DB.NewSelect().Model((*model.PositionMovement)(nil)).Where("journal_entry_id = ?", entryID).Count(s.T().Context())
+	movements, err := s.DB.NewSelect().Model((*model.PositionMovement)(nil)).Where("journal_entry_id = ?", entryID).Count(s.T().Context())
 	require.NoError(s.T(), err)
-	return entries, postings, movements
+	return int(entries), int(postings), int(movements)
 }
 
 func (s *UnitTestSuite) requireEntryGone(entry seededEntry) {

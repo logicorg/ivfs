@@ -91,7 +91,7 @@ func (s *UnitTestSuite) TestPostJournalEntry_AmountPrecision() {
 				require.Zero(s.T(), count, "a rejected entry must leave nothing behind")
 			} else {
 				require.NoError(s.T(), err)
-				require.Equal(s.T(), 1, count)
+				require.EqualValues(s.T(), 1, count)
 			}
 		})
 	}
@@ -177,7 +177,7 @@ func (s *UnitTestSuite) TestPostJournalEntry_Idempotency() {
 
 	count, err := s.DB.NewSelect().Model((*model.JournalEntry)(nil)).Where("idempotency_key = ?", input.IdempotencyKey).Count(s.T().Context())
 	require.NoError(s.T(), err)
-	require.Equal(s.T(), 1, count)
+	require.Equal(s.T(), 1, int(count))
 }
 
 func (s *UnitTestSuite) TestPostJournalEntry_CurrencyBalancing() {

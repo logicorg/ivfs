@@ -123,7 +123,7 @@ func (s *UnitTestSuite) Test_ClearCounterpartyReferences() {
 				postings, err := s.DB.NewSelect().Model((*model.Posting)(nil)).Where("journal_entry_id = ?", entry.ID).Count(s.T().Context())
 				require.NoError(s.T(), err)
 				if entry.Status == model.JournalEntryPosted {
-					require.Equal(s.T(), 2, postings, "entry %d lost postings", entry.ID)
+					require.EqualValues(s.T(), 2, postings, "entry %d lost postings", entry.ID)
 				}
 			}
 			for _, entry := range otherCounterpartiesEntries {

@@ -177,7 +177,7 @@ func (s *UnitTestSuite) Test_JournalEntryDeleteDeclaration() {
 				return
 			}
 			require.ErrorContains(s.T(), err, tc.failure)
-			require.Equal(s.T(), 1, count, "a refused delete must leave the entry in place")
+			require.EqualValues(s.T(), 1, count, "a refused delete must leave the entry in place")
 		})
 	}
 }
