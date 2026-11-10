@@ -42,7 +42,7 @@ func TestGuard(t *testing.T) {
 			body:    `{}`, wantStatus: http.StatusOK,
 		},
 		"a command with no body": {
-			method: http.MethodPost, path: "/api/journal-entries/1/reverse",
+			method: http.MethodPost, path: "/api/financial-accounts/1/close",
 			wantStatus: http.StatusOK,
 		},
 		"another host, such as after DNS rebinding": {
