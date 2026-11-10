@@ -115,9 +115,7 @@ func (s *UnitTestSuite) TestReverseJournalEntry_InvertsEveryMovement() {
 	require.Equal(s.T(), result.JournalEntryID, retryResult.JournalEntryID)
 	require.Empty(s.T(), result.Warnings)
 	require.Empty(s.T(), retryResult.Warnings)
-	count, err := s.DB.NewSelect().Model((*model.PositionMovement)(nil)).Where("journal_entry_id = ?", result.JournalEntryID).Count(s.T().Context())
-	require.NoError(s.T(), err)
-	require.Equal(s.T(), 2, count)
+	require.EqualValues(s.T(), 2, s.CountWhere[model.PositionMovement]("journal_entry_id = ?", result.JournalEntryID))
 }
 
 // held is a financial account holding an asset, with the ledger accounts that
@@ -160,14 +158,6 @@ func (s *UnitTestSuite) insertTrade(h held, units int64, at time.Time) *model.Jo
 	return entry
 }
 
-func (s *UnitTestSuite) countEntries() int {
-	s.T().Helper()
-
-	count, err := s.DB.NewSelect().Model((*model.JournalEntry)(nil)).Count(s.T().Context())
-	require.NoError(s.T(), err)
-	return count
-}
-
 // A reversal gives units back, so when they were sold since it is written
 // anyway and warns about the position it leaves negative, at the date of the
 // reversal. Undoing the sale afterwards gives the units back, but the position
@@ -182,7 +172,7 @@ func (s *UnitTestSuite) TestReverseJournalEntry_UnitsSoldSince() {
 	require.NoError(s.T(), err)
 	var result lt.ReverseJournalEntryResult
 	require.NoError(s.T(), reversed.Get(&result))
-	require.Equal(s.T(), 3, s.countEntries())
+	require.Equal(s.T(), 3, s.Count[model.JournalEntry]())
 	require.Len(s.T(), result.Warnings, 1)
 	warning := result.Warnings[0]
 	require.Equal(s.T(), h.account.ID, warning.FinancialAccountID)
@@ -199,7 +189,7 @@ func (s *UnitTestSuite) TestReverseJournalEntry_UnitsSoldSince() {
 	require.NoError(s.T(), undone.Get(&undoResult))
 	require.Len(s.T(), undoResult.Warnings, 1)
 	require.Equal(s.T(), result.Warnings[0], undoResult.Warnings[0])
-	require.Equal(s.T(), 4, s.countEntries())
+	require.Equal(s.T(), 4, s.Count[model.JournalEntry]())
 }
 
 // A retry returns the warnings as they are now, so none once the units that the
@@ -222,7 +212,7 @@ func (s *UnitTestSuite) TestReverseJournalEntry_IdempotentWarnings() {
 	var retried lt.ReverseJournalEntryResult
 	require.NoError(s.T(), second.Get(&retried))
 	require.Equal(s.T(), created, retried)
-	require.Equal(s.T(), 3, s.countEntries())
+	require.Equal(s.T(), 3, s.Count[model.JournalEntry]())
 
 	s.insertTrade(h, 10, day)
 
@@ -232,7 +222,7 @@ func (s *UnitTestSuite) TestReverseJournalEntry_IdempotentWarnings() {
 	require.NoError(s.T(), third.Get(&afterBackfill))
 	require.Equal(s.T(), created.JournalEntryID, afterBackfill.JournalEntryID)
 	require.Empty(s.T(), afterBackfill.Warnings)
-	require.Equal(s.T(), 4, s.countEntries())
+	require.Equal(s.T(), 4, s.Count[model.JournalEntry]())
 }
 
 // Closing is final, so an entry made while the account was open has to remain

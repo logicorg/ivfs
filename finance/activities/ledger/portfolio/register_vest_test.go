@@ -36,16 +36,6 @@ func (s *UnitTestSuite) vest(key string) lt.RegisterVestInput {
 	}
 }
 
-func (s *UnitTestSuite) countEntriesAndPostings() (entries, postings int) {
-	s.T().Helper()
-
-	entries, err := s.DB.NewSelect().Model((*model.JournalEntry)(nil)).Count(s.T().Context())
-	require.NoError(s.T(), err)
-	postings, err = s.DB.NewSelect().Model((*model.Posting)(nil)).Count(s.T().Context())
-	require.NoError(s.T(), err)
-	return entries, postings
-}
-
 // Test_RegisterVest checks that a vest writes its entry, its postings, and the
 // movement of the units received together, and that the movement is a vest with
 // the cost basis and the date of the entry.
@@ -62,7 +52,7 @@ func (s *UnitTestSuite) Test_RegisterVest() {
 	require.NoError(s.T(), s.DB.NewSelect().Model(&entry).Where("id = ?", result.JournalEntryID).Scan(s.T().Context()))
 	require.Equal(s.T(), model.JournalEntryPosted, entry.Status)
 	require.Equal(s.T(), "acme-rsu-1", *entry.IdempotencyKey)
-	entries, postings := s.countEntriesAndPostings()
+	entries, postings := s.Count[model.JournalEntry](), s.Count[model.Posting]()
 	require.Equal(s.T(), 1, entries)
 	require.Equal(s.T(), len(input.Entry.Postings), postings)
 
@@ -91,8 +81,8 @@ func (s *UnitTestSuite) Test_RegisterVest_Idempotent() {
 	require.NoError(s.T(), err)
 	var created lt.RegisterVestResult
 	require.NoError(s.T(), first.Get(&created))
-	entries, postings := s.countEntriesAndPostings()
-	movements := s.countMovements()
+	entries, postings := s.Count[model.JournalEntry](), s.Count[model.Posting]()
+	movements := s.Count[model.PositionMovement]()
 
 	second, err := s.Env.ExecuteActivity(s.pa.RegisterVest, input)
 	require.NoError(s.T(), err)
@@ -100,10 +90,10 @@ func (s *UnitTestSuite) Test_RegisterVest_Idempotent() {
 	require.NoError(s.T(), second.Get(&retried))
 
 	require.Equal(s.T(), created, retried)
-	afterEntries, afterPostings := s.countEntriesAndPostings()
+	afterEntries, afterPostings := s.Count[model.JournalEntry](), s.Count[model.Posting]()
 	require.Equal(s.T(), entries, afterEntries)
 	require.Equal(s.T(), postings, afterPostings)
-	require.Equal(s.T(), movements, s.countMovements())
+	require.Equal(s.T(), movements, s.Count[model.PositionMovement]())
 	require.True(s.T(), s.unitsHeld(s.financialAccount, s.asset).Equal(decimal.NewFromInt(60)))
 
 	different := s.vest("acme-rsu-1")
@@ -114,7 +104,7 @@ func (s *UnitTestSuite) Test_RegisterVest_Idempotent() {
 	require.NoError(s.T(), third.Get(&unchanged))
 
 	require.Equal(s.T(), created, unchanged)
-	require.Equal(s.T(), movements, s.countMovements())
+	require.Equal(s.T(), movements, s.Count[model.PositionMovement]())
 	require.True(s.T(), s.unitsHeld(s.financialAccount, s.asset).Equal(decimal.NewFromInt(60)))
 }
 
@@ -198,16 +188,16 @@ func (s *UnitTestSuite) Test_RegisterVest_Rejected() {
 	for name, tc := range tests {
 		s.Run(name, func() {
 			input := tc.input(name)
-			entries, postings := s.countEntriesAndPostings()
-			movements := s.countMovements()
+			entries, postings := s.Count[model.JournalEntry](), s.Count[model.Posting]()
+			movements := s.Count[model.PositionMovement]()
 
 			_, err := s.Env.ExecuteActivity(s.pa.RegisterVest, input)
 
 			require.ErrorContains(s.T(), err, tc.failure)
-			afterEntries, afterPostings := s.countEntriesAndPostings()
+			afterEntries, afterPostings := s.Count[model.JournalEntry](), s.Count[model.Posting]()
 			require.Equal(s.T(), entries, afterEntries, "a rejected vest must leave no entry behind")
 			require.Equal(s.T(), postings, afterPostings, "a rejected vest must leave no postings behind")
-			require.Equal(s.T(), movements, s.countMovements(), "a rejected vest must leave no movement behind")
+			require.Equal(s.T(), movements, s.Count[model.PositionMovement](), "a rejected vest must leave no movement behind")
 		})
 	}
 }
@@ -254,5 +244,5 @@ func (s *UnitTestSuite) Test_RegisterVest_RetryWaitsForConcurrentWriter() {
 	outcome := <-done
 	require.NoError(s.T(), outcome.err)
 	require.Equal(s.T(), lt.RegisterVestResult{JournalEntryID: entry.ID, PositionMovementID: movement.ID}, *outcome.result)
-	require.Equal(s.T(), 1, s.countMovements())
+	require.Equal(s.T(), 1, s.Count[model.PositionMovement]())
 }

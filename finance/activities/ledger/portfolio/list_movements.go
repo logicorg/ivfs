@@ -48,7 +48,7 @@ func (a *Activities) ListPositionMovements(ctx context.Context, params lt.ListPo
 	// One more than the page is read to know whether there is a next page.
 	pageSize := params.PageSize()
 	var movements []model.PositionMovement
-	if err := query.Limit(pageSize+1).Scan(ctx, &movements); err != nil {
+	if err := query.Limit(int64(pageSize)+1).Scan(ctx, &movements); err != nil {
 		return nil, fmt.Errorf("list position movements: %w", err)
 	}
 

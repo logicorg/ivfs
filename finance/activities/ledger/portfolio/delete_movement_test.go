@@ -24,7 +24,7 @@ func (s *UnitTestSuite) seedAdjustment(key string, asset *model.Asset, units int
 	return s.seedGroup(key, model.PositionMovementAdjustment, asset, day, leg)[0]
 }
 
-func (s *UnitTestSuite) movementsExist(movements []*model.PositionMovement) int {
+func (s *UnitTestSuite) movementsExist(movements []*model.PositionMovement) int64 {
 	s.T().Helper()
 
 	ids := make([]int64, len(movements))
@@ -34,9 +34,8 @@ func (s *UnitTestSuite) movementsExist(movements []*model.PositionMovement) int 
 	if len(ids) == 0 {
 		return 0
 	}
-	count, err := s.DB.NewSelect().Model((*model.PositionMovement)(nil)).Where("id IN (?)", bun.List(ids)).Count(s.T().Context())
-	require.NoError(s.T(), err)
-	return count
+
+	return int64(s.CountWhere[model.PositionMovement]("id IN (?)", bun.List(ids)))
 }
 
 // Test_DeletePositionMovement checks that any movement of an entry-less command
@@ -128,7 +127,7 @@ func (s *UnitTestSuite) Test_DeletePositionMovement() {
 			var result lt.DeletePositionMovementResult
 			require.NoError(s.T(), activityResult.Get(&result))
 			require.Zero(s.T(), s.movementsExist(gone))
-			require.Equal(s.T(), len(kept), s.movementsExist(kept))
+			require.EqualValues(s.T(), len(kept), s.movementsExist(kept))
 			if tc.wantUnits == nil {
 				require.Empty(s.T(), result.Warnings)
 				return
@@ -174,12 +173,12 @@ func (s *UnitTestSuite) Test_DeletePositionMovement_Rejected() {
 			asset := &model.Asset{Name: name, Kind: model.AssetKindStock}
 			temporaltesting.Insert(s.T(), s.DB, asset)
 			input := tc.input(asset)
-			rows := s.countMovements()
+			rows := s.Count[model.PositionMovement]()
 
 			_, err := s.Env.ExecuteActivity(s.pa.DeletePositionMovement, input)
 
 			require.ErrorContains(s.T(), err, tc.failure)
-			require.Equal(s.T(), rows, s.countMovements(), "a rejected delete must leave nothing behind")
+			require.Equal(s.T(), rows, s.Count[model.PositionMovement](), "a rejected delete must leave nothing behind")
 		})
 	}
 }
@@ -196,15 +195,15 @@ func (s *UnitTestSuite) Test_DeletePositionMovement_Idempotent() {
 	var created lt.DeletePositionMovementResult
 	require.NoError(s.T(), first.Get(&created))
 	require.Len(s.T(), created.Warnings, 1)
-	require.Equal(s.T(), 1, s.countMovements())
+	require.Equal(s.T(), 1, s.Count[model.PositionMovement]())
 
 	second, err := s.Env.ExecuteActivity(s.pa.DeletePositionMovement, input)
 	require.NoError(s.T(), err)
 	var retried lt.DeletePositionMovementResult
 	require.NoError(s.T(), second.Get(&retried))
 	require.Empty(s.T(), retried.Warnings, "a delete that finds nothing touches no position")
-	require.Equal(s.T(), 1, s.countMovements())
-	require.Equal(s.T(), 1, s.movementsExist([]*model.PositionMovement{sale}))
+	require.Equal(s.T(), 1, s.Count[model.PositionMovement]())
+	require.EqualValues(s.T(), 1, s.movementsExist([]*model.PositionMovement{sale}))
 
 	// The insert fails on the unique key unless the delete freed it.
 	s.seedAdjustment("purchase", s.asset, 7, 1, nil)

@@ -65,16 +65,12 @@ func (s *UnitTestSuite) newAsset(name string) *model.Asset {
 	return asset
 }
 
-func (s *UnitTestSuite) rowsOfEntry(entryID int64) (entries, postings, movements int) {
+func (s *UnitTestSuite) rowsOfEntry(entryID int64) (int, int, int) {
 	s.T().Helper()
 
-	var err error
-	entries, err = s.DB.NewSelect().Model((*model.JournalEntry)(nil)).Where("id = ?", entryID).Count(s.T().Context())
-	require.NoError(s.T(), err)
-	postings, err = s.DB.NewSelect().Model((*model.Posting)(nil)).Where("journal_entry_id = ?", entryID).Count(s.T().Context())
-	require.NoError(s.T(), err)
-	movements, err = s.DB.NewSelect().Model((*model.PositionMovement)(nil)).Where("journal_entry_id = ?", entryID).Count(s.T().Context())
-	require.NoError(s.T(), err)
+	entries := s.CountWhere[model.JournalEntry]("id = ?", entryID)
+	postings := s.CountWhere[model.Posting]("journal_entry_id = ?", entryID)
+	movements := s.CountWhere[model.PositionMovement]("journal_entry_id = ?", entryID)
 	return entries, postings, movements
 }
 
@@ -244,7 +240,7 @@ func (s *UnitTestSuite) Test_DeleteJournalEntry_Idempotent() {
 	require.Empty(s.T(), retried.Warnings, "a delete that finds nothing touches no position")
 	s.requireEntryGone(purchase)
 	s.requireEntryKept(sale)
-	require.Equal(s.T(), 1, s.countEntries())
+	require.Equal(s.T(), 1, s.Count[model.JournalEntry]())
 }
 
 // Deleting a reversal puts the effect of the entry it reversed back, so that

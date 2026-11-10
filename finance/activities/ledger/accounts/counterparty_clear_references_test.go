@@ -120,9 +120,8 @@ func (s *UnitTestSuite) Test_ClearCounterpartyReferences() {
 				temporaltesting.Retrieve(s.T(), s.DB, &stored, entry.ID)
 				require.Nil(s.T(), stored.CounterpartyID, "entry %d still names the counterparty", entry.ID)
 				require.Equal(s.T(), entry.Status, stored.Status)
-				postings, err := s.DB.NewSelect().Model((*model.Posting)(nil)).Where("journal_entry_id = ?", entry.ID).Count(s.T().Context())
-				require.NoError(s.T(), err)
 				if entry.Status == model.JournalEntryPosted {
+					postings := s.CountWhere[model.Posting]("journal_entry_id = ?", entry.ID)
 					require.Equal(s.T(), 2, postings, "entry %d lost postings", entry.ID)
 				}
 			}

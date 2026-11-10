@@ -115,7 +115,7 @@ func (t *deletionTarget) entriesTx(ctx context.Context, tx bun.Tx, after int64, 
 			return q
 		}).
 		Where("je.id > ?", after).
-		OrderExpr("je.id").Limit(limit).
+		OrderExpr("je.id").Limit(int64(limit)).
 		Scan(ctx, &ids)
 	if err != nil {
 		return nil, fmt.Errorf("list journal entries on the deleted account: %w", err)

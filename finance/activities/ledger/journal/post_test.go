@@ -84,14 +84,14 @@ func (s *UnitTestSuite) TestPostJournalEntry_AmountPrecision() {
 
 			_, err := s.Env.ExecuteActivity(s.ja.PostJournalEntry, input)
 
-			count, countErr := s.DB.NewSelect().Model((*model.JournalEntry)(nil)).Where("idempotency_key = ?", name).Count(s.T().Context())
-			require.NoError(s.T(), countErr)
+			count := s.CountWhere[model.JournalEntry]("idempotency_key = ?", name)
+
 			if tc.expErr {
 				require.Error(s.T(), err)
 				require.Zero(s.T(), count, "a rejected entry must leave nothing behind")
 			} else {
 				require.NoError(s.T(), err)
-				require.Equal(s.T(), 1, count)
+				require.EqualValues(s.T(), 1, count)
 			}
 		})
 	}
@@ -111,9 +111,7 @@ func (s *UnitTestSuite) TestPostJournalEntry_ClosedLedgerAccount() {
 	}})
 
 	require.ErrorContains(s.T(), err, "is closed")
-	count, err := s.DB.NewSelect().Model((*model.JournalEntry)(nil)).Count(s.T().Context())
-	require.NoError(s.T(), err)
-	require.Zero(s.T(), count, "a rejected entry must leave nothing behind")
+	require.Zero(s.T(), s.Count[model.JournalEntry](), "a rejected entry must leave nothing behind")
 }
 
 // A posting that starts while a transaction is closing one of its accounts has
@@ -175,9 +173,7 @@ func (s *UnitTestSuite) TestPostJournalEntry_Idempotency() {
 	require.NoError(s.T(), second.Get(&secondResult))
 	require.Equal(s.T(), firstResult.JournalEntryID, secondResult.JournalEntryID)
 
-	count, err := s.DB.NewSelect().Model((*model.JournalEntry)(nil)).Where("idempotency_key = ?", input.IdempotencyKey).Count(s.T().Context())
-	require.NoError(s.T(), err)
-	require.Equal(s.T(), 1, count)
+	require.Equal(s.T(), 1, s.CountWhere[model.JournalEntry]("idempotency_key = ?", input.IdempotencyKey))
 }
 
 func (s *UnitTestSuite) TestPostJournalEntry_CurrencyBalancing() {

@@ -204,15 +204,14 @@ func (s *UnitTestSuite) Test_PositionMovementDeleteDeclaration() {
 				return err
 			})
 
-			count, countErr := s.DB.NewSelect().Model((*model.PositionMovement)(nil)).Where("id = ?", movement.ID).Count(s.T().Context())
-			require.NoError(s.T(), countErr)
+			count := s.CountWhere[model.PositionMovement]("id = ?", movement.ID)
 			if tc.failure == "" {
 				require.NoError(s.T(), err)
 				require.Zero(s.T(), count)
-				return
+			} else {
+				require.ErrorContains(s.T(), err, tc.failure)
+				require.EqualValues(s.T(), 1, count, "a refused statement must leave the movement in place")
 			}
-			require.ErrorContains(s.T(), err, tc.failure)
-			require.Equal(s.T(), 1, count, "a refused statement must leave the movement in place")
 		})
 	}
 }

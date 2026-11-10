@@ -54,7 +54,7 @@ func (a *Activities) ListJournalEntries(ctx context.Context, params lt.ListJourn
 
 	// One more than the page is read to know whether there is a next page.
 	pageSize := params.PageSize()
-	if err := query.OrderExpr(order).Limit(pageSize + 1).Scan(ctx); err != nil {
+	if err := query.OrderExpr(order).Limit(int64(pageSize) + 1).Scan(ctx); err != nil {
 		return nil, fmt.Errorf("list journal entries: %w", err)
 	}
 

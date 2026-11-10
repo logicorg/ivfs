@@ -57,14 +57,6 @@ func (s *UnitTestSuite) entry() lt.PostJournalEntryInput {
 	}
 }
 
-func (s *UnitTestSuite) count(table any) int {
-	s.T().Helper()
-
-	count, err := s.DB.NewSelect().Model(table).Count(s.T().Context())
-	require.NoError(s.T(), err)
-	return count
-}
-
 func (s *UnitTestSuite) Test_PostEntryWithMovementsTx() {
 	input := s.entry()
 	movements := []model.PositionMovement{
@@ -103,8 +95,8 @@ func (s *UnitTestSuite) Test_PostEntryWithoutMovements() {
 	require.NoError(s.T(), err)
 
 	require.NotZero(s.T(), entryID)
-	require.Equal(s.T(), 1, s.count((*model.JournalEntry)(nil)))
-	require.Zero(s.T(), s.count((*model.PositionMovement)(nil)))
+	require.Equal(s.T(), 1, s.Count[model.JournalEntry]())
+	require.Zero(s.T(), s.Count[model.PositionMovement]())
 }
 
 // The entry, its postings, and its movements are one write, so a movement that
@@ -121,7 +113,7 @@ func (s *UnitTestSuite) Test_PostEntryWithMovementsTx_IsAtomic() {
 	})
 
 	require.ErrorContains(s.T(), err, "Asset")
-	require.Zero(s.T(), s.count((*model.JournalEntry)(nil)))
-	require.Zero(s.T(), s.count((*model.Posting)(nil)))
-	require.Zero(s.T(), s.count((*model.PositionMovement)(nil)))
+	require.Zero(s.T(), s.Count[model.JournalEntry]())
+	require.Zero(s.T(), s.Count[model.Posting]())
+	require.Zero(s.T(), s.Count[model.PositionMovement]())
 }

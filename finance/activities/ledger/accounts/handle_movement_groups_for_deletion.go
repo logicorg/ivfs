@@ -112,7 +112,7 @@ func (t *deletionTarget) movementGroupsTx(ctx context.Context, tx bun.Tx, offset
 	var keys []string
 	err := tx.NewSelect().Model((*model.PositionMovement)(nil)).Column("pm.idempotency_key").
 		Where("pm.journal_entry_id IS NULL").Where("pm.financial_account_id IN (?)", bun.List(t.financialIDs())).
-		Group("pm.idempotency_key").OrderExpr("min(pm.id)").Offset(offset).Limit(limit).
+		Group("pm.idempotency_key").OrderExpr("min(pm.id)").Offset(int64(offset)).Limit(int64(limit)).
 		Scan(ctx, &keys)
 	if err != nil {
 		return nil, fmt.Errorf("list position movement groups in the deleted account: %w", err)
