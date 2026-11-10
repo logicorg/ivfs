@@ -31,8 +31,8 @@ func ensurePositionConstraints(ctx context.Context, db *bun.DB) error {
 		}
 	}
 
-	// A movement is append-only: it is never changed, and a correction is another
-	// movement. It is deleted only by a transaction that has declared it is
+	// A movement is append-only: it is never changed, and a correction deletes it
+	// and records it again. It is deleted only by a transaction that has declared it is
 	// deleting the movement's journal entry, or, for a movement without one, its
 	// idempotency key group (ADR 0011). A transaction deleting a financial
 	// account can move its movements onto another account, and delete its

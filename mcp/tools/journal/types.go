@@ -25,8 +25,9 @@ type PostJournalEntryToolInput struct {
 // PostingSummary and JournalEntrySummary are flat projections of
 // model.Posting and model.JournalEntry. The models themselves cannot be used
 // as an MCP tool's output type directly: JournalEntry.Postings <->
-// Posting.JournalEntry form a cycle, and jsonschema-go's reflection-based schema inference panics on a cyclic Go
-// type rather than emitting a recursive schema.
+// Posting.JournalEntry form a cycle, and jsonschema-go's reflection-based
+// schema inference panics on a cyclic Go type rather than emitting a recursive
+// schema.
 
 type PostingSummary struct {
 	LedgerAccountID int64           `json:"ledgerAccountId"`

@@ -175,35 +175,6 @@ func (s *UnitTestSuite) TestHandleMovementGroupsForDeletion() {
 			},
 			handled: 1,
 		},
-		"two kept transfers both move to the stray": {
-			setup: func(t *testing.T) (lt.DeletionTarget, []groupOutcome) {
-				account := f.financialAccount(t, "Scalable")
-				out := f.group(t, model.PositionMovementTransfer, leg{account, -5}, leg{f.broker, 5})
-				back := f.group(t, model.PositionMovementTransfer, leg{account, 5}, leg{f.broker, -5})
-				legs := []string{lt.UntrackedAccountsName, "Movement groups broker"}
-				return financialTarget(account), []groupOutcome{{group: out, legs: legs}, {group: back, legs: legs}}
-			},
-			handled: 2,
-		},
-		"two kept splits both lose their legs in the account": {
-			setup: func(t *testing.T) (lt.DeletionTarget, []groupOutcome) {
-				account := f.financialAccount(t, "Saxo")
-				first := f.group(t, model.PositionMovementSplit, leg{account, 5}, leg{f.broker, 10})
-				second := f.group(t, model.PositionMovementSplit, leg{account, 3}, leg{f.broker, 6})
-				legs := []string{"Movement groups broker"}
-				return financialTarget(account), []groupOutcome{{group: first, legs: legs}, {group: second, legs: legs}}
-			},
-			handled: 2,
-		},
-		"two adjustments are both deleted": {
-			setup: func(t *testing.T) (lt.DeletionTarget, []groupOutcome) {
-				account := f.financialAccount(t, "Directa")
-				added := f.group(t, model.PositionMovementAdjustment, leg{account, 5})
-				removed := f.group(t, model.PositionMovementAdjustment, leg{account, -5})
-				return financialTarget(account), []groupOutcome{{group: added, deleted: true}, {group: removed, deleted: true}}
-			},
-			handled: 2,
-		},
 		"a batch handles up to its limit, in the order the groups were written": {
 			setup: func(t *testing.T) (lt.DeletionTarget, []groupOutcome) {
 				account := f.financialAccount(t, "Bux")

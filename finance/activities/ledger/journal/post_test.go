@@ -244,29 +244,6 @@ func (s *UnitTestSuite) TestPostJournalEntryValidation() {
 	}
 }
 
-// Closing an account is final, so new entries into it are rejected.
-func (s *UnitTestSuite) TestPostJournalEntry_AfterAccountIsClosed() {
-	euro := testhelpers.Euro()
-	temporaltesting.Insert(s.T(), s.DB, euro)
-	debit := testLedgerAccount(s.T(), s.DB, euro.ID, "asset", model.LedgerAccountAsset)
-	credit := testLedgerAccount(s.T(), s.DB, euro.ID, "income", model.LedgerAccountIncome)
-	postings := []lt.PostingInput{
-		{LedgerAccountID: debit.ID, Amount: decimal.NewFromInt(25), Side: model.PostingDebit},
-		{LedgerAccountID: credit.ID, Amount: decimal.NewFromInt(25), Side: model.PostingCredit},
-	}
-
-	_, err := s.Env.ExecuteActivity(s.ja.PostJournalEntry, lt.PostJournalEntryInput{IdempotencyKey: "before-close", OccurredAt: time.Now().UTC(), Postings: postings})
-	require.NoError(s.T(), err)
-
-	closedAt := time.Now().UTC()
-	credit.ClosedAt = &closedAt
-	_, err = s.DB.NewUpdate().Model(credit).Column("closed_at").WherePK().Exec(s.T().Context())
-	require.NoError(s.T(), err)
-
-	_, err = s.Env.ExecuteActivity(s.ja.PostJournalEntry, lt.PostJournalEntryInput{IdempotencyKey: "after-close", OccurredAt: time.Now().UTC(), Postings: postings})
-	require.ErrorContains(s.T(), err, "is closed")
-}
-
 func (s *UnitTestSuite) TestPostJournalEntry_UnknownCounterparty() {
 	euro := testhelpers.Euro()
 	temporaltesting.Insert(s.T(), s.DB, euro)

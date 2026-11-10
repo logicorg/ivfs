@@ -83,8 +83,8 @@ func (s *UnitTestSuite) requireEntryKept(entry seededEntry) {
 }
 
 // Test_DeleteJournalEntry checks that an entry of any status is deleted with
-// its postings and movements, and that what is left is untouched. Every case uses an asset of its own, so no
-// case depends on what another left behind.
+// its postings and movements, and that what is left is untouched. Every case
+// uses an asset of its own, so no case depends on what another left behind.
 func (s *UnitTestSuite) Test_DeleteJournalEntry() {
 	h := s.newHeld()
 
