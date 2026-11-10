@@ -17,11 +17,10 @@ describe("statementLines", () => {
     status: "posted",
     postings: [posting(1, 200, "Groceries", "debit", "12.50"), posting(2, 100, "Cash", "credit", "12.50")],
   }
-  const reversal: Entry = {
+  const refund: Entry = {
     id: 8,
     occurredAt: "2026-01-31T11:00:00Z",
     status: "posted",
-    reversalOfEntryId: 7,
     postings: [posting(1, 200, "Groceries", "credit", "12.50"), posting(2, 100, "Cash", "debit", "12.50")],
   }
   const split: Entry = {
@@ -38,8 +37,8 @@ describe("statementLines", () => {
 
   const cases: { name: string; entries: Entry[]; id: number; kind: Balance["kind"]; want: StatementLine[] }[] = [
     {
-      name: "a payment and its reversal, seen from the asset that paid",
-      entries: [reversal, shopping],
+      name: "a payment and its refund, seen from the asset that paid",
+      entries: [refund, shopping],
       id: 100,
       kind: "asset",
       want: [
@@ -48,7 +47,6 @@ describe("statementLines", () => {
           entryId: 8,
           occurredAt: "2026-01-31T11:00:00Z",
           description: undefined,
-          reversalOfEntryId: 7,
           otherAccounts: ["Groceries"],
           amount: "12.50",
         },
@@ -57,7 +55,6 @@ describe("statementLines", () => {
           entryId: 7,
           occurredAt: "2026-01-31T10:00:00Z",
           description: "Supermarket",
-          reversalOfEntryId: undefined,
           otherAccounts: ["Groceries"],
           amount: "-12.50",
         },
@@ -74,7 +71,6 @@ describe("statementLines", () => {
           entryId: 7,
           occurredAt: "2026-01-31T10:00:00Z",
           description: "Supermarket",
-          reversalOfEntryId: undefined,
           otherAccounts: ["Cash"],
           amount: "12.50",
         },
@@ -91,7 +87,6 @@ describe("statementLines", () => {
           entryId: 9,
           occurredAt: "2026-02-01T10:00:00Z",
           description: "Two cards, one shop",
-          reversalOfEntryId: undefined,
           otherAccounts: ["Groceries"],
           amount: "-10",
         },
@@ -100,7 +95,6 @@ describe("statementLines", () => {
           entryId: 9,
           occurredAt: "2026-02-01T10:00:00Z",
           description: "Two cards, one shop",
-          reversalOfEntryId: undefined,
           otherAccounts: ["Groceries"],
           amount: "-20",
         },

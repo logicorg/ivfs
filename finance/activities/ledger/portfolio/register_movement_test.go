@@ -26,6 +26,39 @@ func (s *UnitTestSuite) seedUnits(account *model.FinancialAccount, asset *model.
 	})
 }
 
+// seedGroup inserts the legs of a command without a journal entry, as movements
+// that were already there, under one key and numbered in leg order.
+func (s *UnitTestSuite) seedGroup(key string, kind model.PositionMovementKind, asset *model.Asset, day int, legs ...*model.PositionMovement) []*model.PositionMovement {
+	s.T().Helper()
+
+	for n, leg := range legs {
+		leg.Kind, leg.AssetID = kind, asset.ID
+		leg.OccurredAt = movementDay.AddDate(0, 0, day)
+		leg.IdempotencyKey, leg.LineNumber = ptr.NewPtr(key), n+1
+		leg.ExternalID = ptr.NewPtr("broker-ref")
+		temporaltesting.Insert(s.T(), s.DB, leg)
+	}
+	return legs
+}
+
+// seedTransfer moves 4 of the 10 units the first account holds to the second,
+// with its cost basis, and returns the two legs.
+func (s *UnitTestSuite) seedTransfer(key string, asset *model.Asset) []*model.PositionMovement {
+	s.T().Helper()
+
+	s.seedUnits(s.financialAccount, asset, 10, 1)
+	return s.seedGroup(key, model.PositionMovementTransfer, asset, 5,
+		&model.PositionMovement{
+			FinancialAccountID: s.financialAccount.ID, UnitsDelta: decimal.NewFromInt(-4),
+			CostBasisAmount: ptr.NewPtr(decimal.NewFromInt(-40)), CostBasisCurrencyID: ptr.Int64(s.eur.ID),
+		},
+		&model.PositionMovement{
+			FinancialAccountID: s.otherAccount.ID, UnitsDelta: decimal.NewFromInt(4),
+			CostBasisAmount: ptr.NewPtr(decimal.NewFromInt(40)), CostBasisCurrencyID: ptr.Int64(s.eur.ID),
+		},
+	)
+}
+
 func (s *UnitTestSuite) unitsHeld(account *model.FinancialAccount, asset *model.Asset) decimal.Decimal {
 	s.T().Helper()
 
@@ -510,23 +543,4 @@ func (s *UnitTestSuite) Test_RegisterPositionMovement_RetryWaitsForConcurrentWri
 	require.NoError(s.T(), outcome.err)
 	require.Equal(s.T(), 1, s.Count[model.PositionMovement]())
 	require.Equal(s.T(), []int64{s.movementsWithKey(key)[0].ID}, outcome.result.PositionMovementIDs)
-}
-
-// Test_RegisterPositionMovement_KeyOfReversal checks that a key that belongs to
-// a reversal is not taken for the retry of a registration.
-func (s *UnitTestSuite) Test_RegisterPositionMovement_KeyOfReversal() {
-	originals := s.seedTransfer("transfer-1", s.asset)
-	for n, original := range originals {
-		temporaltesting.Insert(s.T(), s.DB, &model.PositionMovement{
-			Kind: original.Kind, FinancialAccountID: original.FinancialAccountID, AssetID: s.asset.ID,
-			UnitsDelta: original.UnitsDelta.Neg(), OccurredAt: movementDay.AddDate(0, 0, 6),
-			IdempotencyKey: ptr.NewPtr("reversal-1"), LineNumber: n + 1, ReversalOfMovementID: &original.ID,
-		})
-	}
-	rows := s.Count[model.PositionMovement]()
-
-	_, err := s.Env.ExecuteActivity(s.pa.RegisterPositionMovement, s.adjustment("reversal-1", s.asset, 1))
-
-	require.ErrorContains(s.T(), err, "belongs to a reversal")
-	require.Equal(s.T(), rows, s.Count[model.PositionMovement]())
 }

@@ -5,6 +5,7 @@
 - Depends on: [ADR 0004](0004-position-subledger.md)
 - Amends: ADR 0004 (holdings never go negative, and the write path that enforces it)
 - Amended by: [ADR 0009](0009-intent-level-investments.md) (the basis a sale removes)
+  and [ADR 0017](0017-editing-journal-entries.md) (the writes that report)
 - Related: [RFC 0005](../rfcs/0005-negative-holdings.md) (the discussion this
   ADR decides), [RFC 0003](../rfcs/0003-deleting-journal-entries.md) (deleting
   journal entries), [RFC 0004](../rfcs/0004-deleting-accounts.md) (deleting
@@ -43,15 +44,14 @@ is less needed than when a reversal was the only fix.
 
 ### Holdings may be negative
 
-A holding may be negative at any point in time. The four writes that call
-`CheckHoldingsTx` no longer refuse:
+A holding may be negative at any point in time. The writes that call
+`CheckHoldingsTx` no longer refuse (ADR 0017 removes the two reversals from
+them):
 
 | Activity | File |
 | --- | --- |
 | `RegisterInvestmentTrade` | `finance/activities/ledger/portfolio/trade.go` |
 | `RegisterPositionMovement` | `finance/activities/ledger/portfolio/register_movement.go` |
-| `ReversePositionMovement` | `finance/activities/ledger/portfolio/reverse_movement.go` |
-| `ReverseJournalEntry` | `finance/activities/ledger/journal/reversal.go` |
 
 Movements can be entered in any order. Their place in the history is still
 `(occurred_at, id)`, which every report keeps using.
@@ -138,7 +138,7 @@ date, and they would delete the sale and record it again.
 
 - Movements can be entered in any order, and importers (Batch 5) need not sort
   their input.
-- Reversals can be made in any order, and a vest can be reversed while a
+- Corrections can be made in any order, and a vest can be deleted while a
   sell-to-cover exists.
 - RFC 0003 and RFC 0004 no longer need a holdings check of their own.
 - A sale of more than is held is accepted, and is caught by the person reading

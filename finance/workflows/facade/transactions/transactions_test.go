@@ -56,7 +56,7 @@ func entry(want lt.PostJournalEntryInput) any {
 		sameDescription := (got.Description == nil) == (want.Description == nil) &&
 			(got.Description == nil || *got.Description == *want.Description)
 		if got.IdempotencyKey != want.IdempotencyKey || !got.OccurredAt.Equal(want.OccurredAt) || !sameDescription ||
-			got.ReversalOfEntryID != nil || got.CounterpartyID != nil || len(got.Metadata) != 0 || len(got.Postings) != len(want.Postings) {
+			got.CounterpartyID != nil || len(got.Metadata) != 0 || len(got.Postings) != len(want.Postings) {
 			return false
 		}
 		for i, posting := range want.Postings {

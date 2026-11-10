@@ -223,31 +223,6 @@ func TestRegisterPositionMovementInput_ToMovements(t *testing.T) {
 	require.True(t, movements[1].UnitsDelta.Equal(decimal.NewFromInt(5)))
 }
 
-func TestReversePositionMovementInput_Validate(t *testing.T) {
-	tests := map[string]struct {
-		input   ReversePositionMovementInput
-		wantErr bool
-	}{
-		"a movement and a key": {input: ReversePositionMovementInput{MovementID: 1, IdempotencyKey: "reversal-1"}},
-		"a date":               {input: ReversePositionMovementInput{MovementID: 1, IdempotencyKey: "reversal-1", OccurredAt: time.Now()}},
-		"no movement":          {input: ReversePositionMovementInput{IdempotencyKey: "reversal-1"}, wantErr: true},
-		"a negative movement":  {input: ReversePositionMovementInput{MovementID: -1, IdempotencyKey: "reversal-1"}, wantErr: true},
-		"no idempotency key":   {input: ReversePositionMovementInput{MovementID: 1}, wantErr: true},
-	}
-
-	for name, tc := range tests {
-		t.Run(name, func(t *testing.T) {
-			err := tc.input.Validate()
-
-			if tc.wantErr {
-				require.ErrorAs(t, err, &internalerrors.ValidationError{})
-				return
-			}
-			require.NoError(t, err)
-		})
-	}
-}
-
 func TestListPositionMovementsParams_Validate(t *testing.T) {
 	day := time.Date(2026, 3, 1, 12, 0, 0, 0, time.UTC)
 

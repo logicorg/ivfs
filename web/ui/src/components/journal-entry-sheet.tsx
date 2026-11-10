@@ -7,7 +7,6 @@ import {
   deleteJournalEntryMutation,
   getJournalEntryOptions,
   listCurrenciesOptions,
-  reverseJournalEntryMutation,
 } from "@/api/@tanstack/react-query.gen"
 import { ProblemMessages } from "@/components/form-fields"
 import { NegativeHoldingWarnings } from "@/components/negative-holding-warnings"
@@ -31,12 +30,11 @@ import { formatAmount } from "@/lib/money"
 type JournalEntrySheetProps = {
   // entryId is the entry to show, and the sheet is closed without one.
   entryId: number | undefined
-  // onSelect shows another entry, such as the one this one reverses.
+  // onSelect shows another entry, and closes the sheet when given none.
   onSelect: (entryId: number | undefined) => void
 }
 
-// JournalEntrySheet shows a journal entry with its postings, and reverses or
-// deletes it.
+// JournalEntrySheet shows a journal entry with its postings, and deletes it.
 export function JournalEntrySheet({ entryId, onSelect }: JournalEntrySheetProps) {
   // deleted is the entry just deleted along with the holdings that deletion left
   // negative, shown in place of the entry while the sheet still shows its id.
@@ -47,11 +45,7 @@ export function JournalEntrySheet({ entryId, onSelect }: JournalEntrySheetProps)
     enabled: entryId !== undefined && !isDeleted,
   })
   const currencies = useQuery(listCurrenciesOptions())
-  const [reversing, setReversing] = useState(false)
   const [deleting, setDeleting] = useState(false)
-  // warned are the warnings of the reversal just made, shown while the sheet
-  // shows that reversal.
-  const [warned, setWarned] = useState<{ entryId: number; warnings: NegativeHolding[] }>()
 
   return (
     <Sheet open={entryId !== undefined} onOpenChange={(open) => !open && onSelect(undefined)}>
@@ -79,30 +73,13 @@ export function JournalEntrySheet({ entryId, onSelect }: JournalEntrySheetProps)
               <SheetTitle>{entry.data.description ?? `Journal entry ${entry.data.id}`}</SheetTitle>
               <SheetDescription>{formatDate(entry.data.occurredAt, true)}</SheetDescription>
             </SheetHeader>
-            {warned?.entryId === entry.data.id && (
-              <NegativeHoldingWarnings title="This reversal leaves a holding negative" warnings={warned.warnings} />
-            )}
-            <EntryFacts entry={entry.data} onSelect={onSelect} />
+            <EntryFacts entry={entry.data} />
             <Postings entry={entry.data} currencies={currencies.data?.currencies ?? []} />
             <SheetFooter>
-              {entry.data.status === "posted" && (
-                <Button variant="outline" onClick={() => setReversing(true)}>
-                  Reverse entry
-                </Button>
-              )}
               <Button variant="destructive" onClick={() => setDeleting(true)}>
                 Delete entry
               </Button>
             </SheetFooter>
-            <ReverseEntryDialog
-              entry={reversing ? entry.data : null}
-              onOpenChange={setReversing}
-              onReversed={(reversalId, warnings) => {
-                setReversing(false)
-                setWarned({ entryId: reversalId, warnings })
-                onSelect(reversalId)
-              }}
-            />
             <DeleteEntryDialog
               entry={deleting ? entry.data : null}
               onOpenChange={setDeleting}
@@ -123,7 +100,7 @@ export function JournalEntrySheet({ entryId, onSelect }: JournalEntrySheetProps)
   )
 }
 
-function EntryFacts({ entry, onSelect }: { entry: EntryDetail; onSelect: (entryId: number) => void }) {
+function EntryFacts({ entry }: { entry: EntryDetail }) {
   return (
     <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 px-4">
       <dt className="text-muted-foreground">Status</dt>
@@ -137,16 +114,6 @@ function EntryFacts({ entry, onSelect }: { entry: EntryDetail; onSelect: (entryI
             <Link to="/counterparties/$id" params={{ id: String(entry.counterpartyId) }} className="underline">
               {entry.counterpartyName}
             </Link>
-          </dd>
-        </>
-      )}
-      {entry.reversalOfEntryId !== undefined && (
-        <>
-          <dt className="text-muted-foreground">Reverses</dt>
-          <dd>
-            <Button variant="link" className="h-auto p-0" onClick={() => onSelect(entry.reversalOfEntryId!)}>
-              Journal entry {entry.reversalOfEntryId}
-            </Button>
           </dd>
         </>
       )}
@@ -203,76 +170,6 @@ function Postings({ entry, currencies }: { entry: EntryDetail; currencies: Curre
   )
 }
 
-type ReverseEntryDialogProps = {
-  entry: EntryDetail | null
-  onOpenChange: (open: boolean) => void
-  // onReversed is given the reversal and the positions it left negative.
-  onReversed: (reversalId: number, warnings: NegativeHolding[]) => void
-}
-
-// ReverseEntryDialog reverses an entry, once confirmed. The entry stays as it
-// is, and a new one dated now undoes it.
-function ReverseEntryDialog({ entry, onOpenChange, onReversed }: ReverseEntryDialogProps) {
-  const queryClient = useQueryClient()
-  const reverse = useMutation({
-    ...reverseJournalEntryMutation(),
-    onSuccess: (reversal) => {
-      // The reversal changes the statements and balances of every account
-      // the entry posted to, and the holdings its movements changed.
-      for (const _id of [
-        "listJournalEntries",
-        "getLedgerAccountBalance",
-        "getAccountBalances",
-        "getCategoryTotals",
-        "listHoldings",
-        "listHoldingMovements",
-      ]) {
-        void queryClient.invalidateQueries({ queryKey: [{ _id }] })
-      }
-      onReversed(reversal.journalEntryId, reversal.warnings ?? [])
-    },
-  })
-
-  return (
-    <AlertDialog
-      open={entry !== null}
-      onOpenChange={(open) => {
-        if (!open) {
-          reverse.reset()
-        }
-        onOpenChange(open)
-      }}
-    >
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Reverse this entry?</AlertDialogTitle>
-          <AlertDialogDescription>
-            The entry stays in the ledger, and a new entry dated now undoes each of its postings. An entry can be
-            reversed only once.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <ProblemMessages error={reverse.error} />
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            disabled={reverse.isPending}
-            onClick={(event) => {
-              // Keep the dialog open until the gateway answers, to show why
-              // it refused.
-              event.preventDefault()
-              if (entry) {
-                reverse.mutate({ path: { id: entry.id } })
-              }
-            }}
-          >
-            Reverse entry
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  )
-}
-
 type DeleteEntryDialogProps = {
   entry: EntryDetail | null
   onOpenChange: (open: boolean) => void
@@ -289,8 +186,8 @@ function DeleteEntryDialog({ entry, onOpenChange, onDeleted }: DeleteEntryDialog
     ...deleteJournalEntryMutation(),
     onSuccess: (deletion, { path }) => {
       // The deletion changes the statements and balances of every account the
-      // entry posted to, and takes the entry's reversals and movements with
-      // it, which may be open elsewhere.
+      // entry posted to, and takes the entry's movements with it, which may be
+      // open elsewhere.
       for (const _id of [
         "listJournalEntries",
         "getJournalEntry",
@@ -320,8 +217,7 @@ function DeleteEntryDialog({ entry, onOpenChange, onDeleted }: DeleteEntryDialog
         <AlertDialogHeader>
           <AlertDialogTitle>Delete this entry?</AlertDialogTitle>
           <AlertDialogDescription>
-            The entry and its postings leave the ledger as if never recorded, and so does any reversal of it. If it
-            reverses another entry, that entry takes effect again. To keep a trail, reverse it instead.
+            The entry, its postings, and its position movements leave the ledger as if never recorded.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <ProblemMessages error={remove.error} />

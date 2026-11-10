@@ -8,6 +8,5 @@ import (
 // Register adds every journal-domain MCP tool to server.
 func Register(server *mcp.Server, c client.Client) {
 	registerPostJournalEntry(server, c)
-	registerReverseJournalEntry(server, c)
 	registerListJournalEntries(server, c)
 }

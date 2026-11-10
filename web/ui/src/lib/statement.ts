@@ -11,7 +11,6 @@ export type StatementLine = {
   entryId: number
   occurredAt: string
   description?: string
-  reversalOfEntryId?: number
   // otherAccounts names the ledger accounts on the entry's other side, such
   // as Groceries for a payment from Cash.
   otherAccounts: string[]
@@ -33,7 +32,6 @@ export function statementLines(entries: Entry[], ledgerAccountId: number, kind: 
         entryId: entry.id,
         occurredAt: entry.occurredAt,
         description: entry.description,
-        reversalOfEntryId: entry.reversalOfEntryId,
         otherAccounts,
         amount: signedAmount(posting, kind),
       }))

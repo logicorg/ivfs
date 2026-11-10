@@ -44,8 +44,8 @@ func listJournalEntriesHandler(c client.Client) func(
 			out.Entries[i] = JournalEntrySummary{
 				ID: je.ID, Status: string(je.Status), OccurredAt: je.OccurredAt,
 				Description: je.Description, CounterpartyID: je.CounterpartyID,
-				ExternalID: je.ExternalID, ReversalOfEntryID: je.ReversalOfEntryID,
-				Postings: postings,
+				ExternalID: je.ExternalID,
+				Postings:   postings,
 			}
 		}
 		return nil, out, nil

@@ -12,11 +12,10 @@ import (
 	"github.com/uptrace/bun"
 )
 
-// MovementGroupsTx returns the group of the movement, then the group that
-// reverses it, then the one that reverses that, and so on, or nothing when the
-// movement does not exist. It rejects a movement that belongs to a journal
-// entry.
-func MovementGroupsTx(ctx context.Context, tx bun.Tx, movementID int64) ([][]model.PositionMovement, error) {
+// MovementGroupTx returns the movements written by the same command as the
+// movement, or nothing when the movement does not exist. It rejects a movement
+// that belongs to a journal entry.
+func MovementGroupTx(ctx context.Context, tx bun.Tx, movementID int64) ([]model.PositionMovement, error) {
 	var movement model.PositionMovement
 	if err := tx.NewSelect().Model(&movement).Where("pm.id = ?", movementID).Scan(ctx); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -27,33 +26,15 @@ func MovementGroupsTx(ctx context.Context, tx bun.Tx, movementID int64) ([][]mod
 	if movement.JournalEntryID != nil {
 		return nil, internalerrors.ErrInvalidParameter{Description: "the movement belongs to a journal entry, delete the journal entry instead"}
 	}
-
-	var groups [][]model.PositionMovement
 	// A movement without an entry always has a key, which the database checks.
-	group, err := positions.FindByIdempotencyKeyTx(ctx, tx, *movement.IdempotencyKey)
-	for err == nil && len(group) > 0 {
-		groups = append(groups, group)
-
-		var reversal model.PositionMovement
-		err = tx.NewSelect().Model(&reversal).Where("pm.reversal_of_movement_id IN (?)", bun.List(positions.IDs(group))).Limit(1).Scan(ctx)
-		if errors.Is(err, sql.ErrNoRows) {
-			return groups, nil
-		}
-		if err != nil {
-			return nil, fmt.Errorf("load reversing position movement: %w", err)
-		}
-		group, err = positions.FindByIdempotencyKeyTx(ctx, tx, *reversal.IdempotencyKey)
-	}
-	return groups, err
+	return positions.FindByIdempotencyKeyTx(ctx, tx, *movement.IdempotencyKey)
 }
 
-// AccountIDsOf returns the financial accounts the groups move units in.
-func AccountIDsOf(groups [][]model.PositionMovement) []int64 {
-	var ids []int64
-	for _, group := range groups {
-		for _, movement := range group {
-			ids = append(ids, movement.FinancialAccountID)
-		}
+// AccountIDsOf returns the financial accounts the movements move units in.
+func AccountIDsOf(movements []model.PositionMovement) []int64 {
+	ids := make([]int64, 0, len(movements))
+	for _, movement := range movements {
+		ids = append(ids, movement.FinancialAccountID)
 	}
 	return ids
 }

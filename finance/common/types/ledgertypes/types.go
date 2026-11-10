@@ -17,14 +17,13 @@ type PostingInput struct {
 
 // PostJournalEntryInput is the input struct to post a JornalEntry.
 type PostJournalEntryInput struct {
-	IdempotencyKey    string            `json:"idempotencyKey"`
-	ReversalOfEntryID *int64            `json:"reversalOfEntryId,omitempty"`
-	OccurredAt        time.Time         `json:"occurredAt"`
-	Description       *string           `json:"description,omitempty"`
-	CounterpartyID    *int64            `json:"counterpartyId,omitempty"`
-	ExternalID        *string           `json:"externalId,omitempty"`
-	Metadata          map[string]string `json:"metadata,omitempty"`
-	Postings          []PostingInput    `json:"postings"`
+	IdempotencyKey string            `json:"idempotencyKey"`
+	OccurredAt     time.Time         `json:"occurredAt"`
+	Description    *string           `json:"description,omitempty"`
+	CounterpartyID *int64            `json:"counterpartyId,omitempty"`
+	ExternalID     *string           `json:"externalId,omitempty"`
+	Metadata       map[string]string `json:"metadata,omitempty"`
+	Postings       []PostingInput    `json:"postings"`
 }
 
 // Validate performs some basic validation checks on a PostJournalEntryInput

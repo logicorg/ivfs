@@ -284,7 +284,6 @@ export const zMovement = z.object({
         'adjustment'
     ]),
     occurredAt: z.iso.datetime(),
-    reversalOfMovementId: z.int().optional(),
     unitsDelta: z.string().regex(/^-?[0-9]+(\.[0-9]+)?$/)
 });
 
@@ -395,7 +394,6 @@ export const zEntry = z.object({
     id: z.int(),
     occurredAt: z.iso.datetime(),
     postings: z.array(zPosting),
-    reversalOfEntryId: z.int().optional(),
     status: z.enum(['draft', 'posted'])
 });
 
@@ -409,7 +407,6 @@ export const zEntryDetail = z.object({
     occurredAt: z.iso.datetime(),
     postedAt: z.iso.datetime().optional(),
     postings: z.array(zPosting),
-    reversalOfEntryId: z.int().optional(),
     status: z.enum(['draft', 'posted'])
 });
 
@@ -451,11 +448,6 @@ export const zRecordedTrade = z.object({
 
 export const zRecordedTransaction = z.object({
     journalEntryId: z.int()
-});
-
-export const zReversal = z.object({
-    journalEntryId: z.int(),
-    warnings: z.array(zNegativeHolding).optional()
 });
 
 export const zSellForm = z.object({
@@ -940,15 +932,6 @@ export const zGetJournalEntryPath = z.object({
  * OK
  */
 export const zGetJournalEntryResponse = zEntryDetail;
-
-export const zReverseJournalEntryPath = z.object({
-    id: z.int().gte(1)
-});
-
-/**
- * OK
- */
-export const zReverseJournalEntryResponse = zReversal;
 
 export const zDeleteLedgerAccountPath = z.object({
     id: z.int().gte(1)

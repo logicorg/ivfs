@@ -269,8 +269,7 @@ func (s *UnitTestSuite) TestTrialBalanceAt_ReportsAccountsWithNothingCountedAtZe
 
 // TestPositionsAt_CostBasis checks that the cost basis of a position is summed
 // per currency, and that only a movement whose missing basis has an effect
-// makes it unknown: a split never does, and neither does a movement cancelled
-// by a reversal, until the reversal happens. Movements are append-only, so
+// makes it unknown: a split never does. Movements are append-only, so
 // each case holds its own asset, which keeps the cases apart without deleting
 // anything.
 func (s *UnitTestSuite) TestPositionsAt_CostBasis() {
@@ -330,20 +329,6 @@ func (s *UnitTestSuite) TestPositionsAt_CostBasis() {
 			},
 			at: january.AddDate(0, 0, 1), units: 10, costBasis: map[string]int64{"EUR": 100}, average: map[string]int64{"EUR": 10},
 		},
-		"a reversed sale removes nothing": {
-			movements: func(asset *model.Asset) {
-				temporaltesting.InsertPositionMovement(s.T(), s.DB, withBasis(movement(asset, 10, 0), 100, fixture.Currency))
-				s.insertReversedMovement(movement(asset, -4, 1), movement(asset, 4, 3))
-			},
-			units: 10, costBasis: map[string]int64{"EUR": 100}, average: map[string]int64{"EUR": 10},
-		},
-		"before its reversal a sale removes the average cost": {
-			movements: func(asset *model.Asset) {
-				temporaltesting.InsertPositionMovement(s.T(), s.DB, withBasis(movement(asset, 10, 0), 100, fixture.Currency))
-				s.insertReversedMovement(movement(asset, -4, 1), movement(asset, 4, 3))
-			},
-			at: january.AddDate(0, 0, 2), units: 6, costBasis: map[string]int64{"EUR": 60}, average: map[string]int64{"EUR": 10},
-		},
 		"basis kept apart by currency": {
 			movements: func(asset *model.Asset) {
 				temporaltesting.InsertPositionMovement(s.T(), s.DB, withBasis(movement(asset, 10, 0), 100, fixture.Currency))
@@ -366,14 +351,6 @@ func (s *UnitTestSuite) TestPositionsAt_CostBasis() {
 				temporaltesting.InsertPositionMovement(s.T(), s.DB, split)
 			},
 			units: 20, costBasis: map[string]int64{"EUR": 100}, average: map[string]int64{"EUR": 5},
-		},
-		"a reversed movement without a basis does not": {
-			movements: func(asset *model.Asset) { s.insertReversedMovement(movement(asset, 5, 0), movement(asset, -5, 2)) },
-			units:     0, costBasis: map[string]int64{},
-		},
-		"before its reversal it does": {
-			movements: func(asset *model.Asset) { s.insertReversedMovement(movement(asset, 5, 0), movement(asset, -5, 2)) },
-			at:        january.AddDate(0, 0, 1), units: 5, costBasis: map[string]int64{}, unknown: true,
 		},
 		"a draft entry's movement without a basis does not": {
 			movements: func(asset *model.Asset) {
@@ -416,12 +393,4 @@ func (s *UnitTestSuite) TestPositionsAt_CostBasis() {
 			require.Equal(s.T(), tc.average, average)
 		})
 	}
-}
-
-// insertReversedMovement inserts an adjustment and the reversal that cancels
-// it, as ReversePositionMovement writes them.
-func (s *UnitTestSuite) insertReversedMovement(original, reversal *model.PositionMovement) {
-	temporaltesting.InsertPositionMovement(s.T(), s.DB, original)
-	reversal.ReversalOfMovementID = &original.ID
-	temporaltesting.InsertPositionMovement(s.T(), s.DB, reversal)
 }
