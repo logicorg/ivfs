@@ -7,6 +7,7 @@
 - Amends: ADR 0001 (posted entries are never updated), ADR 0002 (counterparties
   are archived), ADR 0005 (names are reserved forever), ADR 0011 (updates stay
   forbidden)
+- Amended by: [ADR 0017](0017-editing-journal-entries.md)
 - Related: [ADR 0005](0005-uniqueness-and-idempotent-creation.md) (uniqueness
   keys), [ADR 0008](0008-intent-level-transactions.md) (the payee)
 
@@ -94,12 +95,6 @@ The two activities are separate operations, so neither wraps the other in a
 transaction. A failure between them leaves the references cleared and the
 counterparty in place. That is harmless.
 
-### Reversals
-
-A reversal copies `CounterpartyID` from the entry it reverses
-(`reversal.go`). Both refer to the counterparty, so both are cleared, and the
-pair stays consistent.
-
 ### Names are freed
 
 Deleting removes the row, so its name leaves the `lower(name)` unique index and
@@ -165,8 +160,7 @@ second delete succeeds.
   counterparty alone (allowed), one that also changes another column
   (refused), and one on a draft (allowed, as before).
 - `ClearCounterpartyReferences` and `DeleteCounterparty` each get activity
-  tests with an idempotency case, covering posted entries, drafts, and a
-  reversal pair. The workflow test mocks both and covers a conflict followed by
+  tests with an idempotency case, covering posted entries and drafts. The workflow test mocks both and covers a conflict followed by
   success, and the conflict returned after the last round.
 - The doc comment of `ErrResourceClosed` mentions an archived counterparty,
   which no longer exists as a concept, and is updated.
