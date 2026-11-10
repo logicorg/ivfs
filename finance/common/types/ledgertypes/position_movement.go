@@ -193,35 +193,6 @@ func (i *RegisterPositionMovementInput) ToMovements() []model.PositionMovement {
 	return movements
 }
 
-// ReversePositionMovementInput reverses a position movement without a journal
-// entry, together with the rest of the movements written by the same command,
-// as one atomic write of the opposite movements. Movements of a journal entry
-// are reversed by reversing the entry.
-//
-// The reversal is dated OccurredAt, or the moment of the call when it is zero.
-type ReversePositionMovementInput struct {
-	MovementID     int64     `json:"movementId" cue:">0"`
-	IdempotencyKey string    `json:"idempotencyKey" cue:"!=\"\""`
-	OccurredAt     time.Time `json:"occurredAt"`
-}
-
-// ReversePositionMovementResult holds the ids of the reversing movements, in
-// the order of the movements they reverse.
-type ReversePositionMovementResult struct {
-	PositionMovementIDs []int64 `json:"positionMovementIds"`
-	// Warnings lists the holdings that are negative after the reversal, which
-	// was written regardless.
-	Warnings []NegativeHolding `json:"warnings,omitempty"`
-}
-
-// Validate checks the command without the database.
-func (i *ReversePositionMovementInput) Validate() error {
-	if err := cuego.Validate(i); err != nil {
-		return internalerrors.ValidationError{Err: err}
-	}
-	return nil
-}
-
 const (
 	// DefaultPositionMovementsLimit is the page size when Limit is not set.
 	DefaultPositionMovementsLimit = 100

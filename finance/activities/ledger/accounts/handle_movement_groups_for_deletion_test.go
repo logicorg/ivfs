@@ -84,21 +84,6 @@ func (f *movementGroupsForDeletionFixture) group(t *testing.T, kind model.Positi
 	return movements
 }
 
-// reversal records the group that reverses group, leg by leg.
-func (f *movementGroupsForDeletionFixture) reversal(t *testing.T, group []*model.PositionMovement) []*model.PositionMovement {
-	f.keys++
-	key := fmt.Sprintf("deletion-group-%d", f.keys)
-	movements := make([]*model.PositionMovement, len(group))
-	for n, movement := range group {
-		movements[n] = &model.PositionMovement{
-			Kind: movement.Kind, FinancialAccountID: movement.FinancialAccountID, AssetID: movement.AssetID, UnitsDelta: movement.UnitsDelta.Neg(),
-			OccurredAt: movement.OccurredAt, IdempotencyKey: &key, LineNumber: n + 1, ReversalOfMovementID: &movement.ID,
-		}
-		temporaltesting.InsertPositionMovement(t, f.s.DB, movements[n])
-	}
-	return movements
-}
-
 // groupOutcome is what a batch should leave of a group: nothing, or legs in
 // the named financial accounts, in line order.
 type groupOutcome struct {
@@ -190,47 +175,12 @@ func (s *UnitTestSuite) TestHandleMovementGroupsForDeletion() {
 			},
 			handled: 1,
 		},
-		"a kept transfer and its reversal both move to the stray": {
-			setup: func(t *testing.T) (lt.DeletionTarget, []groupOutcome) {
-				account := f.financialAccount(t, "Scalable")
-				transfer := f.group(t, model.PositionMovementTransfer, leg{account, -5}, leg{f.broker, 5})
-				legs := []string{lt.UntrackedAccountsName, "Movement groups broker"}
-				return financialTarget(account), []groupOutcome{{group: transfer, legs: legs}, {group: f.reversal(t, transfer), legs: legs}}
-			},
-			handled: 2,
-		},
-		"a kept split and its reversal both lose their legs in the account": {
-			setup: func(t *testing.T) (lt.DeletionTarget, []groupOutcome) {
-				account := f.financialAccount(t, "Saxo")
-				split := f.group(t, model.PositionMovementSplit, leg{account, 5}, leg{f.broker, 10})
-				legs := []string{"Movement groups broker"}
-				return financialTarget(account), []groupOutcome{{group: split, legs: legs}, {group: f.reversal(t, split), legs: legs}}
-			},
-			handled: 2,
-		},
-		"an adjustment and its reversal are deleted together": {
-			setup: func(t *testing.T) (lt.DeletionTarget, []groupOutcome) {
-				account := f.financialAccount(t, "Directa")
-				adjustment := f.group(t, model.PositionMovementAdjustment, leg{account, 5})
-				return financialTarget(account), []groupOutcome{{group: adjustment, deleted: true}, {group: f.reversal(t, adjustment), deleted: true}}
-			},
-			handled: 2,
-		},
 		"a batch handles up to its limit, in the order the groups were written": {
 			setup: func(t *testing.T) (lt.DeletionTarget, []groupOutcome) {
 				account := f.financialAccount(t, "Bux")
 				first := f.group(t, model.PositionMovementAdjustment, leg{account, 5})
 				second := f.group(t, model.PositionMovementAdjustment, leg{account, 3})
 				return financialTarget(account), []groupOutcome{{group: first, deleted: true}, {group: second, legs: []string{"Bux"}}}
-			},
-			limit:   1,
-			handled: 1,
-		},
-		"a batch at its limit deletes a group with its reversal": {
-			setup: func(t *testing.T) (lt.DeletionTarget, []groupOutcome) {
-				account := f.financialAccount(t, "Freedom24")
-				adjustment := f.group(t, model.PositionMovementAdjustment, leg{account, 5})
-				return financialTarget(account), []groupOutcome{{group: adjustment, deleted: true}, {group: f.reversal(t, adjustment), deleted: true}}
 			},
 			limit:   1,
 			handled: 1,

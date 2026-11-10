@@ -7,6 +7,7 @@
 - Amends: ADR 0001 (a posting's account never changes), ADR 0003 (used
   accounts are closed, never deleted), ADR 0004 (movements are append-only),
   ADR 0005 (names are reserved forever), ADR 0006 (the shared accounts)
+- Amended by: [ADR 0017](0017-editing-journal-entries.md)
 - Related: [RFC 0004](../rfcs/0004-deleting-accounts.md) (the discussion this
   ADR decides), [ADR 0005](0005-uniqueness-and-idempotent-creation.md)
   (uniqueness keys), [ADR 0006](0006-intent-level-account-setup.md) (account
@@ -64,8 +65,7 @@ conversion inside it are deleted. A transfer to or from an account that
 survives is kept, so the surviving side stays as it is.
 
 Draft entries that touch a deleted account are deleted, since they have no
-effect. A reversal touches the same accounts as the entry it reverses, so the
-pair is always treated the same way, and ADR 0011 deletes them together.
+effect.
 
 Since the stray accounts are not balances, the order of two deletions does not
 change the result. A transfer between A and B is kept when A is deleted, with
@@ -231,11 +231,10 @@ A deletion that fails and is not run again leaves the account closed, partly
 emptied, and possibly with a balance, a state closing otherwise never allows.
 Running it again, once the cause is fixed, picks up where it stopped.
 
-Reversals, and deletions of entries under ADR 0011, are still allowed on a
-closed account, so one can arrive while a deletion runs. It is not refused: a
-reversal touches the same accounts as the entry it reverses, so the next pass
-of step 2 handles it like any other entry, and step 4 sends the workflow back
-if it arrives late.
+Deletions of entries under ADR 0011 are still allowed on a closed account, so
+one can arrive while a deletion runs. It is not refused: it only removes an
+entry the batches would have handled. Nothing new can be posted to a closed
+account, since ADR 0017 removes reversals.
 
 ### One deletion per account
 

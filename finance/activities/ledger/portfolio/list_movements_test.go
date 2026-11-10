@@ -35,8 +35,8 @@ func (s *UnitTestSuite) seedDraft(asset *model.Asset) {
 //	3  day 3  second account  split       +3   (same instant as 2)
 //	4  day 4  first account   transfer    -4
 //	5  day 4  second account  transfer    +4
-//	6  day 5  first account   transfer    +4   (reverses 4)
-//	7  day 5  second account  transfer    -4   (reverses 5)
+//	6  day 5  first account   transfer    +4   (back from 5)
+//	7  day 5  second account  transfer    -4   (back to 4)
 //
 // It also inserts what the history must leave out: the movement of a draft
 // entry and a movement of another asset.
@@ -62,16 +62,14 @@ func (s *UnitTestSuite) seedHistory(asset *model.Asset) []*model.PositionMovemen
 	split := s.seedGroup(asset.Name+" split", model.PositionMovementSplit, asset, 3, leg(first, 15), leg(second, 3))
 	transfer := s.seedGroup(asset.Name+" transfer", model.PositionMovementTransfer, asset, 4, leg(first, -4), leg(second, 4))
 
-	undoFirst, undoSecond := leg(first, 4), leg(second, -4)
-	undoFirst.ReversalOfMovementID, undoSecond.ReversalOfMovementID = &transfer[0].ID, &transfer[1].ID
-	reversal := s.seedGroup(asset.Name+" reversal", model.PositionMovementTransfer, asset, 5, undoFirst, undoSecond)
+	back := s.seedGroup(asset.Name+" back", model.PositionMovementTransfer, asset, 5, leg(first, 4), leg(second, -4))
 
 	s.seedDraft(asset)
 	other := &model.Asset{Name: asset.Name + " other", Kind: model.AssetKindStock}
 	temporaltesting.Insert(s.T(), s.DB, other)
 	s.seedGroup(asset.Name+" other asset", model.PositionMovementAdjustment, other, 1, leg(first, 7))
 
-	return []*model.PositionMovement{adjustment[0], trade, split[0], split[1], transfer[0], transfer[1], reversal[0], reversal[1]}
+	return []*model.PositionMovement{adjustment[0], trade, split[0], split[1], transfer[0], transfer[1], back[0], back[1]}
 }
 
 func movementIDs(movements []model.PositionMovement) []int64 {

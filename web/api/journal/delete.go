@@ -16,7 +16,7 @@ func registerDelete(api huma.API, c client.Client) {
 		OperationID: "delete-journal-entry",
 		Method:      http.MethodDelete,
 		Path:        "/api/journal-entries/{id}",
-		Summary:     "Delete a journal entry with its postings, position movements, and reversals",
+		Summary:     "Delete a journal entry with its postings and position movements",
 		Description: "The ledger is left as if the entry had never been recorded, and its idempotency key is free again. " +
 			"Deleting an entry that does not exist changes nothing. A deletion that leaves a holding negative at some " +
 			"point in time is made all the same, and the response warns about it.",

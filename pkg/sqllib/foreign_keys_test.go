@@ -35,13 +35,11 @@ func (s *UnitTestSuite) Test_ForeignKeysAreDeclared() {
 		"ledger.ledger_account.financial_account_id -> account.financial_account",
 		"ledger.ledger_account.currency_id -> currency.currency",
 		"ledger.journal_entry.counterparty_id -> ledger.counterparty",
-		"ledger.journal_entry.reversal_of_entry_id -> ledger.journal_entry",
 		"ledger.posting.journal_entry_id -> ledger.journal_entry",
 		"ledger.posting.ledger_account_id -> ledger.ledger_account",
 		"asset.position_movement.journal_entry_id -> ledger.journal_entry",
 		"asset.position_movement.financial_account_id -> account.financial_account",
 		"asset.position_movement.asset_id -> asset.asset",
-		"asset.position_movement.reversal_of_movement_id -> asset.position_movement",
 		"asset.position_movement.cost_basis_currency_id -> currency.currency",
 		"settings.user_settings.default_currency_id -> currency.currency",
 	}

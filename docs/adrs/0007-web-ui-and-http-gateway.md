@@ -27,7 +27,7 @@ would hand any page full control of every workflow.
 | Client | Owns |
 | --- | --- |
 | MCP | Reads and questions ("how much did I spend on groceries this quarter?"), importing statements, and quick capture of a single movement. |
-| Web UI | Setup: accounts and their balances (`OpenAccount` and `AddBalance`, ADR 0006), categories, and currencies. Review and corrections: approving imported entries, reversing entries, closing accounts. Browsing: statements, balances, holdings, and charts. |
+| Web UI | Setup: accounts and their balances (`OpenAccount` and `AddBalance`, ADR 0006), categories, and currencies. Review and corrections: approving imported entries, deleting entries, closing accounts. Browsing: statements, balances, holdings, and charts. |
 
 ADR 0006 leaves which client exposes its facades to the client-facing surface;
 this is that decision. Setup belongs to the UI: `OpenAccount` and `AddBalance`
@@ -73,7 +73,7 @@ review as a change to `openapi.json`.
 
 Reads are `GET` with query parameters; commands are `POST` with a JSON body.
 Paths group endpoints by area, the way `mcp/tools` does: `/api/accounts`,
-`/api/currencies`, `/api/journal-entries/{id}/reverse`, and so on.
+`/api/currencies`, `/api/journal-entries/{id}`, and so on.
 
 ### API types
 

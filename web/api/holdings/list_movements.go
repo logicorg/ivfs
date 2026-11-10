@@ -58,7 +58,7 @@ func newMovement(movement model.PositionMovement) Movement {
 	out := Movement{
 		ID: movement.ID, Kind: string(movement.Kind), FinancialAccountID: movement.FinancialAccountID,
 		AssetID: movement.AssetID, UnitsDelta: gateway.NewAmount(movement.UnitsDelta), OccurredAt: movement.OccurredAt,
-		JournalEntryID: movement.JournalEntryID, ReversalOfMovementID: movement.ReversalOfMovementID,
+		JournalEntryID: movement.JournalEntryID,
 	}
 	if movement.CostBasisAmount != nil && movement.CostBasisCurrencyID != nil {
 		out.CostBasis = &CostBasis{CurrencyID: *movement.CostBasisCurrencyID, Amount: gateway.NewAmount(*movement.CostBasisAmount)}

@@ -30,8 +30,8 @@ func TestList(t *testing.T) {
 			{ID: 71, LineNumber: 2, LedgerAccountID: 100, LedgerAccount: cash, Amount: decimal.RequireFromString("12345678901234.56"), Side: model.PostingCredit},
 		},
 	}
-	reversal := model.JournalEntry{
-		ID: 8, OccurredAt: day.Add(time.Hour), Status: model.JournalEntryPosted, ReversalOfEntryID: ptr.Int64(7),
+	refund := model.JournalEntry{
+		ID: 8, OccurredAt: day.Add(time.Hour), Status: model.JournalEntryPosted,
 		Postings: []model.Posting{
 			{ID: 80, LineNumber: 1, LedgerAccountID: 200, LedgerAccount: groceries, Amount: decimal.RequireFromString("1.5"), Side: model.PostingCredit},
 			{ID: 81, LineNumber: 2, LedgerAccountID: 100, LedgerAccount: cash, Amount: decimal.RequireFromString("1.5"), Side: model.PostingDebit},
@@ -40,7 +40,7 @@ func TestList(t *testing.T) {
 	shoppingBody := `{"id":7,"occurredAt":"2026-01-31T10:00:00Z","description":"Supermarket","externalId":"bank-42","status":"posted","postings":[` +
 		`{"lineNumber":1,"ledgerAccountId":200,"ledgerAccountName":"Groceries","kind":"expense","currencyId":1,"amount":"12345678901234.56","side":"debit"},` +
 		`{"lineNumber":2,"ledgerAccountId":100,"ledgerAccountName":"Cash","kind":"asset","currencyId":1,"amount":"12345678901234.56","side":"credit"}]}`
-	reversalBody := `{"id":8,"occurredAt":"2026-01-31T11:00:00Z","status":"posted","reversalOfEntryId":7,"postings":[` +
+	refundBody := `{"id":8,"occurredAt":"2026-01-31T11:00:00Z","status":"posted","postings":[` +
 		`{"lineNumber":1,"ledgerAccountId":200,"ledgerAccountName":"Groceries","kind":"expense","currencyId":1,"amount":"1.5","side":"credit"},` +
 		`{"lineNumber":2,"ledgerAccountId":100,"ledgerAccountName":"Cash","kind":"asset","currencyId":1,"amount":"1.5","side":"debit"}]}`
 
@@ -53,11 +53,11 @@ func TestList(t *testing.T) {
 					LedgerAccountID: 100, Statuses: []model.JournalEntryStatus{model.JournalEntryPosted}, Descending: true, Limit: 2,
 				},
 				Result: lt.ListJournalEntriesResult{
-					Entries: []model.JournalEntry{reversal, shopping}, Next: &lt.JournalEntryCursor{OccurredAt: day, ID: 7},
+					Entries: []model.JournalEntry{refund, shopping}, Next: &lt.JournalEntryCursor{OccurredAt: day, ID: 7},
 				},
 			},
 			WantStatus: http.StatusOK,
-			WantBody:   `{"entries":[` + reversalBody + `,` + shoppingBody + `],"next":"2026-01-31T10:00:00Z_7"}`,
+			WantBody:   `{"entries":[` + refundBody + `,` + shoppingBody + `],"next":"2026-01-31T10:00:00Z_7"}`,
 		},
 		"the next page": {
 			Method: http.MethodGet, Path: "/api/journal-entries?ledgerAccountId=100&after=2026-01-31T10:00:00Z_7",

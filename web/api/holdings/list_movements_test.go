@@ -34,12 +34,12 @@ func TestListMovements(t *testing.T) {
 	}
 	saleBody := `{"id":21,"kind":"trade","financialAccountId":3,"assetId":7,"unitsDelta":"-2.5",` +
 		`"occurredAt":"2026-01-31T11:00:00Z","journalEntryId":6}`
-	reversal := model.PositionMovement{
+	adjustment := model.PositionMovement{
 		ID: 22, Kind: model.PositionMovementAdjustment, FinancialAccountID: 3, AssetID: 7,
-		UnitsDelta: decimal.RequireFromString("1"), OccurredAt: day.Add(2 * time.Hour), ReversalOfMovementID: ptr.Int64(19),
+		UnitsDelta: decimal.RequireFromString("1"), OccurredAt: day.Add(2 * time.Hour),
 	}
-	reversalBody := `{"id":22,"kind":"adjustment","financialAccountId":3,"assetId":7,"unitsDelta":"1",` +
-		`"occurredAt":"2026-01-31T12:00:00Z","reversalOfMovementId":19}`
+	adjustmentBody := `{"id":22,"kind":"adjustment","financialAccountId":3,"assetId":7,"unitsDelta":"1",` +
+		`"occurredAt":"2026-01-31T12:00:00Z"}`
 	const backwards = "invalid parameter: the end of the date range must be after its start"
 
 	apitest.RunCases(t, Register, map[string]apitest.Case{
@@ -63,9 +63,9 @@ func TestListMovements(t *testing.T) {
 			Call: &apitest.WorkflowCall{
 				Workflow: portfoliowf.ListPositionMovements,
 				Params:   lt.ListPositionMovementsParams{After: &lt.PositionMovementCursor{OccurredAt: day.Add(time.Hour), ID: 21}},
-				Result:   lt.ListPositionMovementsResult{Movements: []model.PositionMovement{reversal}},
+				Result:   lt.ListPositionMovementsResult{Movements: []model.PositionMovement{adjustment}},
 			},
-			WantStatus: http.StatusOK, WantBody: `{"movements":[` + reversalBody + `]}`,
+			WantStatus: http.StatusOK, WantBody: `{"movements":[` + adjustmentBody + `]}`,
 		},
 		"every movement, in a date range and several kinds": {
 			Method: http.MethodGet,
@@ -76,9 +76,9 @@ func TestListMovements(t *testing.T) {
 					Kinds: []model.PositionMovementKind{model.PositionMovementSplit, model.PositionMovementAdjustment},
 					From:  time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC), To: time.Date(2026, 2, 1, 0, 0, 0, 0, time.UTC),
 				},
-				Result: lt.ListPositionMovementsResult{Movements: []model.PositionMovement{reversal}},
+				Result: lt.ListPositionMovementsResult{Movements: []model.PositionMovement{adjustment}},
 			},
-			WantStatus: http.StatusOK, WantBody: `{"movements":[` + reversalBody + `]}`,
+			WantStatus: http.StatusOK, WantBody: `{"movements":[` + adjustmentBody + `]}`,
 		},
 		"no movements": {
 			Method: http.MethodGet, Path: "/api/holdings/movements",

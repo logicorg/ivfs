@@ -67,8 +67,7 @@ func (a *Activities) PositionsAt(ctx context.Context, params lt.PositionsAtParam
 	result := &lt.PositionsAtResult{Positions: make([]lt.PositionResult, 0, len(rows))}
 	for _, item := range rows {
 		position := unitsToPositionResult(item)
-		// A position whose movements were all reversed has nothing replayed,
-		// and its basis is a known zero.
+		// A position with nothing replayed has a known zero basis.
 		if basis, ok := bases[positions.Pair{FinancialAccountID: item.FinancialAccountID, AssetID: item.AssetID}]; ok {
 			addCostBasis(&position, basis)
 		}

@@ -1,7 +1,6 @@
 package accounts
 
 import (
-	"slices"
 	"time"
 
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
@@ -42,17 +41,6 @@ func (e *fixture) post(counterpartyID int64) *model.JournalEntry {
 	return entry
 }
 
-// reverse records the entry that reverses entry, naming the same counterparty
-// as the reverse activity does.
-func (e *fixture) reverse(entry *model.JournalEntry) *model.JournalEntry {
-	reversal := &model.JournalEntry{OccurredAt: entry.OccurredAt, CounterpartyID: entry.CounterpartyID, ReversalOfEntryID: &entry.ID}
-	temporaltesting.InsertPostedJournalEntry(e.s.T(), e.s.DB, reversal,
-		model.Posting{LedgerAccountID: e.cash.ID, Amount: decimal.NewFromInt(10), Side: model.PostingDebit},
-		model.Posting{LedgerAccountID: e.groceries.ID, Amount: decimal.NewFromInt(10), Side: model.PostingCredit},
-	)
-	return reversal
-}
-
 // draft records a draft entry, without postings, naming the counterparty.
 func (e *fixture) draft(counterpartyID int64) *model.JournalEntry {
 	entry := &model.JournalEntry{OccurredAt: time.Date(2026, 1, 15, 0, 0, 0, 0, time.UTC), CounterpartyID: &counterpartyID, Status: model.JournalEntryDraft}
@@ -60,10 +48,9 @@ func (e *fixture) draft(counterpartyID int64) *model.JournalEntry {
 	return entry
 }
 
-// deleteAll deletes entries, latest first, so that a reversal goes before the
-// entry it reverses.
+// deleteAll deletes entries.
 func (e *fixture) deleteAll(entries []*model.JournalEntry) {
-	for _, entry := range slices.Backward(entries) {
+	for _, entry := range entries {
 		temporaltesting.DeleteJournalEntry(e.s.T(), e.s.DB, entry.ID)
 	}
 }
@@ -72,16 +59,14 @@ func (s *UnitTestSuite) Test_ClearCounterpartyReferences() {
 	fixture := newFixture(s)
 
 	tests := map[string]struct {
-		// posted, reversed, and drafts are the entries naming the counterparty:
-		// reversed counts posted entries that are reversed, each with its reversal.
-		posted, reversed, drafts int
+		// posted and drafts are the entries naming the counterparty.
+		posted, drafts int
 		// others are the posted entries naming another counterparty, which keep it.
 		others     int
 		expCleared int64
 	}{
-		"posted entries":                    {posted: 2, expCleared: 2},
-		"a draft":                           {drafts: 1, expCleared: 1},
-		"a reversed entry and its reversal": {reversed: 1, expCleared: 2},
+		"posted entries": {posted: 2, expCleared: 2},
+		"a draft":        {drafts: 1, expCleared: 1},
 		"only the entries of the counterparty": {
 			posted: 1, drafts: 1, others: 2, expCleared: 2,
 		},
@@ -96,10 +81,6 @@ func (s *UnitTestSuite) Test_ClearCounterpartyReferences() {
 		var deletingCounterpartyEntries, otherCounterpartiesEntries []*model.JournalEntry
 		for range tc.posted {
 			deletingCounterpartyEntries = append(deletingCounterpartyEntries, fixture.post(payee.ID))
-		}
-		for range tc.reversed {
-			entry := fixture.post(payee.ID)
-			deletingCounterpartyEntries = append(deletingCounterpartyEntries, entry, fixture.reverse(entry))
 		}
 		for range tc.drafts {
 			deletingCounterpartyEntries = append(deletingCounterpartyEntries, fixture.draft(payee.ID))

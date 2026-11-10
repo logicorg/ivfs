@@ -43,13 +43,9 @@ func PostEntryWithMovementsTx(ctx context.Context, tx bun.Tx, input lt.PostJourn
 		return 0, internalerrors.ErrNotFound{ResourceType: "LedgerAccount"}
 	}
 
-	// Closing is final, so a reversal has to be able to correct an entry that
-	// touches an account closed since.
-	if input.ReversalOfEntryID == nil {
-		for _, a := range accounts {
-			if a.ClosedAt != nil {
-				return 0, internalerrors.ErrResourceClosed{ResourceType: "LedgerAccount", ID: a.ID}
-			}
+	for _, a := range accounts {
+		if a.ClosedAt != nil {
+			return 0, internalerrors.ErrResourceClosed{ResourceType: "LedgerAccount", ID: a.ID}
 		}
 	}
 
@@ -86,7 +82,7 @@ func PostEntryWithMovementsTx(ctx context.Context, tx bun.Tx, input lt.PostJourn
 		}
 	}
 
-	entry := &model.JournalEntry{CounterpartyID: input.CounterpartyID, ReversalOfEntryID: input.ReversalOfEntryID, OccurredAt: input.OccurredAt, Description: input.Description, ExternalID: input.ExternalID, IdempotencyKey: nullableString(input.IdempotencyKey), Metadata: input.Metadata, Status: model.JournalEntryDraft}
+	entry := &model.JournalEntry{CounterpartyID: input.CounterpartyID, OccurredAt: input.OccurredAt, Description: input.Description, ExternalID: input.ExternalID, IdempotencyKey: nullableString(input.IdempotencyKey), Metadata: input.Metadata, Status: model.JournalEntryDraft}
 	if _, err := tx.NewInsert().Model(entry).Returning("id").Exec(ctx); err != nil {
 		if notFound := sqllib.ParentNotFound(err); notFound != nil {
 			return 0, notFound

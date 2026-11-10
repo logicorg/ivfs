@@ -22,7 +22,6 @@ func ensurePositionConstraints(ctx context.Context, db *bun.DB) error {
 		`ALTER TABLE asset.position_movement ADD CONSTRAINT position_movement_cost_basis_currency_check CHECK ((cost_basis_amount IS NULL) = (cost_basis_currency_id IS NULL))`,
 		`ALTER TABLE asset.position_movement ADD CONSTRAINT position_movement_idempotency_line_unique UNIQUE (idempotency_key, line_number)`,
 		// A movement can be compensated only once.
-		`ALTER TABLE asset.position_movement ADD CONSTRAINT position_movement_reversal_unique UNIQUE (reversal_of_movement_id)`,
 		// The holdings check and the reports read one position in time order.
 		`CREATE INDEX IF NOT EXISTS position_movement_position_idx ON asset.position_movement (financial_account_id, asset_id, occurred_at, id)`,
 	}
@@ -32,8 +31,8 @@ func ensurePositionConstraints(ctx context.Context, db *bun.DB) error {
 		}
 	}
 
-	// A movement is append-only: it is never changed, and a correction is another
-	// movement. It is deleted only by a transaction that has declared it is
+	// A movement is append-only: it is never changed, and a correction deletes it
+	// and records it again. It is deleted only by a transaction that has declared it is
 	// deleting the movement's journal entry, or, for a movement without one, its
 	// idempotency key group (ADR 0011). A transaction deleting a financial
 	// account can move its movements onto another account, and delete its

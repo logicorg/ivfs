@@ -60,8 +60,8 @@ func InsertPostedJournalEntryWithMovements(t *testing.T, db *bun.DB, entry *mode
 
 // DeleteJournalEntry deletes an entry of any status with its postings, so a
 // test can remove what it posted. A posted entry can only be deleted by a
-// transaction that declares it (ADR 0011). An entry with movements, or one
-// that another entry reverses, is refused.
+// transaction that declares it (ADR 0011). An entry with movements is
+// refused.
 func DeleteJournalEntry(t *testing.T, db *bun.DB, id int64) {
 	t.Helper()
 

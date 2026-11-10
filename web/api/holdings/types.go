@@ -52,12 +52,11 @@ type Movement struct {
 	UnitsDelta         gateway.Amount `json:"unitsDelta" doc:"the units added, or taken away when negative"`
 	// CostBasis is absent on a sale, whose basis is the average cost worked
 	// out on read (ADR 0009).
-	CostBasis            *CostBasis `json:"costBasis,omitempty" doc:"the change to the cost of the units held, if the movement states it"`
-	OccurredAt           time.Time  `json:"occurredAt"`
-	JournalEntryID       *int64     `json:"journalEntryId,omitempty" doc:"the entry of a trade or a vest, which moved the cash"`
-	ReversalOfMovementID *int64     `json:"reversalOfMovementId,omitempty"`
-	Description          string     `json:"description,omitempty"`
-	ExternalID           string     `json:"externalId,omitempty"`
+	CostBasis      *CostBasis `json:"costBasis,omitempty" doc:"the change to the cost of the units held, if the movement states it"`
+	OccurredAt     time.Time  `json:"occurredAt"`
+	JournalEntryID *int64     `json:"journalEntryId,omitempty" doc:"the entry of a trade or a vest, which moved the cash"`
+	Description    string     `json:"description,omitempty"`
+	ExternalID     string     `json:"externalId,omitempty"`
 }
 
 // MovementPage is one page of movements, oldest first.

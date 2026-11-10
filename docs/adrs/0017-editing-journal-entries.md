@@ -7,7 +7,7 @@
   [ADR 0009](0009-intent-level-investments.md) (trades and vests), and
   [ADR 0011](0011-deleting-journal-entries.md) (deleting journal entries)
 - Amends: ADR 0001, ADR 0002, ADR 0004, ADR 0006, ADR 0007, ADR 0008, ADR 0009,
-  ADR 0010, ADR 0011, ADR 0016
+  ADR 0010, ADR 0011, ADR 0012, ADR 0016
 - Related: [ADR 0005](0005-uniqueness-and-idempotent-creation.md) (idempotent
   creation), [ADR 0012](0012-deleting-accounts.md) (deleting accounts)
 
@@ -345,6 +345,11 @@ ADR 0011:
   movement groups.
 - The closed-account rule rests on correcting mistakes, and no longer on a
   reversal being allowed.
+
+ADR 0012:
+
+- A reversal can no longer arrive on an account while it is deleted. Only a
+  deletion of an entry can.
 
 ADR 0016:
 

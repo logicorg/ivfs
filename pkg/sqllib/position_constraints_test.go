@@ -120,21 +120,6 @@ func (s *UnitTestSuite) Test_PositionMovementConstraints() {
 			existing("twice")
 			return adjustment("twice")
 		}},
-		"a movement reversed twice": {constraint: "position_movement_reversal_unique", movement: func() *model.PositionMovement {
-			original := existing("reversed")
-			first := adjustment("first-reversal")
-			first.UnitsDelta, first.ReversalOfMovementID = decimal.NewFromInt(-5), &original
-			temporaltesting.Insert(s.T(), s.DB, first)
-
-			second := adjustment("second-reversal")
-			second.UnitsDelta, second.ReversalOfMovementID = decimal.NewFromInt(-5), &original
-			return second
-		}},
-		"a reversal of a movement that does not exist": {constraint: "position_movement_reversal_of_movement_id_fkey", movement: func() *model.PositionMovement {
-			m := adjustment("dangling-reversal")
-			m.ReversalOfMovementID = ptr.Int64(999999)
-			return m
-		}},
 		"a cost basis in a currency that does not exist": {constraint: "position_movement_cost_basis_currency_id_fkey", movement: func() *model.PositionMovement {
 			m := trade()
 			m.CostBasisAmount, m.CostBasisCurrencyID = ptr.NewPtr(decimal.NewFromInt(100)), ptr.Int64(999999)
@@ -166,5 +151,5 @@ func (s *UnitTestSuite) Test_PositionMovementRulesAreInstalledOnce() {
 	var count int
 	err := s.DB.NewRaw(`SELECT COUNT(*) FROM pg_constraint WHERE conrelid = 'asset.position_movement'::regclass AND contype IN ('c', 'u')`).Scan(s.T().Context(), &count)
 	require.NoError(s.T(), err)
-	require.Equal(s.T(), 8, count, "six checks and two unique constraints")
+	require.Equal(s.T(), 7, count, "six checks and one unique constraint")
 }

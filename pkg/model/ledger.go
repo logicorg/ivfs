@@ -165,16 +165,14 @@ type Counterparty struct {
 }
 
 // JournalEntry is the header for one financial event. Posted entries are
-// immutable, apart from their counterparty (ADR 0016); corrections are
-// represented by a separate reversing entry.
+// immutable, apart from their counterparty (ADR 0016); a wrong one is deleted
+// (ADR 0011).
 type JournalEntry struct {
 	bun.BaseModel `bun:"table:ledger.journal_entry,alias:je"`
 
 	ID int64 `bun:"id,pk,autoincrement" json:"id"`
 	// CounterpartyID is the ID of the counterparty, if any.
 	CounterpartyID *int64 `bun:"counterparty_id" json:"counterpartyId,omitempty"`
-	// ReversalOfEntryID is the ID of the journal entry that this entry reverses, if any.
-	ReversalOfEntryID *int64 `bun:"reversal_of_entry_id" json:"reversalOfEntryId,omitempty"`
 	// OccurredAt is the time when the event occurred, as opposed to when it was recorded in the ledger.
 	OccurredAt  time.Time `bun:"occurred_at,nullzero,notnull" json:"occurredAt"`
 	Description *string   `bun:"description" json:"description,omitempty"`
@@ -197,7 +195,6 @@ type JournalEntry struct {
 	// Relationships
 
 	Counterparty      *Counterparty      `bun:"rel:belongs-to,join:counterparty_id=id,on_delete:restrict" json:"counterparty,omitempty"`
-	ReversalOfEntry   *JournalEntry      `bun:"rel:belongs-to,join:reversal_of_entry_id=id,on_delete:restrict" json:"reversalOfEntry,omitempty"`
 	Postings          []Posting          `bun:"rel:has-many,join:id=journal_entry_id" json:"postings,omitempty"`
 	PositionMovements []PositionMovement `bun:"rel:has-many,join:id=journal_entry_id" json:"positionMovements,omitempty"`
 }
@@ -258,9 +255,9 @@ func (k PositionMovementKind) HasJournalEntry() bool {
 // PositionMovement is the units subledger for investments. UnitsDelta and
 // CostBasisAmount are signed and share a sign; a buy is normally positive and a
 // sale negative. A movement of a monetary kind references its journal entry,
-// and any other one carries an idempotency key of its own. A movement is never
-// changed or deleted: a correction is another movement that references it
-// through ReversalOfMovementID.
+// and any other one carries an idempotency key of its own. A movement is changed
+// or deleted only by the activities that declare it to the triggers (ADR 0011,
+// ADR 0012).
 type PositionMovement struct {
 	bun.BaseModel `bun:"table:asset.position_movement,alias:pm"`
 
@@ -282,11 +279,9 @@ type PositionMovement struct {
 	// with an entry has neither and is identified through the entry.
 	IdempotencyKey *string `bun:"idempotency_key" json:"idempotencyKey,omitempty"`
 	// LineNumber together with IdempotencyKey identify a movement without a jornal entry.
-	LineNumber int `bun:"line_number,nullzero" json:"lineNumber,omitempty"`
-	// ReversalOfMovementID is the movement this one compensates, if any.
-	ReversalOfMovementID *int64            `bun:"reversal_of_movement_id" json:"reversalOfMovementId,omitempty"`
-	Description          *string           `bun:"description" json:"description,omitempty"`
-	Metadata             map[string]string `bun:"metadata,type:jsonb" json:"metadata,omitempty"`
+	LineNumber  int               `bun:"line_number,nullzero" json:"lineNumber,omitempty"`
+	Description *string           `bun:"description" json:"description,omitempty"`
+	Metadata    map[string]string `bun:"metadata,type:jsonb" json:"metadata,omitempty"`
 	// ExternalID is the identifier of the source record of the movement. A trade
 	// or vest carries its journal entry's external ID, copied when the movement is
 	// written, so units trace to the same broker or payroll record as the cash. A
