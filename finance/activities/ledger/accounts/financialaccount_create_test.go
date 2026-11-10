@@ -299,9 +299,7 @@ func (s *UnitTestSuite) TestCreateFinancialAccount_MissingParents() {
 			require.Equal(s.T(), "ErrNotFound", appErr.Type())
 			require.ErrorContains(s.T(), err, tc.expectedType)
 
-			count, err := s.DB.NewSelect().Model((*model.FinancialAccount)(nil)).Count(s.T().Context())
-			require.NoError(s.T(), err)
-			require.Zero(s.T(), count, "a failed creation must leave nothing behind")
+			require.Zero(s.T(), s.Count[model.FinancialAccount](), "a failed creation must leave nothing behind")
 		})
 	}
 }

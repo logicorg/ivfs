@@ -79,10 +79,7 @@ func (s *UnitTestSuite) Test_Insert_RetrieveOrInsertIdempotency() {
 
 	require.Equal(s.T(), first.ID, second.ID)
 
-	var count int64
-	count, err = s.DB.NewSelect().Model((*model.Institution)(nil)).Where("name = ?", params.Name).Count(s.T().Context())
-	require.NoError(s.T(), err)
-	require.EqualValues(s.T(), 1, count)
+	require.Equal(s.T(), 1, s.CountWhere[model.Institution]("name = ?", params.Name))
 
 	temporaltesting.Delete(s.T(), s.DB, (*model.Institution)(nil), first.ID)
 }

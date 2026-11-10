@@ -287,9 +287,7 @@ func (s *UnitTestSuite) Test_StrayFinancialAccountTx() {
 				require.NoError(s.T(), tx.NewSelect().Model(&institution).Where("i.id = ?", stray.InstitutionID).Scan(s.T().Context()))
 				assert.True(s.T(), lt.IsUntrackedFinancialAccountName(stray.Name), stray.Name)
 				assert.True(s.T(), lt.IsUntrackedInstitution(institution.Name), institution.Name)
-				count, err := tx.NewSelect().Model((*model.Institution)(nil)).Where("lower(i.name) = lower(?)", lt.UntrackedInstitutionName).Count(s.T().Context())
-				require.NoError(s.T(), err)
-				assert.EqualValues(s.T(), 1, count, "one untracked institution")
+				assert.Equal(s.T(), 1, temporaltesting.CountWhere[model.Institution](s.T(), tx, "lower(i.name) = lower(?)", lt.UntrackedInstitutionName), "one untracked institution")
 			})
 		})
 	}

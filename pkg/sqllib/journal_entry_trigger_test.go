@@ -169,15 +169,14 @@ func (s *UnitTestSuite) Test_JournalEntryDeleteDeclaration() {
 				return err
 			})
 
-			count, countErr := s.DB.NewSelect().Model((*model.JournalEntry)(nil)).Where("id = ?", entry.ID).Count(s.T().Context())
-			require.NoError(s.T(), countErr)
+			count := s.CountWhere[model.JournalEntry]("id = ?", entry.ID)
 			if tc.failure == "" {
 				require.NoError(s.T(), err)
 				require.Zero(s.T(), count)
-				return
+			} else {
+				require.ErrorContains(s.T(), err, tc.failure)
+				require.EqualValues(s.T(), 1, count, "a refused delete must leave the entry in place")
 			}
-			require.ErrorContains(s.T(), err, tc.failure)
-			require.EqualValues(s.T(), 1, count, "a refused delete must leave the entry in place")
 		})
 	}
 }

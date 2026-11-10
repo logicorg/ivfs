@@ -104,3 +104,19 @@ func (s *TemporalDBUnitTestSuite) Count[O any]() int {
 	require.NoError(s.T(), err)
 	return int(count)
 }
+
+func (s *TemporalDBUnitTestSuite) CountWhere[O any](query string, args ...any) int {
+	s.T().Helper()
+
+	count, err := s.DB.NewSelect().Model((*O)(nil)).Where(query, args...).Count(s.T().Context())
+	require.NoError(s.T(), err)
+	return int(count)
+}
+
+func CountWhere[O any](t *testing.T, db bun.IDB, query string, args ...any) int {
+	t.Helper()
+
+	count, err := db.NewSelect().Model((*O)(nil)).Where(query, args...).Count(t.Context())
+	require.NoError(t, err)
+	return int(count)
+}

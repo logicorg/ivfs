@@ -109,7 +109,6 @@ func (s *UnitTestSuite) Test_InsertUser_Concurrent() {
 		require.NoError(s.T(), errs[n])
 		require.Equal(s.T(), results[0].ID, results[n].ID)
 	}
-	count, err := s.DB.NewSelect().Model((*registry.User)(nil)).Count(s.T().Context())
-	require.NoError(s.T(), err)
-	require.EqualValues(s.T(), 1, count)
+
+	require.EqualValues(s.T(), 1, s.Count[registry.User]())
 }

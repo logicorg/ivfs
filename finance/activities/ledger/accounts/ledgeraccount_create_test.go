@@ -293,9 +293,7 @@ func (s *UnitTestSuite) Test_CreateLedgerAccount_ClosedScope() {
 			_, err := s.Env.ExecuteActivity(s.aa.CreateLedgerAccount, input)
 			require.ErrorContains(s.T(), err, tc.wantError(input))
 
-			inserted, err := s.DB.NewSelect().Model((*model.LedgerAccount)(nil)).Where("name = ?", input.Name).Count(s.T().Context())
-			require.NoError(s.T(), err)
-			require.Zero(s.T(), inserted)
+			require.Zero(s.T(), s.CountWhere[model.LedgerAccount]("name = ?", input.Name))
 		})
 
 		deleteScope()

@@ -68,14 +68,10 @@ func (s *UnitTestSuite) newAsset(name string) *model.Asset {
 func (s *UnitTestSuite) rowsOfEntry(entryID int64) (int, int, int) {
 	s.T().Helper()
 
-	var err error
-	entries, err := s.DB.NewSelect().Model((*model.JournalEntry)(nil)).Where("id = ?", entryID).Count(s.T().Context())
-	require.NoError(s.T(), err)
-	postings, err := s.DB.NewSelect().Model((*model.Posting)(nil)).Where("journal_entry_id = ?", entryID).Count(s.T().Context())
-	require.NoError(s.T(), err)
-	movements, err := s.DB.NewSelect().Model((*model.PositionMovement)(nil)).Where("journal_entry_id = ?", entryID).Count(s.T().Context())
-	require.NoError(s.T(), err)
-	return int(entries), int(postings), int(movements)
+	entries := s.CountWhere[model.JournalEntry]("id = ?", entryID)
+	postings := s.CountWhere[model.Posting]("journal_entry_id = ?", entryID)
+	movements := s.CountWhere[model.PositionMovement]("journal_entry_id = ?", entryID)
+	return entries, postings, movements
 }
 
 func (s *UnitTestSuite) requireEntryGone(entry seededEntry) {

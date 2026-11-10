@@ -34,9 +34,8 @@ func (s *UnitTestSuite) movementsExist(movements []*model.PositionMovement) int6
 	if len(ids) == 0 {
 		return 0
 	}
-	count, err := s.DB.NewSelect().Model((*model.PositionMovement)(nil)).Where("id IN (?)", bun.List(ids)).Count(s.T().Context())
-	require.NoError(s.T(), err)
-	return count
+
+	return int64(s.CountWhere[model.PositionMovement]("id IN (?)", bun.List(ids)))
 }
 
 // Test_DeletePositionMovement checks that any movement of an entry-less command
