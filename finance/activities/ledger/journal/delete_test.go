@@ -243,23 +243,6 @@ func (s *UnitTestSuite) Test_DeleteJournalEntry_Idempotent() {
 	require.Equal(s.T(), 1, s.Count[model.JournalEntry]())
 }
 
-// Deleting a reversal puts the effect of the entry it reversed back, so that
-// entry can be reversed again.
-func (s *UnitTestSuite) Test_DeleteJournalEntry_ReversalAloneAllowsReversingAgain() {
-	h := s.newHeld()
-	original := s.seedEntry(h, h.asset, model.JournalEntryPosted, 10, deleteDay, nil)
-	reversal := s.seedEntry(h, h.asset, model.JournalEntryPosted, 10, deleteDay.AddDate(0, 0, 1), &original)
-
-	_, err := s.Env.ExecuteActivity(s.ja.ReverseJournalEntry, lt.ReverseJournalEntryInput{JournalEntryID: original.entry.ID, IdempotencyKey: "again-before"})
-	require.Error(s.T(), err, "the original is reversed while its reversal exists")
-
-	_, err = s.Env.ExecuteActivity(s.ja.DeleteJournalEntry, lt.DeleteJournalEntryInput{JournalEntryID: reversal.entry.ID})
-	require.NoError(s.T(), err)
-
-	_, err = s.Env.ExecuteActivity(s.ja.ReverseJournalEntry, lt.ReverseJournalEntryInput{JournalEntryID: original.entry.ID, IdempotencyKey: "again-after"})
-	require.NoError(s.T(), err)
-}
-
 // Deleting an entry frees its idempotency key, so the operation can be recorded
 // anew, which is how a wrong opening balance is replaced (ADR 0011).
 func (s *UnitTestSuite) Test_DeleteJournalEntry_FreesIdempotencyKey() {

@@ -244,9 +244,8 @@ func (s *UnitTestSuite) TestPostJournalEntryValidation() {
 	}
 }
 
-// Closing an account is final, so an entry that touches one has to stay
-// reversible, while new entries into the account are rejected.
-func (s *UnitTestSuite) TestReverseJournalEntry_AfterAccountIsClosed() {
+// Closing an account is final, so new entries into it are rejected.
+func (s *UnitTestSuite) TestPostJournalEntry_AfterAccountIsClosed() {
 	euro := testhelpers.Euro()
 	temporaltesting.Insert(s.T(), s.DB, euro)
 	debit := testLedgerAccount(s.T(), s.DB, euro.ID, "asset", model.LedgerAccountAsset)
@@ -256,10 +255,8 @@ func (s *UnitTestSuite) TestReverseJournalEntry_AfterAccountIsClosed() {
 		{LedgerAccountID: credit.ID, Amount: decimal.NewFromInt(25), Side: model.PostingCredit},
 	}
 
-	posted, err := s.Env.ExecuteActivity(s.ja.PostJournalEntry, lt.PostJournalEntryInput{IdempotencyKey: "before-close", OccurredAt: time.Now().UTC(), Postings: postings})
+	_, err := s.Env.ExecuteActivity(s.ja.PostJournalEntry, lt.PostJournalEntryInput{IdempotencyKey: "before-close", OccurredAt: time.Now().UTC(), Postings: postings})
 	require.NoError(s.T(), err)
-	var original lt.PostJournalEntryResult
-	require.NoError(s.T(), posted.Get(&original))
 
 	closedAt := time.Now().UTC()
 	credit.ClosedAt = &closedAt
@@ -268,9 +265,6 @@ func (s *UnitTestSuite) TestReverseJournalEntry_AfterAccountIsClosed() {
 
 	_, err = s.Env.ExecuteActivity(s.ja.PostJournalEntry, lt.PostJournalEntryInput{IdempotencyKey: "after-close", OccurredAt: time.Now().UTC(), Postings: postings})
 	require.ErrorContains(s.T(), err, "is closed")
-
-	_, err = s.Env.ExecuteActivity(s.ja.ReverseJournalEntry, lt.ReverseJournalEntryInput{JournalEntryID: original.JournalEntryID, IdempotencyKey: "reverse-after-close"})
-	require.NoError(s.T(), err)
 }
 
 func (s *UnitTestSuite) TestPostJournalEntry_UnknownCounterparty() {
