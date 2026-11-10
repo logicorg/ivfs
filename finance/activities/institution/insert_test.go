@@ -79,7 +79,7 @@ func (s *UnitTestSuite) Test_Insert_RetrieveOrInsertIdempotency() {
 
 	require.Equal(s.T(), first.ID, second.ID)
 
-	var count int
+	var count int64
 	count, err = s.DB.NewSelect().Model((*model.Institution)(nil)).Where("name = ?", params.Name).Count(s.T().Context())
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 1, count)
@@ -108,14 +108,6 @@ func (s *UnitTestSuite) Test_Insert_RetrievesExistingWithoutOverwriting() {
 	temporaltesting.Delete(s.T(), s.DB, (*model.Institution)(nil), existing.ID)
 }
 
-func (s *UnitTestSuite) countInstitutions() int {
-	s.T().Helper()
-
-	count, err := s.DB.NewSelect().Model((*model.Institution)(nil)).Count(s.T().Context())
-	require.NoError(s.T(), err)
-	return count
-}
-
 // Test_Insert_RetrievesExistingByName checks that an institution is retrieved
 // by its name compared case-insensitively and trimmed (ADR 0005), and keeps
 // the casing it was created with.
@@ -138,7 +130,7 @@ func (s *UnitTestSuite) Test_Insert_RetrievesExistingByName() {
 			var result it.InsertInstitutionResult
 			require.NoError(s.T(), activityResult.Get(&result))
 			require.Equal(s.T(), existing.ID, result.ID)
-			require.Equal(s.T(), 1, s.countInstitutions())
+			require.Equal(s.T(), 1, s.Count[model.Institution]())
 			var stored model.Institution
 			temporaltesting.Retrieve(s.T(), s.DB, &stored, existing.ID)
 			require.Equal(s.T(), "Revolut", stored.Name)
@@ -179,5 +171,5 @@ func (s *UnitTestSuite) Test_Insert_RetryWaitsForConcurrentWriter() {
 	outcome := <-done
 	require.NoError(s.T(), outcome.err)
 	require.Equal(s.T(), first.ID, outcome.result.ID)
-	require.Equal(s.T(), 1, s.countInstitutions())
+	require.Equal(s.T(), 1, s.Count[model.Institution]())
 }

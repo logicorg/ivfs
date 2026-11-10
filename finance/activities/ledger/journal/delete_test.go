@@ -65,7 +65,7 @@ func (s *UnitTestSuite) newAsset(name string) *model.Asset {
 	return asset
 }
 
-func (s *UnitTestSuite) rowsOfEntry(entryID int64) (entries, postings, movements int) {
+func (s *UnitTestSuite) rowsOfEntry(entryID int64) (entries, postings, movements int64) {
 	s.T().Helper()
 
 	var err error
@@ -244,7 +244,7 @@ func (s *UnitTestSuite) Test_DeleteJournalEntry_Idempotent() {
 	require.Empty(s.T(), retried.Warnings, "a delete that finds nothing touches no position")
 	s.requireEntryGone(purchase)
 	s.requireEntryKept(sale)
-	require.Equal(s.T(), 1, s.countEntries())
+	require.Equal(s.T(), 1, s.Count[model.JournalEntry]())
 }
 
 // Deleting a reversal puts the effect of the entry it reversed back, so that

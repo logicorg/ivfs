@@ -3,6 +3,7 @@ package temporaltesting
 import (
 	"database/sql"
 	"log"
+	"testing"
 
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/logicorg/ivfs/pkg/sqllib"
@@ -25,6 +26,15 @@ type TemporalDBUnitTestSuite struct {
 	DB                *bun.DB
 
 	Env *testsuite.TestActivityEnvironment
+}
+
+type Suite interface {
+	T() *testing.T
+	GetDB() *bun.DB
+}
+
+func (s *TemporalDBUnitTestSuite) GetDB() *bun.DB {
+	return s.DB
 }
 
 // SetupSuite setup the test
@@ -85,4 +95,12 @@ func (s *TemporalDBUnitTestSuite) DropAllTables() {
 			s.T().Logf("failed to drop schema %s: %s", schema, err)
 		}
 	}
+}
+
+func (s *TemporalDBUnitTestSuite) Count[O any]() int {
+	s.T().Helper()
+
+	count, err := s.DB.NewSelect().Model((*O)(nil)).Count(s.T().Context())
+	require.NoError(s.T(), err)
+	return int(count)
 }

@@ -86,7 +86,7 @@ func (c *Conversion) RetrieveMostRecentCurrencyConversionRatesAtDate(
 		Where("to_currency_id = ?", params.ToCurrency).
 		Where("DATE(conv.observed_at) <= ?", params.Date.Format(time.DateOnly)).
 		Order("conv.observed_at DESC").
-		Limit(int(limit))
+		Limit(limit)
 
 	if params.WithRelations {
 		query.Relation("FromCurrency").Relation("ToCurrency")

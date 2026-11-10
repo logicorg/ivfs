@@ -22,14 +22,6 @@ func (s *UnitTestSuite) createFinancialAccount(input lt.CreateFinancialAccountIn
 	return result
 }
 
-func (s *UnitTestSuite) count(model any) int {
-	s.T().Helper()
-
-	count, err := s.DB.NewSelect().Model(model).Count(s.T().Context())
-	require.NoError(s.T(), err)
-	return count
-}
-
 // deleteFinancialAccount deletes a financial account a case created, together
 // with the ledger accounts created with it.
 func (s *UnitTestSuite) deleteFinancialAccount(id int64) {
@@ -119,7 +111,7 @@ func (s *UnitTestSuite) Test_CreateFinancialAccount_Invalid() {
 			_, err := s.Env.ExecuteActivity(s.aa.CreateFinancialAccount, tc.input)
 
 			require.ErrorContains(s.T(), err, tc.errStr)
-			require.Zero(s.T(), s.count((*model.FinancialAccount)(nil)), "a rejected account must not be written")
+			require.Zero(s.T(), s.Count[model.FinancialAccount](), "a rejected account must not be written")
 		})
 
 		_, err := s.DB.NewDelete().Model((*model.FinancialAccount)(nil)).Where("institution_id = ?", institution.ID).Exec(s.T().Context())
@@ -146,8 +138,8 @@ func (s *UnitTestSuite) Test_CreateFinancialAccount_Idempotent() {
 	retried := s.createFinancialAccount(input)
 
 	require.Equal(s.T(), created, retried)
-	require.Equal(s.T(), 1, s.count((*model.FinancialAccount)(nil)))
-	require.Equal(s.T(), 1, s.count((*model.LedgerAccount)(nil)))
+	require.Equal(s.T(), 1, s.Count[model.FinancialAccount]())
+	require.Equal(s.T(), 1, s.Count[model.LedgerAccount]())
 
 	different := s.createFinancialAccount(lt.CreateFinancialAccountInput{
 		InstitutionID: institution.ID, Name: " revolut personal ", ExternalID: ptr.NewPtr("IBAN-1"), CashCurrencyID: ptr.Int64(euro.ID),
@@ -165,8 +157,8 @@ func (s *UnitTestSuite) Test_CreateFinancialAccount_Idempotent() {
 
 	require.Equal(s.T(), created.FinancialAccountID, otherCurrency.FinancialAccountID)
 	require.Nil(s.T(), otherCurrency.CashLedgerAccountID)
-	require.Equal(s.T(), 1, s.count((*model.FinancialAccount)(nil)))
-	require.Equal(s.T(), 1, s.count((*model.LedgerAccount)(nil)))
+	require.Equal(s.T(), 1, s.Count[model.FinancialAccount]())
+	require.Equal(s.T(), 1, s.Count[model.LedgerAccount]())
 }
 
 // Test_CreateFinancialAccount_Scope checks that a name and an external ID are
@@ -205,7 +197,7 @@ func (s *UnitTestSuite) Test_CreateFinancialAccount_Scope() {
 
 			if tc.errStr != "" {
 				require.ErrorContains(s.T(), err, tc.errStr)
-				require.Equal(s.T(), 1, s.count((*model.FinancialAccount)(nil)), "a rejected account must not be written")
+				require.Equal(s.T(), 1, s.Count[model.FinancialAccount](), "a rejected account must not be written")
 				return
 			}
 			require.NoError(s.T(), err)
@@ -233,7 +225,7 @@ func (s *UnitTestSuite) Test_CreateFinancialAccount_ReturnsClosedAccount() {
 	result := s.createFinancialAccount(lt.CreateFinancialAccountInput{InstitutionID: institution.ID, Name: "revolut joint"})
 
 	require.Equal(s.T(), closed.ID, result.FinancialAccountID)
-	require.Equal(s.T(), 1, s.count((*model.FinancialAccount)(nil)))
+	require.Equal(s.T(), 1, s.Count[model.FinancialAccount]())
 }
 
 type financialAccountOutcome struct {
@@ -272,7 +264,7 @@ func (s *UnitTestSuite) Test_CreateFinancialAccount_RetryWaitsForConcurrentWrite
 	outcome := <-done
 	require.NoError(s.T(), outcome.err)
 	require.Equal(s.T(), first.ID, outcome.result.FinancialAccountID)
-	require.Equal(s.T(), 1, s.count((*model.FinancialAccount)(nil)))
+	require.Equal(s.T(), 1, s.Count[model.FinancialAccount]())
 }
 
 // Creating a financial account under an institution or with a cash currency

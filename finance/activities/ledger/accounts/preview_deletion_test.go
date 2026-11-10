@@ -253,11 +253,11 @@ func (s *UnitTestSuite) TestPreviewAccountDeletion_Untracked() {
 
 // rows counts the entries, postings and movements.
 func (f *entriesForDeletionFixture) rows(t *testing.T) int {
-	count := 0
+	count := int64(0)
 	for _, table := range []any{(*model.JournalEntry)(nil), (*model.Posting)(nil), (*model.PositionMovement)(nil)} {
 		n, err := f.s.DB.NewSelect().Model(table).Count(t.Context())
 		require.NoError(t, err)
 		count += n
 	}
-	return count
+	return int(count)
 }

@@ -145,7 +145,7 @@ func (s *UnitTestSuite) Test_ReversePositionMovement_Idempotent() {
 	require.NoError(s.T(), err)
 	var created lt.ReversePositionMovementResult
 	require.NoError(s.T(), first.Get(&created))
-	rows := s.countMovements()
+	rows := s.Count[model.PositionMovement]()
 
 	// The retry comes from the other leg and a later date, which is not compared.
 	input.MovementID, input.OccurredAt = originals[1].ID, movementDay.AddDate(0, 0, 20)
@@ -157,7 +157,7 @@ func (s *UnitTestSuite) Test_ReversePositionMovement_Idempotent() {
 	require.Equal(s.T(), created.PositionMovementIDs, retried.PositionMovementIDs)
 	require.Empty(s.T(), created.Warnings)
 	require.Empty(s.T(), retried.Warnings)
-	require.Equal(s.T(), rows, s.countMovements())
+	require.Equal(s.T(), rows, s.Count[model.PositionMovement]())
 	require.True(s.T(), s.unitsHeld(s.financialAccount, s.asset).Equal(decimal.NewFromInt(10)))
 	require.True(s.T(), s.unitsHeld(s.otherAccount, s.asset).Equal(decimal.Zero))
 }
@@ -180,7 +180,7 @@ func (s *UnitTestSuite) Test_ReversePositionMovement_UnitsUsedSince() {
 	asset := &model.Asset{Name: "used", Kind: model.AssetKindStock}
 	temporaltesting.Insert(s.T(), s.DB, asset)
 	adjustment := s.seedUsedAdjustment(asset)
-	rows := s.countMovements()
+	rows := s.Count[model.PositionMovement]()
 
 	activityResult, err := s.Env.ExecuteActivity(s.pa.ReversePositionMovement, lt.ReversePositionMovementInput{
 		MovementID: adjustment[0].ID, IdempotencyKey: "used-reversal", OccurredAt: movementDay.AddDate(0, 0, 10),
@@ -191,7 +191,7 @@ func (s *UnitTestSuite) Test_ReversePositionMovement_UnitsUsedSince() {
 	require.NoError(s.T(), activityResult.Get(&result))
 	s.requireWarnings(result.Warnings, asset, expectedWarning{s.financialAccount, negativeAt{-8, 10}})
 	require.Len(s.T(), result.PositionMovementIDs, 1)
-	require.Equal(s.T(), rows+1, s.countMovements())
+	require.Equal(s.T(), rows+1, s.Count[model.PositionMovement]())
 	require.True(s.T(), s.unitsHeld(s.financialAccount, asset).Equal(decimal.NewFromInt(-8)))
 }
 
@@ -206,7 +206,7 @@ func (s *UnitTestSuite) Test_ReversePositionMovement_IdempotentWarnings() {
 	var created lt.ReversePositionMovementResult
 	require.NoError(s.T(), first.Get(&created))
 	s.requireWarnings(created.Warnings, s.asset, expectedWarning{s.financialAccount, negativeAt{-8, 10}})
-	rows := s.countMovements()
+	rows := s.Count[model.PositionMovement]()
 
 	second, err := s.Env.ExecuteActivity(s.pa.ReversePositionMovement, input)
 	require.NoError(s.T(), err)
@@ -222,7 +222,7 @@ func (s *UnitTestSuite) Test_ReversePositionMovement_IdempotentWarnings() {
 	require.NoError(s.T(), third.Get(&afterBackfill))
 	require.Equal(s.T(), created.PositionMovementIDs, afterBackfill.PositionMovementIDs)
 	require.Empty(s.T(), afterBackfill.Warnings)
-	require.Equal(s.T(), rows+1, s.countMovements())
+	require.Equal(s.T(), rows+1, s.Count[model.PositionMovement]())
 }
 
 // Test_ReversePositionMovement_Rejected checks that a movement that cannot be
@@ -286,12 +286,12 @@ func (s *UnitTestSuite) Test_ReversePositionMovement_Rejected() {
 			asset := &model.Asset{Name: name, Kind: model.AssetKindStock}
 			temporaltesting.Insert(s.T(), s.DB, asset)
 			input := tc.input(asset)
-			rows := s.countMovements()
+			rows := s.Count[model.PositionMovement]()
 
 			_, err := s.Env.ExecuteActivity(s.pa.ReversePositionMovement, input)
 
 			require.ErrorContains(s.T(), err, tc.failure)
-			require.Equal(s.T(), rows, s.countMovements(), "a rejected reversal must leave nothing behind")
+			require.Equal(s.T(), rows, s.Count[model.PositionMovement](), "a rejected reversal must leave nothing behind")
 		})
 	}
 }
