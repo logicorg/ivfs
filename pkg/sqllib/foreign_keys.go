@@ -57,13 +57,11 @@ var foreignKeys = []foreignKey{
 	{"ledger.ledger_account", "financial_account_id", "account.financial_account", "FinancialAccount"},
 	{"ledger.ledger_account", "currency_id", "currency.currency", "Currency"},
 	{"ledger.journal_entry", "counterparty_id", "ledger.counterparty", "Counterparty"},
-	{"ledger.journal_entry", "reversal_of_entry_id", "ledger.journal_entry", "JournalEntry"},
 	{"ledger.posting", "journal_entry_id", "ledger.journal_entry", "JournalEntry"},
 	{"ledger.posting", "ledger_account_id", "ledger.ledger_account", "LedgerAccount"},
 	{"asset.position_movement", "journal_entry_id", "ledger.journal_entry", "JournalEntry"},
 	{"asset.position_movement", "financial_account_id", "account.financial_account", "FinancialAccount"},
 	{"asset.position_movement", "asset_id", "asset.asset", "Asset"},
-	{"asset.position_movement", "reversal_of_movement_id", "asset.position_movement", "PositionMovement"},
 	{"asset.position_movement", "cost_basis_currency_id", "currency.currency", "Currency"},
 	{"settings.user_settings", "default_currency_id", "currency.currency", "Currency"},
 }
