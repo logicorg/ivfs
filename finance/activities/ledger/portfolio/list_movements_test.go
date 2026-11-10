@@ -209,10 +209,48 @@ func (s *UnitTestSuite) Test_ListPositionMovements_Pages() {
 				last := result.Movements[len(result.Movements)-1]
 				require.Equal(s.T(), last.ID, result.Next.ID)
 				require.True(s.T(), last.OccurredAt.Equal(result.Next.OccurredAt))
+				require.True(s.T(), last.CreatedAt.Equal(result.Next.CreatedAt))
 				params.After = result.Next
 			}
 		})
 	}
+}
+
+// Test_ListPositionMovements_RecordingOrder checks that movements of the same
+// instant are listed by when they were recorded and not by id, and that the
+// cursor follows that order. A movement written again with its entry has a
+// later id and keeps when it was recorded (ADR 0017).
+func (s *UnitTestSuite) Test_ListPositionMovements_RecordingOrder() {
+	asset := &model.Asset{Name: "Recording order", Kind: model.AssetKindStock}
+	temporaltesting.Insert(s.T(), s.DB, asset)
+	recorded := historyDay(30)
+	movement := func(units int64, createdAt time.Time) *model.PositionMovement {
+		m := &model.PositionMovement{
+			FinancialAccountID: s.financialAccount.ID, AssetID: asset.ID, UnitsDelta: decimal.NewFromInt(units),
+			OccurredAt: historyDay(1), CreatedAt: createdAt,
+		}
+		temporaltesting.InsertPositionMovement(s.T(), s.DB, m)
+		return m
+	}
+	sale := movement(-5, recorded.Add(time.Minute))
+	buy := movement(5, recorded)
+	later := movement(1, recorded.Add(2*time.Minute))
+	want := []int64{buy.ID, sale.ID, later.ID}
+
+	whole := s.listMovements(lt.ListPositionMovementsParams{AssetID: asset.ID})
+	require.Equal(s.T(), want, movementIDs(whole.Movements))
+
+	params := lt.ListPositionMovementsParams{AssetID: asset.ID, Limit: 1}
+	var paged []int64
+	for {
+		page := s.listMovements(params)
+		paged = append(paged, movementIDs(page.Movements)...)
+		if page.Next == nil {
+			break
+		}
+		params.After = page.Next
+	}
+	require.Equal(s.T(), want, paged)
 }
 
 // Test_ListPositionMovements_MatchesPositionAt checks that the sum of the

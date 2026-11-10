@@ -246,7 +246,7 @@ func TestListPositionMovementsParams_Validate(t *testing.T) {
 		"a range with no start":              {params: ListPositionMovementsParams{To: day}},
 		"a range with no end":                {params: ListPositionMovementsParams{From: day}},
 		"the largest page":                   {params: ListPositionMovementsParams{Limit: MaxPositionMovementsLimit}},
-		"a cursor":                           {params: ListPositionMovementsParams{After: &PositionMovementCursor{OccurredAt: day, ID: 3}}},
+		"a cursor":                           {params: ListPositionMovementsParams{After: &PositionMovementCursor{OccurredAt: day, CreatedAt: day, ID: 3}}},
 		"a negative account":                 {failure: constraint, params: ListPositionMovementsParams{FinancialAccountID: -1}},
 		"a negative asset":                   {failure: constraint, params: ListPositionMovementsParams{AssetID: -1}},
 		"a negative limit":                   {failure: constraint, params: ListPositionMovementsParams{Limit: -1}},
@@ -254,8 +254,9 @@ func TestListPositionMovementsParams_Validate(t *testing.T) {
 		"a range that ends where it starts":  {failure: rule, params: ListPositionMovementsParams{From: day, To: day}},
 		"a range that ends before it starts": {failure: rule, params: ListPositionMovementsParams{From: day, To: day.Add(-time.Hour)}},
 		"an unknown kind":                    {failure: rule, params: ListPositionMovementsParams{Kinds: []model.PositionMovementKind{"gift"}}},
-		"a cursor without an id":             {failure: rule, params: ListPositionMovementsParams{After: &PositionMovementCursor{OccurredAt: day}}},
-		"a cursor without a date":            {failure: rule, params: ListPositionMovementsParams{After: &PositionMovementCursor{ID: 3}}},
+		"a cursor without an id":             {failure: rule, params: ListPositionMovementsParams{After: &PositionMovementCursor{OccurredAt: day, CreatedAt: day}}},
+		"a cursor without a date":            {failure: rule, params: ListPositionMovementsParams{After: &PositionMovementCursor{CreatedAt: day, ID: 3}}},
+		"a cursor without a creation time":   {failure: rule, params: ListPositionMovementsParams{After: &PositionMovementCursor{OccurredAt: day, ID: 3}}},
 	}
 
 	for name, tc := range tests {

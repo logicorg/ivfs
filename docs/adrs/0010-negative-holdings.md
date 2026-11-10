@@ -54,7 +54,7 @@ them):
 | `RegisterPositionMovement` | `finance/activities/ledger/portfolio/register_movement.go` |
 
 Movements can be entered in any order. Their place in the history is still
-`(occurred_at, id)`, which every report keeps using.
+`(occurred_at, created_at, id)` (ADR 0017), which every report keeps using.
 
 ### A negative holding is a warning
 

@@ -4154,7 +4154,7 @@
             "description": "Internal Server Error"
           }
         },
-        "summary": "List a page of the movements of holdings, by the date they occurred and then by id",
+        "summary": "List a page of the movements of holdings, by the date they occurred and then by when they were recorded",
         "tags": [
           "holdings"
         ]

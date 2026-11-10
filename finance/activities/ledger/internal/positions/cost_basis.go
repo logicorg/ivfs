@@ -73,9 +73,9 @@ func (b *CostBasis) add(currencyID int64, amount decimal.Decimal) {
 
 // CostBasisMovementsQuery selects the effective movements UnitsQuery counts,
 // in the order their basis is replayed: by position, then when they occurred,
-// then by id.
+// then when they were recorded, then by id.
 func CostBasisMovementsQuery(db bun.IDB, filter Filter) *bun.SelectQuery {
-	query := EffectiveMovementsQuery(db).OrderExpr("pm.financial_account_id, pm.asset_id, pm.occurred_at, pm.id")
+	query := EffectiveMovementsQuery(db).OrderExpr("pm.financial_account_id, pm.asset_id, pm.occurred_at, pm.created_at, pm.id")
 	if filter.FinancialAccountID > 0 {
 		query = query.Where("pm.financial_account_id = ?", filter.FinancialAccountID)
 	}

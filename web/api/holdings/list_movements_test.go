@@ -20,6 +20,7 @@ import (
 // cursor the API did not return is refused.
 func TestListMovements(t *testing.T) {
 	day := time.Date(2026, 1, 31, 10, 0, 0, 0, time.UTC)
+	recorded := time.Date(2026, 2, 3, 9, 30, 0, 123456000, time.UTC)
 	buy := model.PositionMovement{
 		ID: 20, JournalEntryID: ptr.Int64(5), Kind: model.PositionMovementTrade, FinancialAccountID: 3, AssetID: 7,
 		UnitsDelta: decimal.RequireFromString("12.5"), CostBasisAmount: ptr.NewPtr(decimal.RequireFromString("1250.25")),
@@ -52,18 +53,20 @@ func TestListMovements(t *testing.T) {
 				},
 				Result: lt.ListPositionMovementsResult{
 					Movements: []model.PositionMovement{buy, sale},
-					Next:      &lt.PositionMovementCursor{OccurredAt: day.Add(time.Hour), ID: 21},
+					Next:      &lt.PositionMovementCursor{OccurredAt: day.Add(time.Hour), CreatedAt: recorded, ID: 21},
 				},
 			},
 			WantStatus: http.StatusOK,
-			WantBody:   `{"movements":[` + buyBody + `,` + saleBody + `],"next":"2026-01-31T11:00:00Z_21"}`,
+			WantBody:   `{"movements":[` + buyBody + `,` + saleBody + `],"next":"2026-01-31T11:00:00Z_2026-02-03T09:30:00.123456Z_21"}`,
 		},
 		"the next page": {
-			Method: http.MethodGet, Path: "/api/holdings/movements?after=2026-01-31T11:00:00Z_21",
+			Method: http.MethodGet, Path: "/api/holdings/movements?after=2026-01-31T11:00:00Z_2026-02-03T09:30:00.123456Z_21",
 			Call: &apitest.WorkflowCall{
 				Workflow: portfoliowf.ListPositionMovements,
-				Params:   lt.ListPositionMovementsParams{After: &lt.PositionMovementCursor{OccurredAt: day.Add(time.Hour), ID: 21}},
-				Result:   lt.ListPositionMovementsResult{Movements: []model.PositionMovement{adjustment}},
+				Params: lt.ListPositionMovementsParams{
+					After: &lt.PositionMovementCursor{OccurredAt: day.Add(time.Hour), CreatedAt: recorded, ID: 21},
+				},
+				Result: lt.ListPositionMovementsResult{Movements: []model.PositionMovement{adjustment}},
 			},
 			WantStatus: http.StatusOK, WantBody: `{"movements":[` + adjustmentBody + `]}`,
 		},
@@ -102,6 +105,9 @@ func TestListMovements(t *testing.T) {
 		},
 		"a cursor the API did not return": {
 			Method: http.MethodGet, Path: "/api/holdings/movements?after=yesterday", WantStatus: http.StatusUnprocessableEntity,
+		},
+		"a cursor without when the movement was recorded": {
+			Method: http.MethodGet, Path: "/api/holdings/movements?after=2026-01-31T11:00:00Z_21", WantStatus: http.StatusUnprocessableEntity,
 		},
 		"a kind that is not one": {
 			Method: http.MethodGet, Path: "/api/holdings/movements?kind=gift", WantStatus: http.StatusUnprocessableEntity,

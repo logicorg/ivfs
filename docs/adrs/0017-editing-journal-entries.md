@@ -335,6 +335,8 @@ ADR 0010:
 
 - The writes that report negative holdings lose the two reversals, and gain
   `ReplaceJournalEntry`.
+- A movement's place in the history is `(occurred_at, created_at, id)`, where
+  it says `(occurred_at, id)`.
 
 ADR 0011:
 
