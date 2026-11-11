@@ -88,9 +88,8 @@ type Counterparty struct {
 	UpdatedAt time.Time
 }
 
-// JournalEntry is the header for one financial event. A posted entry is
-// immutable, apart from its counterparty (ADR 0016); a correction edits or
-// deletes it (ADR 0017).
+// JournalEntry is the header for one financial event. A posted entry can be
+// edited or deleted, and stays balanced through every change (ADR 0017).
 type JournalEntry struct {
 	ID                   int64
 	CounterpartyID       *int64
@@ -161,9 +160,9 @@ constraints in ADR 0001:
 - For every currency in a posted entry, debit and credit amounts total to the
   same value.
 - A posted entry, its postings, and its linked monetary position movements
-  cannot be changed or deleted, apart from the entry's counterparty (ADR 0016).
-- Only a draft entry may be voided. A posted entry is corrected by editing or
-  deleting it (ADR 0017).
+  can be changed or deleted (ADR 0011, ADR 0017). The database checks the first
+  two invariants on every write of a posted entry or of one of its postings.
+- A posted entry is corrected by editing or deleting it (ADR 0017).
 - A monetary purchase or sale position movement references the journal entry
   containing its monetary postings.
 - `JournalEntry.ExternalID` is unique within its import source once import
@@ -175,9 +174,9 @@ decimal string. A fee is a normal posting in the currency in which it was
 charged; it is never silently absorbed into the exchange rate or a rounding
 difference.
 
-The write that posts an entry must insert or update the entry header, replace
-draft postings where applicable, validate all invariants, and mark it posted
-in one SQL database transaction.  A trade write must include both the posted
+The write that posts an entry must insert the entry header as posted, insert
+its postings, and validate all invariants in one SQL database transaction
+(ADR 0017).  A trade write must include both the posted
 entry and its position movement in that same transaction.
 
 ### Activities

@@ -2,7 +2,6 @@ package temporaltesting
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -11,9 +10,9 @@ import (
 	"github.com/uptrace/bun"
 )
 
-// InsertPostedJournalEntry inserts entry with its postings and marks it as
-// posted. The database rejects a posted entry that is not balanced, so the
-// entry, its postings, and the status change have to share one transaction.
+// InsertPostedJournalEntry inserts entry as posted with its postings. The
+// database rejects a posted entry that is not balanced, so the entry and its
+// postings have to share one transaction.
 func InsertPostedJournalEntry(t *testing.T, db *bun.DB, entry *model.JournalEntry, postings ...model.Posting) {
 	t.Helper()
 
@@ -22,14 +21,14 @@ func InsertPostedJournalEntry(t *testing.T, db *bun.DB, entry *model.JournalEntr
 
 // InsertPostedJournalEntryWithMovements is InsertPostedJournalEntry for an entry
 // that also has position movements. The database only accepts a movement of an
-// entry while it is still a draft, and on its date, so the movements are
-// inserted between its postings and the status change, take the date of the
-// entry, and are completed by WithMovementDefaults. They are updated in place.
+// entry on its date, so the movements take the date of the entry. They are
+// completed by WithMovementDefaults and updated in place.
 func InsertPostedJournalEntryWithMovements(t *testing.T, db *bun.DB, entry *model.JournalEntry, postings []model.Posting, movements []*model.PositionMovement) {
 	t.Helper()
 
 	err := db.RunInTx(t.Context(), nil, func(ctx context.Context, tx bun.Tx) error {
-		entry.Status = model.JournalEntryDraft
+		now := time.Now().UTC()
+		entry.Status, entry.PostedAt = model.JournalEntryPosted, &now
 		if _, err := tx.NewInsert().Model(entry).Returning("id").Exec(ctx); err != nil {
 			return err
 		}
@@ -50,25 +49,18 @@ func InsertPostedJournalEntryWithMovements(t *testing.T, db *bun.DB, entry *mode
 			}
 		}
 
-		now := time.Now().UTC()
-		entry.Status, entry.PostedAt = model.JournalEntryPosted, &now
-		_, err := tx.NewUpdate().Model(entry).Column("status", "posted_at", "updated_at").WherePK().Exec(ctx)
-		return err
+		return nil
 	})
 	require.NoError(t, err)
 }
 
 // DeleteJournalEntry deletes an entry of any status with its postings, so a
-// test can remove what it posted. A posted entry can only be deleted by a
-// transaction that declares it (ADR 0011). An entry with movements is
-// refused.
+// test can remove what it posted. A posted entry without postings is not
+// balanced, so both go in one transaction. An entry with movements is refused.
 func DeleteJournalEntry(t *testing.T, db *bun.DB, id int64) {
 	t.Helper()
 
 	err := db.RunInTx(t.Context(), nil, func(ctx context.Context, tx bun.Tx) error {
-		if _, err := tx.ExecContext(ctx, `SELECT set_config('ivfs.deleting_journal_entry', ?, true)`, fmt.Sprint(id)); err != nil {
-			return err
-		}
 		if _, err := tx.NewDelete().Model((*model.Posting)(nil)).Where("journal_entry_id = ?", id).Exec(ctx); err != nil {
 			return err
 		}

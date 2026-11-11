@@ -173,9 +173,8 @@ func (t *deletionTarget) keepsTx(ctx context.Context, tx bun.Tx, entry *model.Jo
 
 // moveLinesTx moves the lines the kept entries have on the target to the
 // strays: each posting to the stray of its account's kind and currency, and
-// each movement to the stray financial account. The triggers let a posted line
-// move only off the account the transaction declares, so it declares each
-// account in turn.
+// each movement to the stray financial account. A stray has the currency of the
+// account it replaces, so the entries stay balanced.
 func (t *deletionTarget) moveLinesTx(ctx context.Context, tx bun.Tx, kept []*model.JournalEntry) error {
 	if len(kept) == 0 {
 		return nil
@@ -215,9 +214,6 @@ func (t *deletionTarget) moveLinesTx(ctx context.Context, tx bun.Tx, kept []*mod
 	}
 
 	for _, account := range accounts {
-		if _, err := tx.ExecContext(ctx, `SELECT set_config('ivfs.deleting_ledger_account', ?, true)`, fmt.Sprint(account.ID)); err != nil {
-			return fmt.Errorf("declare ledger account deletion: %w", err)
-		}
 		if _, err := tx.NewUpdate().Model((*model.Posting)(nil)).
 			Set("ledger_account_id = ?", strays[account.ID]).
 			Where("p.ledger_account_id = ?", account.ID).Where("p.journal_entry_id IN (?)", bun.List(entryIDs)).
@@ -228,9 +224,6 @@ func (t *deletionTarget) moveLinesTx(ctx context.Context, tx bun.Tx, kept []*mod
 
 	if !movesUnits {
 		return nil
-	}
-	if _, err := tx.ExecContext(ctx, `SELECT set_config('ivfs.deleting_financial_account', ?, true)`, fmt.Sprint(t.financialAccount.ID)); err != nil {
-		return fmt.Errorf("declare financial account deletion: %w", err)
 	}
 	if _, err := tx.NewUpdate().Model((*model.PositionMovement)(nil)).
 		Set("financial_account_id = ?", strayFinancialID).

@@ -41,6 +41,10 @@ post that will almost never happen is not worth it.
 
 ### A posted entry's counterparty may change
 
+ADR 0017 removes `prevent_settled_journal_entry_mutation`, so every column of
+a posted entry may change and the exception below is no longer needed. What
+follows is the design as first implemented.
+
 The counterparty is the one column of a posted entry that may be updated.
 `prevent_settled_journal_entry_mutation` lets an update through when no other
 column changes, apart from `updated_at`:

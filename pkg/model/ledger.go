@@ -164,9 +164,8 @@ type Counterparty struct {
 	UpdatedAt  time.Time `bun:"updated_at,nullzero,notnull,default:current_timestamp" json:"updatedAt"`
 }
 
-// JournalEntry is the header for one financial event. Posted entries are
-// immutable, apart from their counterparty (ADR 0016); a wrong one is deleted
-// (ADR 0011).
+// JournalEntry is the header for one financial event. A posted entry can be
+// edited or deleted, and the database keeps it balanced through every change.
 type JournalEntry struct {
 	bun.BaseModel `bun:"table:ledger.journal_entry,alias:je"`
 
@@ -199,7 +198,7 @@ type JournalEntry struct {
 	PositionMovements []PositionMovement `bun:"rel:has-many,join:id=journal_entry_id" json:"positionMovements,omitempty"`
 }
 
-// Posting is one immutable accounting line. Its currency is determined by
+// Posting is one accounting line. Its currency is determined by
 // LedgerAccount currency. Amounts are always positive.
 type Posting struct {
 	bun.BaseModel `bun:"table:ledger.posting,alias:p"`
@@ -255,9 +254,8 @@ func (k PositionMovementKind) HasJournalEntry() bool {
 // PositionMovement is the units subledger for investments. UnitsDelta and
 // CostBasisAmount are signed and share a sign; a buy is normally positive and a
 // sale negative. A movement of a monetary kind references its journal entry,
-// and any other one carries an idempotency key of its own. A movement is changed
-// or deleted only by the activities that declare it to the triggers (ADR 0011,
-// ADR 0012).
+// and any other one carries an idempotency key of its own. A movement of an
+// entry is always on the date of its entry.
 type PositionMovement struct {
 	bun.BaseModel `bun:"table:asset.position_movement,alias:pm"`
 

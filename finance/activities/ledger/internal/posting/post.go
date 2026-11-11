@@ -20,11 +20,9 @@ func PostJournalEntryTx(ctx context.Context, tx bun.Tx, input lt.PostJournalEntr
 
 // PostEntryWithMovementsTx writes and posts a balanced entry together with the
 // position movements that belong to it, using an existing SQL transaction. The
-// movements are inserted while the entry is still a draft, and the entry is
-// marked posted only afterwards, so a movement can never be attached to an
-// entry that is already settled. The movements take the entry's date and are
-// updated in place with their ids; the caller only supplies the rest of their
-// fields.
+// entry is inserted as posted, and the database checks its balance when the
+// transaction commits. The movements take the entry's date and are updated in
+// place with their ids; the caller only supplies the rest of their fields.
 func PostEntryWithMovementsTx(ctx context.Context, tx bun.Tx, input lt.PostJournalEntryInput, movements []model.PositionMovement) (int64, error) {
 	if err := input.Validate(); err != nil {
 		return 0, err
@@ -82,7 +80,8 @@ func PostEntryWithMovementsTx(ctx context.Context, tx bun.Tx, input lt.PostJourn
 		}
 	}
 
-	entry := &model.JournalEntry{CounterpartyID: input.CounterpartyID, OccurredAt: input.OccurredAt, Description: input.Description, ExternalID: input.ExternalID, IdempotencyKey: nullableString(input.IdempotencyKey), Metadata: input.Metadata, Status: model.JournalEntryDraft}
+	now := time.Now().UTC()
+	entry := &model.JournalEntry{CounterpartyID: input.CounterpartyID, OccurredAt: input.OccurredAt, Description: input.Description, ExternalID: input.ExternalID, IdempotencyKey: nullableString(input.IdempotencyKey), Metadata: input.Metadata, Status: model.JournalEntryPosted, PostedAt: &now}
 	if _, err := tx.NewInsert().Model(entry).Returning("id").Exec(ctx); err != nil {
 		if notFound := sqllib.ParentNotFound(err); notFound != nil {
 			return 0, notFound
@@ -110,12 +109,6 @@ func PostEntryWithMovementsTx(ctx context.Context, tx bun.Tx, input lt.PostJourn
 			}
 			return 0, fmt.Errorf("insert position movements: %w", err)
 		}
-	}
-
-	now := time.Now().UTC()
-	entry.Status, entry.PostedAt = model.JournalEntryPosted, &now
-	if _, err := tx.NewUpdate().Model(entry).Column("status", "posted_at", "updated_at").WherePK().Exec(ctx); err != nil {
-		return 0, fmt.Errorf("post journal entry: %w", err)
 	}
 
 	return entry.ID, nil

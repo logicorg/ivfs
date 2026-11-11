@@ -30,6 +30,17 @@ earn little, and they cost a lot:
 
 `ReversePositionMovement` has no route or MCP tool at all.
 
+Immutability costs as much. A posted entry, its postings, and its movements are
+frozen by three triggers, `prevent_settled_journal_entry_mutation`,
+`prevent_posted_posting_mutation`, and `guard_position_movement`. Every later
+decision had to open them: deleting an entry (ADR 0011), moving lines off a
+deleted account (ADR 0012), and clearing a counterparty (ADR 0016), each
+through an `ivfs.deleting_*` setting or a comparison of whole rows. An edit
+would be one more. The freezes exist to keep a trail and to keep a posted
+entry balanced, since the balance is checked only when an entry is posted.
+Once an entry can be edited and deleted there is no trail to keep, and the
+balance can be checked directly.
+
 A refund does not need a reversal. It is an income on a category such as
 "Refund", on its own date and for any amount.
 
@@ -68,15 +79,58 @@ with `DeletePositionMovement`.
 The system is pre-alpha, and databases are recreated rather than migrated
 (ADR 0005).
 
+### What the database enforces
+
+A posted entry is no longer frozen. The database keeps the rules that an edit
+could break, and drops the ones that only kept history.
+
+Kept:
+
+- **A posted entry has at least two postings and balances in each currency.**
+  One deferred check runs at commit for every entry the transaction touched:
+  on an insert of the entry, on a change of its status, and on an insert, an
+  update, or a delete of one of its postings. It skips an entry that no longer
+  exists or is not posted. Until now it ran only when the entry was posted, and
+  the freezes kept it true afterwards.
+- **A movement with an entry has the entry's date.** A foreign key on
+  `(journal_entry_id, occurred_at)` to `ledger.journal_entry (id, occurred_at)`
+  states it, and follows a change of the entry's date. It replaces the check in
+  `guard_position_movement`.
+- `status` stays `draft` or `posted`, and reports and holdings still count
+  posted entries only.
+
+Removed:
+
+- `prevent_settled_journal_entry_mutation`, `prevent_posted_posting_mutation`,
+  and `guard_position_movement`;
+- the settings `ivfs.deleting_journal_entry`,
+  `ivfs.deleting_position_movement_group`, `ivfs.deleting_ledger_account`, and
+  `ivfs.deleting_financial_account`, which only opened those triggers;
+- writing an entry as a draft and then posting it. An entry is inserted as
+  posted, with its `posted_at`. No command writes a draft. The status stays for
+  a later draft lifecycle, such as reviewing imported entries (ADR 0007), which
+  costs nothing to keep.
+
+Two rules move from the triggers to the activities that already follow them.
+Account deletion moves a posting only onto an account of the same currency:
+`StrayLedgerAccountsTx` picks the target by currency, and the balance check
+catches a move that unbalances the entry. A movement of an entry is written
+only with the entry, by posting and by replace.
+
+What is lost is the database refusing a write of our own that changes a posted
+entry and leaves it balanced. Every write goes through a few activities, and
+each has tests.
+
 ### Replacing an entry
 
 A new `ReplaceJournalEntry` workflow runs one activity of the same name. It
-deletes the entry and writes it again **with the same id**, in one transaction.
+updates the entry's row, and replaces its postings and movements, in one
+transaction.
 
 | Field | On replace |
 | --- | --- |
 | `occurredAt`, `description`, `metadata`, postings, position movements | replaced by the input |
-| `id`, `idempotencyKey`, `externalId`, `counterpartyId`, `createdAt`, `postedAt` | kept from the old row |
+| `id`, `idempotencyKey`, `externalId`, `counterpartyId`, `createdAt`, `postedAt` | kept, since the row is updated and never deleted |
 
 The input is the entry's id, the replaced fields, and zero or more movements,
 each with its kind, financial account, asset, units, and cost basis. A movement
@@ -87,32 +141,26 @@ the cash.
 The activity:
 
 - reads the entry, and fails with `ErrNotFound` when it does not exist, or
-  `ErrInvalidParameter` when it is not posted, since writing it again posts it;
+  `ErrInvalidParameter` when it is not posted, since a replace leaves it posted;
 - locks the financial and ledger accounts of the old entry and of the input
-  once, in ascending id order, then reads the entry again;
+  once, in ascending id order, then locks the entry's row and reads it again;
 - checks closed accounts, as below;
-- deletes the entry with `deletion.DeleteEntryTx`;
-- writes it again through the code that `PostEntryWithMovementsTx` uses, given
-  the kept fields;
+- deletes the entry's postings and movements;
+- updates the row's replaced fields;
+- inserts the new postings and movements with the checks that
+  `PostEntryWithMovementsTx` runs on a new entry, which are the precision of
+  each amount and the balance in each currency;
 - returns the ids of the new movements, and `positions.NegativeHoldingsTx` for
   the positions of both the old and the new movements as warnings.
 
-Every step reuses what deletion and posting already do. The triggers do not
-change: `ivfs.deleting_journal_entry` already allows the delete, and the entry
-is written as a draft and then posted, so `guard_position_movement` accepts its
-movements and `validate_posted_journal_entry` runs at commit as it does for any
-new entry. No row of a posted entry is updated.
-
-It works because only `ledger.posting` and `asset.position_movement` refer to a
-journal entry once reversals are gone, and both are replaced. A foreign key
-added later must be replaced with them or the delete fails.
+The balance check of the database runs at commit, on the new postings.
 
 The counterparty is kept because the transactions of ADR 0008 and ADR 0009 do
 not carry one, so replacing it from them would clear it.
 
 A retried activity writes the same state again, so no idempotency key is
-needed. A movement gets a new id on every replace, which nothing refers to, and
-keeps its place through `created_at`, as below.
+needed. A posting or a movement gets a new id on every replace, which nothing
+refers to. A movement keeps its place through `created_at`, as below.
 
 A later record request sent with the entry's original key returns the entry as
 edited, as any retrieve-or-insert returns what is there (ADR 0005).
@@ -150,6 +198,10 @@ ledger account and for a financial account alike.
 
 There is no optimistic locking. The last write wins. The only realistic
 conflict is one person editing the same entry from two devices.
+
+A replace locks the entry's row, so two replaces of one entry run one after
+the other and neither mixes its postings with the other's. A delete of the
+entry waits for the same lock.
 
 ### Holdings
 
@@ -243,10 +295,19 @@ UpdateExpense{journalEntryId: 41, balanceLedgerAccountId: <closed account>, ...}
 
 ## Alternatives considered
 
-- **Updating the entry in place**, with a new `ivfs.editing_journal_entry`
-  setting. It needs exceptions in `prevent_settled_journal_entry_mutation` and
-  `prevent_posted_posting_mutation`, and the balance trigger firing on every
-  update, to end up where delete and re-insert already is.
+- **Keeping the freezes, and replacing an entry by deleting it and inserting it
+  again with the same id.** This ADR first decided it. It needs no new
+  exception, but the kept fields have to be copied onto a new row, a foreign
+  key to an entry added later breaks the delete, and the three triggers and
+  four settings stay to guard a history the ledger no longer keeps.
+- **Keeping the freezes, with a new `ivfs.editing_journal_entry` setting.** One
+  more exception in each trigger, and the balance check on every update anyway.
+- **Removing `status` as well.** No draft is ever committed, so the column is
+  constant today. It stays because a draft lifecycle is a likely later need,
+  and keeping it costs a filter that the reports already have.
+- **Keeping a trigger for the movement's date.** It states the same rule as the
+  foreign key in more code, and would need a second trigger on the entry to
+  follow a change of date.
 - **Delete and record again with a new id.** Atomic, but the entry's URL and
   anything that later refers to it break, and the key is taken by a new row.
 - **Keeping reversals and rewriting the chain on an edit.** It keeps a dated
@@ -274,6 +335,14 @@ UpdateExpense{journalEntryId: 41, balanceLedgerAccountId: <closed account>, ...}
 
 - An entry, a trade, or a vest can be corrected in one transaction, keeping its
   id and key. Nothing exposes this until a later decision adds the routes.
+- A posted entry can change. The database checks that it stays balanced, and no
+  longer that it stays the same.
+- The three freeze triggers, the four settings, and their tests go. Deleting an
+  entry, a movement group, or an account, and clearing a counterparty, become
+  plain statements.
+- The balance check gets tests for an update and a delete of a posting that
+  unbalance a posted entry, and the movement's date for an insert on another
+  date and for a change of the entry's date.
 - The ledger keeps no trail of a correction, by edit or by deletion, and a
   report run twice can differ for a past date.
 - Posting has no exception for closed accounts.
@@ -299,16 +368,23 @@ ADR 0001:
 
 - `reversal_of_entry_id` is removed. A correction is an edit or a deletion, not
   a reversing entry.
+- A posted entry and its postings are no longer immutable. The balance of a
+  posted entry is checked whenever the entry or one of its postings is
+  written.
 
 ADR 0002:
 
 - `ReversalOfEntryID` and `ReverseJournalEntry` are removed.
+- "Write a draft, validate, and mark it posted" becomes "write the entry as
+  posted". The draft status stays, unused.
 
 ADR 0004:
 
 - `ReversalOfMovementID`, `ReversePositionMovement`, and reversing an entry's
-  movements are removed. Movements stay append-only, and are written again only
-  with their entry.
+  movements are removed.
+- Movements are no longer append-only, and `guard_position_movement` is
+  removed. A movement of an entry is written with the entry as posted, no
+  longer while it is a draft, and a foreign key gives it the entry's date.
 - Movements are ordered by `(occurred_at, created_at, id)`, where it says
   `(occurred_at, id)`.
 
@@ -347,12 +423,21 @@ ADR 0011:
   movement groups.
 - The closed-account rule rests on correcting mistakes, and no longer on a
   reversal being allowed.
+- The settings `ivfs.deleting_journal_entry` and
+  `ivfs.deleting_position_movement_group` are removed. A deletion needs no
+  declaration.
 
 ADR 0012:
 
 - A reversal can no longer arrive on an account while it is deleted. Only a
   deletion of an entry can.
+- The settings `ivfs.deleting_ledger_account` and
+  `ivfs.deleting_financial_account` are removed. The activity keeps a moved
+  posting on an account of the same currency.
 
 ADR 0016:
 
 - The section on reversals no longer applies.
+- The exception for the counterparty in
+  `prevent_settled_journal_entry_mutation` goes with the trigger. Clearing a
+  counterparty is a plain update.

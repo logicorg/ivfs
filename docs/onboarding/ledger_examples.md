@@ -53,8 +53,8 @@ counterparty, its status). Each `Posting` is one accounting line: a
 `LedgerAccountID`, a positive `Amount` (in that account's currency), and a
 `Side` (`debit` or `credit`). A *posted* entry must have at least two
 postings, and for every currency present, the debits must sum to the
-credits. Once posted, an entry and its postings are immutable; a correction
-deletes the entry and records it again.
+credits. The database checks this on every write, so a posted entry can be
+edited or deleted, but never left unbalanced.
 
 **`PositionMovement`** (`pkg/model/ledger.go`) is the separate subledger for
 investment units (shares, ETF units, ...). It's the source of truth for "how
