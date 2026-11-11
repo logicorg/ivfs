@@ -113,6 +113,11 @@ trade, an opening balance, ...), and is left for when one proves needed.
 
 ### Enforcement
 
+ADR 0017 removes the three triggers and the two settings this section
+describes. A deletion needs no declaration: the balance check on postings
+only requires that the entry and its postings are deleted in one transaction.
+What follows is the design as first implemented.
+
 The three triggers stay, and gain one exception: a row may be deleted when the
 transaction has declared that it is deleting that entry or movement group. The
 delete activity sets a transaction-local setting before deleting:

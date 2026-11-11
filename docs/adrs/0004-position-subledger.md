@@ -102,9 +102,10 @@ later without a breaking change.
   unchanged, following the retrieve-or-insert convention.
 - `ExternalID` stays a non-unique provenance field.
 
-Every movement row is **append-only**: it is never updated, and is deleted
-only with its entry or its group, by the activities that declare it (ADR 0011).
-A correction deletes the movement's entry or group and records it again.
+A movement row is no longer append-only (ADR 0017). It is deleted with its
+entry or its group (ADR 0011), and replaced when its entry is edited. A
+correction edits the movement's entry, or deletes its entry or group and
+records it again.
 `ReversalOfMovementID`, `ReversePositionMovement`, and reversing an entry's
 movements are removed (ADR 0017).
 
@@ -142,22 +143,20 @@ while any position it holds is non-zero.
   `(occurred_at, created_at, id)` with a keyset cursor (ADR 0017). The sum of the history up to a
   time equals `PositionAt` at that time.
 
-### Write order and the movement guard
+### Write order and the movement date
 
-An entry-linked movement is written while its entry is still a draft, inside
-the same transaction, and the entry is then marked posted. This is what lets
-the database protect movements. A trigger raises on any update or delete of a
-movement, and on an insert whose entry is not a draft or does not share its
-`occurred_at`. A delete is let through when the transaction has declared it is
-deleting that movement's entry or group (ADR 0011). A shared helper writes the
-draft entry, postings, and movements and then posts the entry, and the trade
-and vest paths both use it.
+An entry-linked movement is written with its entry, inside the same
+transaction, and the entry is inserted as posted (ADR 0017). The trigger that
+guarded movements is removed. A foreign key on the entry's id and
+`occurred_at` keeps a movement on the date of its entry, and moves it when the
+entry's date changes. A shared helper writes the entry, postings, and
+movements, and the trade and vest paths both use it.
 
 ### Ledger-wide integrity
 
-- A trigger on `ledger.journal_entry` freezes an entry once it is posted. Only
-  draft to posted is allowed, and a posted entry can be deleted only whole, by
-  the activity that declares it (ADR 0011).
+- Nothing freezes a posted entry (ADR 0017). A deferred trigger checks its
+  balance whenever the entry or one of its postings is written, so an entry is
+  deleted whole, with its postings, in one transaction (ADR 0011).
 - Foreign keys are declared across the schema, all `ON DELETE RESTRICT`, so a
   used row can never be deleted and history is never destroyed or nulled,
   except an entry, its postings, and its movements, which are deleted together
@@ -236,8 +235,8 @@ ADR 0002:
   triggers instead of only by convention.
 - "A monetary purchase or sale position movement references the journal entry"
   extends to a `vest`.
-- The entry, postings, and movements are written in one transaction while the
-  entry is a draft, and the entry is then marked posted.
+- The entry, postings, and movements are written in one transaction, and the
+  entry is inserted as posted (ADR 0017).
 - `RegisterInvestmentTrade` is no longer the only domain-specific financial
   command. `RegisterFXConversion` already exists and the Batch 4 vest command
   is another.

@@ -278,6 +278,12 @@ negative and are never reported.
 
 ### Enforcement
 
+ADR 0017 removes the triggers and the two settings this section describes.
+A moved posting stays on an account of the same currency because the activity
+picks the stray by currency, and the balance check on postings refuses a move
+that would unbalance an entry. What follows is the design as first
+implemented.
+
 Moving a line updates a posted row: a posting's `ledger_account_id`, or a
 movement's `financial_account_id`. The triggers of ADR 0011 gain a second
 exception, with two transaction-local settings set by `set_config(name, value,
