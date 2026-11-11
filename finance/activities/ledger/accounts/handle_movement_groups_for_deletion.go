@@ -144,9 +144,6 @@ func (t *deletionTarget) moveLegsTx(ctx context.Context, tx bun.Tx, kept [][]mod
 		return nil
 	}
 
-	if _, err := tx.ExecContext(ctx, `SELECT set_config('ivfs.deleting_financial_account', ?, true)`, fmt.Sprint(t.financialAccount.ID)); err != nil {
-		return fmt.Errorf("declare financial account deletion: %w", err)
-	}
 	if len(dropped) > 0 {
 		if _, err := tx.NewDelete().Model((*model.PositionMovement)(nil)).Where("id IN (?)", bun.List(dropped)).Exec(ctx); err != nil {
 			return fmt.Errorf("delete position movements: %w", err)

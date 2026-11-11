@@ -39,13 +39,8 @@ func AccountIDsOf(movements []model.PositionMovement) []int64 {
 	return ids
 }
 
-// DeleteGroupTx deletes the entry-less movements written under key, declaring
-// the group to the trigger that guards them. The setting ends with the
-// transaction.
+// DeleteGroupTx deletes the entry-less movements written under key.
 func DeleteGroupTx(ctx context.Context, tx bun.Tx, key string) error {
-	if _, err := tx.ExecContext(ctx, `SELECT set_config('ivfs.deleting_position_movement_group', ?, true)`, key); err != nil {
-		return fmt.Errorf("declare position movement group deletion: %w", err)
-	}
 	if _, err := tx.NewDelete().Model((*model.PositionMovement)(nil)).Where("idempotency_key = ?", key).Where("journal_entry_id IS NULL").Exec(ctx); err != nil {
 		return fmt.Errorf("delete position movements: %w", err)
 	}

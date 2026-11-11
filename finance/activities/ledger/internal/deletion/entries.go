@@ -73,12 +73,9 @@ func LockAccountsTx(ctx context.Context, tx bun.Tx, financialIDs, ledgerIDs []in
 	return nil
 }
 
-// DeleteEntryTx deletes an entry with its movements and postings, declaring it
-// to the triggers that guard them. The setting ends with the transaction.
+// DeleteEntryTx deletes an entry with its movements and postings. They have to
+// go in one transaction: a posted entry left without postings is not balanced.
 func DeleteEntryTx(ctx context.Context, tx bun.Tx, entryID int64) error {
-	if _, err := tx.ExecContext(ctx, `SELECT set_config('ivfs.deleting_journal_entry', ?, true)`, fmt.Sprint(entryID)); err != nil {
-		return fmt.Errorf("declare journal entry deletion: %w", err)
-	}
 	if _, err := tx.NewDelete().Model((*model.PositionMovement)(nil)).Where("journal_entry_id = ?", entryID).Exec(ctx); err != nil {
 		return fmt.Errorf("delete position movements: %w", err)
 	}
