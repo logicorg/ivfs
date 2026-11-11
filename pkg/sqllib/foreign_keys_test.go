@@ -38,6 +38,8 @@ func (s *UnitTestSuite) Test_ForeignKeysAreDeclared() {
 		"ledger.posting.journal_entry_id -> ledger.journal_entry",
 		"ledger.posting.ledger_account_id -> ledger.ledger_account",
 		"asset.position_movement.journal_entry_id -> ledger.journal_entry",
+		// A second key on the entry and its date, listed here by its first column.
+		"asset.position_movement.journal_entry_id -> ledger.journal_entry",
 		"asset.position_movement.financial_account_id -> account.financial_account",
 		"asset.position_movement.asset_id -> asset.asset",
 		"asset.position_movement.cost_basis_currency_id -> currency.currency",
