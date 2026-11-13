@@ -87,6 +87,9 @@ func Register(r worker.Registry, pools tenancy.Pools) {
 	r.RegisterWorkflow(transactions.RecordExpense)
 	r.RegisterWorkflow(transactions.RecordIncome)
 	r.RegisterWorkflow(transactions.RecordTransfer)
+	r.RegisterWorkflow(transactions.UpdateExpense)
+	r.RegisterWorkflow(transactions.UpdateIncome)
+	r.RegisterWorkflow(transactions.UpdateTransfer)
 
 	r.RegisterWorkflow(investments.RecordInvestment)
 

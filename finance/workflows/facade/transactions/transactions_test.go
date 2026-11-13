@@ -1,12 +1,14 @@
 package transactions
 
 import (
+	"maps"
 	"testing"
 
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/logicorg/ivfs/pkg/ptr"
+	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 	"go.temporal.io/sdk/testsuite"
@@ -68,3 +70,27 @@ func entry(want lt.PostJournalEntryInput) any {
 		return true
 	})
 }
+
+// replacement matches the replace want by what it books, as entry does, and
+// checks that it carries no position movement.
+func replacement(want lt.ReplaceJournalEntryInput) any {
+	return mock.MatchedBy(func(got lt.ReplaceJournalEntryInput) bool {
+		sameDescription := (got.Description == nil) == (want.Description == nil) &&
+			(got.Description == nil || *got.Description == *want.Description)
+		if got.JournalEntryID != want.JournalEntryID || !got.OccurredAt.Equal(want.OccurredAt) || !sameDescription ||
+			!maps.Equal(got.Metadata, want.Metadata) || len(got.Movements) != 0 || len(got.Postings) != len(want.Postings) {
+			return false
+		}
+		for i, posting := range want.Postings {
+			if got.Postings[i].LedgerAccountID != posting.LedgerAccountID || got.Postings[i].Side != posting.Side ||
+				!got.Postings[i].Amount.Equal(posting.Amount) {
+				return false
+			}
+		}
+		return true
+	})
+}
+
+// soldSince is a holding an update left negative, as ReplaceJournalEntry
+// reports it.
+var soldSince = []lt.NegativeHolding{{FinancialAccountID: 10, FinancialAccountName: "Revolut Personal", AssetID: 7, AssetName: "ACME", Units: decimal.NewFromInt(-3)}}

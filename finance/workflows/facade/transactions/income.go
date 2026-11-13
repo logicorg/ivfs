@@ -17,22 +17,33 @@ func RecordIncome(ctx workflow.Context, input tt.RecordIncomeInput) (*tt.RecordR
 		return nil, err
 	}
 
-	accounts, err := retrieveLedgerAccounts(ctx, input.BalanceLedgerAccountID, input.CategoryLedgerAccountID)
+	m, err := incomeMovement(ctx, input)
 	if err != nil {
 		return nil, err
 	}
+	return post(ctx, m)
+}
+
+// incomeMovement checks that the accounts can play their roles in an income
+// and returns the movement it is, for recording it or for updating an entry
+// to it.
+func incomeMovement(ctx workflow.Context, input tt.RecordIncomeInput) (movement, error) {
+	accounts, err := retrieveLedgerAccounts(ctx, input.BalanceLedgerAccountID, input.CategoryLedgerAccountID)
+	if err != nil {
+		return movement{}, err
+	}
 	balance, category := accounts[0], accounts[1]
 	if err := checkBalance(balance); err != nil {
-		return nil, err
+		return movement{}, err
 	}
 	if err := checkCategory(category, model.LedgerAccountIncome); err != nil {
-		return nil, err
+		return movement{}, err
 	}
 	if err := checkSameCurrency(balance, category); err != nil {
-		return nil, err
+		return movement{}, err
 	}
 
-	return post(ctx, movement{
+	return movement{
 		kind:           "income",
 		idempotencyKey: input.IdempotencyKey,
 		from:           category.ID,
@@ -40,5 +51,5 @@ func RecordIncome(ctx workflow.Context, input tt.RecordIncomeInput) (*tt.RecordR
 		amount:         input.Amount,
 		occurredAt:     input.OccurredAt,
 		description:    input.Description,
-	})
+	}, nil
 }

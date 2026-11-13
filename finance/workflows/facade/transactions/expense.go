@@ -17,22 +17,33 @@ func RecordExpense(ctx workflow.Context, input tt.RecordExpenseInput) (*tt.Recor
 		return nil, err
 	}
 
-	accounts, err := retrieveLedgerAccounts(ctx, input.BalanceLedgerAccountID, input.CategoryLedgerAccountID)
+	m, err := expenseMovement(ctx, input)
 	if err != nil {
 		return nil, err
 	}
+	return post(ctx, m)
+}
+
+// expenseMovement checks that the accounts can play their roles in an expense
+// and returns the movement it is, for recording it or for updating an entry
+// to it.
+func expenseMovement(ctx workflow.Context, input tt.RecordExpenseInput) (movement, error) {
+	accounts, err := retrieveLedgerAccounts(ctx, input.BalanceLedgerAccountID, input.CategoryLedgerAccountID)
+	if err != nil {
+		return movement{}, err
+	}
 	balance, category := accounts[0], accounts[1]
 	if err := checkBalance(balance); err != nil {
-		return nil, err
+		return movement{}, err
 	}
 	if err := checkCategory(category, model.LedgerAccountExpense); err != nil {
-		return nil, err
+		return movement{}, err
 	}
 	if err := checkSameCurrency(balance, category); err != nil {
-		return nil, err
+		return movement{}, err
 	}
 
-	return post(ctx, movement{
+	return movement{
 		kind:           "expense",
 		idempotencyKey: input.IdempotencyKey,
 		from:           balance.ID,
@@ -40,5 +51,5 @@ func RecordExpense(ctx workflow.Context, input tt.RecordExpenseInput) (*tt.Recor
 		amount:         input.Amount,
 		occurredAt:     input.OccurredAt,
 		description:    input.Description,
-	})
+	}, nil
 }
