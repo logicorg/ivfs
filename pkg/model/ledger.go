@@ -265,10 +265,15 @@ type PositionMovement struct {
 	FinancialAccountID int64                `bun:"financial_account_id,notnull" json:"financialAccountId"`
 	AssetID            int64                `bun:"asset_id,notnull" json:"assetId"`
 	UnitsDelta         decimal.Decimal      `bun:"units_delta,type:numeric(36,18),notnull" json:"unitsDelta"`
-	// CostBasisAmount is the signed change to the position's total cost basis,
-	// in CostBasisCurrencyID. The two fields are either both set or both nil.
-	// Nil is not zero: a decrease removes the average cost, worked out when
-	// read (ADR 0009), an increase makes the basis unknown, and a split keeps it.
+	// CostBasisAmount is the cost basis this movement adds to its position, or
+	// removes when negative, in CostBasisCurrencyID: what the units of a buy
+	// cost, or the value of the units a vest delivered. The two fields are either
+	// both set or both nil.
+	//
+	// Nil is not zero. On an increase it makes the basis unknown, and on a split
+	// it keeps the basis. On a decrease the replay removes the average cost: all
+	// of the basis when no units are left, and an unknown amount when the basis
+	// is unknown or in more than one currency.
 	CostBasisAmount     *decimal.Decimal `bun:"cost_basis_amount,type:numeric(36,18)" json:"costBasisAmount,omitempty"`
 	CostBasisCurrencyID *int64           `bun:"cost_basis_currency_id" json:"costBasisCurrencyId,omitempty"`
 	OccurredAt          time.Time        `bun:"occurred_at,nullzero,notnull" json:"occurredAt"`

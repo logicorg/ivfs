@@ -87,8 +87,12 @@ func Register(r worker.Registry, pools tenancy.Pools) {
 	r.RegisterWorkflow(transactions.RecordExpense)
 	r.RegisterWorkflow(transactions.RecordIncome)
 	r.RegisterWorkflow(transactions.RecordTransfer)
+	r.RegisterWorkflow(transactions.UpdateExpense)
+	r.RegisterWorkflow(transactions.UpdateIncome)
+	r.RegisterWorkflow(transactions.UpdateTransfer)
 
 	r.RegisterWorkflow(investments.RecordInvestment)
+	r.RegisterWorkflow(investments.UpdateInvestment)
 
 	r.RegisterWorkflow(currencies.DeleteCurrency)
 	r.RegisterWorkflow(currencies.InsertCurrency)
@@ -116,6 +120,7 @@ func Register(r worker.Registry, pools tenancy.Pools) {
 	r.RegisterWorkflow(ledgerjournalwf.PostJournalEntry)
 	r.RegisterWorkflow(ledgerjournalwf.RetrieveJournalEntry)
 	r.RegisterWorkflow(ledgerjournalwf.DeleteJournalEntry)
+	r.RegisterWorkflow(ledgerjournalwf.ReplaceJournalEntry)
 	r.RegisterWorkflow(ledgerjournalwf.ListJournalEntries)
 	r.RegisterWorkflow(ledgerreportingwf.LedgerAccountBalance)
 	r.RegisterWorkflow(ledgeraccountswf.CreateFinancialAccount)

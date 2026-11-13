@@ -27,7 +27,9 @@ func InsertPostedJournalEntryWithMovements(t *testing.T, db *bun.DB, entry *mode
 	t.Helper()
 
 	err := db.RunInTx(t.Context(), nil, func(ctx context.Context, tx bun.Tx) error {
-		now := time.Now().UTC()
+		// PostgreSQL keeps microseconds and a Linux clock reads nanoseconds, so
+		// an untruncated time would not equal the one a test reads back.
+		now := time.Now().UTC().Truncate(time.Microsecond)
 		entry.Status, entry.PostedAt = model.JournalEntryPosted, &now
 		if _, err := tx.NewInsert().Model(entry).Returning("id").Exec(ctx); err != nil {
 			return err
