@@ -30,8 +30,10 @@ func (a *Activities) DeleteJournalEntry(ctx context.Context, input lt.DeleteJour
 
 	result := &lt.DeleteJournalEntryResult{}
 	err = db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
-		// A posted entry's postings and movements never change, so the accounts
-		// read before the lock are the ones it still touches after it.
+		// The accounts are read before they are locked. A replace of the entry
+		// that commits in between can move it onto others, which then go
+		// unlocked: the delete is still whole, and only its warnings may miss a
+		// position.
 		if err := deletion.LockAccountsOfTx(ctx, tx, []int64{input.JournalEntryID}); err != nil {
 			return err
 		}
