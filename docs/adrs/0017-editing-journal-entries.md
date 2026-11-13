@@ -1,6 +1,6 @@
 # ADR 0017: Editing journal entries and removing reversals
 
-- Status: Proposed
+- Status: Implemented
 - Date: 2026-11-09
 - Depends on: [ADR 0004](0004-position-subledger.md) (position movements),
   [ADR 0008](0008-intent-level-transactions.md) (transactions),

@@ -92,6 +92,7 @@ func Register(r worker.Registry, pools tenancy.Pools) {
 	r.RegisterWorkflow(transactions.UpdateTransfer)
 
 	r.RegisterWorkflow(investments.RecordInvestment)
+	r.RegisterWorkflow(investments.UpdateInvestment)
 
 	r.RegisterWorkflow(currencies.DeleteCurrency)
 	r.RegisterWorkflow(currencies.InsertCurrency)
