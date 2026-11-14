@@ -1,4 +1,4 @@
-# ADR 0017: A transactions page: filtered, cursor-paged listing
+# ADR 0018: A transactions page: filtered, cursor-paged listing
 
 - Status: Proposed
 - Date: 2026-11-07
