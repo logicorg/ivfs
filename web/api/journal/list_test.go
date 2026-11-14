@@ -16,8 +16,9 @@ import (
 
 // TestList checks that each filter and the cursor reach ListJournalEntries,
 // that the next page's cursor goes back as after, that each entry has its
-// postings with their accounts' names, and that a cursor the API did not
-// return, or an entry without its postings' accounts, is refused.
+// postings with their accounts' names and their categories, and that a cursor
+// the API did not return, or an entry without its postings' accounts or
+// categories, is refused.
 func TestList(t *testing.T) {
 	day := time.Date(2026, 1, 31, 10, 0, 0, 0, time.UTC)
 	cash := &model.LedgerAccount{ID: 100, Name: "Cash", Kind: model.LedgerAccountAsset, CurrencyID: 1}
@@ -26,7 +27,10 @@ func TestList(t *testing.T) {
 		ID: 7, OccurredAt: day, Description: ptr.NewPtr("Supermarket"), ExternalID: ptr.NewPtr("bank-42"),
 		Status: model.JournalEntryPosted,
 		Postings: []model.Posting{
-			{ID: 70, LineNumber: 1, LedgerAccountID: 200, LedgerAccount: groceries, Amount: decimal.RequireFromString("12345678901234.56"), Side: model.PostingDebit},
+			{
+				ID: 70, LineNumber: 1, LedgerAccountID: 200, LedgerAccount: groceries, Amount: decimal.RequireFromString("12345678901234.56"), Side: model.PostingDebit,
+				CategoryID: ptr.Int64(40), Category: &model.Category{ID: 40, Name: "Food", Kind: model.LedgerAccountExpense},
+			},
 			{ID: 71, LineNumber: 2, LedgerAccountID: 100, LedgerAccount: cash, Amount: decimal.RequireFromString("12345678901234.56"), Side: model.PostingCredit},
 		},
 	}
@@ -38,7 +42,7 @@ func TestList(t *testing.T) {
 		},
 	}
 	shoppingBody := `{"id":7,"occurredAt":"2026-01-31T10:00:00Z","description":"Supermarket","externalId":"bank-42","status":"posted","postings":[` +
-		`{"lineNumber":1,"ledgerAccountId":200,"ledgerAccountName":"Groceries","kind":"expense","currencyId":1,"amount":"12345678901234.56","side":"debit"},` +
+		`{"lineNumber":1,"ledgerAccountId":200,"ledgerAccountName":"Groceries","kind":"expense","currencyId":1,"amount":"12345678901234.56","side":"debit","categoryId":40,"categoryName":"Food"},` +
 		`{"lineNumber":2,"ledgerAccountId":100,"ledgerAccountName":"Cash","kind":"asset","currencyId":1,"amount":"12345678901234.56","side":"credit"}]}`
 	refundBody := `{"id":8,"occurredAt":"2026-01-31T11:00:00Z","status":"posted","postings":[` +
 		`{"lineNumber":1,"ledgerAccountId":200,"ledgerAccountName":"Groceries","kind":"expense","currencyId":1,"amount":"1.5","side":"credit"},` +
@@ -112,6 +116,18 @@ func TestList(t *testing.T) {
 				Result: lt.ListJournalEntriesResult{Entries: []model.JournalEntry{{
 					ID: 9, OccurredAt: day, Status: model.JournalEntryPosted,
 					Postings: []model.Posting{{ID: 90, LineNumber: 1, LedgerAccountID: 100, Side: model.PostingDebit}},
+				}}},
+			},
+			WantStatus: http.StatusInternalServerError,
+		},
+		"an entry without its posting's category": {
+			Method: http.MethodGet, Path: "/api/journal-entries",
+			Call: &apitest.WorkflowCall{
+				Workflow: journalwf.ListJournalEntries,
+				Params:   lt.ListJournalEntriesParams{},
+				Result: lt.ListJournalEntriesResult{Entries: []model.JournalEntry{{
+					ID: 9, OccurredAt: day, Status: model.JournalEntryPosted,
+					Postings: []model.Posting{{ID: 90, LineNumber: 1, LedgerAccountID: 200, LedgerAccount: groceries, Side: model.PostingDebit, CategoryID: ptr.Int64(40)}},
 				}}},
 			},
 			WantStatus: http.StatusInternalServerError,

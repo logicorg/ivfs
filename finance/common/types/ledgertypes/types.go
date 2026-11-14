@@ -1,6 +1,7 @@
 package ledgertypes
 
 import (
+	"slices"
 	"time"
 
 	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
@@ -13,6 +14,9 @@ type PostingInput struct {
 	LedgerAccountID int64             `json:"ledgerAccountId"`
 	Amount          decimal.Decimal   `json:"amount"`
 	Side            model.PostingSide `json:"side"`
+	// CategoryID classifies a posting to an income or expense account, and is
+	// nil on any other posting and on an uncategorized one.
+	CategoryID *int64 `json:"categoryId,omitempty"`
 }
 
 // PostJournalEntryInput is the input struct to post a JornalEntry.
@@ -36,6 +40,9 @@ func (pi *PostJournalEntryInput) Validate() error {
 		if p.LedgerAccountID <= 0 || !p.Amount.IsPositive() || !model.IsValidPostingSide(p.Side) {
 			return internalerrors.ErrInvalidParameter{Description: "invalid posting"}
 		}
+		if p.CategoryID != nil && *p.CategoryID <= 0 {
+			return internalerrors.ErrInvalidParameter{Description: "invalid posting category"}
+		}
 	}
 
 	return nil
@@ -54,6 +61,17 @@ func (pi *PostJournalEntryInput) AccountIDs() []int64 {
 	}
 
 	return accountIDs
+}
+
+// CategoryIDs returns the categories the postings carry, each once.
+func (pi *PostJournalEntryInput) CategoryIDs() []int64 {
+	categoryIDs := make([]int64, 0, len(pi.Postings))
+	for _, p := range pi.Postings {
+		if p.CategoryID != nil && !slices.Contains(categoryIDs, *p.CategoryID) {
+			categoryIDs = append(categoryIDs, *p.CategoryID)
+		}
+	}
+	return categoryIDs
 }
 
 type PostJournalEntryResult struct {

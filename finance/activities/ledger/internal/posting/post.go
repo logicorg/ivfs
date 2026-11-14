@@ -46,8 +46,9 @@ func PostEntryWithMovementsTx(ctx context.Context, tx bun.Tx, input lt.PostJourn
 
 // checkPostingsTx checks what an entry needs of its postings before they are
 // written: accounts that exist and are open, amounts within the precision of
-// their currency, and debits that equal credits in each currency. A closed
-// ledger account is accepted when it is one of allowedClosedLedgerAccountIDs.
+// their currency, debits that equal credits in each currency, and categories
+// a posting may carry. A closed ledger account is accepted when it is one of
+// allowedClosedLedgerAccountIDs.
 func checkPostingsTx(ctx context.Context, tx bun.Tx, input lt.PostJournalEntryInput, allowedClosedLedgerAccountIDs []int64) error {
 	if err := input.Validate(); err != nil {
 		return err
@@ -74,8 +75,14 @@ func checkPostingsTx(ctx context.Context, tx bun.Tx, input lt.PostJournalEntryIn
 
 	// maps account with its currency
 	accountCurrencyMap := make(map[int64]*model.Currency, len(accounts))
+	accountKinds := make(map[int64]model.LedgerAccountKind, len(accounts))
 	for _, a := range accounts {
 		accountCurrencyMap[a.ID] = a.Currency
+		accountKinds[a.ID] = a.Kind
+	}
+
+	if err := checkCategoriesTx(ctx, tx, input, accountKinds); err != nil {
+		return err
 	}
 
 	for _, p := range input.Postings {
@@ -107,12 +114,61 @@ func checkPostingsTx(ctx context.Context, tx bun.Tx, input lt.PostJournalEntryIn
 	return nil
 }
 
+// checkCategoriesTx checks the categories the postings carry: each exists, has
+// no children, and has the kind of its posting's account. The database checks
+// the kind too, but only at commit and without saying which posting is wrong.
+//
+// A closed category is accepted. Closing one only stops the UI from offering
+// it: a category has no balance and stands for nothing that can cease to
+// exist, and an expense that arrives late still belongs where it belongs.
+func checkCategoriesTx(ctx context.Context, tx bun.Tx, input lt.PostJournalEntryInput, accountKinds map[int64]model.LedgerAccountKind) error {
+	categoryIDs := input.CategoryIDs()
+	if len(categoryIDs) == 0 {
+		return nil
+	}
+
+	// Sharing the category rows makes a concurrent delete or new child wait for
+	// this transaction, since each of them takes a stronger lock on the
+	// category before it looks for postings. The categories come after the
+	// accounts, in a fixed order, to avoid deadlocks.
+	categories := make([]model.Category, 0, len(categoryIDs))
+	if err := tx.NewSelect().Model(&categories).Where("cat.id IN (?)", bun.List(categoryIDs)).OrderExpr("cat.id").For("SHARE OF cat").Scan(ctx); err != nil {
+		return fmt.Errorf("load posting categories: %w", err)
+	}
+	if len(categories) != len(categoryIDs) {
+		return internalerrors.ErrNotFound{ResourceType: "Category"}
+	}
+
+	categoryKinds := make(map[int64]model.LedgerAccountKind, len(categories))
+	for _, c := range categories {
+		categoryKinds[c.ID] = c.Kind
+	}
+
+	var parentIDs []int64
+	if err := tx.NewSelect().Model((*model.Category)(nil)).ColumnExpr("DISTINCT cat.parent_id").Where("cat.parent_id IN (?)", bun.List(categoryIDs)).OrderExpr("cat.parent_id").Scan(ctx, &parentIDs); err != nil {
+		return fmt.Errorf("load children of posting categories: %w", err)
+	}
+	if len(parentIDs) > 0 {
+		return internalerrors.ErrInvalidParameter{Description: fmt.Sprintf("category %d has children, and a posting takes one of them", parentIDs[0])}
+	}
+
+	for _, p := range input.Postings {
+		if p.CategoryID == nil {
+			continue
+		}
+		if accountKind := accountKinds[p.LedgerAccountID]; categoryKinds[*p.CategoryID] != accountKind {
+			return internalerrors.ErrInvalidParameter{Description: fmt.Sprintf("category %d is of kind %s, and ledger account %d of kind %s", *p.CategoryID, categoryKinds[*p.CategoryID], p.LedgerAccountID, accountKind)}
+		}
+	}
+	return nil
+}
+
 // insertLinesTx inserts the postings and the movements of an entry that is
 // already stored. The movements take the entry's id and date.
 func insertLinesTx(ctx context.Context, tx bun.Tx, entry *model.JournalEntry, lines []lt.PostingInput, movements []model.PositionMovement) error {
 	postings := make([]model.Posting, 0, len(lines))
 	for i, p := range lines {
-		postings = append(postings, model.Posting{JournalEntryID: entry.ID, LineNumber: i + 1, LedgerAccountID: p.LedgerAccountID, Amount: p.Amount, Side: p.Side})
+		postings = append(postings, model.Posting{JournalEntryID: entry.ID, LineNumber: i + 1, LedgerAccountID: p.LedgerAccountID, Amount: p.Amount, Side: p.Side, CategoryID: p.CategoryID})
 	}
 	if _, err := tx.NewInsert().Model(&postings).Exec(ctx); err != nil {
 		return fmt.Errorf("insert journal postings: %w", err)

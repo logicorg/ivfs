@@ -631,6 +631,8 @@ export type Posting = {
      * a decimal amount, as a string so it stays exact
      */
     amount: string;
+    categoryId?: number;
+    categoryName?: string;
     currencyId: number;
     kind: 'asset' | 'liability' | 'equity' | 'income' | 'expense';
     ledgerAccountId: number;

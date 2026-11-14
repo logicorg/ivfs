@@ -374,6 +374,8 @@ export const zAccountForm = z.object({
 
 export const zPosting = z.object({
     amount: z.string().regex(/^-?[0-9]+(\.[0-9]+)?$/),
+    categoryId: z.int().optional(),
+    categoryName: z.string().optional(),
     currencyId: z.int(),
     kind: z.enum([
         'asset',

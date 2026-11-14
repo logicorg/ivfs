@@ -1583,6 +1583,12 @@
             "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
             "type": "string"
           },
+          "categoryId": {
+            "type": "integer"
+          },
+          "categoryName": {
+            "type": "string"
+          },
           "currencyId": {
             "type": "integer"
           },

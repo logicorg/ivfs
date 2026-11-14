@@ -93,17 +93,22 @@ cannot be renamed, moved, or closed, nor deleted while they have postings.
 | --- | --- |
 | A category only on a posting to an income or expense account, and of that account's kind. | The deferred check of `validate_posted_journal_entry`, which already runs for every entry a transaction touched. |
 | The category has no children: postings target leaves. | The activities that write postings. |
-| The category is open. | The activities that write postings, as for a closed account. |
 | A category with postings cannot become a parent. | Creating a category and moving one. |
 
 A posting to "Expenses" or "Income" with no category is valid. It is
 uncategorized.
 
+A posting may carry a closed category, through the API and MCP as well.
+Closing a category only stops the UI from offering it. A closed account is
+refused because the account it mirrors is gone; a category has no balance and
+mirrors nothing, and an expense that arrives after its category was closed
+still belongs there.
+
 The two leaf rules cannot both be bypassed by a race. Writing a posting locks
 its categories `FOR SHARE`, after its ledger accounts and in id order, as it
 locks the accounts, and then checks for children. Creating or moving a child
 locks the new parent `FOR NO KEY UPDATE` and then checks for postings.
-Whichever commits second sees the first. Close and delete take the same lock.
+Whichever commits second sees the first. Delete takes the same lock.
 
 ### What the ledger still proves
 
@@ -140,7 +145,7 @@ entity, with nothing underneath for a facade to compose.
 | `CreateCategory` | Takes a name, a kind, and an optional parent. No currency. Retrieve-or-insert on `(parent_id, kind, lower(name))`. |
 | `RenameCategory` | One row. `ErrResourceConflict` when a sibling of the same kind holds the name. |
 | `MoveCategory` | Changes `parent_id`. Allowed only while the category and its descendants have no postings, as ADR 0003 decided. |
-| `CloseCategory` | One row. Refused with open children. Idempotent. |
+| `CloseCategory` | One row. Refused with open children, so a closed parent hides its whole subtree. Idempotent. Postings are not affected. |
 | `DeleteCategory` | Below. |
 | `RetrieveCategory`, `ListCategories` | Return categories: `id`, `parentId`, `kind`, `name`, `closedAt`. The currency filter goes. |
 
@@ -182,8 +187,8 @@ uncategorized expense a category is the same call.
 does for a category.
 
 - Without a replacement, the category's postings lose their category.
-- With one, they take the replacement, which must be an open category of the
-  same kind with no children, and not the category itself. Anything else
+- With one, they take the replacement, which must be a category of the same
+  kind with no children, and not the category itself. Anything else
   fails with `ErrInvalidParameter` before a row changes.
 - A category with children is refused with `ErrResourceConflict`.
 - The row is then deleted, which frees its name. Deleting a category that does
@@ -326,9 +331,9 @@ RenameCategory{<Groceries>, "Transport"}             a sibling has the name
   postings' categories for the breakdown.
 - A category has no balance. What was read as the balance of a category's
   account is its total over a period.
-- Three rules that the account tree stated by structure, kind, leaf, and open,
-  are now checks: one in the database, two in the activities that write
-  postings.
+- Two rules that the account tree stated by structure, kind and leaf, are now
+  checks: one in the database, one in the activities that write postings. A
+  third, open, is no longer a rule of postings.
 - Recategorising, deleting, and merging a category stop being accounting
   writes. They change one column and cannot unbalance an entry.
 - Making a category optional on an expense is now only a change of validation.

@@ -84,6 +84,7 @@ func loadPostings(ctx context.Context, db bun.IDB, entries []model.JournalEntry)
 	var postings []model.Posting
 	err := db.NewSelect().Model(&postings).
 		Relation("LedgerAccount").
+		Relation("Category").
 		Where("p.journal_entry_id IN (?)", bun.List(ids)).
 		OrderExpr("p.journal_entry_id, p.line_number").
 		Scan(ctx)
