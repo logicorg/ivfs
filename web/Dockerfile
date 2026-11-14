@@ -4,7 +4,7 @@
 # The builders run on the build machine's platform: the JavaScript build is
 # the same on every platform, and Go cross-compiles, which is faster than
 # emulating the target's.
-FROM --platform=$BUILDPLATFORM node:24.11-trixie-slim@sha256:4623e8ac1eb5f35b0a91b85424283c1b97a416a77375dfa6a2e9bfb0b2c351c9 AS ui
+FROM --platform=$BUILDPLATFORM node:26.13-trixie-slim@sha256:e6bedef217677b276c591795e169840edd9096dbf13f29df8ef8d1856b8820bc AS ui
 
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 
