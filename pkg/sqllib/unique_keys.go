@@ -30,6 +30,10 @@ var uniqueKeys = []string{
 	`CREATE UNIQUE INDEX IF NOT EXISTS ledger_account_name_lower_key
 		ON ledger.ledger_account (parent_id, kind, currency_id, lower(name)) NULLS NOT DISTINCT
 		WHERE financial_account_id IS NULL`,
+	// A category has no currency, so its name is unique among the siblings of
+	// its kind. NULLS NOT DISTINCT makes two top-level ones collide, as above.
+	`CREATE UNIQUE INDEX IF NOT EXISTS category_name_lower_key
+		ON ledger.category (parent_id, kind, lower(name)) NULLS NOT DISTINCT`,
 	`CREATE UNIQUE INDEX IF NOT EXISTS counterparty_name_lower_key ON ledger.counterparty (lower(name))`,
 	`CREATE UNIQUE INDEX IF NOT EXISTS tag_name_lower_key ON tag.tag (lower(name))`,
 }

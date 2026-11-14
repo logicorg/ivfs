@@ -203,16 +203,20 @@ type JournalEntry struct {
 type Posting struct {
 	bun.BaseModel `bun:"table:ledger.posting,alias:p"`
 
-	ID              int64           `bun:"id,pk,autoincrement" json:"id"`
-	JournalEntryID  int64           `bun:"journal_entry_id,notnull" json:"journalEntryId"`
-	LineNumber      int             `bun:"line_number,notnull" json:"lineNumber"`
-	LedgerAccountID int64           `bun:"ledger_account_id,notnull" json:"ledgerAccountId"`
-	Amount          decimal.Decimal `bun:"amount,type:numeric(36,18),notnull" json:"amount"`
-	Side            PostingSide     `bun:"side,notnull" json:"side"`
-	CreatedAt       time.Time       `bun:"created_at,nullzero,notnull,default:current_timestamp" json:"createdAt"`
+	ID              int64 `bun:"id,pk,autoincrement" json:"id"`
+	JournalEntryID  int64 `bun:"journal_entry_id,notnull" json:"journalEntryId"`
+	LineNumber      int   `bun:"line_number,notnull" json:"lineNumber"`
+	LedgerAccountID int64 `bun:"ledger_account_id,notnull" json:"ledgerAccountId"`
+	// CategoryID classifies a posting to an income or expense account. A
+	// posting to one with none is uncategorized.
+	CategoryID *int64          `bun:"category_id" json:"categoryId,omitempty"`
+	Amount     decimal.Decimal `bun:"amount,type:numeric(36,18),notnull" json:"amount"`
+	Side       PostingSide     `bun:"side,notnull" json:"side"`
+	CreatedAt  time.Time       `bun:"created_at,nullzero,notnull,default:current_timestamp" json:"createdAt"`
 
 	JournalEntry  *JournalEntry  `bun:"rel:belongs-to,join:journal_entry_id=id,on_delete:restrict" json:"journalEntry,omitempty"`
 	LedgerAccount *LedgerAccount `bun:"rel:belongs-to,join:ledger_account_id=id,on_delete:restrict" json:"ledgerAccount,omitempty"`
+	Category      *Category      `bun:"rel:belongs-to,join:category_id=id,on_delete:restrict" json:"category,omitempty"`
 }
 
 // PositionMovementKind says what a movement is, which decides who may write it
