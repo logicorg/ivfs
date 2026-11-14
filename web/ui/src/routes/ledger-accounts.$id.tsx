@@ -198,7 +198,6 @@ function Entries({ account, onSelect }: { account: Balance; onSelect: (entryId: 
                   }}
                 >
                   {line.description ?? <span className="text-muted-foreground">Journal entry {line.entryId}</span>}
-                  {line.reversalOfEntryId !== undefined && <Badge variant="outline">reversal</Badge>}
                 </button>
               </TableCell>
               <TableCell className="text-muted-foreground">{line.otherAccounts.join(", ")}</TableCell>

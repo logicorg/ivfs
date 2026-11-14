@@ -116,8 +116,8 @@ first posted with it, unchanged, even if its other fields differ.
 ### Results
 
 Each workflow returns the id of the journal entry it posted, or found by its
-key. Correcting a transaction is reversing its entry, as for any entry
-(ADR 0001), and recording it again.
+key. Correcting a transaction is updating it (ADR 0017) or deleting its
+entry.
 
 ### The type is not stored
 

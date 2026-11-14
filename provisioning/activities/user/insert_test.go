@@ -86,9 +86,7 @@ func (s *UnitTestSuite) Test_InsertUser_Idempotency() {
 	}
 
 	require.Equal(s.T(), results[0], results[1])
-	count, err := s.DB.NewSelect().Model((*registry.User)(nil)).Count(s.T().Context())
-	require.NoError(s.T(), err)
-	require.Equal(s.T(), 1, count)
+	require.Equal(s.T(), 1, s.Count[registry.User]())
 }
 
 // Test_InsertUser_Concurrent checks that logins of the same identity racing
@@ -111,7 +109,6 @@ func (s *UnitTestSuite) Test_InsertUser_Concurrent() {
 		require.NoError(s.T(), errs[n])
 		require.Equal(s.T(), results[0].ID, results[n].ID)
 	}
-	count, err := s.DB.NewSelect().Model((*registry.User)(nil)).Count(s.T().Context())
-	require.NoError(s.T(), err)
-	require.Equal(s.T(), 1, count)
+
+	require.EqualValues(s.T(), 1, s.Count[registry.User]())
 }

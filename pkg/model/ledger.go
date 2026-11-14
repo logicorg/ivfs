@@ -164,16 +164,14 @@ type Counterparty struct {
 	UpdatedAt  time.Time `bun:"updated_at,nullzero,notnull,default:current_timestamp" json:"updatedAt"`
 }
 
-// JournalEntry is the header for one financial event. Posted entries are
-// immutable; corrections are represented by a separate reversing entry.
+// JournalEntry is the header for one financial event. A posted entry can be
+// edited or deleted, and the database keeps it balanced through every change.
 type JournalEntry struct {
 	bun.BaseModel `bun:"table:ledger.journal_entry,alias:je"`
 
 	ID int64 `bun:"id,pk,autoincrement" json:"id"`
 	// CounterpartyID is the ID of the counterparty, if any.
 	CounterpartyID *int64 `bun:"counterparty_id" json:"counterpartyId,omitempty"`
-	// ReversalOfEntryID is the ID of the journal entry that this entry reverses, if any.
-	ReversalOfEntryID *int64 `bun:"reversal_of_entry_id" json:"reversalOfEntryId,omitempty"`
 	// OccurredAt is the time when the event occurred, as opposed to when it was recorded in the ledger.
 	OccurredAt  time.Time `bun:"occurred_at,nullzero,notnull" json:"occurredAt"`
 	Description *string   `bun:"description" json:"description,omitempty"`
@@ -196,12 +194,11 @@ type JournalEntry struct {
 	// Relationships
 
 	Counterparty      *Counterparty      `bun:"rel:belongs-to,join:counterparty_id=id,on_delete:restrict" json:"counterparty,omitempty"`
-	ReversalOfEntry   *JournalEntry      `bun:"rel:belongs-to,join:reversal_of_entry_id=id,on_delete:restrict" json:"reversalOfEntry,omitempty"`
 	Postings          []Posting          `bun:"rel:has-many,join:id=journal_entry_id" json:"postings,omitempty"`
 	PositionMovements []PositionMovement `bun:"rel:has-many,join:id=journal_entry_id" json:"positionMovements,omitempty"`
 }
 
-// Posting is one immutable accounting line. Its currency is determined by
+// Posting is one accounting line. Its currency is determined by
 // LedgerAccount currency. Amounts are always positive.
 type Posting struct {
 	bun.BaseModel `bun:"table:ledger.posting,alias:p"`
@@ -257,9 +254,8 @@ func (k PositionMovementKind) HasJournalEntry() bool {
 // PositionMovement is the units subledger for investments. UnitsDelta and
 // CostBasisAmount are signed and share a sign; a buy is normally positive and a
 // sale negative. A movement of a monetary kind references its journal entry,
-// and any other one carries an idempotency key of its own. A movement is never
-// changed or deleted: a correction is another movement that references it
-// through ReversalOfMovementID.
+// and any other one carries an idempotency key of its own. A movement of an
+// entry is always on the date of its entry.
 type PositionMovement struct {
 	bun.BaseModel `bun:"table:asset.position_movement,alias:pm"`
 
@@ -269,10 +265,15 @@ type PositionMovement struct {
 	FinancialAccountID int64                `bun:"financial_account_id,notnull" json:"financialAccountId"`
 	AssetID            int64                `bun:"asset_id,notnull" json:"assetId"`
 	UnitsDelta         decimal.Decimal      `bun:"units_delta,type:numeric(36,18),notnull" json:"unitsDelta"`
-	// CostBasisAmount is the signed change to the position's total cost basis,
-	// in CostBasisCurrencyID. The two fields are either both set or both nil.
-	// Nil is not zero: a decrease removes the average cost, worked out when
-	// read (ADR 0009), an increase makes the basis unknown, and a split keeps it.
+	// CostBasisAmount is the cost basis this movement adds to its position, or
+	// removes when negative, in CostBasisCurrencyID: what the units of a buy
+	// cost, or the value of the units a vest delivered. The two fields are either
+	// both set or both nil.
+	//
+	// Nil is not zero. On an increase it makes the basis unknown, and on a split
+	// it keeps the basis. On a decrease the replay removes the average cost: all
+	// of the basis when no units are left, and an unknown amount when the basis
+	// is unknown or in more than one currency.
 	CostBasisAmount     *decimal.Decimal `bun:"cost_basis_amount,type:numeric(36,18)" json:"costBasisAmount,omitempty"`
 	CostBasisCurrencyID *int64           `bun:"cost_basis_currency_id" json:"costBasisCurrencyId,omitempty"`
 	OccurredAt          time.Time        `bun:"occurred_at,nullzero,notnull" json:"occurredAt"`
@@ -281,11 +282,9 @@ type PositionMovement struct {
 	// with an entry has neither and is identified through the entry.
 	IdempotencyKey *string `bun:"idempotency_key" json:"idempotencyKey,omitempty"`
 	// LineNumber together with IdempotencyKey identify a movement without a jornal entry.
-	LineNumber int `bun:"line_number,nullzero" json:"lineNumber,omitempty"`
-	// ReversalOfMovementID is the movement this one compensates, if any.
-	ReversalOfMovementID *int64            `bun:"reversal_of_movement_id" json:"reversalOfMovementId,omitempty"`
-	Description          *string           `bun:"description" json:"description,omitempty"`
-	Metadata             map[string]string `bun:"metadata,type:jsonb" json:"metadata,omitempty"`
+	LineNumber  int               `bun:"line_number,nullzero" json:"lineNumber,omitempty"`
+	Description *string           `bun:"description" json:"description,omitempty"`
+	Metadata    map[string]string `bun:"metadata,type:jsonb" json:"metadata,omitempty"`
 	// ExternalID is the identifier of the source record of the movement. A trade
 	// or vest carries its journal entry's external ID, copied when the movement is
 	// written, so units trace to the same broker or payroll record as the cash. A
@@ -334,5 +333,5 @@ func FindPositionMovementsByAssetAndFinancialAccountQuery(db *bun.DB, assetID, f
 	return db.NewSelect().Model((*PositionMovement)(nil)).
 		Where("pm.asset_id = ?", assetID).
 		Where("pm.financial_account_id = ?", financialAccountID).
-		OrderExpr("pm.occurred_at ASC, pm.id ASC")
+		OrderExpr("pm.occurred_at ASC, pm.created_at ASC, pm.id ASC")
 }

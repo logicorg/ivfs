@@ -248,23 +248,23 @@ func (s *UnitTestSuite) Test_EsppPurchase() {
 	requireAmount(s.T(), -170, s.balance(s.bankCash), "cash paid")
 }
 
-// Test_CorrectAVest checks that a vest is corrected by reversing its entry.
+// Test_CorrectAVest checks that a vest is corrected by deleting its entry.
 func (s *UnitTestSuite) Test_CorrectAVest() {
 	var vest lt.RegisterVestResult
 	s.runWorkflow(portfoliowf.RegisterVest, s.vest("acme-rsu-2026-03-01"), &vest)
 	var sale lt.RegisterInvestmentTradeResult
 	s.runWorkflow(portfoliowf.RegisterInvestmentTrade, s.sellToCover("acme-rsu-2026-03-01-cover"), &sale)
 
-	res := new(lt.ReverseJournalEntryResult)
-	err := s.execute(journalwf.ReverseJournalEntry, lt.ReverseJournalEntryInput{JournalEntryID: vest.JournalEntryID, IdempotencyKey: "undo-vest"}, res)
+	res := new(lt.DeleteJournalEntryResult)
+	err := s.execute(journalwf.DeleteJournalEntry, lt.DeleteJournalEntryInput{JournalEntryID: vest.JournalEntryID}, res)
 
 	require.NoError(s.T(), err)
-	// reversal of vest still leaves the sale, so the units held are negative and the compensation income is gone.
-	requireAmount(s.T(), -50, s.unitsHeld(), "units held after the reversal")
-	requireAmount(s.T(), 0, s.balance(s.rsuIncome), "compensation income after the reversal")
+	// Deleting the vest still leaves the sale, so the units held are negative and the compensation income is gone.
+	requireAmount(s.T(), -50, s.unitsHeld(), "units held after deleting the vest")
+	requireAmount(s.T(), 0, s.balance(s.rsuIncome), "compensation income after deleting the vest")
 	require.Len(s.T(), res.Warnings, 1, "expecting a warning about negative holdings")
 
-	s.runWorkflow(journalwf.ReverseJournalEntry, lt.ReverseJournalEntryInput{JournalEntryID: sale.JournalEntryID, IdempotencyKey: "undo-cover"}, nil)
+	s.runWorkflow(journalwf.DeleteJournalEntry, lt.DeleteJournalEntryInput{JournalEntryID: sale.JournalEntryID}, nil)
 
 	requireAmount(s.T(), 0, s.unitsHeld(), "units held")
 	requireAmount(s.T(), 0, s.balance(s.rsuIncome), "compensation income")

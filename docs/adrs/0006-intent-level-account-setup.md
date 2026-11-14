@@ -229,8 +229,8 @@ account, `opening-balance:<ledger account id>`, rather than the random key
 `PostJournalEntry` defaults to. A retry, or the same request sent twice, finds
 the entry instead of posting a second one, so a balance has at most one
 opening balance. A different amount sent later is not reconciled, as with any
-retrieve-or-insert; a wrong opening balance is corrected by reversing its
-entry.
+retrieve-or-insert; a wrong opening balance is corrected by editing or
+deleting its entry (ADR 0017).
 
 ### Results
 

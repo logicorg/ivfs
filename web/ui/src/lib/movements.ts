@@ -10,21 +10,17 @@ export type MovementRow = {
   occurredAt: string
   unitsDelta: string
   // unitsAfter is the units held once this movement and every earlier one
-  // count; a reversal takes its original's units away again.
+  // count.
   unitsAfter: string
   costBasis?: Money
   journalEntryId?: number
   description?: string
-  reversal: boolean
-  reversed: boolean
 }
 
 // movementRows names the currencies of movements, which come oldest first as
-// the API pages them, and keeps a running count of the units. A movement is
-// marked reversed only once its reversal is among the movements loaded.
+// the API pages them, and keeps a running count of the units.
 export function movementRows(movements: Movement[], currencies: Currency[]): MovementRow[] {
   const currenciesById = new Map(currencies.map((currency) => [currency.id, currency]))
-  const reversed = new Set(movements.flatMap((movement) => movement.reversalOfMovementId ?? []))
   let units = "0"
   return movements.map((movement) => {
     units = addDecimals(units, movement.unitsDelta)
@@ -42,8 +38,6 @@ export function movementRows(movements: Movement[], currencies: Currency[]): Mov
       },
       journalEntryId: movement.journalEntryId,
       description: movement.description || undefined,
-      reversal: movement.reversalOfMovementId !== undefined,
-      reversed: reversed.has(movement.id),
     }
   })
 }

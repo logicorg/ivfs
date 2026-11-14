@@ -35,8 +35,8 @@ func (s *UnitTestSuite) seedDraft(asset *model.Asset) {
 //	3  day 3  second account  split       +3   (same instant as 2)
 //	4  day 4  first account   transfer    -4
 //	5  day 4  second account  transfer    +4
-//	6  day 5  first account   transfer    +4   (reverses 4)
-//	7  day 5  second account  transfer    -4   (reverses 5)
+//	6  day 5  first account   transfer    +4   (back from 5)
+//	7  day 5  second account  transfer    -4   (back to 4)
 //
 // It also inserts what the history must leave out: the movement of a draft
 // entry and a movement of another asset.
@@ -62,16 +62,14 @@ func (s *UnitTestSuite) seedHistory(asset *model.Asset) []*model.PositionMovemen
 	split := s.seedGroup(asset.Name+" split", model.PositionMovementSplit, asset, 3, leg(first, 15), leg(second, 3))
 	transfer := s.seedGroup(asset.Name+" transfer", model.PositionMovementTransfer, asset, 4, leg(first, -4), leg(second, 4))
 
-	undoFirst, undoSecond := leg(first, 4), leg(second, -4)
-	undoFirst.ReversalOfMovementID, undoSecond.ReversalOfMovementID = &transfer[0].ID, &transfer[1].ID
-	reversal := s.seedGroup(asset.Name+" reversal", model.PositionMovementTransfer, asset, 5, undoFirst, undoSecond)
+	back := s.seedGroup(asset.Name+" back", model.PositionMovementTransfer, asset, 5, leg(first, 4), leg(second, -4))
 
 	s.seedDraft(asset)
 	other := &model.Asset{Name: asset.Name + " other", Kind: model.AssetKindStock}
 	temporaltesting.Insert(s.T(), s.DB, other)
 	s.seedGroup(asset.Name+" other asset", model.PositionMovementAdjustment, other, 1, leg(first, 7))
 
-	return []*model.PositionMovement{adjustment[0], trade, split[0], split[1], transfer[0], transfer[1], reversal[0], reversal[1]}
+	return []*model.PositionMovement{adjustment[0], trade, split[0], split[1], transfer[0], transfer[1], back[0], back[1]}
 }
 
 func movementIDs(movements []model.PositionMovement) []int64 {
@@ -211,10 +209,48 @@ func (s *UnitTestSuite) Test_ListPositionMovements_Pages() {
 				last := result.Movements[len(result.Movements)-1]
 				require.Equal(s.T(), last.ID, result.Next.ID)
 				require.True(s.T(), last.OccurredAt.Equal(result.Next.OccurredAt))
+				require.True(s.T(), last.CreatedAt.Equal(result.Next.CreatedAt))
 				params.After = result.Next
 			}
 		})
 	}
+}
+
+// Test_ListPositionMovements_RecordingOrder checks that movements of the same
+// instant are listed by when they were recorded and not by id, and that the
+// cursor follows that order. A movement written again with its entry has a
+// later id and keeps when it was recorded (ADR 0017).
+func (s *UnitTestSuite) Test_ListPositionMovements_RecordingOrder() {
+	asset := &model.Asset{Name: "Recording order", Kind: model.AssetKindStock}
+	temporaltesting.Insert(s.T(), s.DB, asset)
+	recorded := historyDay(30)
+	movement := func(units int64, createdAt time.Time) *model.PositionMovement {
+		m := &model.PositionMovement{
+			FinancialAccountID: s.financialAccount.ID, AssetID: asset.ID, UnitsDelta: decimal.NewFromInt(units),
+			OccurredAt: historyDay(1), CreatedAt: createdAt,
+		}
+		temporaltesting.InsertPositionMovement(s.T(), s.DB, m)
+		return m
+	}
+	sale := movement(-5, recorded.Add(time.Minute))
+	buy := movement(5, recorded)
+	later := movement(1, recorded.Add(2*time.Minute))
+	want := []int64{buy.ID, sale.ID, later.ID}
+
+	whole := s.listMovements(lt.ListPositionMovementsParams{AssetID: asset.ID})
+	require.Equal(s.T(), want, movementIDs(whole.Movements))
+
+	params := lt.ListPositionMovementsParams{AssetID: asset.ID, Limit: 1}
+	var paged []int64
+	for {
+		page := s.listMovements(params)
+		paged = append(paged, movementIDs(page.Movements)...)
+		if page.Next == nil {
+			break
+		}
+		params.After = page.Next
+	}
+	require.Equal(s.T(), want, paged)
 }
 
 // Test_ListPositionMovements_MatchesPositionAt checks that the sum of the

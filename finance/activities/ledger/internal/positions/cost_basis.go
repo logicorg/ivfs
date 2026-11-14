@@ -73,9 +73,9 @@ func (b *CostBasis) add(currencyID int64, amount decimal.Decimal) {
 
 // CostBasisMovementsQuery selects the effective movements UnitsQuery counts,
 // in the order their basis is replayed: by position, then when they occurred,
-// then by id.
+// then when they were recorded, then by id.
 func CostBasisMovementsQuery(db bun.IDB, filter Filter) *bun.SelectQuery {
-	query := EffectiveMovementsQuery(db).OrderExpr("pm.financial_account_id, pm.asset_id, pm.occurred_at, pm.id")
+	query := EffectiveMovementsQuery(db).OrderExpr("pm.financial_account_id, pm.asset_id, pm.occurred_at, pm.created_at, pm.id")
 	if filter.FinancialAccountID > 0 {
 		query = query.Where("pm.financial_account_id = ?", filter.FinancialAccountID)
 	}
@@ -93,31 +93,9 @@ func CostBasisMovementsQuery(db bun.IDB, filter Filter) *bun.SelectQuery {
 //
 // A movement without a basis removes the average cost when it decreases the
 // units, and makes the basis unknown when it increases them, except a split.
-// A movement and its reversal are both skipped when both are among the
-// movements, as if the original had been deleted: replaying a reversed sale's
-// reversal would bring its units back with no basis, and leave the basis
-// unknown for good.
 func ReplayCostBasis(movements []model.PositionMovement) map[Pair]*CostBasis {
-	present := make(map[int64]struct{}, len(movements))
-	for _, m := range movements {
-		present[m.ID] = struct{}{}
-	}
-	cancelled := make(map[int64]struct{})
-	for _, m := range movements {
-		if m.ReversalOfMovementID == nil {
-			continue
-		}
-		if _, ok := present[*m.ReversalOfMovementID]; ok {
-			cancelled[m.ID] = struct{}{}
-			cancelled[*m.ReversalOfMovementID] = struct{}{}
-		}
-	}
-
 	bases := make(map[Pair]*CostBasis)
 	for _, m := range movements {
-		if _, ok := cancelled[m.ID]; ok {
-			continue
-		}
 		pair := Pair{FinancialAccountID: m.FinancialAccountID, AssetID: m.AssetID}
 		basis, ok := bases[pair]
 		if !ok {

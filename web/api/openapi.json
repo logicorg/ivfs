@@ -739,6 +739,18 @@
         ],
         "type": "object"
       },
+      "CreatedTag": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "type": "object"
+      },
       "Currency": {
         "additionalProperties": false,
         "properties": {
@@ -799,6 +811,19 @@
         ],
         "type": "object"
       },
+      "DeletedCounterparty": {
+        "additionalProperties": false,
+        "properties": {
+          "cleared": {
+            "description": "how many journal entries lost the counterparty",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "cleared"
+        ],
+        "type": "object"
+      },
       "Deletion": {
         "additionalProperties": false,
         "properties": {
@@ -832,9 +857,6 @@
               "$ref": "#/components/schemas/Posting"
             },
             "type": "array"
-          },
-          "reversalOfEntryId": {
-            "type": "integer"
           },
           "status": {
             "enum": [
@@ -887,9 +909,6 @@
               "$ref": "#/components/schemas/Posting"
             },
             "type": "array"
-          },
-          "reversalOfEntryId": {
-            "type": "integer"
           },
           "status": {
             "enum": [
@@ -1278,9 +1297,6 @@
             "format": "date-time",
             "type": "string"
           },
-          "reversalOfMovementId": {
-            "type": "integer"
-          },
           "unitsDelta": {
             "description": "the units added, or taken away when negative",
             "examples": [
@@ -1489,6 +1505,22 @@
         ],
         "type": "object"
       },
+      "NewTag": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "name": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
       "OpenedAccount": {
         "additionalProperties": false,
         "properties": {
@@ -1682,24 +1714,6 @@
         ],
         "type": "object"
       },
-      "Reversal": {
-        "additionalProperties": false,
-        "properties": {
-          "journalEntryId": {
-            "type": "integer"
-          },
-          "warnings": {
-            "items": {
-              "$ref": "#/components/schemas/NegativeHolding"
-            },
-            "type": "array"
-          }
-        },
-        "required": [
-          "journalEntryId"
-        ],
-        "type": "object"
-      },
       "SellForm": {
         "additionalProperties": false,
         "properties": {
@@ -1819,6 +1833,55 @@
           "assetId",
           "assetName",
           "units"
+        ],
+        "type": "object"
+      },
+      "Tag": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description"
+        ],
+        "type": "object"
+      },
+      "TagChanges": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "description": "empty clears it",
+            "type": "string"
+          },
+          "name": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "TagList": {
+        "additionalProperties": false,
+        "properties": {
+          "tags": {
+            "items": {
+              "$ref": "#/components/schemas/Tag"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "tags"
         ],
         "type": "object"
       },
@@ -2894,6 +2957,69 @@
           }
         },
         "summary": "Create a counterparty, or find the one with its name",
+        "tags": [
+          "counterparties"
+        ]
+      }
+    },
+    "/api/counterparties/{id}": {
+      "delete": {
+        "description": "The journal entries that name it keep their postings and lose the counterparty, and its name can be used again. Deleting a counterparty that does not exist changes nothing. Entries that keep being recorded with it while it is deleted are answered with a conflict, and deleting again is safe.",
+        "operationId": "delete-counterparty",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeletedCounterparty"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Delete a counterparty",
         "tags": [
           "counterparties"
         ]
@@ -4028,7 +4154,7 @@
             "description": "Internal Server Error"
           }
         },
-        "summary": "List a page of the movements of holdings, by the date they occurred and then by id",
+        "summary": "List a page of the movements of holdings, by the date they occurred and then by when they were recorded",
         "tags": [
           "holdings"
         ]
@@ -4635,7 +4761,7 @@
             "description": "Internal Server Error"
           }
         },
-        "summary": "Delete a journal entry with its postings, position movements, and reversals",
+        "summary": "Delete a journal entry with its postings and position movements",
         "tags": [
           "journal"
         ]
@@ -4696,79 +4822,6 @@
           }
         },
         "summary": "Get a journal entry with its postings and counterparty",
-        "tags": [
-          "journal"
-        ]
-      }
-    },
-    "/api/journal-entries/{id}/reverse": {
-      "post": {
-        "description": "An entry is reversed at most once: reversing it again is a 409. A reversal that leaves a holding negative at some point in time is made all the same, and the response warns about it.",
-        "operationId": "reverse-journal-entry",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "id",
-            "required": true,
-            "schema": {
-              "minimum": 1,
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Reversal"
-                }
-              }
-            },
-            "description": "OK"
-          },
-          "404": {
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorModel"
-                }
-              }
-            },
-            "description": "Not Found"
-          },
-          "409": {
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorModel"
-                }
-              }
-            },
-            "description": "Conflict"
-          },
-          "422": {
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorModel"
-                }
-              }
-            },
-            "description": "Unprocessable Entity"
-          },
-          "500": {
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorModel"
-                }
-              }
-            },
-            "description": "Internal Server Error"
-          }
-        },
-        "summary": "Reverse a posted journal entry with a new entry that undoes it, now",
         "tags": [
           "journal"
         ]
@@ -5251,7 +5304,7 @@
             "description": "Internal Server Error"
           }
         },
-        "summary": "Delete a position movement with the rest of its group and the group's reversals",
+        "summary": "Delete a position movement with the rest of its group",
         "tags": [
           "positions"
         ]
@@ -5345,6 +5398,206 @@
         "summary": "Replace the user's settings",
         "tags": [
           "settings"
+        ]
+      }
+    },
+    "/api/tags": {
+      "get": {
+        "operationId": "list-tags",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TagList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "List the tags, sorted by name",
+        "tags": [
+          "tags"
+        ]
+      },
+      "post": {
+        "description": "Names are compared ignoring case and surrounding space. A tag that exists is returned unchanged, whatever its description.",
+        "operationId": "create-tag",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewTag"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedTag"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Create a tag, or find the one with its name",
+        "tags": [
+          "tags"
+        ]
+      }
+    },
+    "/api/tags/{id}": {
+      "delete": {
+        "description": "Deleting a tag that does not exist changes nothing.",
+        "operationId": "delete-tag",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Delete a tag",
+        "tags": [
+          "tags"
+        ]
+      },
+      "patch": {
+        "operationId": "update-tag",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TagChanges"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Change a tag's name or description",
+        "tags": [
+          "tags"
         ]
       }
     },

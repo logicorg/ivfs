@@ -40,7 +40,7 @@ type DialogProps = {
 export function VestDialog({ open, onOpenChange }: DialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Vest</DialogTitle>
           <DialogDescription>

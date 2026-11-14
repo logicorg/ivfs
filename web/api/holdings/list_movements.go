@@ -17,7 +17,7 @@ func registerListMovements(api huma.API, c client.Client) {
 		OperationID: "list-holding-movements",
 		Method:      http.MethodGet,
 		Path:        "/api/holdings/movements",
-		Summary:     "List a page of the movements of holdings, by the date they occurred and then by id",
+		Summary:     "List a page of the movements of holdings, by the date they occurred and then by when they were recorded",
 		Description: "Only the movements that count towards holdings are listed: those without a journal entry, and " +
 			"those of a posted one. Their units add up to the holding's.",
 		Tags:   tags,
@@ -27,12 +27,12 @@ func registerListMovements(api huma.API, c client.Client) {
 			FinancialAccountID: in.FinancialAccountID, AssetID: in.AssetID, From: in.From, To: in.To, Limit: in.Limit,
 		}
 		if in.After != "" {
-			occurredAt, id, ok := gateway.DecodeCursor(in.After)
+			after, ok := decodeCursor(in.After)
 			if !ok {
 				return nil, huma.Error422UnprocessableEntity("after is not the next of a page",
 					&huma.ErrorDetail{Location: "query.after", Value: in.After, Message: "not the next of a page"})
 			}
-			params.After = &lt.PositionMovementCursor{OccurredAt: occurredAt, ID: id}
+			params.After = after
 		}
 		for _, kind := range in.Kinds {
 			params.Kinds = append(params.Kinds, model.PositionMovementKind(kind))
@@ -44,7 +44,7 @@ func registerListMovements(api huma.API, c client.Client) {
 		}
 		out := &ListMovementsOutput{Body: MovementPage{Movements: make([]Movement, 0, len(result.Movements))}}
 		if result.Next != nil {
-			out.Body.Next = gateway.EncodeCursor(result.Next.OccurredAt, result.Next.ID)
+			out.Body.Next = encodeCursor(*result.Next)
 		}
 		for _, movement := range result.Movements {
 			out.Body.Movements = append(out.Body.Movements, newMovement(movement))
@@ -58,7 +58,7 @@ func newMovement(movement model.PositionMovement) Movement {
 	out := Movement{
 		ID: movement.ID, Kind: string(movement.Kind), FinancialAccountID: movement.FinancialAccountID,
 		AssetID: movement.AssetID, UnitsDelta: gateway.NewAmount(movement.UnitsDelta), OccurredAt: movement.OccurredAt,
-		JournalEntryID: movement.JournalEntryID, ReversalOfMovementID: movement.ReversalOfMovementID,
+		JournalEntryID: movement.JournalEntryID,
 	}
 	if movement.CostBasisAmount != nil && movement.CostBasisCurrencyID != nil {
 		out.CostBasis = &CostBasis{CurrencyID: *movement.CostBasisCurrencyID, Amount: gateway.NewAmount(*movement.CostBasisAmount)}

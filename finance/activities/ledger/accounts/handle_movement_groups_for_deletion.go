@@ -16,10 +16,8 @@ import (
 // were written, in one transaction (ADR 0012). A group that also moves units on
 // a surviving financial account other than the stray one is kept: its transfer
 // legs in the target move to the stray financial account, and its split and
-// adjustment legs there are deleted alone. Any other group is deleted with its
-// reversals, as DeletePositionMovement does. A reversal moves units on the same
-// accounts as the group it reverses, so it shares the group's fate. Either way
-// the group no longer touches the target, so a batch that handles nothing
+// adjustment legs there are deleted alone. Any other group is deleted, as
+// DeletePositionMovement does. Either way the group no longer touches the target, so a batch that handles nothing
 // means none are left, and a batch run again moves nothing twice.
 //
 // A ledger account has no movements, and neither has a target that does not
@@ -49,48 +47,33 @@ func (a *Activities) HandleMovementGroupsForDeletion(ctx context.Context, input 
 			return target.refusal
 		}
 
-		// A reversal written meanwhile touches the same accounts, so reading the
-		// chains again under the lock is what makes them complete.
+		groups := make([][]model.PositionMovement, 0, len(keys))
 		accountIDs := []int64{target.financialAccount.ID}
 		for _, key := range keys {
-			chain, err := groupChainTx(ctx, tx, key)
+			group, err := positions.FindByIdempotencyKeyTx(ctx, tx, key)
 			if err != nil {
 				return err
 			}
-			accountIDs = append(accountIDs, deletion.AccountIDsOf(chain)...)
+			groups = append(groups, group)
+			accountIDs = append(accountIDs, deletion.AccountIDsOf(group)...)
 		}
 		locked, err := positions.LockFinancialAccountsTx(ctx, tx, accountIDs)
 		if err != nil {
 			return err
 		}
 
-		handled := map[string]bool{}
-		var kept [][][]model.PositionMovement
-		for _, key := range keys {
-			// Part of the chain of a group before it in the batch.
-			if handled[key] {
-				continue
-			}
-			chain, err := groupChainTx(ctx, tx, key)
-			if err != nil {
-				return err
-			}
-			for _, group := range chain {
-				handled[*group[0].IdempotencyKey] = true
-			}
-			keep, err := target.keepsChainTx(ctx, tx, chain, locked)
+		var kept [][]model.PositionMovement
+		for _, group := range groups {
+			keep, err := target.keepsGroupTx(ctx, tx, group, locked)
 			if err != nil {
 				return err
 			}
 			if keep {
-				kept = append(kept, chain)
+				kept = append(kept, group)
 				continue
 			}
-			// A reversal refers to what it reverses, so the last group goes first.
-			for n := len(chain) - 1; n >= 0; n-- {
-				if err := deletion.DeleteGroupTx(ctx, tx, *chain[n][0].IdempotencyKey); err != nil {
-					return err
-				}
+			if err := deletion.DeleteGroupTx(ctx, tx, *group[0].IdempotencyKey); err != nil {
+				return err
 			}
 		}
 		if err := target.moveLegsTx(ctx, tx, kept); err != nil {
@@ -112,7 +95,7 @@ func (t *deletionTarget) movementGroupsTx(ctx context.Context, tx bun.Tx, offset
 	var keys []string
 	err := tx.NewSelect().Model((*model.PositionMovement)(nil)).Column("pm.idempotency_key").
 		Where("pm.journal_entry_id IS NULL").Where("pm.financial_account_id IN (?)", bun.List(t.financialIDs())).
-		Group("pm.idempotency_key").OrderExpr("min(pm.id)").Offset(offset).Limit(limit).
+		Group("pm.idempotency_key").OrderExpr("min(pm.id)").Offset(int64(offset)).Limit(int64(limit)).
 		Scan(ctx, &keys)
 	if err != nil {
 		return nil, fmt.Errorf("list position movement groups in the deleted account: %w", err)
@@ -120,74 +103,49 @@ func (t *deletionTarget) movementGroupsTx(ctx context.Context, tx bun.Tx, offset
 	return keys, nil
 }
 
-// groupChainTx returns the group written under key followed by the groups that
-// reverse it, or nothing when it does not exist.
-func groupChainTx(ctx context.Context, tx bun.Tx, key string) ([][]model.PositionMovement, error) {
-	group, err := positions.FindByIdempotencyKeyTx(ctx, tx, key)
-	if err != nil || len(group) == 0 {
-		return nil, err
-	}
-	return deletion.MovementGroupsTx(ctx, tx, group[0].ID)
-}
-
-// keepsChainTx reports whether a group of the chain moves units on a financial
-// account that survives, the stray one aside, whose holdings are not tracked.
-// The accounts are the locked ones, which include every account of the chain.
-func (t *deletionTarget) keepsChainTx(ctx context.Context, tx bun.Tx, chain [][]model.PositionMovement, accounts map[int64]*model.FinancialAccount) (bool, error) {
-	for _, group := range chain {
-		for _, movement := range group {
-			if t.isFinancialAccount(movement.FinancialAccountID) {
-				continue
-			}
-			stray, err := isStrayFinancialAccountTx(ctx, tx, accounts[movement.FinancialAccountID])
-			if err != nil {
-				return false, err
-			}
-			if !stray {
-				return true, nil
-			}
+// keepsGroupTx reports whether the group moves units on a financial account
+// that survives, the stray one aside, whose holdings are not tracked. The
+// accounts are the locked ones, which include every account of the group.
+func (t *deletionTarget) keepsGroupTx(ctx context.Context, tx bun.Tx, group []model.PositionMovement, accounts map[int64]*model.FinancialAccount) (bool, error) {
+	for _, movement := range group {
+		if t.isFinancialAccount(movement.FinancialAccountID) {
+			continue
+		}
+		stray, err := isStrayFinancialAccountTx(ctx, tx, accounts[movement.FinancialAccountID])
+		if err != nil {
+			return false, err
+		}
+		if !stray {
+			return true, nil
 		}
 	}
 	return false, nil
 }
 
-// moveLegsTx empties the target of the kept chains' legs: each transfer leg
+// moveLegsTx empties the target of the kept groups' legs: each transfer leg
 // moves to the stray financial account, and each split or adjustment leg is
 // deleted, since it is a fact about the target alone and its group stays valid
 // without it.
-func (t *deletionTarget) moveLegsTx(ctx context.Context, tx bun.Tx, kept [][][]model.PositionMovement) error {
-	if len(kept) == 0 {
-		return nil
-	}
-
-	var moving []int64
-	// dropped holds the legs to delete group by group, each chain's last group
-	// first, since a reversal refers to what it reverses.
-	var dropped [][]int64
-	for _, chain := range kept {
-		for n := len(chain) - 1; n >= 0; n-- {
-			var legs []int64
-			for _, movement := range chain[n] {
-				if !t.isFinancialAccount(movement.FinancialAccountID) {
-					continue
-				}
-				if movement.Kind == model.PositionMovementTransfer {
-					moving = append(moving, movement.ID)
-				} else {
-					legs = append(legs, movement.ID)
-				}
+func (t *deletionTarget) moveLegsTx(ctx context.Context, tx bun.Tx, kept [][]model.PositionMovement) error {
+	var moving, dropped []int64
+	for _, group := range kept {
+		for _, movement := range group {
+			if !t.isFinancialAccount(movement.FinancialAccountID) {
+				continue
 			}
-			if len(legs) > 0 {
-				dropped = append(dropped, legs)
+			if movement.Kind == model.PositionMovementTransfer {
+				moving = append(moving, movement.ID)
+			} else {
+				dropped = append(dropped, movement.ID)
 			}
 		}
 	}
-
-	if _, err := tx.ExecContext(ctx, `SELECT set_config('ivfs.deleting_financial_account', ?, true)`, fmt.Sprint(t.financialAccount.ID)); err != nil {
-		return fmt.Errorf("declare financial account deletion: %w", err)
+	if len(moving) == 0 && len(dropped) == 0 {
+		return nil
 	}
-	for _, legs := range dropped {
-		if _, err := tx.NewDelete().Model((*model.PositionMovement)(nil)).Where("id IN (?)", bun.List(legs)).Exec(ctx); err != nil {
+
+	if len(dropped) > 0 {
+		if _, err := tx.NewDelete().Model((*model.PositionMovement)(nil)).Where("id IN (?)", bun.List(dropped)).Exec(ctx); err != nil {
 			return fmt.Errorf("delete position movements: %w", err)
 		}
 	}

@@ -26,6 +26,39 @@ func (s *UnitTestSuite) seedUnits(account *model.FinancialAccount, asset *model.
 	})
 }
 
+// seedGroup inserts the legs of a command without a journal entry, as movements
+// that were already there, under one key and numbered in leg order.
+func (s *UnitTestSuite) seedGroup(key string, kind model.PositionMovementKind, asset *model.Asset, day int, legs ...*model.PositionMovement) []*model.PositionMovement {
+	s.T().Helper()
+
+	for n, leg := range legs {
+		leg.Kind, leg.AssetID = kind, asset.ID
+		leg.OccurredAt = movementDay.AddDate(0, 0, day)
+		leg.IdempotencyKey, leg.LineNumber = ptr.NewPtr(key), n+1
+		leg.ExternalID = ptr.NewPtr("broker-ref")
+		temporaltesting.Insert(s.T(), s.DB, leg)
+	}
+	return legs
+}
+
+// seedTransfer moves 4 of the 10 units the first account holds to the second,
+// with its cost basis, and returns the two legs.
+func (s *UnitTestSuite) seedTransfer(key string, asset *model.Asset) []*model.PositionMovement {
+	s.T().Helper()
+
+	s.seedUnits(s.financialAccount, asset, 10, 1)
+	return s.seedGroup(key, model.PositionMovementTransfer, asset, 5,
+		&model.PositionMovement{
+			FinancialAccountID: s.financialAccount.ID, UnitsDelta: decimal.NewFromInt(-4),
+			CostBasisAmount: ptr.NewPtr(decimal.NewFromInt(-40)), CostBasisCurrencyID: ptr.Int64(s.eur.ID),
+		},
+		&model.PositionMovement{
+			FinancialAccountID: s.otherAccount.ID, UnitsDelta: decimal.NewFromInt(4),
+			CostBasisAmount: ptr.NewPtr(decimal.NewFromInt(40)), CostBasisCurrencyID: ptr.Int64(s.eur.ID),
+		},
+	)
+}
+
 func (s *UnitTestSuite) unitsHeld(account *model.FinancialAccount, asset *model.Asset) decimal.Decimal {
 	s.T().Helper()
 
@@ -34,14 +67,6 @@ func (s *UnitTestSuite) unitsHeld(account *model.FinancialAccount, asset *model.
 	var result lt.PositionAtResult
 	require.NoError(s.T(), position.Get(&result))
 	return result.Units
-}
-
-func (s *UnitTestSuite) countMovements() int {
-	s.T().Helper()
-
-	count, err := s.DB.NewSelect().Model((*model.PositionMovement)(nil)).Count(s.T().Context())
-	require.NoError(s.T(), err)
-	return count
 }
 
 func (s *UnitTestSuite) movementsWithKey(key string) []model.PositionMovement {
@@ -204,7 +229,7 @@ func (s *UnitTestSuite) Test_RegisterPositionMovement_Idempotent() {
 	require.NoError(s.T(), err)
 	var created lt.RegisterPositionMovementResult
 	require.NoError(s.T(), first.Get(&created))
-	rows := s.countMovements()
+	rows := s.Count[model.PositionMovement]()
 
 	second, err := s.Env.ExecuteActivity(s.pa.RegisterPositionMovement, input)
 	require.NoError(s.T(), err)
@@ -214,7 +239,7 @@ func (s *UnitTestSuite) Test_RegisterPositionMovement_Idempotent() {
 	require.Equal(s.T(), created.PositionMovementIDs, retried.PositionMovementIDs)
 	require.Empty(s.T(), created.Warnings)
 	require.Empty(s.T(), retried.Warnings)
-	require.Equal(s.T(), rows, s.countMovements())
+	require.Equal(s.T(), rows, s.Count[model.PositionMovement]())
 	require.True(s.T(), s.unitsHeld(s.financialAccount, s.asset).Equal(decimal.NewFromInt(6)))
 	require.True(s.T(), s.unitsHeld(s.otherAccount, s.asset).Equal(decimal.NewFromInt(4)))
 
@@ -225,7 +250,7 @@ func (s *UnitTestSuite) Test_RegisterPositionMovement_Idempotent() {
 	require.NoError(s.T(), third.Get(&unchanged))
 
 	require.Equal(s.T(), created.PositionMovementIDs, unchanged.PositionMovementIDs)
-	require.Equal(s.T(), rows, s.countMovements())
+	require.Equal(s.T(), rows, s.Count[model.PositionMovement]())
 	require.True(s.T(), s.unitsHeld(s.otherAccount, s.asset).Equal(decimal.NewFromInt(4)))
 }
 
@@ -292,7 +317,7 @@ func (s *UnitTestSuite) Test_RegisterPositionMovement_Negative() {
 			temporaltesting.Insert(s.T(), s.DB, asset)
 			s.seedUnits(s.financialAccount, asset, 10, 1)
 			input := tc.input(asset)
-			rows := s.countMovements()
+			rows := s.Count[model.PositionMovement]()
 
 			activityResult, err := s.Env.ExecuteActivity(s.pa.RegisterPositionMovement, input)
 
@@ -300,7 +325,7 @@ func (s *UnitTestSuite) Test_RegisterPositionMovement_Negative() {
 			var result lt.RegisterPositionMovementResult
 			require.NoError(s.T(), activityResult.Get(&result))
 			s.requireWarnings(result.Warnings, asset, tc.warnings...)
-			require.Equal(s.T(), rows+len(input.Legs), s.countMovements())
+			require.Equal(s.T(), rows+len(input.Legs), s.Count[model.PositionMovement]())
 			require.Len(s.T(), s.movementsWithKey(input.IdempotencyKey), len(input.Legs))
 			require.True(s.T(), s.unitsHeld(s.financialAccount, asset).Equal(decimal.NewFromInt(tc.wantFirst)))
 			require.True(s.T(), s.unitsHeld(s.otherAccount, asset).Equal(decimal.NewFromInt(tc.wantSecond)))
@@ -333,7 +358,7 @@ func (s *UnitTestSuite) Test_RegisterPositionMovement_IdempotentWarnings() {
 	require.NoError(s.T(), third.Get(&afterBackfill))
 	require.Equal(s.T(), created.PositionMovementIDs, afterBackfill.PositionMovementIDs)
 	require.Empty(s.T(), afterBackfill.Warnings)
-	require.Equal(s.T(), 2, s.countMovements())
+	require.Equal(s.T(), 2, s.Count[model.PositionMovement]())
 }
 
 // Test_RegisterPositionMovement_Rejected checks that a movement that cannot be
@@ -398,12 +423,12 @@ func (s *UnitTestSuite) Test_RegisterPositionMovement_Rejected() {
 			temporaltesting.Insert(s.T(), s.DB, asset)
 			s.seedUnits(s.financialAccount, asset, 10, 1)
 			input := tc.input(asset)
-			rows := s.countMovements()
+			rows := s.Count[model.PositionMovement]()
 
 			_, err := s.Env.ExecuteActivity(s.pa.RegisterPositionMovement, input)
 
 			require.ErrorContains(s.T(), err, tc.failure)
-			require.Equal(s.T(), rows, s.countMovements(), "a rejected movement must leave nothing behind")
+			require.Equal(s.T(), rows, s.Count[model.PositionMovement](), "a rejected movement must leave nothing behind")
 		})
 	}
 }
@@ -425,7 +450,7 @@ func (s *UnitTestSuite) Test_RegisterPositionMovement_ClosedAccountRetry() {
 	var retried lt.RegisterPositionMovementResult
 	require.NoError(s.T(), retry.Get(&retried))
 	require.Equal(s.T(), created.PositionMovementIDs, retried.PositionMovementIDs)
-	require.Equal(s.T(), 1, s.countMovements())
+	require.Equal(s.T(), 1, s.Count[model.PositionMovement]())
 }
 
 // holdAccount opens a transaction that has locked the financial account, as a
@@ -516,25 +541,6 @@ func (s *UnitTestSuite) Test_RegisterPositionMovement_RetryWaitsForConcurrentWri
 	commit()
 	outcome := <-done
 	require.NoError(s.T(), outcome.err)
-	require.Equal(s.T(), 1, s.countMovements())
+	require.Equal(s.T(), 1, s.Count[model.PositionMovement]())
 	require.Equal(s.T(), []int64{s.movementsWithKey(key)[0].ID}, outcome.result.PositionMovementIDs)
-}
-
-// Test_RegisterPositionMovement_KeyOfReversal checks that a key that belongs to
-// a reversal is not taken for the retry of a registration.
-func (s *UnitTestSuite) Test_RegisterPositionMovement_KeyOfReversal() {
-	originals := s.seedTransfer("transfer-1", s.asset)
-	for n, original := range originals {
-		temporaltesting.Insert(s.T(), s.DB, &model.PositionMovement{
-			Kind: original.Kind, FinancialAccountID: original.FinancialAccountID, AssetID: s.asset.ID,
-			UnitsDelta: original.UnitsDelta.Neg(), OccurredAt: movementDay.AddDate(0, 0, 6),
-			IdempotencyKey: ptr.NewPtr("reversal-1"), LineNumber: n + 1, ReversalOfMovementID: &original.ID,
-		})
-	}
-	rows := s.countMovements()
-
-	_, err := s.Env.ExecuteActivity(s.pa.RegisterPositionMovement, s.adjustment("reversal-1", s.asset, 1))
-
-	require.ErrorContains(s.T(), err, "belongs to a reversal")
-	require.Equal(s.T(), rows, s.countMovements())
 }

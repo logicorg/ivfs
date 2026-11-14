@@ -13,6 +13,8 @@ type RetrieveTagResult struct {
 	Tag *model.Tag
 }
 
+type ListTagsParams struct{}
+
 type ListTagsResult struct {
 	Tags []*model.Tag
 }

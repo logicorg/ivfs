@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AddBalanceData, AddBalanceErrors, AddBalanceResponses, BuyAssetData, BuyAssetErrors, BuyAssetResponses, CloseCategoryData, CloseCategoryErrors, CloseCategoryResponses, CloseFinancialAccountData, CloseFinancialAccountErrors, CloseFinancialAccountResponses, CloseInstitutionData, CloseInstitutionErrors, CloseInstitutionResponses, CloseLedgerAccountData, CloseLedgerAccountErrors, CloseLedgerAccountResponses, CreateAssetData, CreateAssetErrors, CreateAssetResponses, CreateCategoryData, CreateCategoryErrors, CreateCategoryResponses, CreateCounterpartyData, CreateCounterpartyErrors, CreateCounterpartyResponses, CreateCurrencyData, CreateCurrencyErrors, CreateCurrencyResponses, DeleteCategoryData, DeleteCategoryErrors, DeleteCategoryResponses, DeleteCurrencyData, DeleteCurrencyErrors, DeleteCurrencyResponses, DeleteFinancialAccountData, DeleteFinancialAccountErrors, DeleteFinancialAccountResponses, DeleteInstitutionData, DeleteInstitutionErrors, DeleteInstitutionResponses, DeleteJournalEntryData, DeleteJournalEntryErrors, DeleteJournalEntryResponses, DeleteLedgerAccountData, DeleteLedgerAccountErrors, DeleteLedgerAccountResponses, DeletePositionMovementData, DeletePositionMovementErrors, DeletePositionMovementResponses, GetAccountBalancesData, GetAccountBalancesErrors, GetAccountBalancesResponses, GetCategoryTotalsData, GetCategoryTotalsErrors, GetCategoryTotalsResponses, GetHealthData, GetHealthErrors, GetHealthResponses, GetJournalEntryData, GetJournalEntryErrors, GetJournalEntryResponses, GetLedgerAccountBalanceData, GetLedgerAccountBalanceErrors, GetLedgerAccountBalanceResponses, GetNetWorthSeriesData, GetNetWorthSeriesErrors, GetNetWorthSeriesResponses, ListAssetsData, ListAssetsErrors, ListAssetsResponses, ListAssetValuesData, ListAssetValuesErrors, ListAssetValuesResponses, ListCategoriesData, ListCategoriesErrors, ListCategoriesResponses, ListConversionRatesData, ListConversionRatesErrors, ListConversionRatesResponses, ListCounterpartiesData, ListCounterpartiesErrors, ListCounterpartiesResponses, ListCurrenciesData, ListCurrenciesErrors, ListCurrenciesResponses, ListFinancialAccountsData, ListFinancialAccountsErrors, ListFinancialAccountsResponses, ListHoldingMovementsData, ListHoldingMovementsErrors, ListHoldingMovementsResponses, ListHoldingsData, ListHoldingsErrors, ListHoldingsResponses, ListJournalEntriesData, ListJournalEntriesErrors, ListJournalEntriesResponses, MoveCategoryData, MoveCategoryErrors, MoveCategoryResponses, OpenAccountData, OpenAccountErrors, OpenAccountResponses, PreviewCategoryDeletionData, PreviewCategoryDeletionErrors, PreviewCategoryDeletionResponses, PreviewFinancialAccountDeletionData, PreviewFinancialAccountDeletionErrors, PreviewFinancialAccountDeletionResponses, PreviewInstitutionDeletionData, PreviewInstitutionDeletionErrors, PreviewInstitutionDeletionResponses, PreviewLedgerAccountDeletionData, PreviewLedgerAccountDeletionErrors, PreviewLedgerAccountDeletionResponses, RecordExpenseData, RecordExpenseErrors, RecordExpenseResponses, RecordIncomeData, RecordIncomeErrors, RecordIncomeResponses, RecordTransferData, RecordTransferErrors, RecordTransferResponses, RenameCategoryData, RenameCategoryErrors, RenameCategoryResponses, RenameCounterpartyData, RenameCounterpartyErrors, RenameCounterpartyResponses, RenameFinancialAccountData, RenameFinancialAccountErrors, RenameFinancialAccountResponses, RenameLedgerAccountData, RenameLedgerAccountErrors, RenameLedgerAccountResponses, RetrieveUserSettingsData, RetrieveUserSettingsErrors, RetrieveUserSettingsResponses, ReverseJournalEntryData, ReverseJournalEntryErrors, ReverseJournalEntryResponses, SellAssetData, SellAssetErrors, SellAssetResponses, UpdateCurrencyData, UpdateCurrencyErrors, UpdateCurrencyResponses, UpdateUserSettingsData, UpdateUserSettingsErrors, UpdateUserSettingsResponses, VestAssetData, VestAssetErrors, VestAssetResponses } from './types.gen';
+import type { AddBalanceData, AddBalanceErrors, AddBalanceResponses, BuyAssetData, BuyAssetErrors, BuyAssetResponses, CloseCategoryData, CloseCategoryErrors, CloseCategoryResponses, CloseFinancialAccountData, CloseFinancialAccountErrors, CloseFinancialAccountResponses, CloseInstitutionData, CloseInstitutionErrors, CloseInstitutionResponses, CloseLedgerAccountData, CloseLedgerAccountErrors, CloseLedgerAccountResponses, CreateAssetData, CreateAssetErrors, CreateAssetResponses, CreateCategoryData, CreateCategoryErrors, CreateCategoryResponses, CreateCounterpartyData, CreateCounterpartyErrors, CreateCounterpartyResponses, CreateCurrencyData, CreateCurrencyErrors, CreateCurrencyResponses, CreateTagData, CreateTagErrors, CreateTagResponses, DeleteCategoryData, DeleteCategoryErrors, DeleteCategoryResponses, DeleteCounterpartyData, DeleteCounterpartyErrors, DeleteCounterpartyResponses, DeleteCurrencyData, DeleteCurrencyErrors, DeleteCurrencyResponses, DeleteFinancialAccountData, DeleteFinancialAccountErrors, DeleteFinancialAccountResponses, DeleteInstitutionData, DeleteInstitutionErrors, DeleteInstitutionResponses, DeleteJournalEntryData, DeleteJournalEntryErrors, DeleteJournalEntryResponses, DeleteLedgerAccountData, DeleteLedgerAccountErrors, DeleteLedgerAccountResponses, DeletePositionMovementData, DeletePositionMovementErrors, DeletePositionMovementResponses, DeleteTagData, DeleteTagErrors, DeleteTagResponses, GetAccountBalancesData, GetAccountBalancesErrors, GetAccountBalancesResponses, GetCategoryTotalsData, GetCategoryTotalsErrors, GetCategoryTotalsResponses, GetHealthData, GetHealthErrors, GetHealthResponses, GetJournalEntryData, GetJournalEntryErrors, GetJournalEntryResponses, GetLedgerAccountBalanceData, GetLedgerAccountBalanceErrors, GetLedgerAccountBalanceResponses, GetNetWorthSeriesData, GetNetWorthSeriesErrors, GetNetWorthSeriesResponses, ListAssetsData, ListAssetsErrors, ListAssetsResponses, ListAssetValuesData, ListAssetValuesErrors, ListAssetValuesResponses, ListCategoriesData, ListCategoriesErrors, ListCategoriesResponses, ListConversionRatesData, ListConversionRatesErrors, ListConversionRatesResponses, ListCounterpartiesData, ListCounterpartiesErrors, ListCounterpartiesResponses, ListCurrenciesData, ListCurrenciesErrors, ListCurrenciesResponses, ListFinancialAccountsData, ListFinancialAccountsErrors, ListFinancialAccountsResponses, ListHoldingMovementsData, ListHoldingMovementsErrors, ListHoldingMovementsResponses, ListHoldingsData, ListHoldingsErrors, ListHoldingsResponses, ListJournalEntriesData, ListJournalEntriesErrors, ListJournalEntriesResponses, ListTagsData, ListTagsErrors, ListTagsResponses, MoveCategoryData, MoveCategoryErrors, MoveCategoryResponses, OpenAccountData, OpenAccountErrors, OpenAccountResponses, PreviewCategoryDeletionData, PreviewCategoryDeletionErrors, PreviewCategoryDeletionResponses, PreviewFinancialAccountDeletionData, PreviewFinancialAccountDeletionErrors, PreviewFinancialAccountDeletionResponses, PreviewInstitutionDeletionData, PreviewInstitutionDeletionErrors, PreviewInstitutionDeletionResponses, PreviewLedgerAccountDeletionData, PreviewLedgerAccountDeletionErrors, PreviewLedgerAccountDeletionResponses, RecordExpenseData, RecordExpenseErrors, RecordExpenseResponses, RecordIncomeData, RecordIncomeErrors, RecordIncomeResponses, RecordTransferData, RecordTransferErrors, RecordTransferResponses, RenameCategoryData, RenameCategoryErrors, RenameCategoryResponses, RenameCounterpartyData, RenameCounterpartyErrors, RenameCounterpartyResponses, RenameFinancialAccountData, RenameFinancialAccountErrors, RenameFinancialAccountResponses, RenameLedgerAccountData, RenameLedgerAccountErrors, RenameLedgerAccountResponses, RetrieveUserSettingsData, RetrieveUserSettingsErrors, RetrieveUserSettingsResponses, SellAssetData, SellAssetErrors, SellAssetResponses, UpdateCurrencyData, UpdateCurrencyErrors, UpdateCurrencyResponses, UpdateTagData, UpdateTagErrors, UpdateTagResponses, UpdateUserSettingsData, UpdateUserSettingsErrors, UpdateUserSettingsResponses, VestAssetData, VestAssetErrors, VestAssetResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -151,6 +151,13 @@ export const createCounterparty = <ThrowOnError extends boolean = false>(options
 });
 
 /**
+ * Delete a counterparty
+ *
+ * The journal entries that name it keep their postings and lose the counterparty, and its name can be used again. Deleting a counterparty that does not exist changes nothing. Entries that keep being recorded with it while it is deleted are answered with a conflict, and deleting again is safe.
+ */
+export const deleteCounterparty = <ThrowOnError extends boolean = false>(options: Options<DeleteCounterpartyData, ThrowOnError>): RequestResult<DeleteCounterpartyResponses, DeleteCounterpartyErrors, ThrowOnError> => (options.client ?? client).delete<DeleteCounterpartyResponses, DeleteCounterpartyErrors, ThrowOnError>({ url: '/api/counterparties/{id}', ...options });
+
+/**
  * Rename a counterparty
  *
  * The journal entries that name it show the new name.
@@ -279,7 +286,7 @@ export const getHealth = <ThrowOnError extends boolean = false>(options?: Option
 export const listHoldings = <ThrowOnError extends boolean = false>(options?: Options<ListHoldingsData, ThrowOnError>): RequestResult<ListHoldingsResponses, ListHoldingsErrors, ThrowOnError> => (options?.client ?? client).get<ListHoldingsResponses, ListHoldingsErrors, ThrowOnError>({ url: '/api/holdings', ...options });
 
 /**
- * List a page of the movements of holdings, by the date they occurred and then by id
+ * List a page of the movements of holdings, by the date they occurred and then by when they were recorded
  *
  * Only the movements that count towards holdings are listed: those without a journal entry, and those of a posted one. Their units add up to the holding's.
  */
@@ -354,7 +361,7 @@ export const vestAsset = <ThrowOnError extends boolean = false>(options: Options
 export const listJournalEntries = <ThrowOnError extends boolean = false>(options?: Options<ListJournalEntriesData, ThrowOnError>): RequestResult<ListJournalEntriesResponses, ListJournalEntriesErrors, ThrowOnError> => (options?.client ?? client).get<ListJournalEntriesResponses, ListJournalEntriesErrors, ThrowOnError>({ url: '/api/journal-entries', ...options });
 
 /**
- * Delete a journal entry with its postings, position movements, and reversals
+ * Delete a journal entry with its postings and position movements
  *
  * The ledger is left as if the entry had never been recorded, and its idempotency key is free again. Deleting an entry that does not exist changes nothing. A deletion that leaves a holding negative at some point in time is made all the same, and the response warns about it.
  */
@@ -364,13 +371,6 @@ export const deleteJournalEntry = <ThrowOnError extends boolean = false>(options
  * Get a journal entry with its postings and counterparty
  */
 export const getJournalEntry = <ThrowOnError extends boolean = false>(options: Options<GetJournalEntryData, ThrowOnError>): RequestResult<GetJournalEntryResponses, GetJournalEntryErrors, ThrowOnError> => (options.client ?? client).get<GetJournalEntryResponses, GetJournalEntryErrors, ThrowOnError>({ url: '/api/journal-entries/{id}', ...options });
-
-/**
- * Reverse a posted journal entry with a new entry that undoes it, now
- *
- * An entry is reversed at most once: reversing it again is a 409. A reversal that leaves a holding negative at some point in time is made all the same, and the response warns about it.
- */
-export const reverseJournalEntry = <ThrowOnError extends boolean = false>(options: Options<ReverseJournalEntryData, ThrowOnError>): RequestResult<ReverseJournalEntryResponses, ReverseJournalEntryErrors, ThrowOnError> => (options.client ?? client).post<ReverseJournalEntryResponses, ReverseJournalEntryErrors, ThrowOnError>({ url: '/api/journal-entries/{id}/reverse', ...options });
 
 /**
  * Delete a ledger account with the entries and movements recorded on it
@@ -420,7 +420,7 @@ export const renameLedgerAccount = <ThrowOnError extends boolean = false>(option
 export const getNetWorthSeries = <ThrowOnError extends boolean = false>(options: Options<GetNetWorthSeriesData, ThrowOnError>): RequestResult<GetNetWorthSeriesResponses, GetNetWorthSeriesErrors, ThrowOnError> => (options.client ?? client).get<GetNetWorthSeriesResponses, GetNetWorthSeriesErrors, ThrowOnError>({ url: '/api/net-worth/series', ...options });
 
 /**
- * Delete a position movement with the rest of its group and the group's reversals
+ * Delete a position movement with the rest of its group
  *
  * Any movement of a split, a transfer, or an adjustment deletes all of it, and its idempotency key is free again. A movement of a journal entry, a trade or a vest, is a 422: it is deleted with its entry. Deleting a movement that does not exist changes nothing. A deletion that leaves a holding negative at some point in time is made all the same, and the response warns about it.
  */
@@ -438,6 +438,44 @@ export const retrieveUserSettings = <ThrowOnError extends boolean = false>(optio
  */
 export const updateUserSettings = <ThrowOnError extends boolean = false>(options: Options<UpdateUserSettingsData, ThrowOnError>): RequestResult<UpdateUserSettingsResponses, UpdateUserSettingsErrors, ThrowOnError> => (options.client ?? client).put<UpdateUserSettingsResponses, UpdateUserSettingsErrors, ThrowOnError>({
     url: '/api/settings',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * List the tags, sorted by name
+ */
+export const listTags = <ThrowOnError extends boolean = false>(options?: Options<ListTagsData, ThrowOnError>): RequestResult<ListTagsResponses, ListTagsErrors, ThrowOnError> => (options?.client ?? client).get<ListTagsResponses, ListTagsErrors, ThrowOnError>({ url: '/api/tags', ...options });
+
+/**
+ * Create a tag, or find the one with its name
+ *
+ * Names are compared ignoring case and surrounding space. A tag that exists is returned unchanged, whatever its description.
+ */
+export const createTag = <ThrowOnError extends boolean = false>(options: Options<CreateTagData, ThrowOnError>): RequestResult<CreateTagResponses, CreateTagErrors, ThrowOnError> => (options.client ?? client).post<CreateTagResponses, CreateTagErrors, ThrowOnError>({
+    url: '/api/tags',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Delete a tag
+ *
+ * Deleting a tag that does not exist changes nothing.
+ */
+export const deleteTag = <ThrowOnError extends boolean = false>(options: Options<DeleteTagData, ThrowOnError>): RequestResult<DeleteTagResponses, DeleteTagErrors, ThrowOnError> => (options.client ?? client).delete<DeleteTagResponses, DeleteTagErrors, ThrowOnError>({ url: '/api/tags/{id}', ...options });
+
+/**
+ * Change a tag's name or description
+ */
+export const updateTag = <ThrowOnError extends boolean = false>(options: Options<UpdateTagData, ThrowOnError>): RequestResult<UpdateTagResponses, UpdateTagErrors, ThrowOnError> => (options.client ?? client).patch<UpdateTagResponses, UpdateTagErrors, ThrowOnError>({
+    url: '/api/tags/{id}',
     ...options,
     headers: {
         'Content-Type': 'application/json',

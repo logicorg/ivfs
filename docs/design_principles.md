@@ -4,10 +4,12 @@ This document outlines the key design principles and architectural patterns obse
 
 ## Ledger Invariants
 
-- `JournalEntry` and immutable `Posting` rows are the monetary source of
-  truth. Do not reintroduce a two-sided `Transaction` table.
+- `JournalEntry` and `Posting` rows are the monetary source of truth. Do not
+  reintroduce a two-sided `Transaction` table.
 - Every posted journal entry balances debits and credits independently for
-  each currency.
+  each currency. The database checks it on every write of the entry or of one
+  of its postings, so an entry can be edited or deleted but never left
+  unbalanced (ADR 0017).
 - `LedgerAccount` is the balance-bearing chart of accounts. It has one
   currency and one accounting kind: asset, liability, equity, income, or
   expense.

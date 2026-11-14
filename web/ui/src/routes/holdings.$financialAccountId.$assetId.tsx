@@ -34,8 +34,8 @@ export const Route = createFileRoute("/holdings/$financialAccountId/$assetId")({
 })
 
 // HoldingHistory is an asset held in a financial account, with every movement
-// of its units. A movement's entry opens in the sheet, which reverses it, and
-// the reversal takes the movement back with it (ADR 0004).
+// of its units. A movement's entry opens in the sheet, which deletes it, and
+// the movement goes with it (ADR 0011).
 function HoldingHistory() {
   const params = Route.useParams()
   const financialAccountId = Number(params.financialAccountId)
@@ -190,8 +190,6 @@ function Movements({
                       </button>
                     )}
                     <Badge variant="outline">{row.kind}</Badge>
-                    {row.reversal && <Badge variant="outline">reversal</Badge>}
-                    {row.reversed && <Badge variant="outline">reversed</Badge>}
                   </span>
                 </TableCell>
                 <TableCell className="text-right tabular-nums">{formatUnits(row.unitsDelta)}</TableCell>

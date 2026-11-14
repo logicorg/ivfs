@@ -100,5 +100,5 @@ func (s *UnitTestSuite) hasSchemas(name string) bool {
 		Where("schema_name IN (?)", bun.List(model.Schemas)).
 		Count(s.T().Context())
 	require.NoError(s.T(), err)
-	return count == len(model.Schemas)
+	return int(count) == len(model.Schemas)
 }

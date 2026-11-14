@@ -30,6 +30,11 @@ func (i *SellAssetInput) Validate() error {
 	if err := cuego.Validate(i); err != nil {
 		return errs.ValidationError{Err: err}
 	}
+	return i.rules()
+}
+
+// rules checks what CUE cannot, for a sale recorded or updated to.
+func (i *SellAssetInput) rules() error {
 	if err := validateOccurredAt(i.OccurredAt); err != nil {
 		return err
 	}

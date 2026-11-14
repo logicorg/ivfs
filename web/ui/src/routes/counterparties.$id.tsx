@@ -1,11 +1,12 @@
+import { useState } from "react"
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query"
 import { createFileRoute, Link } from "@tanstack/react-router"
 import { ArrowLeft } from "lucide-react"
 
 import { listCounterpartiesOptions, listCurrenciesOptions, listJournalEntriesInfiniteOptions } from "@/api/@tanstack/react-query.gen"
+import { DeleteCounterpartyDialog } from "@/components/counterparty-dialogs"
 import { ProblemMessages } from "@/components/form-fields"
 import { JournalEntrySheet } from "@/components/journal-entry-sheet"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { formatDate } from "@/lib/dates"
@@ -35,6 +36,7 @@ function CounterpartyEntries() {
   const navigate = Route.useNavigate()
   const counterparties = useQuery(listCounterpartiesOptions({ query: {} }))
   const counterparty = counterparties.data?.counterparties.find((candidate) => candidate.id === id)
+  const [deleting, setDeleting] = useState(false)
 
   return (
     <div className="flex max-w-4xl flex-col gap-6">
@@ -53,12 +55,23 @@ function CounterpartyEntries() {
       ) : (
         <>
           <div className="flex flex-col gap-1">
-            <h1 className="text-2xl font-semibold">{counterparty.name}</h1>
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-2xl font-semibold">{counterparty.name}</h1>
+              <Button variant="ghost" size="sm" onClick={() => setDeleting(true)}>
+                Delete
+              </Button>
+            </div>
             {counterparty.externalId && <p className="text-muted-foreground">{counterparty.externalId}</p>}
           </div>
           <Entries
             counterpartyId={id}
             onSelect={(entryId) => navigate({ search: { entry: entryId }, replace: entry !== undefined })}
+          />
+          <DeleteCounterpartyDialog
+            counterparty={counterparty}
+            open={deleting}
+            onOpenChange={setDeleting}
+            onDeleted={() => void navigate({ to: "/counterparties" })}
           />
         </>
       )}
@@ -122,7 +135,6 @@ function Entries({ counterpartyId, onSelect }: { counterpartyId: number; onSelec
                   }}
                 >
                   {item.description ?? <span className="text-muted-foreground">Journal entry {item.id}</span>}
-                  {item.reversalOfEntryId !== undefined && <Badge variant="outline">reversal</Badge>}
                 </button>
               </TableCell>
               <TableCell className="text-muted-foreground">

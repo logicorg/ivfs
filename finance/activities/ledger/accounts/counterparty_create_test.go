@@ -10,14 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func (s *UnitTestSuite) countCounterparties() int {
-	s.T().Helper()
-
-	count, err := s.DB.NewSelect().Model((*model.Counterparty)(nil)).Count(s.T().Context())
-	require.NoError(s.T(), err)
-	return count
-}
-
 func (s *UnitTestSuite) createCounterparty(input lt.CreateCounterpartyInput) lt.CreateCounterpartyResult {
 	s.T().Helper()
 
@@ -47,7 +39,7 @@ func (s *UnitTestSuite) Test_CreateCounterparty() {
 
 			if tc.errStr != "" {
 				require.ErrorContains(s.T(), err, tc.errStr)
-				require.Zero(s.T(), s.countCounterparties())
+				require.Zero(s.T(), s.Count[model.Counterparty]())
 				return
 			}
 			require.NoError(s.T(), err)
@@ -71,12 +63,12 @@ func (s *UnitTestSuite) Test_CreateCounterparty_Idempotent() {
 	retried := s.createCounterparty(lt.CreateCounterpartyInput{Name: "Tesco", ExternalID: ptr.NewPtr("merchant-1")})
 
 	require.Equal(s.T(), created, retried)
-	require.Equal(s.T(), 1, s.countCounterparties())
+	require.Equal(s.T(), 1, s.Count[model.Counterparty]())
 
 	different := s.createCounterparty(lt.CreateCounterpartyInput{Name: " TESCO ", ExternalID: ptr.NewPtr("merchant-2")})
 
 	require.Equal(s.T(), created, different)
-	require.Equal(s.T(), 1, s.countCounterparties())
+	require.Equal(s.T(), 1, s.Count[model.Counterparty]())
 	var stored model.Counterparty
 	temporaltesting.Retrieve(s.T(), s.DB, &stored, created.CounterpartyID)
 	require.Equal(s.T(), "Tesco", stored.Name)
@@ -116,5 +108,5 @@ func (s *UnitTestSuite) Test_CreateCounterparty_RetryWaitsForConcurrentWriter() 
 	outcome := <-done
 	require.NoError(s.T(), outcome.err)
 	require.Equal(s.T(), first.ID, outcome.result.CounterpartyID)
-	require.Equal(s.T(), 1, s.countCounterparties())
+	require.Equal(s.T(), 1, s.Count[model.Counterparty]())
 }

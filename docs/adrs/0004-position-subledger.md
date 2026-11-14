@@ -4,7 +4,7 @@
 - Date: 2026-09-18
 - Depends on: [ADR 0001](0001-double-entry-ledger.md) and [ADR 0002](0002-ledger-domain-and-application-api.md)
 - Amends: ADR 0001 (cost-basis currency) and ADR 0002 (`PositionMovement`, its invariants, and the positions commands)
-- Amended by: [ADR 0009](0009-intent-level-investments.md), [ADR 0010](0010-negative-holdings.md), and [ADR 0011](0011-deleting-journal-entries.md)
+- Amended by: [ADR 0009](0009-intent-level-investments.md), [ADR 0010](0010-negative-holdings.md), [ADR 0011](0011-deleting-journal-entries.md), and [ADR 0017](0017-editing-journal-entries.md)
 
 ## Context
 
@@ -102,17 +102,12 @@ later without a breaking change.
   unchanged, following the retrieve-or-insert convention.
 - `ExternalID` stays a non-unique provenance field.
 
-Every movement row is **append-only**: it is never updated, and is deleted
-only with its entry or its group, by the activities that declare it (ADR 0011).
-A correction is a compensating movement that references the original through
-`ReversalOfMovementID`, which is unique:
-
-- `ReversePositionMovement` reverses a whole entry-less group atomically. A
-  second reversal of the same group is a conflict. An entry-linked movement is
-  rejected, and the caller reverses its entry instead.
-- `ReverseJournalEntry` inverts **every** movement linked to the entry and
-  copies neither the external ID nor the original date, since a reversal is
-  dated when it is made.
+A movement row is no longer append-only (ADR 0017). It is deleted with its
+entry or its group (ADR 0011), and replaced when its entry is edited. A
+correction edits the movement's entry, or deletes its entry or group and
+records it again.
+`ReversalOfMovementID`, `ReversePositionMovement`, and reversing an entry's
+movements are removed (ADR 0017).
 
 ### Holdings never go negative
 
@@ -127,18 +122,17 @@ The activity enforces this inside its transaction:
    `FOR NO KEY UPDATE`. This serialises concurrent writers to the same account
    without blocking child inserts, and it also validates that the accounts
    exist and are open. A closed account rejects the write with
-   `ErrResourceClosed`, except for reversals.
+   `ErrResourceClosed`.
 2. Look up the idempotency key, which removes the duplicate-key race.
 3. Insert the entry, postings, and movements.
 4. Mark the entry posted.
 5. For each affected account and asset, compute the running sum ordered by
-   `(occurred_at, id)` over effective movements. If it is negative anywhere the
+   `(occurred_at, created_at, id)` over effective movements (ADR 0017). If it is negative anywhere the
    transaction rolls back with `ErrResourceConflict{ResourceType: "Position"}`
    that names the first negative point.
 
-Trades, reversals, transfers, and position movements all use this path. A
-reversal is rejected when the units it would restore have since been sold, so
-reversals must be made in the right order. `CloseFinancialAccount` refuses
+Trades, transfers, and position movements all use this path.
+`CloseFinancialAccount` refuses
 while any position it holds is non-zero.
 
 ### Queries
@@ -146,25 +140,23 @@ while any position it holds is non-zero.
 - `PositionAt` counts effective movements with `occurred_at <= At`.
 - `ListPositionMovements` filters by financial account, asset, kinds, and a
   half-open date range (`From` inclusive, `To` exclusive), ordered by
-  `(occurred_at, id)` with a keyset cursor. The sum of the history up to a
+  `(occurred_at, created_at, id)` with a keyset cursor (ADR 0017). The sum of the history up to a
   time equals `PositionAt` at that time.
 
-### Write order and the movement guard
+### Write order and the movement date
 
-An entry-linked movement is written while its entry is still a draft, inside
-the same transaction, and the entry is then marked posted. This is what lets
-the database protect movements. A trigger raises on any update or delete of a
-movement, and on an insert whose entry is not a draft or does not share its
-`occurred_at`. A delete is let through when the transaction has declared it is
-deleting that movement's entry or group (ADR 0011). A shared helper writes the
-draft entry, postings, and movements and then posts the entry, and the trade,
-reversal, and vest paths all use it.
+An entry-linked movement is written with its entry, inside the same
+transaction, and the entry is inserted as posted (ADR 0017). The trigger that
+guarded movements is removed. A foreign key on the entry's id and
+`occurred_at` keeps a movement on the date of its entry, and moves it when the
+entry's date changes. A shared helper writes the entry, postings, and
+movements, and the trade and vest paths both use it.
 
 ### Ledger-wide integrity
 
-- A trigger on `ledger.journal_entry` freezes an entry once it is posted. Only
-  draft to posted is allowed, and a posted entry can be deleted only whole, by
-  the activity that declares it (ADR 0011).
+- Nothing freezes a posted entry (ADR 0017). A deferred trigger checks its
+  balance whenever the entry or one of its postings is written, so an entry is
+  deleted whole, with its postings, in one transaction (ADR 0011).
 - Foreign keys are declared across the schema, all `ON DELETE RESTRICT`, so a
   used row can never be deleted and history is never destroyed or nulled,
   except an entry, its postings, and its movements, which are deleted together
@@ -184,8 +176,8 @@ through the shared helper in one transaction. Sell-to-cover is an ordinary
 `RegisterInvestmentTrade` whose entry carries the withholding postings. Income,
 tax, cash, and units are then all reconstructible from ledger facts. An ESPP
 purchase is a trade whose entry carries the discount and payroll postings.
-Reversing the vest is refused by the holdings guard while a sell-to-cover
-exists, which forces the correct order.
+A vest is corrected by deleting its entry (ADR 0011), in any order with its
+sell-to-cover (ADR 0010).
 
 Fair-market-value lookup, tax computation, payroll and broker parsing, vesting
 schedules, lot selection, realised gains, and wash sales stay out of scope.
@@ -236,21 +228,20 @@ ADR 0001:
 ADR 0002:
 
 - `PositionMovement` gains `Kind`, `IdempotencyKey`, `LineNumber`,
-  `ReversalOfMovementID`, `CostBasisCurrencyID`, `Description`, and
+  `CostBasisCurrencyID`, `Description`, and
   `Metadata`, and `CostBasisBaseAmount` is renamed `CostBasisAmount`.
 - "A posted entry, its postings, and its linked monetary position movements
   cannot be changed or deleted" now covers every movement, and is enforced by
   triggers instead of only by convention.
 - "A monetary purchase or sale position movement references the journal entry"
   extends to a `vest`.
-- The entry, postings, and movements are written in one transaction while the
-  entry is a draft, and the entry is then marked posted.
+- The entry, postings, and movements are written in one transaction, and the
+  entry is inserted as posted (ADR 0017).
 - `RegisterInvestmentTrade` is no longer the only domain-specific financial
   command. `RegisterFXConversion` already exists and the Batch 4 vest command
   is another.
 - "Under explicit policy" for `RegisterPositionMovement` means the kinds
-  `split`, `transfer`, and `adjustment`. `ReversePositionMovement` and
-  `ListPositionMovements` are added, and `PositionAt` counts effective
-  movements.
+  `split`, `transfer`, and `adjustment`. `ListPositionMovements` is added, and
+  `PositionAt` counts effective movements.
 - The persistence invariants gain the never-negative holdings rule, foreign
   keys with `RESTRICT`, and the journal-entry trigger.

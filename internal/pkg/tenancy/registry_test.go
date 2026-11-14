@@ -96,7 +96,7 @@ func (s *RegistryPoolsTestSuite) Test_RegistryPools_For() {
 			count, err := db.NewSelect().TableExpr("information_schema.schemata").
 				Where("schema_name IN (?)", bun.List(model.Schemas)).Count(s.T().Context())
 			require.NoError(s.T(), err)
-			require.Equal(s.T(), len(model.Schemas), count)
+			require.EqualValues(s.T(), len(model.Schemas), count)
 		})
 	}
 }

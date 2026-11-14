@@ -325,9 +325,8 @@ func (s *UnitTestSuite) TestDeleteLedgerAccountOnlyAllowsUnusedLeaf() {
 
 	_, err = s.Env.ExecuteActivity(s.aa.DeleteLedgerAccount, lt.DeleteLedgerAccountInput{LedgerAccountID: child.ID})
 	require.NoError(s.T(), err)
-	count, err := s.DB.NewSelect().Model((*model.LedgerAccount)(nil)).Where("id = ?", child.ID).Count(s.T().Context())
-	require.NoError(s.T(), err)
-	assert.Zero(s.T(), count)
+
+	assert.Zero(s.T(), s.CountWhere[model.LedgerAccount]("id = ?", child.ID))
 }
 
 func int64Ptr(value int64) *int64 { return &value }

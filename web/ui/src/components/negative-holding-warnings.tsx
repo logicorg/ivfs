@@ -3,7 +3,7 @@ import { TriangleAlert } from "lucide-react"
 import type { NegativeHolding } from "@/api"
 import { describeNegativeHolding } from "@/lib/negative-holdings"
 
-// NegativeHoldingWarnings shows the positions a reversal, a deletion or a merge left
+// NegativeHoldingWarnings shows the positions a deletion or a merge left
 // negative at some point in time. The change is made all the same, so they are
 // for the reader to fix, by recording what is missing or undoing what was wrong.
 export function NegativeHoldingWarnings({ title, warnings }: { title: string; warnings: NegativeHolding[] }) {

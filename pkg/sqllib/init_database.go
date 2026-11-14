@@ -118,6 +118,12 @@ func InitDatabase(ctx context.Context, db *bun.DB) error {
 	if err != nil {
 		return fmt.Errorf(errCreateTableFmt, "user_settings", err)
 	}
+	_, err = db.NewCreateTable().Model((*model.Tag)(nil)).
+		IfNotExists().
+		Exec(ctx)
+	if err != nil {
+		return fmt.Errorf(errCreateTableFmt, "tag", err)
+	}
 	if err := ensureLedgerConstraints(ctx, db); err != nil {
 		return err
 	}
@@ -133,12 +139,8 @@ func InitDatabase(ctx context.Context, db *bun.DB) error {
 	if err := ensureForeignKeys(ctx, db); err != nil {
 		return err
 	}
-
-	_, err = db.NewCreateTable().Model((*model.Tag)(nil)).
-		IfNotExists().
-		Exec(ctx)
-	if err != nil {
-		return fmt.Errorf(errCreateTableFmt, "tag", err)
+	if err := ensureMovementEntryDate(ctx, db); err != nil {
+		return err
 	}
 
 	return nil

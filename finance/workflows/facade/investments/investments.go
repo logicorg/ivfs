@@ -1,5 +1,5 @@
-// Package investments records the investments a person thinks in, a buy, a
-// sale, or a vest, as one journal entry and one position movement each,
+// Package investments records and corrects the investments a person thinks
+// in, a buy, a sale, or a vest, as one journal entry and one position movement each,
 // deciding the sides and the basis in code (ADR 0009).
 package investments
 
@@ -13,6 +13,7 @@ import (
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	currencieswf "github.com/logicorg/ivfs/finance/workflows/currencies"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
+	journalwf "github.com/logicorg/ivfs/finance/workflows/ledger/journal"
 	portfoliowf "github.com/logicorg/ivfs/finance/workflows/ledger/portfolio"
 	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/logicorg/ivfs/pkg/model"
@@ -99,9 +100,8 @@ func retrieveBrokerage(ctx workflow.Context, financialAccountID int64, currencyC
 	return result, nil
 }
 
-// register writes the trade's entry and movement in one transaction. A closed
-// account or an unknown asset fails here, inside it.
-func register(ctx workflow.Context, t trade) (*it.TradeResult, error) {
+// input is the trade as the entry and the movement that record it.
+func (t trade) input() lt.RegisterInvestmentTradeInput {
 	input := lt.RegisterInvestmentTradeInput{
 		Entry: lt.PostJournalEntryInput{
 			IdempotencyKey: t.kind + ":" + t.idempotencyKey,
@@ -121,9 +121,14 @@ func register(ctx workflow.Context, t trade) (*it.TradeResult, error) {
 	if t.description != "" {
 		input.Entry.Description = &t.description
 	}
+	return input
+}
 
+// register writes the trade's entry and movement in one transaction. A closed
+// account or an unknown asset fails here, inside it.
+func register(ctx workflow.Context, t trade) (*it.TradeResult, error) {
 	var result lt.RegisterInvestmentTradeResult
-	if err := workflow.ExecuteChildWorkflow(ctx, portfoliowf.RegisterInvestmentTrade, input).Get(ctx, &result); err != nil {
+	if err := workflow.ExecuteChildWorkflow(ctx, portfoliowf.RegisterInvestmentTrade, t.input()).Get(ctx, &result); err != nil {
 		return nil, fmt.Errorf("register %s: %w", t.kind, err)
 	}
 	return &it.TradeResult{
@@ -141,6 +146,32 @@ func registerVest(ctx workflow.Context, input lt.RegisterVestInput) (*it.TradeRe
 		return nil, fmt.Errorf("register vest: %w", err)
 	}
 	return &it.TradeResult{JournalEntryID: result.JournalEntryID, PositionMovementID: result.PositionMovementID}, nil
+}
+
+// replace makes the journal entry what entry and movement state: its date,
+// description, and postings, and the one movement of its units. The entry
+// keeps its own key, so the one in entry is not used. An unknown entry or
+// asset, or an account the entry may not move onto, fails here, inside the
+// transaction that replaces.
+func replace(ctx workflow.Context, journalEntryID int64, kind it.Kind, entry lt.PostJournalEntryInput, movement lt.ReplaceMovementInput) (*it.TradeResult, error) {
+	input := lt.ReplaceJournalEntryInput{
+		JournalEntryID: journalEntryID,
+		OccurredAt:     entry.OccurredAt,
+		Description:    entry.Description,
+		Metadata:       entry.Metadata,
+		Postings:       entry.Postings,
+		Movements:      []lt.ReplaceMovementInput{movement},
+	}
+
+	var result lt.ReplaceJournalEntryResult
+	if err := workflow.ExecuteChildWorkflow(ctx, journalwf.ReplaceJournalEntry, input).Get(ctx, &result); err != nil {
+		return nil, fmt.Errorf("update %s: %w", kind, err)
+	}
+	return &it.TradeResult{
+		JournalEntryID:     result.JournalEntryID,
+		PositionMovementID: result.PositionMovementIDs[0],
+		Warnings:           result.Warnings,
+	}, nil
 }
 
 // retrieveLedgerAccounts retrieves the given ledger accounts concurrently.

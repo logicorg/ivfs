@@ -287,3 +287,39 @@ func (i *RenameCounterpartyInput) Validate() error {
 type CounterpartyMutationResult struct {
 	CounterpartyID int64 `json:"counterpartyId"`
 }
+
+// ClearCounterpartyReferencesInput names the counterparty that every journal
+// entry, posted or not, stops referring to (ADR 0016).
+type ClearCounterpartyReferencesInput struct {
+	CounterpartyID int64 `json:"counterpartyId" cue:">0"`
+}
+
+func (i *ClearCounterpartyReferencesInput) Validate() error {
+	if err := cuego.Validate(i); err != nil {
+		return errs.ValidationError{Err: err}
+	}
+	return nil
+}
+
+type ClearCounterpartyReferencesResult struct {
+	// Cleared is the number of journal entries that lost the counterparty.
+	Cleared int64 `json:"cleared"`
+}
+
+// DeleteCounterpartyInput deletes a Counterparty. The journal entries that
+// refer to it keep their postings and lose their counterparty (ADR 0016).
+type DeleteCounterpartyInput struct {
+	CounterpartyID int64 `json:"counterpartyId" cue:">0"`
+}
+
+func (i *DeleteCounterpartyInput) Validate() error {
+	if err := cuego.Validate(i); err != nil {
+		return errs.ValidationError{Err: err}
+	}
+	return nil
+}
+
+type DeleteCounterpartyResult struct {
+	// Cleared is the number of journal entries that lost the counterparty.
+	Cleared int64 `json:"cleared"`
+}

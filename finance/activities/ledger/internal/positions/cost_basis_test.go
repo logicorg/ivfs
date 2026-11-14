@@ -23,8 +23,6 @@ type step struct {
 	basis    string
 	currency int64
 	kind     model.PositionMovementKind
-	// reverses is the id of the movement this one reverses.
-	reverses int64
 }
 
 type replayed struct {
@@ -93,18 +91,6 @@ func Test_ReplayCostBasis(t *testing.T) {
 			steps: []step{{units: "10", basis: "100", currency: eur}, {units: "-5", kind: model.PositionMovementSplit}},
 			want:  map[int64]replayed{1: {units: "5", amounts: map[int64]string{eur: "100"}, average: "20"}},
 		},
-		"a reversed sale and its reversal are skipped": {
-			steps: []step{{units: "10", basis: "100", currency: eur}, {units: "-4"}, {units: "4", reverses: 2}},
-			want:  map[int64]replayed{1: {units: "10", amounts: map[int64]string{eur: "100"}, average: "10"}},
-		},
-		"a reversed buy and its reversal are skipped": {
-			steps: []step{{units: "10", basis: "100", currency: eur}, {units: "5"}, {units: "-5", reverses: 2}},
-			want:  map[int64]replayed{1: {units: "10", amounts: map[int64]string{eur: "100"}, average: "10"}},
-		},
-		"a reversal without its original is replayed": {
-			steps: []step{{units: "10", basis: "100", currency: eur}, {units: "4", reverses: 99}},
-			want:  map[int64]replayed{1: {units: "14", amounts: map[int64]string{eur: "100"}, unknown: true}},
-		},
 		"positions are replayed apart": {
 			steps: []step{{units: "10", basis: "100", currency: eur}, {asset: 2, units: "5"}, {units: "-5"}},
 			want: map[int64]replayed{
@@ -130,9 +116,6 @@ func Test_ReplayCostBasis(t *testing.T) {
 				}
 				if s.basis != "" {
 					m.CostBasisAmount, m.CostBasisCurrencyID = ptr.NewPtr(decimal.RequireFromString(s.basis)), ptr.NewPtr(s.currency)
-				}
-				if s.reverses != 0 {
-					m.ReversalOfMovementID = ptr.NewPtr(s.reverses)
 				}
 				movements[n] = m
 			}

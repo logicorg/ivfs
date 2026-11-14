@@ -88,9 +88,7 @@ func (s *UnitTestSuite) TestRegisterInvestmentTradeAndPosition() {
 	require.NoError(s.T(), retryResult.Get(&retry))
 	require.Equal(s.T(), result.JournalEntryID, retry.JournalEntryID)
 	require.Equal(s.T(), result.PositionMovementID, retry.PositionMovementID)
-	count, err := s.DB.NewSelect().Model((*model.PositionMovement)(nil)).Where("journal_entry_id = ?", result.JournalEntryID).Count(s.T().Context())
-	require.NoError(s.T(), err)
-	require.Equal(s.T(), 1, count)
+	require.EqualValues(s.T(), 1, s.CountWhere[model.PositionMovement]("journal_entry_id = ?", result.JournalEntryID))
 }
 
 // The cost basis is in a currency of its own, so a trade can carry it in another

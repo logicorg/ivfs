@@ -43,7 +43,8 @@ category table (see ADR 0003). `LedgerAccount` also has an optional
 **`Counterparty`** (`pkg/model/ledger.go`) is optional descriptive metadata
 on a `JournalEntry` — a merchant, an employer, a person. It is attached via
 `JournalEntry.CounterpartyID` and is **never a posting target**; postings
-only ever point at a `LedgerAccountID`.
+only ever point at a `LedgerAccountID`. It can be deleted: the entries that
+name it keep their postings and lose the counterparty, so no balance moves.
 
 **`JournalEntry` + `Posting`** (`pkg/model/ledger.go`) are the actual
 double-entry record and the one thing every example below produces.
@@ -52,8 +53,8 @@ counterparty, its status). Each `Posting` is one accounting line: a
 `LedgerAccountID`, a positive `Amount` (in that account's currency), and a
 `Side` (`debit` or `credit`). A *posted* entry must have at least two
 postings, and for every currency present, the debits must sum to the
-credits. Once posted, an entry and its postings are immutable; corrections
-are a new reversing entry, never an edit.
+credits. The database checks this on every write, so a posted entry can be
+edited or deleted, but never left unbalanced.
 
 **`PositionMovement`** (`pkg/model/ledger.go`) is the separate subledger for
 investment units (shares, ETF units, ...). It's the source of truth for "how
@@ -227,7 +228,7 @@ PositionMovement (same DB transaction, references the JournalEntry above)
   between two of your own financial accounts, or a correction, is not a trade.
   It is a `PositionMovement` with no `JournalEntryID`, written by
   `RegisterPositionMovement` with one leg per financial account, under one
-  idempotency key. `ReversePositionMovement` undoes the whole command, and
+  idempotency key. `DeletePositionMovement` undoes the whole command, and
   `ListPositionMovements` returns the history. An opening balance is not an
   adjustment: record it with `RegisterInvestmentTrade` against an equity account
   so the ledger stays balanced. See
@@ -273,8 +274,8 @@ RegisterInvestmentTrade (an hour later)
   tax, and cash proceeds from the balances of their ledger accounts (1000, 400,
   and 100), and the cost basis by summing the basis of the history from
   `ListPositionMovements` (500).
-- A vest is corrected by reversing its entry with `ReverseJournalEntry`. That is
-  refused while units of it have been sold, so the sale is reversed first.
+- A vest is corrected by deleting its entry with `DeleteJournalEntry` and
+  recording it again. A holding left negative by it is reported as a warning.
 - An ESPP purchase is not a vest, since it has cash on the other side. It is a
   `RegisterInvestmentTrade` whose entry credits the payroll cash account and
   books the discount as income, with the fair market value as the cost basis:
@@ -306,11 +307,12 @@ use `ListPostings`, and for what an account holds, `LedgerAccountBalance` or
 | Convert money between two currencies | source/destination/clearing/fee `LedgerAccount`s | `RegisterFXConversion` |
 | Buy or sell an asset | `LedgerAccount`(s) + `PositionMovement` | `RegisterInvestmentTrade` |
 | Receive units from an RSU vest | `LedgerAccount`(s) + `PositionMovement` of kind `vest` | `RegisterVest` |
-| Split, move units between own accounts, or correct units | `PositionMovement` only, no `JournalEntry` | `RegisterPositionMovement` (undo with `ReversePositionMovement`, read with `ListPositionMovements`) |
+| Split, move units between own accounts, or correct units | `PositionMovement` only, no `JournalEntry` | `RegisterPositionMovement` (undo with `DeletePositionMovement`, read with `ListPositionMovements`) |
 | Set up a new provider relationship | `Institution`, `FinancialAccount` | `CreateFinancialAccount` (can create a first cash `LedgerAccount` in the same call) |
 | Add a spending/income category | `LedgerAccount` (income/expense kind, no `FinancialAccountID`) | `CreateCategory` (facade) or `CreateLedgerAccount` |
-| Correct a posted entry | new balanced `JournalEntry` referencing the original | `ReverseJournalEntry` |
+| Correct a posted entry | the `JournalEntry` is deleted and recorded again | `DeleteJournalEntry` |
 | Page through entries by account, counterparty, external ID, status or date | `JournalEntry` + `Posting` | `ListJournalEntries` |
+| Delete a counterparty, clearing it from its entries | `Counterparty`, the `JournalEntry` rows naming it | `DeleteCounterparty` |
 
 ## Common mistake to avoid
 
