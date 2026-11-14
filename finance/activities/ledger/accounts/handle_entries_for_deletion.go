@@ -16,8 +16,8 @@ import (
 // target of a deletion, up to input.Limit in id order, in one transaction
 // (ADR 0012). A posted entry that also touches a surviving balance, or units on
 // a surviving financial account other than the stray one, is kept, and its
-// lines on the target move to the stray accounts. Any other entry is deleted
-// with its reversals, as DeleteJournalEntry does. Either way it no longer
+// lines on the target move to the stray accounts. Any other entry is deleted,
+// as DeleteJournalEntry does. Either way it no longer
 // touches the target, so a batch that handles nothing means none are left, and
 // a batch run again moves nothing twice.
 //
@@ -64,8 +64,7 @@ func (a *Activities) HandleEntriesForDeletion(ctx context.Context, input lt.Dele
 			if err != nil {
 				return err
 			}
-			// Gone with the chain of an entry before it in the batch, or deleted
-			// meanwhile.
+			// Deleted meanwhile.
 			if entry == nil {
 				continue
 			}
@@ -77,7 +76,7 @@ func (a *Activities) HandleEntriesForDeletion(ctx context.Context, input lt.Dele
 				kept = append(kept, entry)
 				continue
 			}
-			if err := deleteChainTx(ctx, tx, id); err != nil {
+			if err := deletion.DeleteEntryTx(ctx, tx, id); err != nil {
 				return err
 			}
 		}
@@ -115,7 +114,7 @@ func (t *deletionTarget) entriesTx(ctx context.Context, tx bun.Tx, after int64, 
 			return q
 		}).
 		Where("je.id > ?", after).
-		OrderExpr("je.id").Limit(limit).
+		OrderExpr("je.id").Limit(int64(limit)).
 		Scan(ctx, &ids)
 	if err != nil {
 		return nil, fmt.Errorf("list journal entries on the deleted account: %w", err)
@@ -172,26 +171,10 @@ func (t *deletionTarget) keepsTx(ctx context.Context, tx bun.Tx, entry *model.Jo
 	return false, nil
 }
 
-// deleteChainTx deletes the entry with the chain of reversals that follow it,
-// the last one first, since a reversal refers to what it reverses.
-func deleteChainTx(ctx context.Context, tx bun.Tx, entryID int64) error {
-	chain, err := deletion.ReversalChainTx(ctx, tx, entryID)
-	if err != nil {
-		return err
-	}
-	for n := len(chain) - 1; n >= 0; n-- {
-		if err := deletion.DeleteEntryTx(ctx, tx, chain[n]); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // moveLinesTx moves the lines the kept entries have on the target to the
 // strays: each posting to the stray of its account's kind and currency, and
-// each movement to the stray financial account. The triggers let a posted line
-// move only off the account the transaction declares, so it declares each
-// account in turn.
+// each movement to the stray financial account. A stray has the currency of the
+// account it replaces, so the entries stay balanced.
 func (t *deletionTarget) moveLinesTx(ctx context.Context, tx bun.Tx, kept []*model.JournalEntry) error {
 	if len(kept) == 0 {
 		return nil
@@ -231,9 +214,6 @@ func (t *deletionTarget) moveLinesTx(ctx context.Context, tx bun.Tx, kept []*mod
 	}
 
 	for _, account := range accounts {
-		if _, err := tx.ExecContext(ctx, `SELECT set_config('ivfs.deleting_ledger_account', ?, true)`, fmt.Sprint(account.ID)); err != nil {
-			return fmt.Errorf("declare ledger account deletion: %w", err)
-		}
 		if _, err := tx.NewUpdate().Model((*model.Posting)(nil)).
 			Set("ledger_account_id = ?", strays[account.ID]).
 			Where("p.ledger_account_id = ?", account.ID).Where("p.journal_entry_id IN (?)", bun.List(entryIDs)).
@@ -244,9 +224,6 @@ func (t *deletionTarget) moveLinesTx(ctx context.Context, tx bun.Tx, kept []*mod
 
 	if !movesUnits {
 		return nil
-	}
-	if _, err := tx.ExecContext(ctx, `SELECT set_config('ivfs.deleting_financial_account', ?, true)`, fmt.Sprint(t.financialAccount.ID)); err != nil {
-		return fmt.Errorf("declare financial account deletion: %w", err)
 	}
 	if _, err := tx.NewUpdate().Model((*model.PositionMovement)(nil)).
 		Set("financial_account_id = ?", strayFinancialID).

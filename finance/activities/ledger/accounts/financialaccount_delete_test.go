@@ -80,14 +80,14 @@ func (f *deleteFinancialAccountFixture) rows(t *testing.T, id int64) int {
 	require.NoError(t, err)
 	ledgerAccounts, err := f.s.DB.NewSelect().Model((*model.LedgerAccount)(nil)).Where("la.financial_account_id = ?", id).Count(t.Context())
 	require.NoError(t, err)
-	return accounts + ledgerAccounts
+	return int(accounts + ledgerAccounts)
 }
 
 // rowsOutside counts the ledger accounts outside every financial account.
 func (f *deleteFinancialAccountFixture) rowsOutside(t *testing.T) int {
 	count, err := f.s.DB.NewSelect().Model((*model.LedgerAccount)(nil)).Where("la.financial_account_id IS NULL").Count(t.Context())
 	require.NoError(t, err)
-	return count
+	return int(count)
 }
 
 func (s *UnitTestSuite) TestDeleteFinancialAccount() {

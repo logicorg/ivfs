@@ -11,8 +11,8 @@ import (
 // ClearCounterpartyReferences removes the counterparty from every journal entry
 // that refers to it, so that it can be deleted (ADR 0016). Postings and
 // movements are untouched, so no balance or holding changes. It is one
-// statement and needs no transaction: the trigger lets a posted entry change
-// its counterparty alone. A retry finds nothing left to clear and reports 0.
+// statement and needs no transaction. A retry finds nothing left to clear and
+// reports 0.
 func (a *Activities) ClearCounterpartyReferences(ctx context.Context, input lt.ClearCounterpartyReferencesInput) (*lt.ClearCounterpartyReferencesResult, error) {
 	db, err := a.Pools.For(ctx)
 	if err != nil {

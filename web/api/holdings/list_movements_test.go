@@ -20,6 +20,7 @@ import (
 // cursor the API did not return is refused.
 func TestListMovements(t *testing.T) {
 	day := time.Date(2026, 1, 31, 10, 0, 0, 0, time.UTC)
+	recorded := time.Date(2026, 2, 3, 9, 30, 0, 123456000, time.UTC)
 	buy := model.PositionMovement{
 		ID: 20, JournalEntryID: ptr.Int64(5), Kind: model.PositionMovementTrade, FinancialAccountID: 3, AssetID: 7,
 		UnitsDelta: decimal.RequireFromString("12.5"), CostBasisAmount: ptr.NewPtr(decimal.RequireFromString("1250.25")),
@@ -34,12 +35,12 @@ func TestListMovements(t *testing.T) {
 	}
 	saleBody := `{"id":21,"kind":"trade","financialAccountId":3,"assetId":7,"unitsDelta":"-2.5",` +
 		`"occurredAt":"2026-01-31T11:00:00Z","journalEntryId":6}`
-	reversal := model.PositionMovement{
+	adjustment := model.PositionMovement{
 		ID: 22, Kind: model.PositionMovementAdjustment, FinancialAccountID: 3, AssetID: 7,
-		UnitsDelta: decimal.RequireFromString("1"), OccurredAt: day.Add(2 * time.Hour), ReversalOfMovementID: ptr.Int64(19),
+		UnitsDelta: decimal.RequireFromString("1"), OccurredAt: day.Add(2 * time.Hour),
 	}
-	reversalBody := `{"id":22,"kind":"adjustment","financialAccountId":3,"assetId":7,"unitsDelta":"1",` +
-		`"occurredAt":"2026-01-31T12:00:00Z","reversalOfMovementId":19}`
+	adjustmentBody := `{"id":22,"kind":"adjustment","financialAccountId":3,"assetId":7,"unitsDelta":"1",` +
+		`"occurredAt":"2026-01-31T12:00:00Z"}`
 	const backwards = "invalid parameter: the end of the date range must be after its start"
 
 	apitest.RunCases(t, Register, map[string]apitest.Case{
@@ -52,20 +53,22 @@ func TestListMovements(t *testing.T) {
 				},
 				Result: lt.ListPositionMovementsResult{
 					Movements: []model.PositionMovement{buy, sale},
-					Next:      &lt.PositionMovementCursor{OccurredAt: day.Add(time.Hour), ID: 21},
+					Next:      &lt.PositionMovementCursor{OccurredAt: day.Add(time.Hour), CreatedAt: recorded, ID: 21},
 				},
 			},
 			WantStatus: http.StatusOK,
-			WantBody:   `{"movements":[` + buyBody + `,` + saleBody + `],"next":"2026-01-31T11:00:00Z_21"}`,
+			WantBody:   `{"movements":[` + buyBody + `,` + saleBody + `],"next":"2026-01-31T11:00:00Z_2026-02-03T09:30:00.123456Z_21"}`,
 		},
 		"the next page": {
-			Method: http.MethodGet, Path: "/api/holdings/movements?after=2026-01-31T11:00:00Z_21",
+			Method: http.MethodGet, Path: "/api/holdings/movements?after=2026-01-31T11:00:00Z_2026-02-03T09:30:00.123456Z_21",
 			Call: &apitest.WorkflowCall{
 				Workflow: portfoliowf.ListPositionMovements,
-				Params:   lt.ListPositionMovementsParams{After: &lt.PositionMovementCursor{OccurredAt: day.Add(time.Hour), ID: 21}},
-				Result:   lt.ListPositionMovementsResult{Movements: []model.PositionMovement{reversal}},
+				Params: lt.ListPositionMovementsParams{
+					After: &lt.PositionMovementCursor{OccurredAt: day.Add(time.Hour), CreatedAt: recorded, ID: 21},
+				},
+				Result: lt.ListPositionMovementsResult{Movements: []model.PositionMovement{adjustment}},
 			},
-			WantStatus: http.StatusOK, WantBody: `{"movements":[` + reversalBody + `]}`,
+			WantStatus: http.StatusOK, WantBody: `{"movements":[` + adjustmentBody + `]}`,
 		},
 		"every movement, in a date range and several kinds": {
 			Method: http.MethodGet,
@@ -76,9 +79,9 @@ func TestListMovements(t *testing.T) {
 					Kinds: []model.PositionMovementKind{model.PositionMovementSplit, model.PositionMovementAdjustment},
 					From:  time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC), To: time.Date(2026, 2, 1, 0, 0, 0, 0, time.UTC),
 				},
-				Result: lt.ListPositionMovementsResult{Movements: []model.PositionMovement{reversal}},
+				Result: lt.ListPositionMovementsResult{Movements: []model.PositionMovement{adjustment}},
 			},
-			WantStatus: http.StatusOK, WantBody: `{"movements":[` + reversalBody + `]}`,
+			WantStatus: http.StatusOK, WantBody: `{"movements":[` + adjustmentBody + `]}`,
 		},
 		"no movements": {
 			Method: http.MethodGet, Path: "/api/holdings/movements",
@@ -102,6 +105,9 @@ func TestListMovements(t *testing.T) {
 		},
 		"a cursor the API did not return": {
 			Method: http.MethodGet, Path: "/api/holdings/movements?after=yesterday", WantStatus: http.StatusUnprocessableEntity,
+		},
+		"a cursor without when the movement was recorded": {
+			Method: http.MethodGet, Path: "/api/holdings/movements?after=2026-01-31T11:00:00Z_21", WantStatus: http.StatusUnprocessableEntity,
 		},
 		"a kind that is not one": {
 			Method: http.MethodGet, Path: "/api/holdings/movements?kind=gift", WantStatus: http.StatusUnprocessableEntity,

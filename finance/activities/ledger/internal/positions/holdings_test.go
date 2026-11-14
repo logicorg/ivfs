@@ -63,6 +63,9 @@ type negative struct {
 func (s *NegativeHoldingsSuite) Test_NegativeHoldingsTx() {
 	tests := map[string]struct {
 		moves []move
+		// recorded is, for each move, the minute it was recorded at, for the
+		// cases where that is not the order the moves are inserted in.
+		recorded []int
 		// pairs are the positions asked about, as an account and an asset index.
 		pairs [][2]int
 		want  []negative
@@ -137,6 +140,13 @@ func (s *NegativeHoldingsSuite) Test_NegativeHoldingsTx() {
 			pairs: [][2]int{{0, 0}},
 			want:  []negative{{0, 0, -5, 1}},
 		},
+		// A movement written again with its entry has a later id and keeps when
+		// it was recorded (ADR 0017).
+		"a tie on the date is broken by when it was recorded before the id": {
+			moves:    []move{{0, 0, -5, 1, false}, {0, 0, 5, 1, false}},
+			recorded: []int{2, 1},
+			pairs:    [][2]int{{0, 0}},
+		},
 	}
 
 	for name, tc := range tests {
@@ -147,12 +157,15 @@ func (s *NegativeHoldingsSuite) Test_NegativeHoldingsTx() {
 				assets[n] = &model.Asset{Name: name + string(rune('a'+n)), Kind: model.AssetKindStock}
 				temporaltesting.Insert(s.T(), s.DB, assets[n])
 			}
-			for _, m := range tc.moves {
+			for n, m := range tc.moves {
 				movement := &model.PositionMovement{
 					FinancialAccountID: accounts[m.account].ID,
 					AssetID:            assets[m.asset].ID,
 					UnitsDelta:         decimal.NewFromInt(m.units),
 					OccurredAt:         negativeBaseDay.AddDate(0, 0, m.day),
+				}
+				if tc.recorded != nil {
+					movement.CreatedAt = negativeBaseDay.AddDate(0, 1, 0).Add(time.Duration(tc.recorded[n]) * time.Minute)
 				}
 				if m.draft {
 					entry := &model.JournalEntry{OccurredAt: movement.OccurredAt, Status: model.JournalEntryDraft}

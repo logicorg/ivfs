@@ -39,9 +39,6 @@ func (a *Activities) RegisterPositionMovement(ctx context.Context, input lt.Regi
 			return err
 		}
 		if len(existing) > 0 {
-			if existing[0].ReversalOfMovementID != nil {
-				return internalerrors.ErrResourceConflict{ResourceType: "PositionMovement", Reason: "idempotency key belongs to a reversal"}
-			}
 			result.PositionMovementIDs = positions.IDs(existing)
 			result.Warnings, err = positions.NegativeHoldingsTx(ctx, tx, positions.PairsOf(existing))
 			return err

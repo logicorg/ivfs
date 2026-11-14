@@ -36,6 +36,11 @@ func (i *VestInput) Validate() error {
 	if err := cuego.Validate(i); err != nil {
 		return errs.ValidationError{Err: err}
 	}
+	return i.rules()
+}
+
+// rules checks what CUE cannot, for a vest recorded or updated to.
+func (i *VestInput) rules() error {
 	if err := validateOccurredAt(i.OccurredAt); err != nil {
 		return err
 	}

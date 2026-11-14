@@ -102,15 +102,7 @@ priced from a broker's statement, or a transfer's equal and opposite legs
 (ADR 0004), keep working. Carrying the average cost across a transfer, without
 the caller giving it, is left for later.
 
-A reversed movement and its reversal (linked by `ReversalOfMovementID`) are
-skipped together once both are effective at the time read, so the basis and
-the gains come out as if the original had been deleted (ADR 0011). Replaying the
-reversal instead would price a reversed sale's units back at an increase with no
-basis, which makes the holding's basis unknown for good. Before the
-reversal's date the original still counts, so a read at a past time matches
-`PositionAt`; the pair nets to zero units, so it matches afterwards too. A
-reversal dated before its original, only possible when the original is dated in
-the future, is replayed alone.
+Average cost has no reversals to skip, since ADR 0017 removes them.
 
 Lot selection (FIFO, specific lots) stays out of scope (ADR 0004). Average cost
 is chosen because it needs no lots, is additive, and matches how the basis is
@@ -203,8 +195,8 @@ and it is posted with the kind in front of it: `buy:<key>`, `sell:<key>`,
 ### Results
 
 The workflow returns the journal entry id and the position movement id. A
-correction is a reversal of the entry, which also reverses the movement
-(ADR 0004), and recording it again.
+correction is an update (ADR 0017) or a deletion of the entry, which takes
+the movement with it (ADR 0011).
 
 ### Reads the UI needs
 
@@ -225,7 +217,7 @@ starting `RecordInvestment` with its kind, so every form keeps a typed request
 and the gateway only chooses the kind. The
 UI gains an "Investments" screen: holdings grouped by brokerage account, with
 units, cost basis, and average cost, and buttons to buy, sell, and record a
-vest; a holding opens its movement history, where an entry can be reversed
+vest; a holding opens its movement history, where an entry can be deleted
 through the existing journal entry sheet.
 
 ## Alternatives considered

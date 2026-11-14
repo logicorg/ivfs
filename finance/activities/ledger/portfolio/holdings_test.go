@@ -36,14 +36,6 @@ func (s *UnitTestSuite) trade(key string, asset *model.Asset, units int64, day i
 	}
 }
 
-func (s *UnitTestSuite) countEntries() int {
-	s.T().Helper()
-
-	count, err := s.DB.NewSelect().Model((*model.JournalEntry)(nil)).Count(s.T().Context())
-	require.NoError(s.T(), err)
-	return count
-}
-
 // negativeAt is the warning a case expects: the units held at the first point
 // where the holding is negative, and the day of that point.
 type negativeAt struct {
@@ -111,7 +103,7 @@ func (s *UnitTestSuite) Test_RegisterInvestmentTrade_Holdings() {
 		s.Run(name, func() {
 			asset := &model.Asset{Name: name, Kind: model.AssetKindStock}
 			temporaltesting.Insert(s.T(), s.DB, asset)
-			entriesBefore := s.countEntries()
+			entriesBefore := s.Count[model.JournalEntry]()
 
 			for i, st := range tc.steps {
 				activityResult, err := s.Env.ExecuteActivity(s.pa.RegisterInvestmentTrade, s.trade(fmt.Sprintf("%s-%d", name, i), asset, st.units, st.day))
@@ -126,7 +118,7 @@ func (s *UnitTestSuite) Test_RegisterInvestmentTrade_Holdings() {
 				s.requireWarnings(result.Warnings, asset, expectedWarning{s.financialAccount, *st.warning})
 			}
 
-			require.Equal(s.T(), entriesBefore+len(tc.steps), s.countEntries(), "a trade is written even when the holding is negative")
+			require.Equal(s.T(), entriesBefore+len(tc.steps), s.Count[model.JournalEntry](), "a trade is written even when the holding is negative")
 			require.True(s.T(), s.unitsHeld(s.financialAccount, asset).Equal(decimal.NewFromInt(tc.held)))
 		})
 	}
@@ -151,7 +143,7 @@ func (s *UnitTestSuite) Test_RegisterInvestmentTrade_Idempotent() {
 	require.Equal(s.T(), created.JournalEntryID, retried.JournalEntryID)
 	require.Equal(s.T(), created.PositionMovementID, retried.PositionMovementID)
 	require.Equal(s.T(), created.Warnings, retried.Warnings)
-	require.Equal(s.T(), 1, s.countEntries())
+	require.Equal(s.T(), 1, s.Count[model.JournalEntry]())
 
 	s.seedUnits(s.financialAccount, s.asset, 10, 1)
 
@@ -161,7 +153,7 @@ func (s *UnitTestSuite) Test_RegisterInvestmentTrade_Idempotent() {
 	require.NoError(s.T(), later.Get(&afterBackfill))
 	require.Equal(s.T(), created.JournalEntryID, afterBackfill.JournalEntryID)
 	require.Empty(s.T(), afterBackfill.Warnings)
-	require.Equal(s.T(), 1, s.countEntries())
+	require.Equal(s.T(), 1, s.Count[model.JournalEntry]())
 }
 
 func (s *UnitTestSuite) Test_RegisterInvestmentTrade_ClosedFinancialAccount() {
@@ -176,12 +168,12 @@ func (s *UnitTestSuite) Test_RegisterInvestmentTrade_ClosedFinancialAccount() {
 
 	_, err = s.Env.ExecuteActivity(s.pa.RegisterInvestmentTrade, s.trade("after-close", s.asset, 5, 2))
 	require.ErrorContains(s.T(), err, "is closed")
-	require.Equal(s.T(), 1, s.countEntries())
+	require.Equal(s.T(), 1, s.Count[model.JournalEntry]())
 
 	// A retry of a trade made while the account was open still returns it.
 	_, err = s.Env.ExecuteActivity(s.pa.RegisterInvestmentTrade, first)
 	require.NoError(s.T(), err)
-	require.Equal(s.T(), 1, s.countEntries())
+	require.Equal(s.T(), 1, s.Count[model.JournalEntry]())
 }
 
 // Test_RegisterInvestmentTrade_WaitsForConcurrentWriter checks that a trade

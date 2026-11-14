@@ -342,7 +342,6 @@ export type Entry = {
     id: number;
     occurredAt: string;
     postings: Array<Posting>;
-    reversalOfEntryId?: number;
     status: 'draft' | 'posted';
 };
 
@@ -356,7 +355,6 @@ export type EntryDetail = {
     occurredAt: string;
     postedAt?: string;
     postings: Array<Posting>;
-    reversalOfEntryId?: number;
     status: 'draft' | 'posted';
 };
 
@@ -533,7 +531,6 @@ export type Movement = {
     journalEntryId?: number;
     kind: 'trade' | 'vest' | 'split' | 'transfer' | 'adjustment';
     occurredAt: string;
-    reversalOfMovementId?: number;
     /**
      * the units added, or taken away when negative
      */
@@ -671,11 +668,6 @@ export type RecordedTrade = {
 
 export type RecordedTransaction = {
     journalEntryId: number;
-};
-
-export type Reversal = {
-    journalEntryId: number;
-    warnings?: Array<NegativeHolding>;
 };
 
 export type SellForm = {
@@ -2354,45 +2346,6 @@ export type GetJournalEntryResponses = {
 };
 
 export type GetJournalEntryResponse = GetJournalEntryResponses[keyof GetJournalEntryResponses];
-
-export type ReverseJournalEntryData = {
-    body?: never;
-    path: {
-        id: number;
-    };
-    query?: never;
-    url: '/api/journal-entries/{id}/reverse';
-};
-
-export type ReverseJournalEntryErrors = {
-    /**
-     * Not Found
-     */
-    404: ErrorModel;
-    /**
-     * Conflict
-     */
-    409: ErrorModel;
-    /**
-     * Unprocessable Entity
-     */
-    422: ErrorModel;
-    /**
-     * Internal Server Error
-     */
-    500: ErrorModel;
-};
-
-export type ReverseJournalEntryError = ReverseJournalEntryErrors[keyof ReverseJournalEntryErrors];
-
-export type ReverseJournalEntryResponses = {
-    /**
-     * OK
-     */
-    200: Reversal;
-};
-
-export type ReverseJournalEntryResponse = ReverseJournalEntryResponses[keyof ReverseJournalEntryResponses];
 
 export type DeleteLedgerAccountData = {
     body?: never;

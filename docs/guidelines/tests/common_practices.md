@@ -134,6 +134,13 @@ message, such as `"resource Currency not found"` or `"resource Currency
 conflict"`. Do not unwrap a `*temporal.ApplicationError` to compare its
 `Type()`.
 
+## Truncate a time you compare with a stored one
+
+PostgreSQL stores a timestamp to the microsecond. `time.Now()` reads
+nanoseconds on Linux and microseconds on macOS, so a test that compares it with
+the row read back passes on a Mac and fails in CI. Use a fixed `time.Date`, or
+`time.Now().UTC().Truncate(time.Microsecond)`.
+
 ## Initialise pointers with `pkg/ptr`
 
 Use `ptr.NewPtr` to take a pointer to a value, and `ptr.Int64` for an `*int64`.

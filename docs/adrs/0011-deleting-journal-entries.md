@@ -5,7 +5,8 @@
 - Depends on: [ADR 0010](0010-negative-holdings.md) (holdings that go negative)
 - Amends: ADR 0001 (posted entries are never deleted), ADR 0004 (movements
   are append-only, and the `voided` status)
-- Amended by: [ADR 0016](0016-deleting-counterparties.md)
+- Amended by: [ADR 0016](0016-deleting-counterparties.md) and
+  [ADR 0017](0017-editing-journal-entries.md)
 - Related: [RFC 0003](../rfcs/0003-deleting-journal-entries.md) (the
   discussion this ADR decides), [ADR 0006](0006-intent-level-account-setup.md)
   (opening balances), [ADR 0008](0008-intent-level-transactions.md)
@@ -51,34 +52,18 @@ and `guard_position_movement` (`pkg/sqllib/ledger_constraints.go`,
 
 `DeleteJournalEntry` deletes an entry of any status, its postings, and its
 position movements, in one transaction. No row is kept, no status is set, and
-nothing is recorded about the deletion. A reversal stays available for when a
-trail is wanted.
+nothing is recorded about the deletion.
 
 `DeletePositionMovement` does the same for an entry-less movement group (a
 split, a transfer, or an adjustment, ADR 0004). It is identified by any of its
 movements, and deletes every movement written under the group's idempotency
-key, the same group `ReversePositionMovement` reverses as a whole. A movement
+key. A movement
 that belongs to a journal entry, a trade or a vest, is refused with
 `ErrInvalidParameter`: it is deleted with its entry.
 
 Both are idempotent. Deleting something that does not exist succeeds, as
 deleting an institution already does, so a retry after a successful delete is
 not an error.
-
-### Reversals go with what they reverse
-
-A reversal and the entry it reverses net to zero, in postings and in units.
-
-- Deleting an entry that has been reversed deletes its reversal with it. The
-  two together change nothing, so removing both is always safe, and leaving the
-  reversal would make it reverse nothing. A reversal is a posted entry and can
-  be reversed in turn, so this follows the whole chain.
-- Deleting a reversal alone is allowed, and puts the original's effect back.
-  The original can then be reversed again.
-
-Entry-less movement groups and their reversals (`ReversalOfMovementID`) follow
-the same rules. The movements of a reversed trade or vest belong to the
-reversing entry, and go with it.
 
 ### Positions
 
@@ -101,9 +86,8 @@ below zero.
 
 Deleting an entry changes the balance of every account it touches, so an entry
 on an account closed since leaves a closed account with a balance, which
-closing refuses (`refuseStrandedBalance`). A reversal is already allowed on a
-closed account for the same reason: closing is final, and a mistake still needs
-correcting. Deletion follows it and is allowed on a closed ledger account or
+closing refuses (`refuseStrandedBalance`). Closing is final, and a mistake
+still needs correcting, so deletion is allowed on a closed ledger account or
 financial account.
 
 ### Idempotency keys are freed
@@ -129,12 +113,16 @@ trade, an opening balance, ...), and is left for when one proves needed.
 
 ### Enforcement
 
+ADR 0017 removes the three triggers and the two settings this section
+describes. A deletion needs no declaration: the balance check on postings
+only requires that the entry and its postings are deleted in one transaction.
+What follows is the design as first implemented.
+
 The three triggers stay, and gain one exception: a row may be deleted when the
 transaction has declared that it is deleting that entry or movement group. The
 delete activity sets a transaction-local setting before deleting:
 
-- `ivfs.deleting_journal_entry` names the entry being deleted. It is set again
-  for each entry of a reversal chain, before that entry's rows are deleted.
+- `ivfs.deleting_journal_entry` names the entry being deleted.
 - `ivfs.deleting_position_movement_group` names the idempotency key of the
   entry-less group being deleted.
 
@@ -148,9 +136,8 @@ update of the counterparty alone (ADR 0016), and so does any delete made
 without the setting.
 
 The foreign keys stay `ON DELETE RESTRICT`, with no cascade. The activity
-deletes in order, from the last reversal of a chain back to the entry asked for,
-and for each entry its movements, its postings, and then the entry, so a delete
-made outside it still fails on a foreign key.
+deletes in order, the entry's movements, its postings, and then the entry, so
+a delete made outside it still fails on a foreign key.
 
 The activity locks the ledger accounts and financial accounts the entries
 touch, in ascending id order, as posting does, so a concurrent close, posting,
@@ -173,7 +160,7 @@ and `posted`. The system is pre-alpha, so nothing is migrated.
 
 Each has its workflow, in `finance/workflows/ledger/journal/delete.go` and
 `finance/workflows/ledger/portfolio/delete_movement.go`, and the journal entry
-sheet in the UI gains a delete action next to reverse. The result carries the
+sheet in the UI gains a delete action. The result carries the
 negative holding warnings and nothing else.
 
 ## Example
@@ -220,13 +207,10 @@ is -10 units from the sale's date.
 
 ## Consequences
 
-- A mistake can be removed without leaving a trail in the list of transactions,
-  and the trail is kept only when the person chooses a reversal.
-- The ledger keeps no record that an entry existed. Whoever wants one reverses
-  instead.
+- A mistake can be removed without leaving a trail in the list of transactions.
+- The ledger keeps no record that an entry existed.
 - A wrong opening balance can be replaced, which a reversal could not do.
-- A closed account can be left with a balance by a deletion, as it already can
-  by a reversal.
+- A closed account can be left with a balance by a deletion.
 - A split's delta can disagree with the holding it was sized from after a
   deletion, as it already can after a backdated buy.
 - A request sent again after a deletion records the operation again. The UI's

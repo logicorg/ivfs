@@ -38,14 +38,6 @@ func (s *UnitTestSuite) postingsOf(entryID int64) []string {
 	return lines
 }
 
-func (s *UnitTestSuite) countEntries() int {
-	s.T().Helper()
-
-	count, err := s.DB.NewSelect().Model((*model.JournalEntry)(nil)).Count(s.T().Context())
-	require.NoError(s.T(), err)
-	return count
-}
-
 func (s *UnitTestSuite) Test_RegisterFXConversion() {
 	input := s.adrExample()
 	input.ProviderReference = ptr.NewPtr("revolut-tx-42")
@@ -99,7 +91,7 @@ func (s *UnitTestSuite) Test_RegisterFXConversion_Idempotency() {
 	require.NoError(s.T(), err)
 
 	require.Equal(s.T(), first.JournalEntryID, second.JournalEntryID)
-	require.Equal(s.T(), 1, s.countEntries())
+	require.Equal(s.T(), 1, s.Count[model.JournalEntry]())
 	require.Len(s.T(), s.postingsOf(first.JournalEntryID), 5)
 	require.Contains(s.T(), s.postingsOf(first.JournalEntryID), fmt.Sprintf("debit account %d 90", s.revolutEUR.ID))
 }
@@ -196,7 +188,7 @@ func (s *UnitTestSuite) Test_RegisterFXConversion_Invalid() {
 			_, err := s.execute(input)
 
 			require.ErrorContains(s.T(), err, tc.expMsg)
-			require.Zero(s.T(), s.countEntries(), "a rejected conversion must leave nothing behind")
+			require.Zero(s.T(), s.Count[model.JournalEntry](), "a rejected conversion must leave nothing behind")
 		})
 	}
 }

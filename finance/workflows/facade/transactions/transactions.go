@@ -1,6 +1,6 @@
-// Package transactions records the movements a person thinks in, an expense,
-// an income, or a transfer, as one balanced journal entry each, deciding the
-// sides in code (ADR 0008).
+// Package transactions records and corrects the movements a person thinks in,
+// an expense, an income, or a transfer, as one balanced journal entry each,
+// deciding the sides in code (ADR 0008).
 package transactions
 
 import (
@@ -88,10 +88,9 @@ func checkSameCurrency(a, b *model.LedgerAccount) error {
 	return nil
 }
 
-// post posts the movement as one entry, crediting the account the money
-// leaves and debiting the one it reaches. A closed or unknown account fails
-// here, inside the transaction that posts.
-func post(ctx workflow.Context, m movement) (*tt.RecordResult, error) {
+// entry is the movement as one journal entry, crediting the account the money
+// leaves and debiting the one it reaches.
+func (m movement) entry() lt.PostJournalEntryInput {
 	input := lt.PostJournalEntryInput{
 		IdempotencyKey: m.kind + ":" + m.idempotencyKey,
 		OccurredAt:     m.occurredAt,
@@ -103,10 +102,35 @@ func post(ctx workflow.Context, m movement) (*tt.RecordResult, error) {
 	if m.description != "" {
 		input.Description = &m.description
 	}
+	return input
+}
 
+// post posts the movement as one entry. A closed or unknown account fails
+// here, inside the transaction that posts.
+func post(ctx workflow.Context, m movement) (*tt.RecordResult, error) {
 	var result lt.PostJournalEntryResult
-	if err := workflow.ExecuteChildWorkflow(ctx, journalwf.PostJournalEntry, input).Get(ctx, &result); err != nil {
+	if err := workflow.ExecuteChildWorkflow(ctx, journalwf.PostJournalEntry, m.entry()).Get(ctx, &result); err != nil {
 		return nil, fmt.Errorf("post %s: %w", m.kind, err)
 	}
 	return &tt.RecordResult{JournalEntryID: result.JournalEntryID}, nil
+}
+
+// replace makes the journal entry what entry states: its date, description,
+// metadata, and postings, with no position movements. The entry keeps its own
+// key, so the one in entry is not used. An unknown entry, or an account it may
+// not move onto, fails here, inside the transaction that replaces.
+func replace(ctx workflow.Context, journalEntryID int64, kind string, entry lt.PostJournalEntryInput) (*tt.UpdateResult, error) {
+	input := lt.ReplaceJournalEntryInput{
+		JournalEntryID: journalEntryID,
+		OccurredAt:     entry.OccurredAt,
+		Description:    entry.Description,
+		Metadata:       entry.Metadata,
+		Postings:       entry.Postings,
+	}
+
+	var result lt.ReplaceJournalEntryResult
+	if err := workflow.ExecuteChildWorkflow(ctx, journalwf.ReplaceJournalEntry, input).Get(ctx, &result); err != nil {
+		return nil, fmt.Errorf("update %s: %w", kind, err)
+	}
+	return &tt.UpdateResult{JournalEntryID: result.JournalEntryID, Warnings: result.Warnings}, nil
 }

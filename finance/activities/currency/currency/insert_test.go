@@ -44,14 +44,6 @@ func (s *UnitTestSuite) insertCurrency(params ct.InsertCurrencyParams) ct.Insert
 	return res
 }
 
-func (s *UnitTestSuite) countCurrencies() int {
-	s.T().Helper()
-
-	count, err := s.DB.NewSelect().Model((*model.Currency)(nil)).Count(s.T().Context())
-	require.NoError(s.T(), err)
-	return count
-}
-
 // Test_Insert_Idempotent checks that a retry returns the currency of the
 // first call and changes nothing, even when the retried request differs: a
 // currency is identified by its code, and a retry does not reconcile the
@@ -63,12 +55,12 @@ func (s *UnitTestSuite) Test_Insert_Idempotent() {
 	retried := s.insertCurrency(params)
 
 	require.Equal(s.T(), created, retried)
-	require.Equal(s.T(), 1, s.countCurrencies())
+	require.Equal(s.T(), 1, s.Count[model.Currency]())
 
 	different := s.insertCurrency(ct.InsertCurrencyParams{Code: "EUR", Name: "European Euro", Symbol: "E", Precision: ptr.NewPtr(3)})
 
 	require.Equal(s.T(), created, different)
-	require.Equal(s.T(), 1, s.countCurrencies())
+	require.Equal(s.T(), 1, s.Count[model.Currency]())
 	var stored model.Currency
 	require.NoError(s.T(), model.FindCurrencyByIDQuery(s.DB, created.CurrencyID).Scan(s.T().Context(), &stored))
 	require.Equal(s.T(), "Euro", stored.Name)
@@ -98,7 +90,7 @@ func (s *UnitTestSuite) Test_Insert_Rejected() {
 			_, err := s.Env.ExecuteActivity(s.ca.InsertCurrency, tc.params)
 
 			require.ErrorContains(s.T(), err, tc.errStr)
-			require.Equal(s.T(), 1, s.countCurrencies(), "a rejected currency must not be written")
+			require.Equal(s.T(), 1, s.Count[model.Currency](), "a rejected currency must not be written")
 		})
 	}
 }
@@ -171,7 +163,7 @@ func (s *UnitTestSuite) Test_Insert_RetrievesExistingByCode() {
 			result := s.insertCurrency(ct.InsertCurrencyParams{Code: code, Name: "Euro", Symbol: "€"})
 
 			require.Equal(s.T(), euroID, result.CurrencyID)
-			require.Equal(s.T(), 1, s.countCurrencies())
+			require.Equal(s.T(), 1, s.Count[model.Currency]())
 		})
 
 		temporaltesting.DeleteIgnoreNotFound(s.T(), s.DB, (*model.Currency)(nil), euroID)

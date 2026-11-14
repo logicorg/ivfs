@@ -38,9 +38,9 @@ func (s *UnitTestSuite) Test_OpenAccount() {
 	var notFound ast.OpenAccountResult
 	s.runWorkflow(accountsetup.OpenAccount, revolut, &notFound)
 	require.Equal(s.T(), ast.OpenAccountResult{Outcome: ast.OutcomeInstitutionNotFound, InstitutionName: "Revolut"}, notFound)
-	s.requireCount((*model.Institution)(nil), 0)
-	s.requireCount((*model.FinancialAccount)(nil), 0)
-	s.requireCount((*model.LedgerAccount)(nil), 0)
+	require.Equal(s.T(), 0, s.Count[model.Institution]())
+	require.Equal(s.T(), 0, s.Count[model.FinancialAccount]())
+	require.Equal(s.T(), 0, s.Count[model.LedgerAccount]())
 
 	revolut.CreateInstitution = true
 	var opened ast.OpenAccountResult
@@ -58,7 +58,7 @@ func (s *UnitTestSuite) Test_OpenAccount() {
 	var reopened ast.OpenAccountResult
 	s.runWorkflow(accountsetup.OpenAccount, revolut, &reopened)
 	require.Equal(s.T(), opened, reopened)
-	s.requireCount((*model.JournalEntry)(nil), 1)
+	require.Equal(s.T(), 1, s.Count[model.JournalEntry]())
 
 	// Opening it with another currency adds that currency's balances only.
 
@@ -87,7 +87,7 @@ func (s *UnitTestSuite) Test_OpenAccount() {
 	s.runWorkflow(accountsetup.AddBalance, vault, &addedAgain)
 	require.Equal(s.T(), added, addedAgain)
 	require.Len(s.T(), added.OpeningEntries, 1)
-	s.requireCount((*model.JournalEntry)(nil), 2)
+	require.Equal(s.T(), 2, s.Count[model.JournalEntry]())
 
 	// A wallet needs no institution: "Physical cash" is created on first use.
 
@@ -137,14 +137,6 @@ func describe(rows []lt.AccountSummary) []string {
 		described = append(described, name)
 	}
 	return described
-}
-
-func (s *UnitTestSuite) requireCount(m any, want int) {
-	s.T().Helper()
-
-	count, err := s.DB.NewSelect().Model(m).Count(s.T().Context())
-	require.NoError(s.T(), err)
-	require.Equalf(s.T(), want, count, "%T rows", m)
 }
 
 // requireBalance checks a ledger account's balance, in its natural direction.

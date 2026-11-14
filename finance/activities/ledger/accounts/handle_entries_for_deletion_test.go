@@ -77,16 +77,6 @@ func (f *entriesForDeletionFixture) entry(t *testing.T, debit, credit *model.Led
 	return entry
 }
 
-// reversal records the entry that reverses entry, from debit to credit.
-func (f *entriesForDeletionFixture) reversal(t *testing.T, entry *model.JournalEntry, debit, credit *model.LedgerAccount) *model.JournalEntry {
-	reversal := &model.JournalEntry{OccurredAt: entry.OccurredAt, ReversalOfEntryID: &entry.ID}
-	temporaltesting.InsertPostedJournalEntry(t, f.s.DB, reversal,
-		model.Posting{LedgerAccountID: credit.ID, Amount: decimal.NewFromInt(100), Side: model.PostingDebit},
-		model.Posting{LedgerAccountID: debit.ID, Amount: decimal.NewFromInt(100), Side: model.PostingCredit},
-	)
-	return reversal
-}
-
 // draft records a draft entry of 100 from credit to debit.
 func (f *entriesForDeletionFixture) draft(t *testing.T, debit, credit *model.LedgerAccount) *model.JournalEntry {
 	entry := &model.JournalEntry{OccurredAt: time.Date(2026, 1, 15, 0, 0, 0, 0, time.UTC), Status: model.JournalEntryDraft}
@@ -237,24 +227,12 @@ func (s *UnitTestSuite) TestHandleEntriesForDeletion() {
 			},
 			handled: 1,
 		},
-		"a reversal is deleted with the entry it reverses": {
-			setup: func(t *testing.T) (lt.DeletionTarget, []entryOutcome) {
-				gym := f.ledgerAccount(t, "Gym cash", model.LedgerAccountAsset, nil)
-				entry := f.entry(t, f.groceries, gym)
-				return ledgerTarget(gym), []entryOutcome{
-					{entry: entry, deleted: true},
-					{entry: f.reversal(t, entry, f.groceries, gym), deleted: true},
-				}
-			},
-			handled: 2,
-		},
-		"a reversal of a kept entry is kept": {
+		"two kept entries both move their lines": {
 			setup: func(t *testing.T) (lt.DeletionTarget, []entryOutcome) {
 				loan := f.ledgerAccount(t, "Loan cash", model.LedgerAccountAsset, nil)
-				entry := f.entry(t, loan, f.bank)
 				return ledgerTarget(loan), []entryOutcome{
-					{entry: entry, postings: []string{lt.UntrackedAccountsName, "Bank cash"}},
-					{entry: f.reversal(t, entry, loan, f.bank), postings: []string{"Bank cash", lt.UntrackedAccountsName}},
+					{entry: f.entry(t, loan, f.bank), postings: []string{lt.UntrackedAccountsName, "Bank cash"}},
+					{entry: f.entry(t, f.bank, loan), postings: []string{"Bank cash", lt.UntrackedAccountsName}},
 				}
 			},
 			handled: 2,

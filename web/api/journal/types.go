@@ -28,9 +28,7 @@ type Entry struct {
 	Description string    `json:"description,omitempty"`
 	ExternalID  string    `json:"externalId,omitempty"`
 	Status      string    `json:"status" enum:"draft,posted"`
-	// ReversalOfEntryID is the entry this one reverses, if it is a reversal.
-	ReversalOfEntryID *int64    `json:"reversalOfEntryId,omitempty"`
-	Postings          []Posting `json:"postings"`
+	Postings    []Posting `json:"postings"`
 }
 
 // EntryPage is one page of journal entries.
@@ -47,14 +45,6 @@ type EntryDetail struct {
 	CounterpartyName string     `json:"counterpartyName,omitempty"`
 	PostedAt         *time.Time `json:"postedAt,omitempty"`
 	CreatedAt        time.Time  `json:"createdAt"`
-}
-
-// Reversal is the entry that reverses another.
-type Reversal struct {
-	JournalEntryID int64 `json:"journalEntryId"`
-	// Warnings are the positions the reversal leaves negative at some point in
-	// time. The reversal is made all the same (ADR 0010).
-	Warnings []gateway.NegativeHolding `json:"warnings,omitempty"`
 }
 
 // ListJournalEntriesInput is the request of GET /api/journal-entries.
@@ -85,18 +75,6 @@ type RetrieveJournalEntryOutput struct {
 	Body EntryDetail
 }
 
-// ReverseJournalEntryInput is the request of POST
-// /api/journal-entries/{id}/reverse.
-type ReverseJournalEntryInput struct {
-	ID int64 `path:"id" minimum:"1"`
-}
-
-// ReverseJournalEntryOutput is the response of POST
-// /api/journal-entries/{id}/reverse.
-type ReverseJournalEntryOutput struct {
-	Body Reversal
-}
-
 // DeleteJournalEntryInput is the request of DELETE /api/journal-entries/{id}.
 type DeleteJournalEntryInput struct {
 	ID int64 `path:"id" minimum:"1"`
@@ -114,7 +92,7 @@ type DeleteJournalEntryOutput struct {
 func newEntry(entry *model.JournalEntry) (Entry, error) {
 	out := Entry{
 		ID: entry.ID, OccurredAt: entry.OccurredAt, Status: string(entry.Status),
-		ReversalOfEntryID: entry.ReversalOfEntryID, Postings: make([]Posting, 0, len(entry.Postings)),
+		Postings: make([]Posting, 0, len(entry.Postings)),
 	}
 	if entry.Description != nil {
 		out.Description = *entry.Description

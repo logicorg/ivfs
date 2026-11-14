@@ -139,6 +139,9 @@ func InitDatabase(ctx context.Context, db *bun.DB) error {
 	if err := ensureForeignKeys(ctx, db); err != nil {
 		return err
 	}
+	if err := ensureMovementEntryDate(ctx, db); err != nil {
+		return err
+	}
 
 	return nil
 }

@@ -9,6 +9,7 @@ import (
 	"slices"
 
 	"github.com/logicorg/ivfs/finance/activities/ledger/internal/deletion"
+	"github.com/logicorg/ivfs/finance/activities/ledger/internal/positions"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/logicorg/ivfs/pkg/model"
@@ -219,51 +220,41 @@ func (d *deletionTally) movementGroupsTx(ctx context.Context, tx bun.Tx) error {
 	if len(d.target.financialAccounts) == 0 {
 		return nil
 	}
-	handled := map[string]bool{}
 	for offset := 0; ; offset += previewPageSize {
 		keys, err := d.target.movementGroupsTx(ctx, tx, offset, previewPageSize)
 		if err != nil || len(keys) == 0 {
 			return err
 		}
 		for _, key := range keys {
-			// Part of the chain of a group before it.
-			if handled[key] {
-				continue
-			}
-			chain, err := groupChainTx(ctx, tx, key)
+			group, err := positions.FindByIdempotencyKeyTx(ctx, tx, key)
 			if err != nil {
 				return err
 			}
-			for _, group := range chain {
-				handled[*group[0].IdempotencyKey] = true
-			}
-			if err := d.chainTx(ctx, tx, chain); err != nil {
+			if err := d.groupTx(ctx, tx, group); err != nil {
 				return err
 			}
 		}
 	}
 }
 
-func (d *deletionTally) chainTx(ctx context.Context, tx bun.Tx, chain [][]model.PositionMovement) error {
-	accounts, err := financialAccountsTx(ctx, tx, deletion.AccountIDsOf(chain))
+func (d *deletionTally) groupTx(ctx context.Context, tx bun.Tx, group []model.PositionMovement) error {
+	accounts, err := financialAccountsTx(ctx, tx, deletion.AccountIDsOf(group))
 	if err != nil {
 		return err
 	}
-	keep, err := d.target.keepsChainTx(ctx, tx, chain, accounts)
+	keep, err := d.target.keepsGroupTx(ctx, tx, group, accounts)
 	if err != nil {
 		return err
 	}
 	if !keep {
-		d.preview.DeletedMovementGroups += len(chain)
+		d.preview.DeletedMovementGroups++
 		return nil
 	}
-	d.preview.KeptMovementGroups += len(chain)
+	d.preview.KeptMovementGroups++
 	// A split or adjustment leg on the target is deleted, not moved.
-	for _, group := range chain {
-		for _, movement := range group {
-			if d.target.isFinancialAccount(movement.FinancialAccountID) && movement.Kind == model.PositionMovementTransfer {
-				d.units[movement.AssetID] = d.units[movement.AssetID].Add(movement.UnitsDelta)
-			}
+	for _, movement := range group {
+		if d.target.isFinancialAccount(movement.FinancialAccountID) && movement.Kind == model.PositionMovementTransfer {
+			d.units[movement.AssetID] = d.units[movement.AssetID].Add(movement.UnitsDelta)
 		}
 	}
 	return nil

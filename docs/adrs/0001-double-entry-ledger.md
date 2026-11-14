@@ -3,8 +3,9 @@
 - Status: Implemented
 - Date: 2026-08-26
 - Amended by: [ADR 0004](0004-position-subledger.md),
-  [ADR 0011](0011-deleting-journal-entries.md), and
-  [ADR 0016](0016-deleting-counterparties.md)
+  [ADR 0011](0011-deleting-journal-entries.md),
+  [ADR 0016](0016-deleting-counterparties.md), and
+  [ADR 0017](0017-editing-journal-entries.md)
 
 ## Context
 
@@ -35,7 +36,6 @@ that groups the related accounting lines and records shared attributes:
 - optional `counterparty_id`
 - optional metadata, including provider references and precise FX-rate details
 - `status`: `draft` or `posted` (ADR 0011 removes `voided`)
-- optional `reversal_of_entry_id`
 
 `Posting` represents one accounting line in that event.  Every posting has:
 
@@ -128,11 +128,11 @@ they are not the source of truth for balances or positions.
 
 ### Entry lifecycle
 
-Draft entries may be edited.  Once posted, entries and their postings are
-immutable.  A correction is recorded as a new, balanced reversing entry whose
-`reversal_of_entry_id` references the original.  Posted entries are never
-updated, except their counterparty (ADR 0016).  A posted entry can be deleted
-whole, with its postings and its reversals (ADR 0011).
+An entry is written as posted.  A posted entry can be edited (ADR 0017), or
+deleted whole, with its postings (ADR 0011).  A correction is one of the two,
+not a reversing entry.  The database checks the balance of a posted entry
+whenever the entry or one of its postings is written (ADR 0017).  The draft
+status stays, unused.
 
 ### Transaction naming
 
@@ -197,8 +197,9 @@ JournalEntry metadata
   interpreting source and destination columns.
 - Transfers, fees, tax withholding, and split categories can use more than
   two postings without special transaction types.
-- The model gains an auditable, immutable history and explicit reversal
-  semantics.
+- The model gained an auditable, immutable history with explicit reversal
+  semantics. ADR 0017 removes both: an entry can be edited, and the database
+  keeps it balanced.
 - The implementation must create and post entries and their postings in one
   database transaction, with database-level per-currency balance checks.
 - Existing account, transaction, balance, asset, and workflow code must be

@@ -124,7 +124,7 @@ func tradeInput(want lt.RegisterInvestmentTradeInput) any {
 		}
 		gotEntry, wantEntry := got.Entry, want.Entry
 		if gotEntry.IdempotencyKey != wantEntry.IdempotencyKey || !gotEntry.OccurredAt.Equal(wantEntry.OccurredAt) ||
-			!sameString(gotEntry.Description, wantEntry.Description) || gotEntry.ReversalOfEntryID != nil ||
+			!sameString(gotEntry.Description, wantEntry.Description) ||
 			gotEntry.CounterpartyID != nil || len(gotEntry.Metadata) != 0 || len(gotEntry.Postings) != len(wantEntry.Postings) {
 			return false
 		}

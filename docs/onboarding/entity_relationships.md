@@ -134,12 +134,10 @@ erDiagram
     JournalEntry ||--|{ Posting : "has"
     LedgerAccount ||--o{ Posting : "is posted to by"
     Counterparty |o--o{ JournalEntry : "is named by"
-    JournalEntry |o--o| JournalEntry : "reversed by"
 
     JournalEntry {
         int64 id PK
         int64 counterparty_id FK "optional"
-        int64 reversal_of_entry_id FK "optional"
         string idempotency_key UK "optional"
         string external_id "optional"
         string status "draft, posted"
@@ -163,8 +161,10 @@ A `JournalEntry` is one financial event. Once posted it has at least two
 `Posting` rows, each a debit or a credit on one ledger account, and they
 balance per currency. A counterparty is optional descriptive metadata on the
 entry, not an account, and deleting one leaves its entries in place without it.
-A correction is a new entry that points back at the one it reverses, and an
-entry is reversed at most once.
+A correction deletes the entry and records it again
+([ADR 0011](../adrs/0011-deleting-journal-entries.md)). Reversing entries were
+removed, and editing in place is decided but not built yet
+([ADR 0017](../adrs/0017-editing-journal-entries.md)).
 
 ## Units of an asset
 
@@ -174,7 +174,6 @@ erDiagram
     Asset ||--o{ PositionMovement : "is moved by"
     JournalEntry |o--o{ PositionMovement : "pays for"
     Currency |o--o{ PositionMovement : "denominates cost basis"
-    PositionMovement |o--o| PositionMovement : "reversed by"
 
     PositionMovement {
         int64 id PK
@@ -182,7 +181,6 @@ erDiagram
         int64 financial_account_id FK
         int64 asset_id FK
         int64 cost_basis_currency_id FK "optional"
-        int64 reversal_of_movement_id FK, UK "optional"
         string idempotency_key "without an entry only"
         int line_number "without an entry only"
         string kind "trade, vest, split, transfer, adjustment"
@@ -244,9 +242,7 @@ These are all the uniqueness rules the database enforces:
 | `Tag` | `name` |
 | `JournalEntry` | `idempotency_key`, when present |
 | `Posting` | `(journal_entry_id, line_number)` |
-| `PositionMovement` | `(idempotency_key, line_number)`; `reversal_of_movement_id`, so a movement is reversed at most once |
+| `PositionMovement` | `(idempotency_key, line_number)` |
 
 `FinancialAccount`, `LedgerAccount`, `AssetValue`, and `Conversion` have no
-uniqueness rule beyond their ID. Neither does a journal entry's
-`reversal_of_entry_id`: the rule that an entry is reversed at most once is
-checked by the reversal activity, not by the database.
+uniqueness rule beyond their ID.

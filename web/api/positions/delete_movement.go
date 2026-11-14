@@ -16,7 +16,7 @@ func registerDeleteMovement(api huma.API, c client.Client) {
 		OperationID: "delete-position-movement",
 		Method:      http.MethodDelete,
 		Path:        "/api/position-movements/{id}",
-		Summary:     "Delete a position movement with the rest of its group and the group's reversals",
+		Summary:     "Delete a position movement with the rest of its group",
 		Description: "Any movement of a split, a transfer, or an adjustment deletes all of it, and its idempotency key is " +
 			"free again. A movement of a journal entry, a trade or a vest, is a 422: it is deleted with its entry. " +
 			"Deleting a movement that does not exist changes nothing. A deletion that leaves a holding negative at " +

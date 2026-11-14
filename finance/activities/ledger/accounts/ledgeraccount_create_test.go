@@ -105,7 +105,7 @@ func (s *UnitTestSuite) Test_CreateLedgerAccount_RetrievesExisting() {
 	for name, tc := range tests {
 		existing := tc.existing()
 		temporaltesting.Insert(s.T(), s.DB, existing)
-		before := s.count((*model.LedgerAccount)(nil))
+		before := s.Count[model.LedgerAccount]()
 		var created int64
 
 		s.Run(name, func() {
@@ -113,7 +113,7 @@ func (s *UnitTestSuite) Test_CreateLedgerAccount_RetrievesExisting() {
 			created = result.LedgerAccountID
 
 			require.Equal(s.T(), existing.ID, result.LedgerAccountID)
-			require.Equal(s.T(), before, s.count((*model.LedgerAccount)(nil)))
+			require.Equal(s.T(), before, s.Count[model.LedgerAccount]())
 			var stored model.LedgerAccount
 			temporaltesting.Retrieve(s.T(), s.DB, &stored, existing.ID)
 			require.Equal(s.T(), existing.Name, stored.Name)
@@ -293,9 +293,7 @@ func (s *UnitTestSuite) Test_CreateLedgerAccount_ClosedScope() {
 			_, err := s.Env.ExecuteActivity(s.aa.CreateLedgerAccount, input)
 			require.ErrorContains(s.T(), err, tc.wantError(input))
 
-			inserted, err := s.DB.NewSelect().Model((*model.LedgerAccount)(nil)).Where("name = ?", input.Name).Count(s.T().Context())
-			require.NoError(s.T(), err)
-			require.Zero(s.T(), inserted)
+			require.Zero(s.T(), s.CountWhere[model.LedgerAccount]("name = ?", input.Name))
 		})
 
 		deleteScope()

@@ -6,7 +6,7 @@ import (
 )
 
 // DeleteJournalEntryInput deletes a journal entry of any status, with its
-// postings, its position movements, and the reversals that follow it (ADR 0011).
+// postings and its position movements (ADR 0011).
 // Deleting an entry that does not exist is not an error.
 type DeleteJournalEntryInput struct {
 	JournalEntryID int64 `json:"journalEntryId" cue:">0"`
@@ -27,7 +27,7 @@ func (i *DeleteJournalEntryInput) Validate() error {
 }
 
 // DeletePositionMovementInput deletes the movements written by the same command
-// as the movement, with the reversals of them, as ADR 0011 describes. Movements
+// as the movement, as ADR 0011 describes. Movements
 // of a journal entry are deleted with the entry. Deleting a movement that does
 // not exist is not an error.
 type DeletePositionMovementInput struct {

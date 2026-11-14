@@ -35,15 +35,3 @@ func RetrieveJournalEntry(ctx workflow.Context, params lt.RetrieveJournalEntryPa
 
 	return &result, nil
 }
-
-func ReverseJournalEntry(ctx workflow.Context, input lt.ReverseJournalEntryInput) (*lt.ReverseJournalEntryResult, error) {
-	ctx = workflow.WithActivityOptions(ctx, workflows.GetDefaultActivityOptions())
-	input.IdempotencyKey = workflows.DefaultIdempotencyKey(ctx, input.IdempotencyKey)
-
-	var result lt.ReverseJournalEntryResult
-	if err := workflow.ExecuteActivity(ctx, ledgerActivity.ReverseJournalEntry, input).Get(ctx, &result); err != nil {
-		return nil, fmt.Errorf("reverse journal entry: %w", err)
-	}
-
-	return &result, nil
-}

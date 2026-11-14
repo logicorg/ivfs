@@ -23,8 +23,6 @@ const row = (id: number, unitsDelta: string, unitsAfter: string, extra: Partial<
   costBasis: undefined,
   journalEntryId: undefined,
   description: undefined,
-  reversal: false,
-  reversed: false,
   ...extra,
 })
 
@@ -51,11 +49,6 @@ describe("movementRows", () => {
         }),
         row(3, "-4", "8.5", { journalEntryId: 42 }),
       ],
-    },
-    {
-      name: "a reversed buy and its reversal",
-      movements: [movement(1, "10"), movement(2, "-10", { reversalOfMovementId: 1 })],
-      want: [row(1, "10", "10", { reversed: true }), row(2, "-10", "0", { reversal: true })],
     },
     {
       name: "a currency not in the list",
