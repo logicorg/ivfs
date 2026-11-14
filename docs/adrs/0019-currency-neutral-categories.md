@@ -1,17 +1,20 @@
-# ADR 0017: Currency-neutral categories
+# ADR 0019: Currency-neutral categories, as a dimension of postings
 
 - Status: Proposed
-- Date: 2026-11-08
-- Depends on: [ADR 0003](0003-categories-and-tags.md) (categories as ledger
-  accounts), [ADR 0005](0005-uniqueness-and-idempotent-creation.md) (the
-  uniqueness key of a category), [ADR 0008](0008-intent-level-transactions.md)
-  (the transactions that post to a category), and
-  [ADR 0012](0012-deleting-accounts.md) (deleting and merging categories)
-- Amends: ADR 0003 (a category's required currency), ADR 0005 (rename and move
-  conflicts), ADR 0008 (an expense or income in another currency), ADR 0009
-  (a vest's categories), ADR 0012 (deleting a category)
-- Related: [ADR 0015](0015-net-worth-over-time.md) (the user's default
-  currency). Issue: logicorg/ivfs#6
+- Date: 2026-11-14
+- Depends on: [ADR 0001](0001-double-entry-ledger.md) (one currency per ledger
+  account), [ADR 0003](0003-categories-and-tags.md) (categories as ledger
+  accounts, which this reverses), [ADR 0008](0008-intent-level-transactions.md)
+  (the transactions that name a category),
+  [ADR 0012](0012-deleting-accounts.md) (deleting and merging categories), and
+  [ADR 0017](0017-editing-journal-entries.md) (a posted entry can be edited)
+- Amends: ADR 0003 (what a category is), ADR 0005 (the unique key of a
+  category and of a top-level account), ADR 0006 (the shared accounts),
+  ADR 0008 and ADR 0009 (how a transaction and a vest name a category),
+  ADR 0012 (deleting a category, "Uncategorized"), ADR 0017 (the update
+  workflows)
+- Related: [ADR 0018](0018-transactions-page.md) (the category filter).
+  Issue: logicorg/ivfs#6
 
 ## Context
 
@@ -21,285 +24,372 @@ accounts that a person must create, rename, and close one by one. People do
 not think that way: a category is a name, and a transaction in any currency
 can fall under it.
 
-The accounting side should not change. One currency per account keeps
-postings, roll-ups, and reports exact (ADR 0001, ADR 0003). What is missing is
-a way to say "these accounts are one category", and a way to get the account
-for a new currency without asking.
+One currency per account is worth keeping. It is what makes a balance one
+number and what the balance check of every entry relies on (ADR 0001). What
+has to give is the idea that a category is an account.
 
-The constraints that shape the design:
+An earlier draft of this ADR kept one account per category and currency and
+tied them together with a shared key. It needed a name lookup on every insert,
+ancestor accounts created on first use of a currency, rename and close fanned
+out over several rows, a grouping rule checked across currencies, and three
+invariants that only application code kept. All of that exists to hide the
+copies. This version has no copies.
 
-- A child has its parent's kind and currency (ADR 0003), so an account for a
-  child in a new currency needs one for each of its ancestors.
-- The unique key of a category is `(parent_id, kind, currency_id, lower(name))`
-  (ADR 0005). The same index also serves equity and clearing accounts.
-- `RecordExpense`, `RecordIncome`, and a vest fail when a category's currency
-  differs from the money's.
-- A person's default currency exists but may be unset (ADR 0015).
+What a category has to do:
+
+- classify an income or an expense, in any currency;
+- nest, at most two parent links deep (ADR 0003);
+- give exact totals per category and currency over a period;
+- be renamed, closed, deleted, and merged as one thing.
+
+None of these needs a balance of its own, which is the one thing a ledger
+account is for.
 
 ## Decision
 
-Keep one ledger account per category and currency, created when first needed.
-Mark the accounts of one category with a shared key. There is no category
-table: ADR 0003's rule stands.
+A category is a row of a new `ledger.category` table, and a posting may carry
+one. Money spent or earned posts to one shared "Expenses" or "Income" ledger
+account per currency. A category has no currency.
 
-### The key
-
-`ledger.ledger_account` gains a column:
+### The tables
 
 ```sql
-category_key uuid NOT NULL DEFAULT gen_random_uuid()
+CREATE TABLE ledger.category (
+  id         bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  parent_id  bigint REFERENCES ledger.category (id),
+  kind       text NOT NULL,          -- income or expense
+  name       text NOT NULL,
+  closed_at  timestamptz,
+  created_at timestamptz NOT NULL DEFAULT current_timestamp,
+  updated_at timestamptz NOT NULL DEFAULT current_timestamp
+);
+
+CREATE UNIQUE INDEX category_name_lower_key
+  ON ledger.category (parent_id, kind, lower(name)) NULLS NOT DISTINCT;
+
+ALTER TABLE ledger.posting
+  ADD COLUMN category_id bigint REFERENCES ledger.category (id);
 ```
 
-**A category is the set of ledger accounts that share a `category_key`.**
+The hierarchy keeps ADR 0003's rules, now on the category: at most two parent
+links, a child has its parent's kind, no cycles, and a parent is open when a
+child is created or moved under it. A category's kind never changes.
 
-Names match once, when an account is inserted. From then on the key alone
-identifies the category, so a rename cannot break it.
+### The shared accounts
 
-Every account gets a key, including balances and equity accounts, for which it
-means nothing: each has a key of its own, so its category is that one row. This
-is what lets rename, close, and move below act on the key with no check of the
-account's kind.
+"Expenses" and "Income" join "Opening balances" and "FX clearing" as shared
+ledger accounts (ADR 0006): top-level, with no financial account, one per
+currency, found by name and kind, and created by retrieve-or-insert through
+`CreateLedgerAccount` the first time a currency needs one.
 
-### Joining a category
+They are the only income and expense ledger accounts. `CreateLedgerAccount`
+refuses any other name for those two kinds, so there is one way to classify
+spending, not two. The rules ADR 0012 gives the shared accounts apply: they
+cannot be renamed, moved, or closed, nor deleted while they have postings.
 
-Before an income or expense account with no financial account is inserted, one
-lookup looks for the category it belongs to:
+### What a posting may carry
 
-```sql
-SELECT la.category_key, la.closed_at
-FROM ledger.ledger_account AS la
-LEFT JOIN ledger.ledger_account AS p ON p.id = la.parent_id
-WHERE la.financial_account_id IS NULL
-  AND la.kind = ?
-  AND lower(la.name) = lower(?)
-  AND p.category_key IS NOT DISTINCT FROM ?  -- the new parent's key; NULL at top level
-LIMIT 1
+| Rule | Where it is checked |
+| --- | --- |
+| A category only on a posting to an income or expense account, and of that account's kind. | The deferred check of `validate_posted_journal_entry`, which already runs for every entry a transaction touched. |
+| The category has no children: postings target leaves. | The activities that write postings. |
+| The category is open. | The activities that write postings, as for a closed account. |
+| A category with postings cannot become a parent. | Creating a category and moving one. |
+
+A posting to "Expenses" or "Income" with no category is valid. It is
+uncategorized.
+
+The two leaf rules cannot both be bypassed by a race. Writing a posting locks
+its categories `FOR SHARE`, after its ledger accounts and in id order, as it
+locks the accounts, and then checks for children. Creating or moving a child
+locks the new parent `FOR NO KEY UPDATE` and then checks for postings.
+Whichever commits second sees the first. Close and delete take the same lock.
+
+### What the ledger still proves
+
+Nothing about double entry changes. An expense is still one balanced entry:
+
+```text
+Dr Expenses (EUR)  12.50   category: Groceries
+Cr Cash (EUR)      12.50
 ```
 
-If it finds one, the new account takes its key and its `closed_at`. If not, the
-database generates a key and the account starts a new category.
+Every entry balances in each currency, and the trigger that checks it is
+untouched. The balance of "Expenses (EUR)" is everything spent in EUR.
 
-The lookup runs inside `CreateLedgerAccount` and when `StrayLedgerAccount`
-creates an "Uncategorized", so that account is one category across currencies
-too. `CreateLedgerAccount` stays retrieve-or-insert on the ADR 0005 key, which
-is unchanged: the lookup only decides what an insert writes.
+What changes is how fine the chart of accounts is. The ledger proves the total
+earned and spent per currency; the breakdown by category is a property of the
+postings. It cannot drift from the total: a posting has at most one category,
+so the categories of an account and its uncategorized postings always sum to
+the account's balance.
 
-Inheriting `closed_at` means a closed category stays closed in every currency,
-with no check in the workflows that post.
+The type of a transaction is still not stored, and is derived as ADR 0008
+says: a posting to an expense account makes an expense, one to an income
+account an income.
 
-### Creating a category
+### Categories
 
-`CreateCategory`'s `currencyId` becomes optional. The account is created:
+The category workflows keep their names and act on `ledger.category`. They
+move from `finance/workflows/facade/categories` to
+`finance/workflows/ledger/categories`, one workflow per activity, with the
+activities in `finance/activities/ledger/categories`: a category is now an
+entity, with nothing underneath for a facade to compose.
 
-1. in the parent's currency, if there is a parent. A given currency that
-   differs from the parent's fails, as it does today;
-2. otherwise in the given currency;
-3. otherwise in the default currency;
-4. otherwise it fails with `ErrInvalidParameter`, saying to choose a currency
-   or set a default in Settings.
+| Workflow | Rule |
+| --- | --- |
+| `CreateCategory` | Takes a name, a kind, and an optional parent. No currency. Retrieve-or-insert on `(parent_id, kind, lower(name))`. |
+| `RenameCategory` | One row. `ErrResourceConflict` when a sibling of the same kind holds the name. |
+| `MoveCategory` | Changes `parent_id`. Allowed only while the category and its descendants have no postings, as ADR 0003 decided. |
+| `CloseCategory` | One row. Refused with open children. Idempotent. |
+| `DeleteCategory` | Below. |
+| `RetrieveCategory`, `ListCategories` | Return categories: `id`, `parentId`, `kind`, `name`, `closedAt`. The currency filter goes. |
 
-Creating "Food" in EUR when "Food" exists only in USD adds an account to the
-existing category.
+"Uncategorized" is refused as a name, compared as the unique keys are, so the
+label a client gives the postings with no category is never also a category.
 
 ### Posting
 
-`RecordExpense`, `RecordIncome`, and a vest keep their input: the
-`categoryLedgerAccountId` may name the category's account in any currency.
+`PostingInput` gains an optional `categoryId`, which `PostJournalEntry` and
+`ReplaceJournalEntry` write with the posting.
 
-After their other checks and just before posting, they call
-`EnsureCategoryAccount`, a helper in the `finance/workflows/ledger/accounts`
-package modelled on `ensureFXClearing`. When the named account is already in
-the money's currency it returns it. Otherwise it walks up to the root, at most
-two retrievals, and calls `CreateLedgerAccount` from the root down in that
-currency, and the entry posts to the leaf.
+The workflows that name a category take its id instead of a ledger account's:
 
-No new activity is needed, and each step is idempotent. A closed account is
-still left to `PostJournalEntry` (ADR 0008), so a request retried with a known
-idempotency key still returns its entry. If posting fails after the accounts
-were created they stay, empty and harmless.
+| Workflow | Field today | Field now |
+| --- | --- | --- |
+| `RecordExpense`, `RecordIncome`, `UpdateExpense`, `UpdateIncome` | `categoryLedgerAccountId` | `categoryId` |
+| A vest, in `RecordInvestment` and `UpdateInvestment` | `incomeCategoryLedgerAccountId`, `taxCategoryLedgerAccountId` | `incomeCategoryId`, `taxCategoryId` |
+| The fee of `RegisterFXConversion` | `fee.ledgerAccountId` | `fee.categoryId` |
 
-### Grouping categories
+Each retrieves the category, checks its kind, finds the shared account of the
+money's currency with a helper modelled on `ensureFXClearing`, and posts to it
+with the category. The check that the category and the balance share a
+currency goes, since a category has none. A category stays required where it
+is today.
 
-ADR 0003 says postings should target leaves, and nothing enforces it. With
-several currencies that becomes a bug: "Food" in EUR can have children while
-"Food" in USD has none and takes postings, and then "Groceries" can never be
-created in USD, because a used account cannot become a grouping account.
+A request retried with a known idempotency key still returns its entry
+unchanged (ADR 0005).
 
-So the rule applies to the whole category:
+### Recategorising
 
-- `RetrieveLedgerAccount` reports whether any account of the category has
-  children, and the three workflows above refuse such a category with
-  `ErrInvalidParameter`;
-- `validateLedgerAccountParent` refuses a parent when any account of its
-  category has postings, not only the parent itself.
+Changing the category of an expense is `UpdateExpense` with another
+`categoryId`, which replaces the entry (ADR 0017). The posting stays on the
+same account, so no balance moves and no account has to exist first. Giving an
+uncategorized expense a category is the same call.
 
-`PostJournalEntry` does not change.
+### Deleting and merging a category
 
-### Rename, close, and move
+`DeleteCategory` is one activity in one transaction. It replaces what ADR 0012
+does for a category.
 
-These stay in the existing activities, each in one transaction, so the generic
-`/api/ledger-accounts/{id}` routes behave the same as the category ones.
+- Without a replacement, the category's postings lose their category.
+- With one, they take the replacement, which must be an open category of the
+  same kind with no children, and not the category itself. Anything else
+  fails with `ErrInvalidParameter` before a row changes.
+- A category with children is refused with `ErrResourceConflict`.
+- The row is then deleted, which frees its name. Deleting a category that does
+  not exist succeeds.
 
-| Operation | Rule |
-| --- | --- |
-| Rename | Updates `WHERE category_key = ?`. Fails with `ErrResourceConflict` when the lookup above finds a different key on the new name. |
-| Close | Updates `WHERE category_key = ?`. Fails when any account of the category has active children. Closing again also closes any account of the category still open. |
-| Move | Fails with `ErrResourceConflict` when the category has more than one account, and on a different key at the target, as for a rename. |
+No entry is deleted and no posting changes account, so totals per currency are
+untouched, no holding changes, and there are no warnings to return. The
+deletion preview returns the number of entries affected in each currency.
 
-The rename check is needed because the unique index only sees a conflict within
-one currency: "Supermarket" in USD and "Groceries" in EUR share no currency, so
-renaming one onto the other would otherwise show two categories of one name.
-
-A move is refused for several accounts because ADR 0003 already allows a move
-only before use, and an account per currency exists almost only because of use.
-`MoveCategory` first calls `EnsureCategoryAccount` on the target, since the
-parent may not yet have an account in the moved category's currency.
-
-### Deleting a category
-
-`DeleteCategory` deletes every account of the category, in id order, each
-through the existing `DeleteLedgerAccount` child and its ADR 0012 rules.
-Postings move to "Uncategorized" in their own currency.
-
-A category with children in any currency is refused before anything is deleted.
-A deletion that fails partway leaves the remaining accounts as the category,
-and can be run again on them.
-
-A replacement names any account of another category of the same kind, and
-`EnsureCategoryAccount` finds its account in each deleted currency. A
-replacement from the same category fails with `ErrInvalidParameter`. The
-deletion preview sums the same work across the accounts.
-
-`DELETE /api/ledger-accounts/{id}` still removes only that one account.
+The "Uncategorized" stray accounts go, with the part of `AssignUntracked` that
+moved lines off them. "Untracked accounts" and the rest of ADR 0012 stand.
+Deleting a balance still deletes an expense paid from it, since the entry's
+other line is on a shared account.
 
 ### Reads and clients
 
-`ledgerAccounts` and category totals gain `categoryKey`. They stay per account
-and per currency: the API does not convert or merge amounts.
+- `CategoryTotals` groups by `posting.category_id` and the account's currency.
+  A row is a category, a kind, a currency, and a total. A row with no category
+  is the uncategorized total of that kind and currency. Totals stay per leaf;
+  rolling them up to a parent is left to the client, as today.
+- `ListJournalEntries` gains the `CategoryIDs` filter ADR 0018 plans: entries
+  with a posting in any of these categories or their descendants. It replaces
+  the ledger-account filter as the way to list a category's entries.
+- A posting in an API response carries its `categoryId`.
+- The UI shows one tree of categories, offers every open leaf whatever the
+  currency of the balance, and never asks for a category's currency.
+- MCP's `create_category` loses `currencyId`.
 
-The UI groups rows by key into one category, shows totals per currency, and
-offers every category whatever the currency of the balance, sending the
-category's account in that currency when there is one and any of them when
-not. It asks for a currency only when the person has no default. MCP's
-`currencyId` becomes optional.
+### What is removed
+
+- `ledger_account.parent_id`, its foreign key, `MoveLedgerAccount`, and the
+  depth, cycle, and parent checks of ledger accounts. Only categories used
+  the hierarchy. The unique key of a ledger account with no financial account
+  becomes `(kind, currency_id, lower(name))`.
+- The category facade package, `refuseNonCategory`, and `checkSameCurrency`
+  for an expense and an income.
+- The "Uncategorized" stray, its reserved name among ledger accounts, and its
+  branch in `StrayLedgerAccount`.
 
 ## Examples
 
-Food and Groceries exist in EUR, and 20 USD is spent on Groceries:
+Groceries exists, and 20 USD is spent on it for the first time in USD:
 
 ```text
-Before:  Food EUR (key F)
-          └ Groceries EUR (key G)
+Categories:  Food
+              └ Groceries
 
-RecordExpense{balance: <Cash (USD)>, category: <Groceries (EUR)>, amount: 20, ...}
-  CreateLedgerAccount{Food, USD}                     -> inserted, joins F
-  CreateLedgerAccount{Groceries, USD, <Food (USD)>}  -> inserted, joins G
-  -> entry: debit Groceries (USD) 20, credit Cash (USD) 20
+RecordExpense{balance: <Cash (USD)>, categoryId: <Groceries>, amount: 20, ...}
+  CreateLedgerAccount{Expenses, expense, USD}   -> found, or inserted
+  -> entry: Dr Expenses (USD) 20 [Groceries] / Cr Cash (USD) 20
 
-After:   Food EUR (F)                 Food USD (F)
-          └ Groceries EUR (G)          └ Groceries USD (G)
-
-The UI shows: Food
-               └ Groceries
+Categories:  unchanged
 ```
 
-Sending it again with the same key returns the entry and creates nothing.
-
-Renaming from either currency renames both:
+Totals for the month, with spending in two currencies:
 
 ```text
-RenameCategory{<Groceries (USD)>, "Supermarket"}
-  -> Supermarket EUR (G), Supermarket USD (G)
+CategoryTotals{from, to}
+  -> {Groceries, expense, EUR, 312.40}
+     {Groceries, expense, USD,  20.00}
+     {<none>,    expense, EUR,  15.00}
+```
+
+Renaming, recategorising, and merging:
+
+```text
+RenameCategory{<Groceries>, "Supermarket"}
+  -> one row; every posting follows
+
+UpdateExpense{journalEntryId: 41, categoryId: <Eating out>, ...}
+  -> Dr Expenses (EUR) 12.50 [Eating out] / Cr Cash (EUR) 12.50
+
+DeleteCategory{<Supermarket>, replacementId: <Groceries>}
+  -> the postings of Supermarket, in every currency, are in Groceries
+```
+
+A vest of 100 units at 10 USD with 40 withheld:
+
+```text
+Cr Income (USD)       1000  [RSU compensation]
+Dr Investments (USD)   600
+Dr Expenses (USD)      400  [Tax withheld]
 ```
 
 Requests that fail:
 
 ```text
-CreateCategory{name: "Food", kind: expense}        with no default currency
-  -> ErrInvalidParameter: choose a currency or set a default one in Settings
-
-RecordExpense{... category: <Food (USD)>}          Food has children
+RecordExpense{... categoryId: <Food>}                Food has children
   -> ErrInvalidParameter: "Food" groups other categories; pick one of them
 
-RenameCategory{<Groceries (EUR)>, "Transport"}     "Transport" exists only in USD
+RecordExpense{... categoryId: <Salary>}
+  -> ErrInvalidParameter: "Salary" is an income category, not an expense one
+
+CreateCategory{name: "Fresh", parentId: <Groceries>} Groceries has postings
+  -> ErrResourceConflict: a category with postings cannot group others
+
+RenameCategory{<Groceries>, "Transport"}             a sibling has the name
   -> ErrResourceConflict: a category named "Transport" already exists
 ```
 
 ## Alternatives considered
 
-- **A `ledger.category` table**, with accounts pointing at it. It stores the
-  hierarchy once and needs no fan-out for rename, but it reverses ADR 0003, and
-  account rows would lose `parent_id`, which the unique key needs:
-  "Food > Other" and "Home > Other" would collide. Roll-ups, "Uncategorized",
-  and deletion would all need rework. The feature does not justify a second
-  source of truth.
-- **Accounts matched by name, with no column.** The smallest schema change, but
-  identity is a string, so a rename has to find its rows by the old name,
-  and every read has to join ancestors by name.
-- **A currency-neutral parent account**, the future ADR 0003 mentions. It
-  bends the rule that a ledger account has one currency, for rows the ledger
-  would then have to treat specially.
-- **One account per currency created eagerly.** Most would stay empty forever,
-  and adding a currency would mean back-filling every category.
-- **A nullable key, set on categories only.** It avoids a meaningless value on
-  balances, at the cost of a kind check in every operation that uses the key.
-- **A second unique index on `(category_key, currency_id)`.** The name index
-  already prevents duplicates, because accounts of one category share a name
-  and have parents of one category.
-- **Asking for the category's account in a new currency explicitly**, through
-  a new activity or endpoint. `CreateLedgerAccount` already retrieves or
-  inserts, as `ensureFXClearing` relies on.
+- **One account per category and currency, tied by a shared key.** The earlier
+  draft. It leaves ADR 0003 standing, at the cost listed in the Context: the
+  copies have to be created, kept alike, and hidden, by code alone.
+- **A category table with one ledger account per currency under it**, as a
+  financial account has. Names and the hierarchy are stored once, and it keeps
+  a balance per category. But the per-currency accounts remain, created on
+  first use, and recategorising still moves a posting between accounts, the
+  target of which may not exist yet.
+- **The currency on the posting, with one currency-less account per
+  category**, as plain-text accounting tools do. The cleanest model of a
+  category, but it bends ADR 0001's rule for two kinds of account, and the
+  balance check and every read of an account's currency would have to follow
+  the posting instead.
+- **The category on the journal entry.** One column fewer to check, but a
+  vest has two categories and a split has several.
+- **Tags as categories.** A tag is flat, optional, and many to an entry
+  (ADR 0003). A category is a tree, has a kind, and is one per posting, which
+  is what makes its totals sum to the account's.
+- **One "Expenses" account in all currencies.** It would need the currency on
+  the posting, as above.
+- **An "Uncategorized" category row** for postings with none. It would have to
+  be created, reserved, and protected from deletion, to say what a null
+  already says.
+- **Lifting ADR 0003's restriction on moving a used category.** A move no
+  longer touches a posting, so it is now only a matter of policy. It is left
+  as it is: this ADR changes what a category is, not what a person may do to
+  one.
 
 ## Consequences
 
-- A person creates a category once and uses it in any currency. The ledger,
-  its balances, and its invariants do not change.
-- Rename and close change several rows at once for a category in several
-  currencies, which the activities' comments and tests must cover.
-- A rename that lands while another request inserts the old name's account in a
-  new currency could leave that account with a new key. No lock prevents it:
-  this is a single-person database, and the result is a visible, separate
-  category.
-- Posting to a grouping category now fails. It was allowed before, against
-  ADR 0003's intent.
-- A category used in several currencies cannot be moved. Close it and create a
-  new one, or delete it into a replacement.
+- A person creates a category once and uses it in any currency. There is
+  nothing per currency to create, keep alike, or clean up.
+- ADR 0003's central decision is reversed: there is a category table again.
+  It is not the table that ADR removed, which classified transactions beside
+  the ledger. Money still lives only in postings.
+- The chart of accounts no longer lists categories. A report read straight
+  from account balances shows income and expenses per currency, and needs the
+  postings' categories for the breakdown.
+- A category has no balance. What was read as the balance of a category's
+  account is its total over a period.
+- Three rules that the account tree stated by structure, kind, leaf, and open,
+  are now checks: one in the database, two in the activities that write
+  postings.
+- Recategorising, deleting, and merging a category stop being accounting
+  writes. They change one column and cannot unbalance an entry.
+- Making a category optional on an expense is now only a change of validation.
+- The categories code, the transaction and vest workflows, the conversion
+  fee, the totals report, and the UI's category screens are rewritten. The
+  ledger-account hierarchy and most of ADR 0012's category handling are
+  deleted.
 - The schema is created with `IfNotExists`, so existing databases do not gain
-  the column. As in ADR 0005, the system is pre-alpha and databases are
-  recreated rather than migrated.
-- `design_principles.md` and `entity_relationships.md` gain the key when this
-  is implemented. A category still is not a table or a kind.
+  the table or the column. As in ADR 0005, the system is pre-alpha and
+  databases are recreated rather than migrated.
+- `design_principles.md` and `entity_relationships.md` change when this is
+  implemented: a category is a table, and ledger accounts have no hierarchy.
 
 ## Amendments to earlier ADRs
 
 ADR 0003:
 
-- `CreateCategory`'s currency is optional.
-- A category is the set of accounts sharing a key, one per currency. Parent
-  and child accounts still share a currency.
-- Rename and close act on the whole category. A move is refused for a category
-  with more than one account.
-- Postings through `RecordExpense`, `RecordIncome`, and a vest must target a
-  category with no children in any currency.
+- A category is a row of `ledger.category`, not a ledger account, and has no
+  currency. A posting to an income or expense account may carry one.
+- The hierarchy and its rules move from ledger accounts to categories. Ledger
+  accounts have no parent.
+- The category workflows act on categories and no longer delegate to the
+  ledger-account ones.
 
 ADR 0005:
 
-- Renaming or moving a category fails with `ErrResourceConflict` when a
-  different category holds the name among the target's siblings in any
-  currency, not only in its own.
+- A category is unique on `(parent_id, kind, lower(name))`, a missing parent
+  counting as one value.
+- A ledger account with no financial account is unique on
+  `(kind, currency_id, lower(name))`.
+
+ADR 0006:
+
+- "Expenses" and "Income" are shared accounts, one per currency, and the only
+  income and expense ledger accounts.
 
 ADR 0008:
 
-- An expense's or an income's category may be in another currency than the
-  balance: the category's account in the balance's currency is used, and
-  created if needed.
+- An expense debits "Expenses", and an income credits "Income", in the
+  balance's currency, with the category on that posting. The input names the
+  category by `categoryId`, and the currency check between the two is gone.
 
 ADR 0009:
 
-- A vest's categories follow the same rule, in the vest's currency.
+- A vest credits "Income" and debits "Expenses" in its currency, with
+  `incomeCategoryId` and `taxCategoryId` on those postings.
 
 ADR 0012:
 
-- `DeleteCategory` and its preview act on every account of the category. A
-  replacement names any account of another category, and is resolved per
-  currency.
+- Deleting a category clears it from its postings, or sets the replacement.
+  It deletes no entry and moves no posting.
+- The "Uncategorized" stray accounts are removed. `AssignUntracked` handles
+  "Untracked accounts" only.
+- "Expenses" and "Income" are protected as the other shared accounts are.
+
+ADR 0017:
+
+- `UpdateExpense`, `UpdateIncome`, and `UpdateInvestment` take category ids,
+  as the record workflows do. Changing only the category of an entry is such
+  an update.
+
+ADR 0018 (proposed):
+
+- `CategoryIDs` names categories, and matches on `posting.category_id`.
