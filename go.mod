@@ -20,7 +20,7 @@ require (
 	github.com/uptrace/bun/dialect/pgdialect v1.3.0
 	github.com/uptrace/bun/driver/pgdriver v1.3.0
 	go.temporal.io/api v1.64.3
-	go.temporal.io/sdk v1.50.0
+	go.temporal.io/sdk v1.51.0
 	golang.org/x/oauth2 v0.38.0
 	google.golang.org/protobuf v1.36.12
 )
