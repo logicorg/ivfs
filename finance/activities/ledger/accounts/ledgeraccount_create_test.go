@@ -215,6 +215,53 @@ func (s *UnitTestSuite) Test_CreateLedgerAccount_OnlySharedCategoryAccounts() {
 	}
 }
 
+// Test_CreateLedgerAccount_ReservedNames checks that the name of a shared or
+// stray account is taken among the accounts of no financial account whatever
+// the kind, and nothing is inserted, while a financial account may have an
+// account of that name.
+func (s *UnitTestSuite) Test_CreateLedgerAccount_ReservedNames() {
+	f := s.seedLedgerAccountFixtures()
+
+	tests := map[string]struct {
+		input   lt.CreateLedgerAccountInput
+		wantErr string
+	}{
+		"the clearing account's name as equity": {
+			input:   lt.CreateLedgerAccountInput{CurrencyID: f.euro.ID, Name: " fx CLEARING ", Kind: model.LedgerAccountEquity},
+			wantErr: `"fx CLEARING" is the name of the ledger's asset account and cannot name an equity account with no financial account; pick another name`,
+		},
+		"the income account's name as an asset": {
+			input:   lt.CreateLedgerAccountInput{CurrencyID: f.euro.ID, Name: "Income", Kind: model.LedgerAccountAsset},
+			wantErr: `"Income" is the name of the ledger's income account`,
+		},
+		"the stray's name as a liability": {
+			input:   lt.CreateLedgerAccountInput{CurrencyID: f.euro.ID, Name: "Untracked accounts", Kind: model.LedgerAccountLiability},
+			wantErr: `"Untracked accounts" is the name of the ledger's equity account`,
+		},
+		"the clearing account's name under a financial account": {
+			input: lt.CreateLedgerAccountInput{FinancialAccountID: &f.personal.ID, CurrencyID: f.euro.ID, Name: "FX clearing", Kind: model.LedgerAccountLiability},
+		},
+	}
+
+	for name, tc := range tests {
+		s.Run(name, func() {
+			before := s.Count[model.LedgerAccount]()
+
+			activityResult, err := s.Env.ExecuteActivity(s.aa.CreateLedgerAccount, tc.input)
+			if tc.wantErr == "" {
+				require.NoError(s.T(), err)
+				var result lt.CreateLedgerAccountResult
+				require.NoError(s.T(), activityResult.Get(&result))
+				s.deleteLedgerAccounts(result.LedgerAccountID)
+				return
+			}
+			require.ErrorContains(s.T(), err, tc.wantErr)
+
+			require.Equal(s.T(), before, s.Count[model.LedgerAccount]())
+		})
+	}
+}
+
 type ledgerAccountOutcome struct {
 	result *lt.CreateLedgerAccountResult
 	err    error

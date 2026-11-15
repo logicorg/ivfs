@@ -6,9 +6,6 @@ import (
 	"github.com/logicorg/ivfs/pkg/model"
 )
 
-//TODO: should we simplify, be stricter, and just reserve those names (regardless of kind)?
-// we can get rid of the map and just use a simple array + slices.Contains()
-
 // OpeningBalancesAccountName is the name of the shared equity account, one per
 // currency and of no financial account, that opening balances are booked
 // against (ADR 0006).
@@ -33,30 +30,34 @@ const UntrackedAccountsName = "Untracked accounts"
 // stray financial account, "Untracked accounts" (ADR 0012).
 const UntrackedInstitutionName = "Untracked"
 
-// reservedLedgerAccounts are the kinds each shared or stray ledger account's
-// name is reserved for.
-var reservedLedgerAccounts = map[string][]model.LedgerAccountKind{
-	strings.ToLower(OpeningBalancesAccountName): {model.LedgerAccountEquity},
-	strings.ToLower(FXClearingAccountName):      {model.LedgerAccountAsset},
-	strings.ToLower(ExpensesAccountName):        {model.LedgerAccountExpense},
-	strings.ToLower(IncomeAccountName):          {model.LedgerAccountIncome},
-	strings.ToLower(UntrackedAccountsName):      {model.LedgerAccountEquity},
+// reservedLedgerAccounts are the shared and stray ledger accounts, by name,
+// with the kind each has. Among the accounts of no financial account the name
+// is theirs whatever the kind, so that a name says which account it is.
+var reservedLedgerAccounts = map[string]model.LedgerAccountKind{
+	strings.ToLower(OpeningBalancesAccountName): model.LedgerAccountEquity,
+	strings.ToLower(FXClearingAccountName):      model.LedgerAccountAsset,
+	strings.ToLower(ExpensesAccountName):        model.LedgerAccountExpense,
+	strings.ToLower(IncomeAccountName):          model.LedgerAccountIncome,
+	strings.ToLower(UntrackedAccountsName):      model.LedgerAccountEquity,
+}
+
+// ReservedLedgerAccountKind returns the kind of the shared or stray account
+// of this name, and whether there is one. Names compare as the unique keys
+// do, trimmed and case-insensitively (ADR 0005), so "fx clearing" is the one
+// creation finds.
+func ReservedLedgerAccountKind(name string) (model.LedgerAccountKind, bool) {
+	kind, reserved := reservedLedgerAccounts[normalizeName(name)]
+	return kind, reserved
 }
 
 // IsReservedLedgerAccount reports whether the account is one of the shared or
-// stray accounts, which the ledger finds by name, kind, and having no
-// financial account. Names compare as the unique keys do, trimmed and
-// case-insensitively (ADR 0005), so "fx clearing" is the one creation finds.
+// stray accounts: it has no financial account and one of their names.
 func IsReservedLedgerAccount(account *model.LedgerAccount) bool {
 	if account.FinancialAccountID != nil {
 		return false
 	}
-	for _, kind := range reservedLedgerAccounts[normalizeName(account.Name)] {
-		if account.Kind == kind {
-			return true
-		}
-	}
-	return false
+	_, reserved := ReservedLedgerAccountKind(account.Name)
+	return reserved
 }
 
 // CategoryAccountName returns the name of the shared account that the

@@ -40,6 +40,9 @@ func (a *Activities) CreateLedgerAccount(ctx context.Context, input lt.CreateLed
 	if err := refuseOtherCategoryAccount(input); err != nil {
 		return nil, err
 	}
+	if err := refuseReservedName(input); err != nil {
+		return nil, err
+	}
 
 	existing, err := findLedgerAccount(ctx, db, input)
 	if err != nil {
@@ -102,6 +105,21 @@ func refuseOtherCategoryAccount(input lt.CreateLedgerAccountInput) error {
 	}
 	return internalerrors.ErrInvalidParameter{
 		Description: fmt.Sprintf("the only %s account is %q, with no financial account; create a category for %q instead", input.Kind, shared, input.Name),
+	}
+}
+
+// refuseReservedName fails for an account of no financial account that takes
+// the name of a shared or stray account with another kind. The ledger knows
+// those accounts by name, and would refuse to rename or close this one as if
+// it were its own.
+func refuseReservedName(input lt.CreateLedgerAccountInput) error {
+	kind, reserved := lt.ReservedLedgerAccountKind(input.Name)
+	if !reserved || input.FinancialAccountID != nil || input.Kind == kind {
+		return nil
+	}
+	return internalerrors.ErrInvalidParameter{
+		Description: fmt.Sprintf("%q is the name of the ledger's %s account and cannot name an %s account with no financial account; pick another name",
+			input.Name, kind, input.Kind),
 	}
 }
 

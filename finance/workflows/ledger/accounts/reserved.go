@@ -20,8 +20,8 @@ func retrieveLedgerAccount(ctx workflow.Context, id int64) (*model.LedgerAccount
 }
 
 // refuseReservedAccount fails when the account is a shared or stray account,
-// which the ledger finds by its name and place (ADR 0012): renamed, moved, or
-// closed, the next write that needs it would create another or fail.
+// which the ledger finds by its name (ADR 0012): renamed or closed, the next
+// write that needs it would create another or fail.
 func refuseReservedAccount(account *model.LedgerAccount, action string) error {
 	if !lt.IsReservedLedgerAccount(account) {
 		return nil
@@ -38,8 +38,8 @@ func refuseBecomingReserved(account, changed *model.LedgerAccount, action string
 		return nil
 	}
 	return errs.ErrInvalidParameter{
-		Description: fmt.Sprintf("%q cannot be %s: a top-level %s account named %q is managed by the ledger; pick another name",
-			account.Name, action, changed.Kind, changed.Name),
+		Description: fmt.Sprintf("%q cannot be %s: the account named %q, of no financial account, is managed by the ledger; pick another name",
+			account.Name, action, changed.Name),
 	}
 }
 
