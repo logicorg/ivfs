@@ -2,20 +2,16 @@ package categorytypes
 
 import "github.com/logicorg/ivfs/pkg/model"
 
-// CreateCategoryInput represents the input for creating a new category (ledger account).
+// CreateCategoryInput is the key of a category: its name, its kind, and its
+// parent. A category has no currency.
 type CreateCategoryInput struct {
-	// Name is the name of the new category.
 	Name string `json:"name"`
-	// ParentID is the ID of the parent ledger account, if any.
-	ParentID *int64 `json:"parentId,omitempty,omitzero" jsonschema:"the parent category, of the same kind and currency, if any"`
-	// CurrencyID is the ID of the currency associated with the new category.
-	CurrencyID int64 `json:"currencyId"`
-	// Kind is the kind of the new category (ledger account).
-	Kind model.LedgerAccountKind `json:"kind" jsonschema:"income or expense"`
+	// ParentID is nil for a top-level category.
+	ParentID *int64                  `json:"parentId,omitempty,omitzero" jsonschema:"the parent category, of the same kind, if any"`
+	Kind     model.LedgerAccountKind `json:"kind" jsonschema:"income or expense"`
 }
 
-// CategoryResult represents the result of creating a new category.
+// CategoryResult names the category a command created or changed.
 type CategoryResult struct {
-	// LedgerAccountID is the ID of the newly created category ledger account.
-	LedgerAccountID int64 `json:"ledgerAccountId"`
+	CategoryID int64 `json:"categoryId"`
 }

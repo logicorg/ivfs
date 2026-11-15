@@ -8,8 +8,6 @@ const category = (id: number, name: string, fields: Partial<Category> = {}): Cat
   id,
   name,
   kind: "expense",
-  currencyId: 1,
-  currencyCode: "EUR",
   closed: false,
   ...fields,
 })
@@ -20,14 +18,14 @@ const bakery = category(3, "Bakery", { parentId: 2 })
 const travel = category(4, "Travel")
 const salary = category(5, "Salary", { kind: "income" })
 const gifts = category(6, "Gifts", { kind: "income" })
-const dollarTravel = category(7, "Travel", { currencyId: 2, currencyCode: "USD" })
-const categories = [food, groceries, bakery, travel, salary, gifts, dollarTravel]
+const categories = [food, groceries, bakery, travel, salary, gifts]
 
-const total = ({ id, kind, currencyId, currencyCode }: Category, amount: string): CategoryTotal => ({
+// total is what a category took in a currency, the euro unless dollars is set.
+const total = ({ id, kind }: Category, amount: string, dollars = false): CategoryTotal => ({
   id,
   kind,
-  currencyId,
-  currencyCode,
+  currencyId: dollars ? 2 : 1,
+  currencyCode: dollars ? "USD" : "EUR",
   total: amount,
 })
 
@@ -85,12 +83,12 @@ describe("periodTotals", () => {
       ],
     },
     {
-      name: "currencies kept apart, sorted by code",
-      totals: [total(dollarTravel, "30"), total(travel, "10")],
+      name: "a category's currencies kept apart, sorted by code",
+      totals: [total(travel, "30", true), total(travel, "10")],
       categories,
       want: [
         { currencyCode: "EUR", income: "0", expenses: "10", net: "-10", rows: [{ id: 4, name: "Travel", kind: "expense", total: "10" }] },
-        { currencyCode: "USD", income: "0", expenses: "30", net: "-30", rows: [{ id: 7, name: "Travel", kind: "expense", total: "30" }] },
+        { currencyCode: "USD", income: "0", expenses: "30", net: "-30", rows: [{ id: 4, name: "Travel", kind: "expense", total: "30" }] },
       ],
     },
     {

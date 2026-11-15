@@ -195,16 +195,24 @@ export type BuyForm = {
 };
 
 export type Category = {
+    /**
+     * no longer offered for new entries, which can still take it
+     */
     closed: boolean;
-    currencyCode: string;
-    currencyId: number;
     id: number;
     kind: 'income' | 'expense';
     name: string;
     /**
-     * the parent category, of the same kind and currency; none for a top-level one
+     * the parent category, of the same kind; none for a top-level one
      */
     parentId?: number;
+};
+
+export type CategoryDeletionPreview = {
+    /**
+     * journal entries that would lose the category, or take the replacement
+     */
+    entries: number;
 };
 
 export type CategoryList = {
@@ -217,13 +225,13 @@ export type CategoryName = {
 
 export type CategoryParent = {
     /**
-     * the new parent, of the same kind and currency; top level if omitted
+     * the new parent, of the same kind; top level if omitted
      */
     parentId?: number;
 };
 
 export type CategoryResult = {
-    ledgerAccountId: number;
+    categoryId: number;
 };
 
 export type CategoryTotal = {
@@ -585,11 +593,10 @@ export type NetWorthUnits = {
 };
 
 export type NewCategory = {
-    currencyId: number;
     kind: 'income' | 'expense';
     name: string;
     /**
-     * the parent category, of the same kind and currency; top level if omitted
+     * the parent category, of the same kind; top level if omitted
      */
     parentId?: number;
 };
@@ -1097,7 +1104,7 @@ export type DeleteCategoryData = {
     };
     query?: {
         /**
-         * the category to merge this one into; merging is not supported yet
+         * an open category of the same kind, with none under it, that the entries take instead of losing their category
          */
         replacementId?: number;
     };
@@ -1123,13 +1130,9 @@ export type DeleteCategoryError = DeleteCategoryErrors[keyof DeleteCategoryError
 
 export type DeleteCategoryResponses = {
     /**
-     * OK
+     * No Content
      */
-    200: AccountDeletion;
-    /**
-     * The deletion is still running; deleting again waits on it
-     */
-    202: AccountDeletion;
+    204: void;
 };
 
 export type DeleteCategoryResponse = DeleteCategoryResponses[keyof DeleteCategoryResponses];
@@ -1203,7 +1206,7 @@ export type PreviewCategoryDeletionResponses = {
     /**
      * OK
      */
-    200: AccountDeletionPreview;
+    200: CategoryDeletionPreview;
 };
 
 export type PreviewCategoryDeletionResponse = PreviewCategoryDeletionResponses[keyof PreviewCategoryDeletionResponses];

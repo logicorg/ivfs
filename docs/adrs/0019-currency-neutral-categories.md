@@ -108,7 +108,8 @@ The two leaf rules cannot both be bypassed by a race. Writing a posting locks
 its categories `FOR SHARE`, after its ledger accounts and in id order, as it
 locks the accounts, and then checks for children. Creating or moving a child
 locks the new parent `FOR NO KEY UPDATE` and then checks for postings.
-Whichever commits second sees the first. Delete takes the same lock.
+Whichever commits second sees the first. Delete takes the same lock, and so
+does close, so that no child is created under a parent while it is closed.
 
 ### What the ledger still proves
 
@@ -187,8 +188,8 @@ uncategorized expense a category is the same call.
 does for a category.
 
 - Without a replacement, the category's postings lose their category.
-- With one, they take the replacement, which must be a category of the same
-  kind with no children, and not the category itself. Anything else
+- With one, they take the replacement, which must be an open category of the
+  same kind with no children, and not the category itself. Anything else
   fails with `ErrInvalidParameter` before a row changes.
 - A category with children is refused with `ErrResourceConflict`.
 - The row is then deleted, which frees its name. Deleting a category that does
@@ -196,7 +197,7 @@ does for a category.
 
 No entry is deleted and no posting changes account, so totals per currency are
 untouched, no holding changes, and there are no warnings to return. The
-deletion preview returns the number of entries affected in each currency.
+deletion preview returns the number of entries affected.
 
 The "Uncategorized" stray accounts go, with the part of `AssignUntracked` that
 moved lines off them. "Untracked accounts" and the rest of ADR 0012 stand.

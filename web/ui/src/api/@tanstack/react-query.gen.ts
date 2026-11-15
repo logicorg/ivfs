@@ -173,9 +173,9 @@ export const getCategoryTotalsOptions = (options: Options<GetCategoryTotalsData>
 });
 
 /**
- * Delete a category with the entries recorded on it
+ * Delete a category, or merge it into another
  *
- * An entry that also moves money in a financial account is kept, with this category's lines moved to the untracked accounts. A category with categories under it cannot be deleted until they are. Deleting a category that does not exist changes nothing. A deletion still running after a while is answered with 202 Accepted, and deleting again waits on it.
+ * No entry is deleted and no balance moves: the entries filed under the category lose it, or take the replacement. A category with categories under it cannot be deleted until they are. Deleting a category that does not exist changes nothing.
  */
 export const deleteCategoryMutation = (options?: Partial<Options<DeleteCategoryData>>): UseMutationOptions<DeleteCategoryResponse, DeleteCategoryError, Options<DeleteCategoryData>> => {
     const mutationOptions: UseMutationOptions<DeleteCategoryResponse, DeleteCategoryError, Options<DeleteCategoryData>> = {
@@ -194,7 +194,7 @@ export const deleteCategoryMutation = (options?: Partial<Options<DeleteCategoryD
 /**
  * Close a category
  *
- * A category with open categories under it cannot be closed until they are. Closing keeps its history; to remove it, delete it.
+ * A category with open categories under it cannot be closed until they are. A closed category is only no longer offered: entries keep it, and can still take it. To remove it, delete it.
  */
 export const closeCategoryMutation = (options?: Partial<Options<CloseCategoryData>>): UseMutationOptions<CloseCategoryResponse, CloseCategoryError, Options<CloseCategoryData>> => {
     const mutationOptions: UseMutationOptions<CloseCategoryResponse, CloseCategoryError, Options<CloseCategoryData>> = {
@@ -233,7 +233,7 @@ export const previewCategoryDeletionOptions = (options: Options<PreviewCategoryD
 /**
  * Move a category under another, or to the top level
  *
- * A category can move only while it and the categories under it have no postings.
+ * A category can move only while it and the categories under it have no entries.
  */
 export const moveCategoryMutation = (options?: Partial<Options<MoveCategoryData>>): UseMutationOptions<MoveCategoryResponse, MoveCategoryError, Options<MoveCategoryData>> => {
     const mutationOptions: UseMutationOptions<MoveCategoryResponse, MoveCategoryError, Options<MoveCategoryData>> = {

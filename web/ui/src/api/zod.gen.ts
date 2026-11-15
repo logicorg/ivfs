@@ -99,12 +99,14 @@ export const zBuyForm = z.object({
 
 export const zCategory = z.object({
     closed: z.boolean(),
-    currencyCode: z.string(),
-    currencyId: z.int(),
     id: z.int(),
     kind: z.enum(['income', 'expense']),
     name: z.string(),
     parentId: z.int().optional()
+});
+
+export const zCategoryDeletionPreview = z.object({
+    entries: z.int()
 });
 
 export const zCategoryList = z.object({
@@ -120,7 +122,7 @@ export const zCategoryParent = z.object({
 });
 
 export const zCategoryResult = z.object({
-    ledgerAccountId: z.int()
+    categoryId: z.int()
 });
 
 export const zCategoryTotal = z.object({
@@ -329,7 +331,6 @@ export const zNetWorthSeries = z.object({
 });
 
 export const zNewCategory = z.object({
-    currencyId: z.int().gte(1),
     kind: z.enum(['income', 'expense']),
     name: z.string().min(1),
     parentId: z.int().gte(1).optional()
@@ -609,9 +610,9 @@ export const zDeleteCategoryQuery = z.object({
 });
 
 /**
- * OK
+ * No Content
  */
-export const zDeleteCategoryResponse = zAccountDeletion;
+export const zDeleteCategoryResponse = z.void();
 
 export const zCloseCategoryPath = z.object({
     id: z.int().gte(1)
@@ -629,7 +630,7 @@ export const zPreviewCategoryDeletionPath = z.object({
 /**
  * OK
  */
-export const zPreviewCategoryDeletionResponse = zAccountDeletionPreview;
+export const zPreviewCategoryDeletionResponse = zCategoryDeletionPreview;
 
 export const zMoveCategoryBody = zCategoryParent;
 

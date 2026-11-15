@@ -9,13 +9,11 @@ import (
 
 // Category is an income or expense category as the API returns it.
 type Category struct {
-	ID           int64  `json:"id"`
-	Name         string `json:"name"`
-	Kind         string `json:"kind" enum:"income,expense"`
-	CurrencyID   int64  `json:"currencyId"`
-	CurrencyCode string `json:"currencyCode"`
-	ParentID     *int64 `json:"parentId,omitempty" doc:"the parent category, of the same kind and currency; none for a top-level one"`
-	Closed       bool   `json:"closed"`
+	ID       int64  `json:"id"`
+	Name     string `json:"name"`
+	Kind     string `json:"kind" enum:"income,expense"`
+	ParentID *int64 `json:"parentId,omitempty" doc:"the parent category, of the same kind; none for a top-level one"`
+	Closed   bool   `json:"closed" doc:"no longer offered for new entries, which can still take it"`
 }
 
 // CategoryList is every category asked for, in no particular order.
@@ -35,10 +33,9 @@ type ListCategoriesOutput struct {
 
 // NewCategory is a category to create.
 type NewCategory struct {
-	Name       string `json:"name" minLength:"1"`
-	Kind       string `json:"kind" enum:"income,expense"`
-	CurrencyID int64  `json:"currencyId" minimum:"1"`
-	ParentID   *int64 `json:"parentId,omitempty" minimum:"1" doc:"the parent category, of the same kind and currency; top level if omitted"`
+	Name     string `json:"name" minLength:"1"`
+	Kind     string `json:"kind" enum:"income,expense"`
+	ParentID *int64 `json:"parentId,omitempty" minimum:"1" doc:"the parent category, of the same kind; top level if omitted"`
 }
 
 // CreateCategoryInput is the request of POST /api/categories.
@@ -65,7 +62,7 @@ type RenameCategoryInput struct {
 
 // CategoryParent is where to move a category.
 type CategoryParent struct {
-	ParentID *int64 `json:"parentId,omitempty" minimum:"1" doc:"the new parent, of the same kind and currency; top level if omitted"`
+	ParentID *int64 `json:"parentId,omitempty" minimum:"1" doc:"the new parent, of the same kind; top level if omitted"`
 }
 
 // MoveCategoryInput is the request of POST /api/categories/{id}/move.
@@ -109,10 +106,21 @@ type CategoryTotalsOutput struct {
 // DeleteCategoryInput is the request of DELETE /api/categories/{id}.
 type DeleteCategoryInput struct {
 	ID            int64 `path:"id" minimum:"1"`
-	ReplacementID int64 `query:"replacementId" minimum:"1" doc:"the category to merge this one into; merging is not supported yet"`
+	ReplacementID int64 `query:"replacementId" minimum:"1" doc:"an open category of the same kind, with none under it, that the entries take instead of losing their category"`
 }
 
 // DeletionPreviewInput is the request of GET /api/categories/{id}/deletion-preview.
 type DeletionPreviewInput struct {
 	ID int64 `path:"id" minimum:"1"`
+}
+
+// CategoryDeletionPreview is what deleting a category would change: no entry
+// is deleted and no balance moves, so it is one number.
+type CategoryDeletionPreview struct {
+	Entries int `json:"entries" doc:"journal entries that would lose the category, or take the replacement"`
+}
+
+// DeletionPreviewOutput is the response of GET /api/categories/{id}/deletion-preview.
+type DeletionPreviewOutput struct {
+	Body CategoryDeletionPreview
 }

@@ -10,6 +10,7 @@ import (
 	"github.com/logicorg/ivfs/finance/activities/currency/currency"
 	"github.com/logicorg/ivfs/finance/activities/institution"
 	ledgeraccounts "github.com/logicorg/ivfs/finance/activities/ledger/accounts"
+	ledgercategories "github.com/logicorg/ivfs/finance/activities/ledger/categories"
 	ledgerfx "github.com/logicorg/ivfs/finance/activities/ledger/fx"
 	ledgerjournal "github.com/logicorg/ivfs/finance/activities/ledger/journal"
 	ledgerportfolio "github.com/logicorg/ivfs/finance/activities/ledger/portfolio"
@@ -20,11 +21,11 @@ import (
 	"github.com/logicorg/ivfs/finance/workflows/assets/assetvalues"
 	"github.com/logicorg/ivfs/finance/workflows/currencies"
 	"github.com/logicorg/ivfs/finance/workflows/facade/accountsetup"
-	"github.com/logicorg/ivfs/finance/workflows/facade/categories"
 	"github.com/logicorg/ivfs/finance/workflows/facade/investments"
 	"github.com/logicorg/ivfs/finance/workflows/facade/transactions"
 	institutionwf "github.com/logicorg/ivfs/finance/workflows/institution"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
+	"github.com/logicorg/ivfs/finance/workflows/ledger/categories"
 	ledgerfxwf "github.com/logicorg/ivfs/finance/workflows/ledger/fx"
 	ledgerjournalwf "github.com/logicorg/ivfs/finance/workflows/ledger/journal"
 	ledgerportfoliowf "github.com/logicorg/ivfs/finance/workflows/ledger/portfolio"
@@ -45,6 +46,7 @@ func Register(r worker.Registry, pools tenancy.Pools) {
 	conversionActivity := conversion.Conversion{Pools: pools}
 	tagActivity := tag.Tag{Pools: pools}
 	ledgerAccountsActivity := ledgeraccounts.Activities{Pools: pools}
+	ledgerCategoriesActivity := ledgercategories.Activities{Pools: pools}
 	ledgerFXActivity := ledgerfx.Activities{Pools: pools}
 	ledgerJournalActivity := ledgerjournal.Activities{Pools: pools}
 	ledgerPortfolioActivity := ledgerportfolio.Activities{Pools: pools}
@@ -58,6 +60,7 @@ func Register(r worker.Registry, pools tenancy.Pools) {
 	r.RegisterActivity(&conversionActivity)
 	r.RegisterActivity(&tagActivity)
 	r.RegisterActivity(&ledgerAccountsActivity)
+	r.RegisterActivity(&ledgerCategoriesActivity)
 	r.RegisterActivity(&ledgerFXActivity)
 	r.RegisterActivity(&ledgerJournalActivity)
 	r.RegisterActivity(&ledgerPortfolioActivity)

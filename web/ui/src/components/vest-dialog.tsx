@@ -91,9 +91,9 @@ function RecordVestForm({ onDone }: { onDone: () => void }) {
       soldFee: "",
     },
   })
-  const [financialAccountId, currencyCode, assetId, sellToCover] = useWatch({
+  const [financialAccountId, assetId, sellToCover] = useWatch({
     control: form.control,
-    name: ["financialAccountId", "currencyCode", "assetId", "sellToCover"],
+    name: ["financialAccountId", "assetId", "sellToCover"],
   })
   const balances = useQuery({
     ...getAccountBalancesOptions({ path: { id: Number(financialAccountId) } }),
@@ -179,16 +179,13 @@ function RecordVestForm({ onDone }: { onDone: () => void }) {
       .map((asset) => ({ value: String(asset.id), label: assetLabel(asset) })),
     { value: newAsset, label: "New asset…" },
   ]
-  // Only in the vest's currency, the one category and Investments share.
   const categoryOptions = (kind: "income" | "expense"): SelectOption[] =>
-    currencyCode === ""
-      ? []
-      : categoryChoices(categories.data?.categories ?? [], kind, currencyCode).map((choice) => ({
-          value: String(choice.ledgerAccountId),
-          label: choice.label,
-          depth: choice.depth,
-        }))
-  const categoryPlaceholder = currencyCode === "" ? "Choose a currency first" : "Choose…"
+    categoryChoices(categories.data?.categories ?? [], kind).map((choice) => ({
+      value: String(choice.ledgerAccountId),
+      label: choice.label,
+      depth: choice.depth,
+    }))
+  const categoryPlaceholder = "Choose…"
   const vested = vestedAssetId !== undefined
   const pending = createAsset.isPending || vestAsset.isPending || sellAsset.isPending
 

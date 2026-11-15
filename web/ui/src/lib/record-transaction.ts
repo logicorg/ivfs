@@ -25,9 +25,9 @@ export const recordTransactionForm = z.object({
 
 export type RecordTransactionFormValues = z.infer<typeof recordTransactionForm>
 
-// A Choice is a ledger account a picker offers, with its currency. depth
-// indents a category inside its tree.
-export type Choice = { ledgerAccountId: number; label: string; currencyCode: string; depth?: number }
+// A Choice is what a picker offers: a balance with its currency, or a
+// category, which has none. depth indents a category inside its tree.
+export type Choice = { ledgerAccountId: number; label: string; currencyCode?: string; depth?: number }
 
 // A Picker is one side of the transaction: what it is called and what it
 // offers.
@@ -58,44 +58,30 @@ export function balanceChoices(accounts: FinancialAccount[], balances: AccountBa
   )
 }
 
-// categoryChoices lists the open categories of kind in tree order, only those
-// in currencyCode when one is given.
-export function categoryChoices(categories: Category[], kind: Category["kind"], currencyCode?: string): Choice[] {
-  const offered = categories.filter(
-    (category) =>
-      !category.closed &&
-      category.kind === kind &&
-      (currencyCode === undefined || category.currencyCode === currencyCode),
-  )
-  return categoryRows(offered).map(({ category, depth }) => ({
-    ledgerAccountId: category.id,
-    label: category.name,
-    currencyCode: category.currencyCode,
-    depth,
-  }))
+// categoryChoices lists the open categories of kind in tree order.
+export function categoryChoices(categories: Category[], kind: Category["kind"]): Choice[] {
+  const offered = categories.filter((category) => !category.closed && category.kind === kind)
+  return categoryRows(offered).map(({ category, depth }) => ({ ledgerAccountId: category.id, label: category.name, depth }))
 }
 
-// pickers are the two sides the type asks for. A category is offered only in
-// the currency of the balance already chosen, since a category takes money in
-// its own currency only, and a transfer does not offer its source as its
+// pickers are the two sides the type asks for. A category is offered whatever
+// the balance's currency, and a transfer does not offer its source as its
 // destination.
 export function pickers(
   type: TransactionType,
   balances: Choice[],
   categories: Category[],
   fromId: string,
-  toId: string,
 ): { from: Picker; to: Picker } {
-  const currencyOf = (id: string) => balances.find((choice) => String(choice.ledgerAccountId) === id)?.currencyCode
   switch (type) {
     case "expense":
       return {
         from: { label: "Paid from", choices: balances },
-        to: { label: "Category", choices: categoryChoices(categories, "expense", currencyOf(fromId)) },
+        to: { label: "Category", choices: categoryChoices(categories, "expense") },
       }
     case "income":
       return {
-        from: { label: "Category", choices: categoryChoices(categories, "income", currencyOf(toId)) },
+        from: { label: "Category", choices: categoryChoices(categories, "income") },
         to: { label: "Received into", choices: balances },
       }
     case "transfer":

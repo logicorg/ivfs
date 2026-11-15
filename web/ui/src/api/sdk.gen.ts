@@ -85,16 +85,16 @@ export const createCategory = <ThrowOnError extends boolean = false>(options: Op
 export const getCategoryTotals = <ThrowOnError extends boolean = false>(options: Options<GetCategoryTotalsData, ThrowOnError>): RequestResult<GetCategoryTotalsResponses, GetCategoryTotalsErrors, ThrowOnError> => (options.client ?? client).get<GetCategoryTotalsResponses, GetCategoryTotalsErrors, ThrowOnError>({ url: '/api/categories/totals', ...options });
 
 /**
- * Delete a category with the entries recorded on it
+ * Delete a category, or merge it into another
  *
- * An entry that also moves money in a financial account is kept, with this category's lines moved to the untracked accounts. A category with categories under it cannot be deleted until they are. Deleting a category that does not exist changes nothing. A deletion still running after a while is answered with 202 Accepted, and deleting again waits on it.
+ * No entry is deleted and no balance moves: the entries filed under the category lose it, or take the replacement. A category with categories under it cannot be deleted until they are. Deleting a category that does not exist changes nothing.
  */
 export const deleteCategory = <ThrowOnError extends boolean = false>(options: Options<DeleteCategoryData, ThrowOnError>): RequestResult<DeleteCategoryResponses, DeleteCategoryErrors, ThrowOnError> => (options.client ?? client).delete<DeleteCategoryResponses, DeleteCategoryErrors, ThrowOnError>({ url: '/api/categories/{id}', ...options });
 
 /**
  * Close a category
  *
- * A category with open categories under it cannot be closed until they are. Closing keeps its history; to remove it, delete it.
+ * A category with open categories under it cannot be closed until they are. A closed category is only no longer offered: entries keep it, and can still take it. To remove it, delete it.
  */
 export const closeCategory = <ThrowOnError extends boolean = false>(options: Options<CloseCategoryData, ThrowOnError>): RequestResult<CloseCategoryResponses, CloseCategoryErrors, ThrowOnError> => (options.client ?? client).post<CloseCategoryResponses, CloseCategoryErrors, ThrowOnError>({ url: '/api/categories/{id}/close', ...options });
 
@@ -108,7 +108,7 @@ export const previewCategoryDeletion = <ThrowOnError extends boolean = false>(op
 /**
  * Move a category under another, or to the top level
  *
- * A category can move only while it and the categories under it have no postings.
+ * A category can move only while it and the categories under it have no entries.
  */
 export const moveCategory = <ThrowOnError extends boolean = false>(options: Options<MoveCategoryData, ThrowOnError>): RequestResult<MoveCategoryResponses, MoveCategoryErrors, ThrowOnError> => (options.client ?? client).post<MoveCategoryResponses, MoveCategoryErrors, ThrowOnError>({
     url: '/api/categories/{id}/move',

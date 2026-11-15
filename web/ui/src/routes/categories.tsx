@@ -4,7 +4,7 @@ import { createFileRoute } from "@tanstack/react-router"
 import { MoreHorizontal, Plus } from "lucide-react"
 
 import type { Category } from "@/api"
-import { listCategoriesOptions, listCurrenciesOptions } from "@/api/@tanstack/react-query.gen"
+import { listCategoriesOptions } from "@/api/@tanstack/react-query.gen"
 import {
   CloseCategoryDialog,
   CreateCategoryDialog,
@@ -42,7 +42,6 @@ function Categories() {
   const { includeClosed } = Route.useSearch()
   const navigate = Route.useNavigate()
   const categories = useQuery(listCategoriesOptions({ query: { includeClosed } }))
-  const currencies = useQuery(listCurrenciesOptions())
   const [creating, setCreating] = useState(false)
   const [action, setAction] = useState<Action | null>(null)
 
@@ -54,7 +53,7 @@ function Categories() {
     <div className="flex max-w-3xl flex-col gap-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Categories</h1>
-        <Button onClick={() => setCreating(true)} disabled={!currencies.data?.currencies.length}>
+        <Button onClick={() => setCreating(true)}>
           <Plus />
           Add category
         </Button>
@@ -88,16 +87,11 @@ function Categories() {
         </>
       )}
 
-      <CreateCategoryDialog
-        open={creating}
-        onOpenChange={setCreating}
-        categories={all}
-        currencies={currencies.data?.currencies ?? []}
-      />
+      <CreateCategoryDialog open={creating} onOpenChange={setCreating} categories={all} />
       <RenameCategoryDialog category={dialogCategory("rename")} onOpenChange={closeDialog} />
       <MoveCategoryDialog category={dialogCategory("move")} categories={all} onOpenChange={closeDialog} />
       <CloseCategoryDialog category={dialogCategory("close")} onOpenChange={closeDialog} />
-      <DeleteCategoryDialog category={dialogCategory("delete")} onOpenChange={closeDialog} />
+      <DeleteCategoryDialog category={dialogCategory("delete")} categories={all} onOpenChange={closeDialog} />
     </div>
   )
 }
@@ -121,7 +115,6 @@ function CategorySection({
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
-              <TableHead className="w-24">Currency</TableHead>
               <TableHead className="w-12" />
             </TableRow>
           </TableHeader>
@@ -134,7 +127,6 @@ function CategorySection({
                     {category.closed && <Badge variant="outline">closed</Badge>}
                   </span>
                 </TableCell>
-                <TableCell>{category.currencyCode}</TableCell>
                 <TableCell>
                   <CategoryMenu category={category} onAction={onAction} />
                 </TableCell>

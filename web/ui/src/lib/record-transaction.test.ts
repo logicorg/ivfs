@@ -32,8 +32,8 @@ function balance(ledgerAccountId: number, ledgerAccountName: string, currencyCod
   }
 }
 
-function category(id: number, name: string, kind: Category["kind"], currencyCode: string, extra?: Partial<Category>): Category {
-  return { id, name, kind, currencyCode, currencyId: currencyCode === "EUR" ? 1 : 2, closed: false, ...extra }
+function category(id: number, name: string, kind: Category["kind"], extra?: Partial<Category>): Category {
+  return { id, name, kind, closed: false, ...extra }
 }
 
 const groceries: RecordTransactionFormValues = {
@@ -127,38 +127,32 @@ describe("balanceChoices", () => {
 
 describe("categoryChoices", () => {
   const categories = [
-    category(201, "Restaurants", "expense", "EUR", { parentId: 200 }),
-    category(200, "Food", "expense", "EUR"),
-    category(202, "Travel", "expense", "USD"),
-    category(203, "Old hobby", "expense", "EUR", { closed: true }),
-    category(210, "Salary", "income", "EUR"),
+    category(201, "Restaurants", "expense", { parentId: 200 }),
+    category(200, "Food", "expense"),
+    category(202, "Travel", "expense"),
+    category(203, "Old hobby", "expense", { closed: true }),
+    category(210, "Salary", "income"),
   ]
-  const cases: { name: string; kind: Category["kind"]; currencyCode?: string; want: Choice[] }[] = [
+  const cases: { name: string; kind: Category["kind"]; want: Choice[] }[] = [
     {
       name: "open ones of the kind, in tree order",
       kind: "expense",
       want: [
-        { ledgerAccountId: 200, label: "Food", currencyCode: "EUR", depth: 0 },
-        { ledgerAccountId: 201, label: "Restaurants", currencyCode: "EUR", depth: 1 },
-        { ledgerAccountId: 202, label: "Travel", currencyCode: "USD", depth: 0 },
+        { ledgerAccountId: 200, label: "Food", depth: 0 },
+        { ledgerAccountId: 201, label: "Restaurants", depth: 1 },
+        { ledgerAccountId: 202, label: "Travel", depth: 0 },
       ],
-    },
-    {
-      name: "only those in the currency given",
-      kind: "expense",
-      currencyCode: "USD",
-      want: [{ ledgerAccountId: 202, label: "Travel", currencyCode: "USD", depth: 0 }],
     },
     {
       name: "income ones",
       kind: "income",
-      want: [{ ledgerAccountId: 210, label: "Salary", currencyCode: "EUR", depth: 0 }],
+      want: [{ ledgerAccountId: 210, label: "Salary", depth: 0 }],
     },
   ]
 
-  for (const { name, kind, currencyCode, want } of cases) {
+  for (const { name, kind, want } of cases) {
     it(name, () => {
-      expect(categoryChoices(categories, kind, currencyCode)).toEqual(want)
+      expect(categoryChoices(categories, kind)).toEqual(want)
     })
   }
 })
@@ -167,54 +161,49 @@ describe("pickers", () => {
   const cash: Choice = { ledgerAccountId: 100, label: "Cash", currencyCode: "EUR" }
   const dollars: Choice = { ledgerAccountId: 103, label: "Cash (USD)", currencyCode: "USD" }
   const categories = [
-    category(200, "Food", "expense", "EUR"),
-    category(202, "Travel", "expense", "USD"),
-    category(210, "Salary", "income", "EUR"),
+    category(200, "Food", "expense"),
+    category(202, "Travel", "expense"),
+    category(210, "Salary", "income"),
   ]
-  const food: Choice = { ledgerAccountId: 200, label: "Food", currencyCode: "EUR", depth: 0 }
-  const travel: Choice = { ledgerAccountId: 202, label: "Travel", currencyCode: "USD", depth: 0 }
-  const salary: Choice = { ledgerAccountId: 210, label: "Salary", currencyCode: "EUR", depth: 0 }
+  const food: Choice = { ledgerAccountId: 200, label: "Food", depth: 0 }
+  const travel: Choice = { ledgerAccountId: 202, label: "Travel", depth: 0 }
+  const salary: Choice = { ledgerAccountId: 210, label: "Salary", depth: 0 }
 
   const cases: {
     name: string
     type: RecordTransactionFormValues["type"]
     fromId: string
-    toId: string
     want: ReturnType<typeof pickers>
   }[] = [
     {
       name: "an expense, before a balance is chosen",
       type: "expense",
       fromId: "",
-      toId: "",
       want: { from: { label: "Paid from", choices: [cash, dollars] }, to: { label: "Category", choices: [food, travel] } },
     },
     {
-      name: "an expense from a dollar balance",
+      name: "an expense from a dollar balance, offered every category",
       type: "expense",
       fromId: "103",
-      toId: "",
-      want: { from: { label: "Paid from", choices: [cash, dollars] }, to: { label: "Category", choices: [travel] } },
+      want: { from: { label: "Paid from", choices: [cash, dollars] }, to: { label: "Category", choices: [food, travel] } },
     },
     {
-      name: "an income into a euro balance",
+      name: "an income",
       type: "income",
       fromId: "",
-      toId: "100",
       want: { from: { label: "Category", choices: [salary] }, to: { label: "Received into", choices: [cash, dollars] } },
     },
     {
       name: "a transfer, its source not offered as its destination",
       type: "transfer",
       fromId: "100",
-      toId: "",
       want: { from: { label: "From", choices: [cash, dollars] }, to: { label: "To", choices: [dollars] } },
     },
   ]
 
-  for (const { name, type, fromId, toId, want } of cases) {
+  for (const { name, type, fromId, want } of cases) {
     it(name, () => {
-      expect(pickers(type, [cash, dollars], categories, fromId, toId)).toEqual(want)
+      expect(pickers(type, [cash, dollars], categories, fromId)).toEqual(want)
     })
   }
 })
@@ -223,8 +212,8 @@ describe("offers", () => {
   const picker = {
     label: "Category",
     choices: [
-      { ledgerAccountId: 200, label: "Food", currencyCode: "EUR" },
-      { ledgerAccountId: 201, label: "Rent", currencyCode: "EUR" },
+      { ledgerAccountId: 200, label: "Food" },
+      { ledgerAccountId: 201, label: "Rent" },
     ],
   }
   const cases: { name: string; id: string; want: boolean }[] = [
