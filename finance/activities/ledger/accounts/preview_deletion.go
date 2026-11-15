@@ -46,7 +46,7 @@ func (a *Activities) PreviewAccountDeletion(ctx context.Context, input lt.Previe
 		if err != nil {
 			return err
 		}
-		tally := &deletionTally{target: target, preview: preview, amounts: map[strayKey]decimal.Decimal{}, units: map[int64]decimal.Decimal{}}
+		tally := &deletionTally{target: target, preview: preview, amounts: map[int64]decimal.Decimal{}, units: map[int64]decimal.Decimal{}}
 		if err := tally.entriesTx(ctx, tx); err != nil {
 			return err
 		}
@@ -137,19 +137,13 @@ func appendConflict(conflicts []string, err error) ([]string, error) {
 	return conflicts, err
 }
 
-// strayKey is a stray ledger account, which may not exist yet.
-type strayKey struct {
-	name       string
-	kind       model.LedgerAccountKind
-	currencyID int64
-}
-
 // deletionTally adds up what the deletion would do to each entry and group.
 type deletionTally struct {
 	target  *deletionTarget
 	preview *lt.AccountDeletionPreview
-	// amounts is what lands on each stray ledger account, debits minus credits.
-	amounts map[strayKey]decimal.Decimal
+	// amounts is what lands on the stray ledger account of each currency,
+	// debits minus credits. The stray may not exist yet.
+	amounts map[int64]decimal.Decimal
 	// units is what lands on the stray financial account, by asset.
 	units map[int64]decimal.Decimal
 }
@@ -193,13 +187,11 @@ func (d *deletionTally) entryTx(ctx context.Context, tx bun.Tx, entry *model.Jou
 		if !deleted {
 			continue
 		}
-		stray := deletion.StrayLedgerAccount(account.CurrencyID)
-		key := strayKey{stray.Name, stray.Kind, stray.CurrencyID}
 		amount := posting.Amount
 		if posting.Side == model.PostingCredit {
 			amount = amount.Neg()
 		}
-		d.amounts[key] = d.amounts[key].Add(amount)
+		d.amounts[account.CurrencyID] = d.amounts[account.CurrencyID].Add(amount)
 	}
 	for _, movement := range entry.PositionMovements {
 		if d.target.isFinancialAccount(movement.FinancialAccountID) {
@@ -266,12 +258,12 @@ func financialAccountsTx(ctx context.Context, tx bun.Tx, ids []int64) (map[int64
 }
 
 // strays fills the preview's stray amounts and units, leaving out what nets to
-// zero, ordered by currency and name, and by asset name.
+// zero, ordered by currency, and by asset name.
 func (d *deletionTally) strays(ctx context.Context, tx bun.Tx) error {
 	var currencyIDs, assetIDs []int64
-	for key, amount := range d.amounts {
+	for currencyID, amount := range d.amounts {
 		if !amount.IsZero() {
-			currencyIDs = append(currencyIDs, key.currencyID)
+			currencyIDs = append(currencyIDs, currencyID)
 		}
 	}
 	for assetID, units := range d.units {
@@ -285,19 +277,11 @@ func (d *deletionTally) strays(ctx context.Context, tx bun.Tx) error {
 		if err := tx.NewSelect().Model(&currencies).Where("c.id IN (?)", bun.List(currencyIDs)).Scan(ctx); err != nil {
 			return fmt.Errorf("load currencies: %w", err)
 		}
-		codes := map[int64]string{}
 		for _, currency := range currencies {
-			codes[currency.ID] = currency.Code
-		}
-		for key, amount := range d.amounts {
-			if !amount.IsZero() {
-				d.preview.StrayAmounts = append(d.preview.StrayAmounts, lt.StrayAmount{
-					Name: key.name, Kind: key.kind, CurrencyCode: codes[key.currencyID], Amount: amount,
-				})
-			}
+			d.preview.StrayAmounts = append(d.preview.StrayAmounts, lt.StrayAmount{CurrencyCode: currency.Code, Amount: d.amounts[currency.ID]})
 		}
 		slices.SortFunc(d.preview.StrayAmounts, func(a, b lt.StrayAmount) int {
-			return cmp.Or(cmp.Compare(a.CurrencyCode, b.CurrencyCode), cmp.Compare(a.Name, b.Name), cmp.Compare(a.Kind, b.Kind))
+			return cmp.Compare(a.CurrencyCode, b.CurrencyCode)
 		})
 	}
 

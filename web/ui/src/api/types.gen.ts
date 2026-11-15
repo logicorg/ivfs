@@ -724,8 +724,6 @@ export type StrayAmount = {
      */
     amount: string;
     currencyCode: string;
-    kind: string;
-    name: string;
 };
 
 export type StrayUnits = {

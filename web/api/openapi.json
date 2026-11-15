@@ -1801,17 +1801,9 @@
           },
           "currencyCode": {
             "type": "string"
-          },
-          "kind": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
           }
         },
         "required": [
-          "name",
-          "kind",
           "currencyCode",
           "amount"
         ],

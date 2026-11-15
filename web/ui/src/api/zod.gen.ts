@@ -467,9 +467,7 @@ export const zSellForm = z.object({
 
 export const zStrayAmount = z.object({
     amount: z.string().regex(/^-?[0-9]+(\.[0-9]+)?$/),
-    currencyCode: z.string(),
-    kind: z.string(),
-    name: z.string()
+    currencyCode: z.string()
 });
 
 export const zStrayUnits = z.object({

@@ -3,7 +3,6 @@ package ledgertypes
 import (
 	"cuelang.org/go/cuego"
 	errs "github.com/logicorg/ivfs/internal/pkg/errors"
-	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/shopspring/decimal"
 )
 
@@ -41,7 +40,8 @@ type AccountDeletionPreview struct {
 	KeptEntries           int `json:"keptEntries"`
 	DeletedMovementGroups int `json:"deletedMovementGroups"`
 	KeptMovementGroups    int `json:"keptMovementGroups"`
-	// StrayAmounts is what the kept entries move onto each stray ledger account.
+	// StrayAmounts is what the kept entries move onto the stray ledger
+	// account of each currency.
 	StrayAmounts []StrayAmount `json:"strayAmounts,omitempty"`
 	// StrayUnits is what the kept entries and groups move onto the stray
 	// financial account, by asset.
@@ -51,13 +51,11 @@ type AccountDeletionPreview struct {
 	Conflicts []string `json:"conflicts,omitempty"`
 }
 
-// StrayAmount is what lands on one stray ledger account, debits minus
-// credits.
+// StrayAmount is what lands on the stray ledger account of a currency,
+// debits minus credits.
 type StrayAmount struct {
-	Name         string                  `json:"name"`
-	Kind         model.LedgerAccountKind `json:"kind"`
-	CurrencyCode string                  `json:"currencyCode"`
-	Amount       decimal.Decimal         `json:"amount"`
+	CurrencyCode string          `json:"currencyCode"`
+	Amount       decimal.Decimal `json:"amount"`
 }
 
 // StrayUnits is how many units of an asset land on the stray financial

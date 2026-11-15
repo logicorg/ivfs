@@ -32,7 +32,7 @@ const untrackedInstitutionKind = "untracked"
 // accounts". It is created with no financial account the first time it is
 // needed, and returned closed or not, since the person cannot close it.
 func StrayLedgerAccountTx(ctx context.Context, tx bun.Tx, currencyID int64) (int64, error) {
-	stray := StrayLedgerAccount(currencyID)
+	stray := &model.LedgerAccount{CurrencyID: currencyID, Name: lt.UntrackedAccountsName, Kind: model.LedgerAccountEquity}
 	find := func() (bool, error) {
 		err := tx.NewSelect().Model(stray).
 			Where("la.financial_account_id IS NULL").
@@ -76,12 +76,6 @@ func StrayLedgerAccountsTx(ctx context.Context, tx bun.Tx, accounts []*model.Led
 		byAccount[account.ID] = strayIDs[account.CurrencyID]
 	}
 	return byAccount, nil
-}
-
-// StrayLedgerAccount is the stray that receives the postings of an account in
-// currencyID, before it is retrieved or inserted.
-func StrayLedgerAccount(currencyID int64) *model.LedgerAccount {
-	return &model.LedgerAccount{CurrencyID: currencyID, Name: lt.UntrackedAccountsName, Kind: model.LedgerAccountEquity}
 }
 
 // StrayFinancialAccountTx returns the stray financial account, "Untracked
