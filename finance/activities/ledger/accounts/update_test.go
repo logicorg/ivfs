@@ -9,7 +9,7 @@ import (
 
 // renameFixtures are the ledger accounts each rename case starts from.
 type renameFixtures struct {
-	cash, savings, wallet, groceries, dining *model.LedgerAccount
+	cash, savings, wallet, adjustments, reserves *model.LedgerAccount
 }
 
 // Test_RenameLedgerAccount_Taken checks that a ledger account cannot take a
@@ -32,11 +32,11 @@ func (s *UnitTestSuite) Test_RenameLedgerAccount_Taken() {
 			errStr:  "resource LedgerAccount conflict",
 			stored:  "Savings",
 		},
-		"the name of a top-level category of the same kind and currency": {
-			target:  func(r renameFixtures) *model.LedgerAccount { return r.dining },
-			newName: "GROCERIES",
+		"the name of an account with no financial account, of the same kind and currency": {
+			target:  func(r renameFixtures) *model.LedgerAccount { return r.reserves },
+			newName: "ADJUSTMENTS",
 			errStr:  "resource LedgerAccount conflict",
-			stored:  "Dining",
+			stored:  "Reserves",
 		},
 		"the name of an account in another currency": {
 			target:  func(r renameFixtures) *model.LedgerAccount { return r.wallet },
@@ -44,21 +44,21 @@ func (s *UnitTestSuite) Test_RenameLedgerAccount_Taken() {
 			stored:  "Cash",
 		},
 		"its own name in another casing": {
-			target:  func(r renameFixtures) *model.LedgerAccount { return r.groceries },
-			newName: "groceries",
-			stored:  "groceries",
+			target:  func(r renameFixtures) *model.LedgerAccount { return r.adjustments },
+			newName: "adjustments",
+			stored:  "adjustments",
 		},
 	}
 
 	for name, tc := range tests {
 		r := renameFixtures{
-			cash:      &model.LedgerAccount{FinancialAccountID: &f.personal.ID, CurrencyID: f.euro.ID, Name: "Cash", Kind: model.LedgerAccountAsset},
-			savings:   &model.LedgerAccount{FinancialAccountID: &f.personal.ID, CurrencyID: f.euro.ID, Name: "Savings", Kind: model.LedgerAccountAsset},
-			wallet:    &model.LedgerAccount{FinancialAccountID: &f.personal.ID, CurrencyID: f.dollar.ID, Name: "Wallet", Kind: model.LedgerAccountAsset},
-			groceries: &model.LedgerAccount{CurrencyID: f.euro.ID, Name: "Groceries", Kind: model.LedgerAccountExpense},
-			dining:    &model.LedgerAccount{CurrencyID: f.euro.ID, Name: "Dining", Kind: model.LedgerAccountExpense},
+			cash:        &model.LedgerAccount{FinancialAccountID: &f.personal.ID, CurrencyID: f.euro.ID, Name: "Cash", Kind: model.LedgerAccountAsset},
+			savings:     &model.LedgerAccount{FinancialAccountID: &f.personal.ID, CurrencyID: f.euro.ID, Name: "Savings", Kind: model.LedgerAccountAsset},
+			wallet:      &model.LedgerAccount{FinancialAccountID: &f.personal.ID, CurrencyID: f.dollar.ID, Name: "Wallet", Kind: model.LedgerAccountAsset},
+			adjustments: &model.LedgerAccount{CurrencyID: f.euro.ID, Name: "Adjustments", Kind: model.LedgerAccountEquity},
+			reserves:    &model.LedgerAccount{CurrencyID: f.euro.ID, Name: "Reserves", Kind: model.LedgerAccountEquity},
 		}
-		for _, account := range []*model.LedgerAccount{r.cash, r.savings, r.wallet, r.groceries, r.dining} {
+		for _, account := range []*model.LedgerAccount{r.cash, r.savings, r.wallet, r.adjustments, r.reserves} {
 			temporaltesting.Insert(s.T(), s.DB, account)
 		}
 		target := tc.target(r)
@@ -76,6 +76,6 @@ func (s *UnitTestSuite) Test_RenameLedgerAccount_Taken() {
 			require.Equal(s.T(), tc.stored, stored.Name)
 		})
 
-		s.deleteLedgerAccounts(r.cash.ID, r.savings.ID, r.wallet.ID, r.groceries.ID, r.dining.ID)
+		s.deleteLedgerAccounts(r.cash.ID, r.savings.ID, r.wallet.ID, r.adjustments.ID, r.reserves.ID)
 	}
 }

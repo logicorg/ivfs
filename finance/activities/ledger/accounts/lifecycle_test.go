@@ -55,23 +55,23 @@ func (s *UnitTestSuite) TestRetrieveAndListLedgerAccounts() {
 
 // TestListLedgerAccountsNameFilter covers NameContains, a case-insensitive
 // substring match on the ledger account's own name, the way a caller
-// resolving something like "groceries" to a category would.
+// resolving something like "expenses" to an account would.
 func (s *UnitTestSuite) TestListLedgerAccountsNameFilter() {
 	currency := &model.Currency{Code: "EUR", Name: "Euro", Precision: 2}
 	temporaltesting.Insert(s.T(), s.DB, currency)
 
-	groceries := &model.LedgerAccount{Name: "Groceries", CurrencyID: currency.ID, Kind: model.LedgerAccountExpense}
-	temporaltesting.Insert(s.T(), s.DB, groceries)
-	salary := &model.LedgerAccount{Name: "Salary", CurrencyID: currency.ID, Kind: model.LedgerAccountIncome}
-	temporaltesting.Insert(s.T(), s.DB, salary)
+	expenses := &model.LedgerAccount{Name: lt.ExpensesAccountName, CurrencyID: currency.ID, Kind: model.LedgerAccountExpense}
+	temporaltesting.Insert(s.T(), s.DB, expenses)
+	income := &model.LedgerAccount{Name: lt.IncomeAccountName, CurrencyID: currency.ID, Kind: model.LedgerAccountIncome}
+	temporaltesting.Insert(s.T(), s.DB, income)
 
 	tests := map[string]struct {
 		nameContains string
 		expIDs       []int64
 	}{
 		"case-insensitive substring match": {
-			nameContains: "grocer",
-			expIDs:       []int64{groceries.ID},
+			nameContains: "expen",
+			expIDs:       []int64{expenses.ID},
 		},
 		"no match returns empty": {
 			nameContains: "nonexistent",
@@ -79,7 +79,7 @@ func (s *UnitTestSuite) TestListLedgerAccountsNameFilter() {
 		},
 		"blank filter matches everything": {
 			nameContains: "",
-			expIDs:       []int64{groceries.ID, salary.ID},
+			expIDs:       []int64{expenses.ID, income.ID},
 		},
 	}
 	for name, tc := range tests {
@@ -99,16 +99,16 @@ func (s *UnitTestSuite) TestListLedgerAccountsNameFilter() {
 }
 
 // TestListLedgerAccountsKindFilter covers Kinds, which keeps only accounts of
-// the given kinds, the way the categories facade lists income and expense
-// accounts without the asset accounts behind financial accounts.
+// the given kinds, such as the income and expense accounts without the asset
+// accounts behind financial accounts.
 func (s *UnitTestSuite) TestListLedgerAccountsKindFilter() {
 	currency := &model.Currency{Code: "EUR", Name: "Euro", Precision: 2}
 	temporaltesting.Insert(s.T(), s.DB, currency)
 
 	cash := &model.LedgerAccount{Name: "Cash", CurrencyID: currency.ID, Kind: model.LedgerAccountAsset}
-	groceries := &model.LedgerAccount{Name: "Groceries", CurrencyID: currency.ID, Kind: model.LedgerAccountExpense}
-	salary := &model.LedgerAccount{Name: "Salary", CurrencyID: currency.ID, Kind: model.LedgerAccountIncome}
-	for _, account := range []*model.LedgerAccount{cash, groceries, salary} {
+	expenses := &model.LedgerAccount{Name: lt.ExpensesAccountName, CurrencyID: currency.ID, Kind: model.LedgerAccountExpense}
+	income := &model.LedgerAccount{Name: lt.IncomeAccountName, CurrencyID: currency.ID, Kind: model.LedgerAccountIncome}
+	for _, account := range []*model.LedgerAccount{cash, expenses, income} {
 		temporaltesting.Insert(s.T(), s.DB, account)
 	}
 
@@ -119,7 +119,7 @@ func (s *UnitTestSuite) TestListLedgerAccountsKindFilter() {
 	}{
 		"income and expense": {
 			kinds:  []model.LedgerAccountKind{model.LedgerAccountIncome, model.LedgerAccountExpense},
-			expIDs: []int64{groceries.ID, salary.ID},
+			expIDs: []int64{expenses.ID, income.ID},
 		},
 		"a single kind": {
 			kinds:  []model.LedgerAccountKind{model.LedgerAccountAsset},
@@ -130,7 +130,7 @@ func (s *UnitTestSuite) TestListLedgerAccountsKindFilter() {
 			expIDs: []int64{},
 		},
 		"no kinds matches everything": {
-			expIDs: []int64{cash.ID, groceries.ID, salary.ID},
+			expIDs: []int64{cash.ID, expenses.ID, income.ID},
 		},
 		"an unknown kind": {
 			kinds:     []model.LedgerAccountKind{"clearly-invalid-kind"},
