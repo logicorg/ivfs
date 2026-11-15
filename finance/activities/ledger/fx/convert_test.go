@@ -33,7 +33,11 @@ func (s *UnitTestSuite) postingsOf(entryID int64) []string {
 
 	lines := make([]string, 0, len(postings))
 	for _, p := range postings {
-		lines = append(lines, fmt.Sprintf("%s account %d %s", p.Side, p.LedgerAccountID, p.Amount))
+		line := fmt.Sprintf("%s account %d %s", p.Side, p.LedgerAccountID, p.Amount)
+		if p.CategoryID != nil {
+			line += fmt.Sprintf(" category %d", *p.CategoryID)
+		}
+		lines = append(lines, line)
 	}
 	return lines
 }
@@ -47,7 +51,7 @@ func (s *UnitTestSuite) Test_RegisterFXConversion() {
 
 	require.ElementsMatch(s.T(), []string{
 		fmt.Sprintf("debit account %d 99", s.usdClearing.ID),
-		fmt.Sprintf("debit account %d 1", s.usdFees.ID),
+		fmt.Sprintf("debit account %d 1 category %d", s.usdExpenses.ID, s.fxFees.ID),
 		fmt.Sprintf("credit account %d 100", s.revolutUSD.ID),
 		fmt.Sprintf("debit account %d 90", s.revolutEUR.ID),
 		fmt.Sprintf("credit account %d 90", s.eurClearing.ID),
@@ -171,8 +175,20 @@ func (s *UnitTestSuite) Test_RegisterFXConversion_Invalid() {
 			expMsg: "fee ledger account must be of kind expense",
 		},
 		"fee account in the destination currency": {
-			mutate: func(i *lt.RegisterFXConversionInput) { i.Fee.LedgerAccountID = s.eurFees.ID },
+			mutate: func(i *lt.RegisterFXConversionInput) { i.Fee.LedgerAccountID = s.eurExpenses.ID },
 			expMsg: "fee ledger account must be denominated",
+		},
+		"fee without a category": {
+			mutate: func(i *lt.RegisterFXConversionInput) { i.Fee.CategoryID = 0 },
+			expMsg: "Fee.CategoryID",
+		},
+		"fee under an income category": {
+			mutate: func(i *lt.RegisterFXConversionInput) { i.Fee.CategoryID = s.interest.ID },
+			expMsg: "is of kind income",
+		},
+		"fee under an unknown category": {
+			mutate: func(i *lt.RegisterFXConversionInput) { i.Fee.CategoryID = 999999 },
+			expMsg: "not found",
 		},
 		"amount beyond the currency precision": {
 			mutate: func(i *lt.RegisterFXConversionInput) { i.DestinationAmount = decimal.RequireFromString("90.001") },
