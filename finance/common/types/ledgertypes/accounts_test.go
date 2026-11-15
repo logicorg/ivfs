@@ -23,7 +23,6 @@ func TestListLedgerAccountsParams_Validate(t *testing.T) {
 			name: "valid params",
 			params: ListLedgerAccountsParams{
 				FinancialAccountID: ptr.Int64(1),
-				ParentID:           ptr.Int64(2),
 				CurrencyID:         ptr.Int64(3),
 				NameContains:       "test",
 				Kinds:              []model.LedgerAccountKind{model.LedgerAccountIncome, model.LedgerAccountExpense},
@@ -35,13 +34,6 @@ func TestListLedgerAccountsParams_Validate(t *testing.T) {
 			name: "invalid FinancialAccountID",
 			params: ListLedgerAccountsParams{
 				FinancialAccountID: ptr.Int64(-1),
-			},
-			wantError: true,
-		},
-		{
-			name: "invalid ParentID",
-			params: ListLedgerAccountsParams{
-				ParentID: ptr.Int64(-1),
 			},
 			wantError: true,
 		},

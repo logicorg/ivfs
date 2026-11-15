@@ -30,7 +30,7 @@ func replacement(want lt.ReplaceJournalEntryInput) any {
 		}
 		for i, posting := range want.Postings {
 			if got.Postings[i].LedgerAccountID != posting.LedgerAccountID || got.Postings[i].Side != posting.Side ||
-				!got.Postings[i].Amount.Equal(posting.Amount) {
+				!got.Postings[i].Amount.Equal(posting.Amount) || !sameID(got.Postings[i].CategoryID, posting.CategoryID) {
 				return false
 			}
 		}
@@ -100,15 +100,15 @@ func (s *WorkflowUnitTestSuite) TestUpdateInvestment() {
 			input: it.UpdateInvestmentInput{JournalEntryID: 41, Kind: it.KindVest, Vest: &it.UpdateVestInput{
 				FinancialAccountID: ibkr, AssetID: 7,
 				UnitsVested: decimal.NewFromInt(100), UnitsWithheld: decimal.NewFromInt(40), FairMarketValue: decimal.RequireFromString("10.00"),
-				CurrencyCode: "eur", IncomeCategoryLedgerAccountID: compensation.ID, TaxCategoryLedgerAccountID: taxWithheld.ID,
+				CurrencyCode: "eur", IncomeCategoryID: compensation.ID, TaxCategoryID: taxWithheld.ID,
 				OccurredAt: occurredAt,
 			}},
 			want: lt.ReplaceJournalEntryInput{
 				JournalEntryID: 41, OccurredAt: occurredAt,
 				Postings: []lt.PostingInput{
 					{LedgerAccountID: investments.ID, Amount: decimal.NewFromInt(600), Side: model.PostingDebit},
-					{LedgerAccountID: taxWithheld.ID, Amount: decimal.NewFromInt(400), Side: model.PostingDebit},
-					{LedgerAccountID: compensation.ID, Amount: decimal.NewFromInt(1000), Side: model.PostingCredit},
+					{LedgerAccountID: expenses.ID, Amount: decimal.NewFromInt(400), Side: model.PostingDebit, CategoryID: ptr.NewPtr(taxWithheld.ID)},
+					{LedgerAccountID: income.ID, Amount: decimal.NewFromInt(1000), Side: model.PostingCredit, CategoryID: ptr.NewPtr(compensation.ID)},
 				},
 				Movements: []lt.ReplaceMovementInput{{
 					Kind: model.PositionMovementVest, FinancialAccountID: ibkr, AssetID: 7, UnitsDelta: decimal.NewFromInt(60),
@@ -123,14 +123,14 @@ func (s *WorkflowUnitTestSuite) TestUpdateInvestment() {
 			input: it.UpdateInvestmentInput{JournalEntryID: 41, Kind: it.KindVest, Vest: &it.UpdateVestInput{
 				FinancialAccountID: ibkr, AssetID: 7,
 				UnitsVested: decimal.NewFromInt(100), FairMarketValue: decimal.RequireFromString("10.00"),
-				CurrencyCode: "EUR", IncomeCategoryLedgerAccountID: compensation.ID, TaxCategoryLedgerAccountID: unknownCategory,
+				CurrencyCode: "EUR", IncomeCategoryID: compensation.ID, TaxCategoryID: unknownCategory,
 				OccurredAt: occurredAt,
 			}},
 			want: lt.ReplaceJournalEntryInput{
 				JournalEntryID: 41, OccurredAt: occurredAt,
 				Postings: []lt.PostingInput{
 					{LedgerAccountID: investments.ID, Amount: decimal.NewFromInt(1000), Side: model.PostingDebit},
-					{LedgerAccountID: compensation.ID, Amount: decimal.NewFromInt(1000), Side: model.PostingCredit},
+					{LedgerAccountID: income.ID, Amount: decimal.NewFromInt(1000), Side: model.PostingCredit, CategoryID: ptr.NewPtr(compensation.ID)},
 				},
 				Movements: []lt.ReplaceMovementInput{{
 					Kind: model.PositionMovementVest, FinancialAccountID: ibkr, AssetID: 7, UnitsDelta: decimal.NewFromInt(100),
@@ -166,8 +166,8 @@ func (s *WorkflowUnitTestSuite) TestUpdateInvestment() {
 }
 
 // TestUpdateInvestment_Errors checks that an invalid request, an unknown
-// currency, an account without the two balances in it, or a vest's category of
-// the wrong kind or currency fail before anything is replaced, since
+// currency, an account without the two balances in it, or a vest's category
+// that is unknown or of the wrong kind fail before anything is replaced, since
 // ReplaceJournalEntry is mocked only where a case reaches it, and that a
 // failing replace's error is returned.
 func (s *WorkflowUnitTestSuite) TestUpdateInvestment_Errors() {
@@ -178,13 +178,12 @@ func (s *WorkflowUnitTestSuite) TestUpdateInvestment_Errors() {
 	vest := it.UpdateVestInput{
 		FinancialAccountID: ibkr, AssetID: 7,
 		UnitsVested: decimal.NewFromInt(100), UnitsWithheld: decimal.NewFromInt(40), FairMarketValue: decimal.NewFromInt(10),
-		CurrencyCode: "EUR", IncomeCategoryLedgerAccountID: compensation.ID, TaxCategoryLedgerAccountID: taxWithheld.ID, OccurredAt: occurredAt,
+		CurrencyCode: "EUR", IncomeCategoryID: compensation.ID, TaxCategoryID: taxWithheld.ID, OccurredAt: occurredAt,
 	}
-	vestIncomeUSD, vestIncomeExpense, vestTaxBalance, vestTaxUnknown := vest, vest, vest, vest
-	vestIncomeUSD.IncomeCategoryLedgerAccountID = compensationUSD.ID
-	vestIncomeExpense.IncomeCategoryLedgerAccountID = taxWithheld.ID
-	vestTaxBalance.TaxCategoryLedgerAccountID = cash.ID
-	vestTaxUnknown.TaxCategoryLedgerAccountID = unknownCategory
+	vestIncomeExpense, vestTaxIncome, vestTaxUnknown := vest, vest, vest
+	vestIncomeExpense.IncomeCategoryID = taxWithheld.ID
+	vestTaxIncome.TaxCategoryID = compensation.ID
+	vestTaxUnknown.TaxCategoryID = unknownCategory
 
 	tests := []struct {
 		name  string
@@ -198,10 +197,9 @@ func (s *WorkflowUnitTestSuite) TestUpdateInvestment_Errors() {
 		{name: "a buy with invalid facts", input: it.UpdateInvestmentInput{JournalEntryID: 41, Kind: it.KindBuy, Buy: &it.UpdateBuyInput{FinancialAccountID: ibkr, AssetID: 7, CurrencyCode: "EUR"}}, wantError: "validation error"},
 		{name: "a buy in an unknown currency", input: it.UpdateInvestmentInput{JournalEntryID: 41, Kind: it.KindBuy, Buy: &buyXYZ}, wantError: "retrieve currency XYZ"},
 		{name: "a sale in a currency the account holds no investments in", input: it.UpdateInvestmentInput{JournalEntryID: 41, Kind: it.KindSell, Sell: &sellUSD}, wantError: `invalid parameter: financial account 20 has no "Cash" and "Investments" balances in USD`},
-		{name: "a vest whose income category is in another currency", input: it.UpdateInvestmentInput{JournalEntryID: 41, Kind: it.KindVest, Vest: &vestIncomeUSD}, wantError: `invalid parameter: "RSU compensation (USD)" is not in EUR, the currency of the vest`},
 		{name: "a vest whose income category is an expense one", input: it.UpdateInvestmentInput{JournalEntryID: 41, Kind: it.KindVest, Vest: &vestIncomeExpense}, wantError: `invalid parameter: "Tax withheld" is an expense category, not an income one`},
-		{name: "a vest whose tax category is a balance", input: it.UpdateInvestmentInput{JournalEntryID: 41, Kind: it.KindVest, Vest: &vestTaxBalance}, wantError: `invalid parameter: "Cash" is not an expense category: its kind is asset`},
-		{name: "a vest whose tax category is unknown", input: it.UpdateInvestmentInput{JournalEntryID: 41, Kind: it.KindVest, Vest: &vestTaxUnknown}, wantError: "retrieve ledger account 999: "},
+		{name: "a vest whose tax category is an income one", input: it.UpdateInvestmentInput{JournalEntryID: 41, Kind: it.KindVest, Vest: &vestTaxIncome}, wantError: `invalid parameter: "RSU compensation" is an income category, not an expense one`},
+		{name: "a vest whose tax category is unknown", input: it.UpdateInvestmentInput{JournalEntryID: 41, Kind: it.KindVest, Vest: &vestTaxUnknown}, wantError: "retrieve category 999: "},
 		{name: "an unknown entry", input: it.UpdateInvestmentInput{JournalEntryID: 41, Kind: it.KindBuy, Buy: &buy}, replaceErr: "resource JournalEntry not found with ID: 41", wantError: "update buy: "},
 		{name: "a vest onto a closed account", input: it.UpdateInvestmentInput{JournalEntryID: 41, Kind: it.KindVest, Vest: &vest}, replaceErr: "resource FinancialAccount with ID: 20 is closed", wantError: "resource FinancialAccount with ID: 20 is closed"},
 	}

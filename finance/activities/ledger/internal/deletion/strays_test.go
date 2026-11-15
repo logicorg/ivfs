@@ -29,15 +29,13 @@ func seedStrayFixtures(s *UnitTestSuite, tx bun.Tx) strayFixtures {
 	return f
 }
 
-// Test_StrayLedgerAccountTx checks which stray receives the postings of each
-// kind, and that a stray is found by name, case-insensitively, kind, currency,
-// and being top-level with no financial account, and created only when there
-// is none.
+// Test_StrayLedgerAccountTx checks that the stray is found by name,
+// case-insensitively, kind, currency, and having no financial account, and
+// created only when there is none.
 func (s *UnitTestSuite) Test_StrayLedgerAccountTx() {
 	closedAt := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 
 	tests := map[string]struct {
-		kind model.LedgerAccountKind
 		// existing inserts the accounts there are before the call. With
 		// wantExisting, the first of them is the stray to return; otherwise a
 		// new one is.
@@ -45,66 +43,38 @@ func (s *UnitTestSuite) Test_StrayLedgerAccountTx() {
 		dollar       bool
 		wantExisting bool
 		wantName     string
-		wantKind     model.LedgerAccountKind
 	}{
-		"an asset goes to untracked accounts": {
-			kind: model.LedgerAccountAsset, wantName: lt.UntrackedAccountsName, wantKind: model.LedgerAccountEquity,
-		},
-		"a liability goes to untracked accounts": {
-			kind: model.LedgerAccountLiability, wantName: lt.UntrackedAccountsName, wantKind: model.LedgerAccountEquity,
-		},
-		"an equity account goes to untracked accounts": {
-			kind: model.LedgerAccountEquity, wantName: lt.UntrackedAccountsName, wantKind: model.LedgerAccountEquity,
-		},
-		"an expense goes to uncategorized expense": {
-			kind: model.LedgerAccountExpense, wantName: lt.UncategorizedAccountName, wantKind: model.LedgerAccountExpense,
-		},
-		"an income goes to uncategorized income": {
-			kind: model.LedgerAccountIncome, wantName: lt.UncategorizedAccountName, wantKind: model.LedgerAccountIncome,
-		},
+		"no stray yet": {wantName: lt.UntrackedAccountsName},
 		"an existing stray in another casing": {
-			kind: model.LedgerAccountAsset,
 			existing: func(insert func(*model.LedgerAccount), f strayFixtures) []*model.LedgerAccount {
 				return inserted(insert, &model.LedgerAccount{CurrencyID: f.euro.ID, Name: "untracked ACCOUNTS", Kind: model.LedgerAccountEquity})
 			},
-			wantExisting: true, wantName: "untracked ACCOUNTS", wantKind: model.LedgerAccountEquity,
+			wantExisting: true, wantName: "untracked ACCOUNTS",
 		},
 		"an existing closed stray": {
-			kind: model.LedgerAccountExpense,
 			existing: func(insert func(*model.LedgerAccount), f strayFixtures) []*model.LedgerAccount {
-				return inserted(insert, &model.LedgerAccount{CurrencyID: f.euro.ID, Name: lt.UncategorizedAccountName, Kind: model.LedgerAccountExpense, ClosedAt: &closedAt})
+				return inserted(insert, &model.LedgerAccount{CurrencyID: f.euro.ID, Name: lt.UntrackedAccountsName, Kind: model.LedgerAccountEquity, ClosedAt: &closedAt})
 			},
-			wantExisting: true, wantName: lt.UncategorizedAccountName, wantKind: model.LedgerAccountExpense,
+			wantExisting: true, wantName: lt.UntrackedAccountsName,
 		},
 		"a namesake in another currency": {
-			kind: model.LedgerAccountAsset, dollar: true,
+			dollar: true,
 			existing: func(insert func(*model.LedgerAccount), f strayFixtures) []*model.LedgerAccount {
 				return inserted(insert, &model.LedgerAccount{CurrencyID: f.euro.ID, Name: lt.UntrackedAccountsName, Kind: model.LedgerAccountEquity})
 			},
-			wantName: lt.UntrackedAccountsName, wantKind: model.LedgerAccountEquity,
+			wantName: lt.UntrackedAccountsName,
 		},
-		"a namesake of the other category kind": {
-			kind: model.LedgerAccountIncome,
+		"a namesake of another kind": {
 			existing: func(insert func(*model.LedgerAccount), f strayFixtures) []*model.LedgerAccount {
-				return inserted(insert, &model.LedgerAccount{CurrencyID: f.euro.ID, Name: lt.UncategorizedAccountName, Kind: model.LedgerAccountExpense})
+				return inserted(insert, &model.LedgerAccount{CurrencyID: f.euro.ID, Name: lt.UntrackedAccountsName, Kind: model.LedgerAccountAsset})
 			},
-			wantName: lt.UncategorizedAccountName, wantKind: model.LedgerAccountIncome,
+			wantName: lt.UntrackedAccountsName,
 		},
 		"a namesake under a financial account": {
-			kind: model.LedgerAccountAsset,
 			existing: func(insert func(*model.LedgerAccount), f strayFixtures) []*model.LedgerAccount {
 				return inserted(insert, &model.LedgerAccount{FinancialAccountID: &f.bank.ID, CurrencyID: f.euro.ID, Name: lt.UntrackedAccountsName, Kind: model.LedgerAccountEquity})
 			},
-			wantName: lt.UntrackedAccountsName, wantKind: model.LedgerAccountEquity,
-		},
-		"a namesake under a parent": {
-			kind: model.LedgerAccountAsset,
-			existing: func(insert func(*model.LedgerAccount), f strayFixtures) []*model.LedgerAccount {
-				parent := &model.LedgerAccount{CurrencyID: f.euro.ID, Name: "Equity", Kind: model.LedgerAccountEquity}
-				insert(parent)
-				return inserted(insert, &model.LedgerAccount{ParentID: &parent.ID, CurrencyID: f.euro.ID, Name: lt.UntrackedAccountsName, Kind: model.LedgerAccountEquity})
-			},
-			wantName: lt.UntrackedAccountsName, wantKind: model.LedgerAccountEquity,
+			wantName: lt.UntrackedAccountsName,
 		},
 	}
 	for name, tc := range tests {
@@ -120,9 +90,9 @@ func (s *UnitTestSuite) Test_StrayLedgerAccountTx() {
 					currency = f.dollar
 				}
 
-				id, err := StrayLedgerAccountTx(s.T().Context(), tx, tc.kind, currency.ID)
+				id, err := StrayLedgerAccountTx(s.T().Context(), tx, currency.ID)
 				require.NoError(s.T(), err)
-				again, err := StrayLedgerAccountTx(s.T().Context(), tx, tc.kind, currency.ID)
+				again, err := StrayLedgerAccountTx(s.T().Context(), tx, currency.ID)
 				require.NoError(s.T(), err)
 				assert.Equal(s.T(), id, again, "a second call returns the same stray")
 
@@ -136,9 +106,8 @@ func (s *UnitTestSuite) Test_StrayLedgerAccountTx() {
 				var stray model.LedgerAccount
 				require.NoError(s.T(), tx.NewSelect().Model(&stray).Where("la.id = ?", id).Scan(s.T().Context()))
 				assert.Equal(s.T(), tc.wantName, stray.Name)
-				assert.Equal(s.T(), tc.wantKind, stray.Kind)
+				assert.Equal(s.T(), model.LedgerAccountEquity, stray.Kind)
 				assert.Equal(s.T(), currency.ID, stray.CurrencyID)
-				assert.Nil(s.T(), stray.ParentID)
 				assert.Nil(s.T(), stray.FinancialAccountID)
 			})
 		})
@@ -163,7 +132,7 @@ func (s *UnitTestSuite) Test_StrayLedgerAccountTx_Concurrent() {
 	first, err := s.DB.BeginTx(ctx, nil)
 	require.NoError(s.T(), err)
 	defer func() { _ = first.Rollback() }()
-	firstID, err := StrayLedgerAccountTx(ctx, first, model.LedgerAccountExpense, euro.ID)
+	firstID, err := StrayLedgerAccountTx(ctx, first, euro.ID)
 	require.NoError(s.T(), err)
 
 	// The second insert waits on the first transaction's row until it commits.
@@ -175,7 +144,7 @@ func (s *UnitTestSuite) Test_StrayLedgerAccountTx_Concurrent() {
 			return
 		}
 		defer func() { _ = second.Rollback() }()
-		id, err := StrayLedgerAccountTx(ctx, second, model.LedgerAccountExpense, euro.ID)
+		id, err := StrayLedgerAccountTx(ctx, second, euro.ID)
 		if assert.NoError(s.T(), err) && assert.NoError(s.T(), second.Commit()) {
 			secondID <- id
 		}
@@ -189,7 +158,7 @@ func (s *UnitTestSuite) Test_StrayLedgerAccountTx_Concurrent() {
 }
 
 // Test_StrayLedgerAccountsTx checks that each account gets the stray of its
-// kind and currency, and that accounts with the same stray share it.
+// currency, and that accounts in one currency share it.
 func (s *UnitTestSuite) Test_StrayLedgerAccountsTx() {
 	s.inRolledBackTx(func(tx bun.Tx) {
 		f := seedStrayFixtures(s, tx)
@@ -198,35 +167,25 @@ func (s *UnitTestSuite) Test_StrayLedgerAccountsTx() {
 			insertTx(s.T(), tx, a)
 			return a
 		}
-		groceries := account("Groceries", model.LedgerAccountExpense, f.euro)
 		cash := account("Cash", model.LedgerAccountAsset, f.euro)
 		card := account("Card balance", model.LedgerAccountLiability, f.euro)
-		salary := account("Salary", model.LedgerAccountIncome, f.euro)
+		adjustments := account("Adjustments", model.LedgerAccountEquity, f.euro)
 		dollars := account("Dollar cash", model.LedgerAccountAsset, f.dollar)
 
-		strays, err := StrayLedgerAccountsTx(s.T().Context(), tx, []*model.LedgerAccount{groceries, cash, card, salary, dollars})
+		strays, err := StrayLedgerAccountsTx(s.T().Context(), tx, []*model.LedgerAccount{cash, card, adjustments, dollars})
 		require.NoError(s.T(), err)
 
-		want := map[*model.LedgerAccount]struct {
-			name     string
-			kind     model.LedgerAccountKind
-			currency *model.Currency
-		}{
-			groceries: {lt.UncategorizedAccountName, model.LedgerAccountExpense, f.euro},
-			cash:      {lt.UntrackedAccountsName, model.LedgerAccountEquity, f.euro},
-			card:      {lt.UntrackedAccountsName, model.LedgerAccountEquity, f.euro},
-			salary:    {lt.UncategorizedAccountName, model.LedgerAccountIncome, f.euro},
-			dollars:   {lt.UntrackedAccountsName, model.LedgerAccountEquity, f.dollar},
-		}
+		want := map[*model.LedgerAccount]*model.Currency{cash: f.euro, card: f.euro, adjustments: f.euro, dollars: f.dollar}
 		require.Len(s.T(), strays, len(want))
-		for account, w := range want {
+		for account, currency := range want {
 			var stray model.LedgerAccount
 			require.NoError(s.T(), tx.NewSelect().Model(&stray).Where("la.id = ?", strays[account.ID]).Scan(s.T().Context()))
-			assert.Equal(s.T(), w.name, stray.Name, account.Name)
-			assert.Equal(s.T(), w.kind, stray.Kind, account.Name)
-			assert.Equal(s.T(), w.currency.ID, stray.CurrencyID, account.Name)
+			assert.Equal(s.T(), lt.UntrackedAccountsName, stray.Name, account.Name)
+			assert.Equal(s.T(), model.LedgerAccountEquity, stray.Kind, account.Name)
+			assert.Equal(s.T(), currency.ID, stray.CurrencyID, account.Name)
 		}
 		assert.Equal(s.T(), strays[cash.ID], strays[card.ID], "a balance and a liability in one currency share the stray")
+		assert.NotEqual(s.T(), strays[cash.ID], strays[dollars.ID], "each currency has its own stray")
 	})
 }
 

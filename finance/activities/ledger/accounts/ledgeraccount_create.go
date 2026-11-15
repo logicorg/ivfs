@@ -15,10 +15,10 @@ import (
 
 // CreateLedgerAccount returns the ledger account with the input's key,
 // creating it when there is none (ADR 0005). Under a financial account the key
-// is the financial account, the currency, and the name; elsewhere, for
-// categories, equity, and clearing accounts, it is the parent, the kind, the
-// currency, and the name. Names are compared case-insensitively and stored
-// trimmed, in the casing they were first given. An account that already
+// is the financial account, the currency, and the name; for the shared
+// accounts, which have none, it is the kind, the currency, and the name.
+// Names are compared case-insensitively and stored trimmed, in the casing
+// they were first given. An account that already
 // exists is returned unchanged, closed or not, whatever the rest of the input
 // says, so a retry or a second create of the same account is harmless.
 func (a *Activities) CreateLedgerAccount(ctx context.Context, input lt.CreateLedgerAccountInput) (*lt.CreateLedgerAccountResult, error) {
@@ -36,6 +36,12 @@ func (a *Activities) CreateLedgerAccount(ctx context.Context, input lt.CreateLed
 	}
 	if input.FinancialAccountID != nil && *input.FinancialAccountID <= 0 {
 		return nil, internalerrors.ErrInvalidParameter{Description: "financial account ID must be positive"}
+	}
+	if err := refuseOtherCategoryAccount(input); err != nil {
+		return nil, err
+	}
+	if err := refuseReservedName(input); err != nil {
+		return nil, err
 	}
 
 	existing, err := findLedgerAccount(ctx, db, input)
@@ -56,15 +62,10 @@ func (a *Activities) CreateLedgerAccount(ctx context.Context, input lt.CreateLed
 				return err
 			}
 		}
-		if input.ParentID != nil {
-			if err := validateLedgerAccountParent(ctx, tx, nil, *input.ParentID, input.Kind, input.CurrencyID); err != nil {
-				return err
-			}
-		}
 
 		account := &model.LedgerAccount{
-			ParentID: input.ParentID, FinancialAccountID: input.FinancialAccountID,
-			CurrencyID: input.CurrencyID, Name: input.Name, Kind: input.Kind,
+			FinancialAccountID: input.FinancialAccountID,
+			CurrencyID:         input.CurrencyID, Name: input.Name, Kind: input.Kind,
 		}
 		if _, err := tx.NewInsert().Model(account).Returning("id").Exec(ctx); err != nil {
 			return fmt.Errorf("insert ledger account: %w", err)
@@ -91,20 +92,48 @@ func (a *Activities) CreateLedgerAccount(ctx context.Context, input lt.CreateLed
 	return result, nil
 }
 
+// refuseOtherCategoryAccount fails for an income or expense account that is
+// not the shared one of its kind. What the money was for is the category of a
+// posting, and a second way to say it would split the totals.
+func refuseOtherCategoryAccount(input lt.CreateLedgerAccountInput) error {
+	if !model.IsCategoryKind(input.Kind) {
+		return nil
+	}
+	shared := lt.CategoryAccountName(input.Kind)
+	if input.FinancialAccountID == nil && strings.EqualFold(input.Name, shared) {
+		return nil
+	}
+	return internalerrors.ErrInvalidParameter{
+		Description: fmt.Sprintf("the only %s account is %q, with no financial account; create a category for %q instead", input.Kind, shared, input.Name),
+	}
+}
+
+// refuseReservedName fails for an account of no financial account that takes
+// the name of a shared or stray account with another kind. The ledger knows
+// those accounts by name, and would refuse to rename or close this one as if
+// it were its own.
+func refuseReservedName(input lt.CreateLedgerAccountInput) error {
+	kind, reserved := lt.ReservedLedgerAccountKind(input.Name)
+	if !reserved || input.FinancialAccountID != nil || input.Kind == kind {
+		return nil
+	}
+	return internalerrors.ErrInvalidParameter{
+		Description: fmt.Sprintf("%q is the name of the ledger's %s account and cannot name an %s account with no financial account; pick another name",
+			input.Name, kind, input.Kind),
+	}
+}
+
 // findLedgerAccount returns the ledger account with the input's key, or nil
-// when there is none. A missing parent matches only a top-level account.
+// when there is none.
 func findLedgerAccount(ctx context.Context, db bun.IDB, input lt.CreateLedgerAccountInput) (*model.LedgerAccount, error) {
 	account := new(model.LedgerAccount)
 	query := db.NewSelect().Model(account).
 		Where("la.currency_id = ?", input.CurrencyID).
 		Where("lower(la.name) = lower(?)", input.Name)
-	switch {
-	case input.FinancialAccountID != nil:
+	if input.FinancialAccountID != nil {
 		query = query.Where("la.financial_account_id = ?", *input.FinancialAccountID)
-	case input.ParentID != nil:
-		query = query.Where("la.financial_account_id IS NULL AND la.kind = ? AND la.parent_id = ?", input.Kind, *input.ParentID)
-	default:
-		query = query.Where("la.financial_account_id IS NULL AND la.kind = ? AND la.parent_id IS NULL", input.Kind)
+	} else {
+		query = query.Where("la.financial_account_id IS NULL AND la.kind = ?", input.Kind)
 	}
 
 	err := query.Scan(ctx)

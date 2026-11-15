@@ -34,7 +34,10 @@ type JournalEntryCursor struct {
 type ListJournalEntriesParams struct {
 	// LedgerAccountID selects the entries that have a posting on this account.
 	LedgerAccountID int64 `json:"ledgerAccountId" cue:">=0"`
-	CounterpartyID  int64 `json:"counterpartyId" cue:">=0"`
+	// CategoryIDs selects the entries that have a posting in any of these
+	// categories or in one under them.
+	CategoryIDs    []int64 `json:"categoryIds,omitempty"`
+	CounterpartyID int64   `json:"counterpartyId" cue:">=0"`
 	// ExternalID has to match the external id of the entry exactly.
 	ExternalID string `json:"externalId"`
 	// Statuses selects the entries in any of these states, and every entry when
@@ -74,6 +77,11 @@ func (p *ListJournalEntriesParams) Validate() error {
 	}
 	if !p.From.IsZero() && !p.To.IsZero() && !p.To.After(p.From) {
 		return internalerrors.ErrInvalidParameter{Description: "the end of the date range must be after its start"}
+	}
+	for _, id := range p.CategoryIDs {
+		if id <= 0 {
+			return internalerrors.ErrInvalidParameter{Description: "category ids must be positive"}
+		}
 	}
 	for _, status := range p.Statuses {
 		if !model.IsValidJournalEntryStatus(status) {

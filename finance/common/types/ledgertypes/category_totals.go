@@ -36,20 +36,23 @@ func (p *CategoryTotalsParams) Validate() error {
 }
 
 // CategoryTotal is what was earned in an income category, or spent in an
-// expense category, during a period: credits less debits for income, debits
-// less credits for an expense. A refund larger than the spending makes it
-// negative.
+// expense category, in one currency during a period: credits less debits for
+// income, debits less credits for an expense. A refund larger than the
+// spending makes it negative. Without a CategoryID it is the uncategorized
+// total of the kind and currency, so the totals of a kind and currency sum to
+// what its "Income" or "Expenses" account took.
 type CategoryTotal struct {
-	LedgerAccountID int64                   `json:"ledgerAccountId"`
-	Kind            model.LedgerAccountKind `json:"kind"`
-	CurrencyID      int64                   `json:"currencyId"`
-	CurrencyCode    string                  `json:"currencyCode"`
-	Total           decimal.Decimal         `json:"total"`
+	CategoryID   *int64                  `json:"categoryId,omitempty"`
+	Kind         model.LedgerAccountKind `json:"kind"`
+	CurrencyID   int64                   `json:"currencyId"`
+	CurrencyCode string                  `json:"currencyCode"`
+	Total        decimal.Decimal         `json:"total"`
 }
 
-// CategoryTotalsResult is the total of each category with a posted entry in
-// the period, ordered by ledger account id. A category without one is left
-// out.
+// CategoryTotalsResult is the total of each category and currency with a
+// posted entry in the period, ordered by category id, the uncategorized totals
+// last, and then by kind and currency. A category without an entry is left
+// out, and a total is of the category itself, not of those under it.
 type CategoryTotalsResult struct {
 	Totals []CategoryTotal `json:"totals"`
 }

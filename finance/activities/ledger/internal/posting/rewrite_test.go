@@ -128,6 +128,84 @@ func (s *UnitTestSuite) Test_RewriteEntryTx() {
 	}
 }
 
+// Test_RewriteEntryTx_Categories checks the category a rewritten entry may
+// take. Each case starts from an expense of 7, debited to an expense account
+// and credited to cash, and rewrites it as one of 10.
+func (s *UnitTestSuite) Test_RewriteEntryTx_Categories() {
+	tests := []struct {
+		name string
+		// carried tells whether the entry already had the category the rewrite
+		// gives it. Otherwise it had another one.
+		carried bool
+		// closed closes the category the rewrite gives the entry.
+		closed bool
+		// drop rewrites the entry without a category.
+		drop bool
+	}{
+		{name: "the entry takes another category"},
+		{name: "the entry keeps its category", carried: true},
+		{name: "a closed category the entry already carried is accepted", carried: true, closed: true},
+		{name: "a closed category the entry never carried is accepted", closed: true},
+		{name: "the entry drops its category", drop: true},
+	}
+
+	for _, tt := range tests {
+		s.Run(tt.name, func() {
+			ctx := s.T().Context()
+
+			expenses := &model.LedgerAccount{CurrencyID: s.debit.CurrencyID, Name: tt.name, Kind: model.LedgerAccountExpense}
+			temporaltesting.Insert(s.T(), s.DB, expenses)
+			before := &model.Category{Kind: model.LedgerAccountExpense, Name: "before " + tt.name}
+			temporaltesting.Insert(s.T(), s.DB, before)
+			after := &model.Category{Kind: model.LedgerAccountExpense, Name: "after " + tt.name}
+			if tt.closed {
+				closedAt := time.Now().UTC()
+				after.ClosedAt = &closedAt
+			}
+			temporaltesting.Insert(s.T(), s.DB, after)
+
+			old := before
+			if tt.carried {
+				old = after
+			}
+			entry := &model.JournalEntry{OccurredAt: time.Date(2026, 1, 5, 0, 0, 0, 0, time.UTC)}
+			temporaltesting.InsertPostedJournalEntry(s.T(), s.DB, entry,
+				model.Posting{LedgerAccountID: expenses.ID, Amount: decimal.NewFromInt(7), Side: model.PostingDebit, CategoryID: &old.ID},
+				model.Posting{LedgerAccountID: s.debit.ID, Amount: decimal.NewFromInt(7), Side: model.PostingCredit},
+			)
+
+			var want *int64
+			if !tt.drop {
+				want = &after.ID
+			}
+			input := lt.PostJournalEntryInput{
+				OccurredAt: entry.OccurredAt,
+				Postings: []lt.PostingInput{
+					{LedgerAccountID: expenses.ID, Amount: decimal.NewFromInt(10), Side: model.PostingDebit, CategoryID: want},
+					{LedgerAccountID: s.debit.ID, Amount: decimal.NewFromInt(10), Side: model.PostingCredit},
+				},
+			}
+
+			err := s.DB.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
+				var locked model.JournalEntry
+				if err := tx.NewSelect().Model(&locked).Where("je.id = ?", entry.ID).For("UPDATE").Scan(ctx); err != nil {
+					return err
+				}
+				return RewriteEntryTx(ctx, tx, &locked, input, nil, []int64{expenses.ID, s.debit.ID})
+			})
+
+			var postings []model.Posting
+			require.NoError(s.T(), s.DB.NewSelect().Model(&postings).Where("journal_entry_id = ?", entry.ID).Order("line_number").Scan(ctx))
+			require.Len(s.T(), postings, 2)
+			require.NoError(s.T(), err)
+
+			require.True(s.T(), decimal.NewFromInt(10).Equal(postings[0].Amount))
+			require.Equal(s.T(), want, postings[0].CategoryID)
+			require.Nil(s.T(), postings[1].CategoryID)
+		})
+	}
+}
+
 // The old lines are deleted before the new ones are written, so a movement
 // that cannot be stored has to bring the old postings back with it.
 func (s *UnitTestSuite) Test_RewriteEntryTx_IsAtomic() {

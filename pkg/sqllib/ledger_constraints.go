@@ -17,6 +17,7 @@ const (
 func ensureLedgerConstraints(ctx context.Context, db *bun.DB) error {
 	statements := []string{
 		`ALTER TABLE ledger.ledger_account ADD CONSTRAINT ledger_account_kind_check CHECK (kind IN ('asset', 'liability', 'equity', 'income', 'expense'))`,
+		`ALTER TABLE ledger.category ADD CONSTRAINT category_kind_check CHECK (kind IN ('income', 'expense'))`,
 		`ALTER TABLE ledger.posting ADD CONSTRAINT posting_side_check CHECK (side IN ('debit', 'credit'))`,
 		`ALTER TABLE ledger.posting ADD CONSTRAINT posting_amount_positive_check CHECK (amount > 0)`,
 		`ALTER TABLE ledger.journal_entry ADD CONSTRAINT journal_entry_status_check CHECK (status IN ('draft', 'posted'))`,
@@ -25,6 +26,9 @@ func ensureLedgerConstraints(ctx context.Context, db *bun.DB) error {
 		// entries by a posting on an account.
 		`CREATE INDEX IF NOT EXISTS journal_entry_occurred_at_idx ON ledger.journal_entry (occurred_at, id)`,
 		`CREATE INDEX IF NOT EXISTS posting_ledger_account_idx ON ledger.posting (ledger_account_id)`,
+		// Totals, the journal list, and deleting a category all find the
+		// postings of a category.
+		`CREATE INDEX IF NOT EXISTS posting_category_idx ON ledger.posting (category_id)`,
 	}
 	for _, statement := range statements {
 		if _, err := db.ExecContext(ctx, statement); err != nil && !isDuplicateConstraintError(err) {
@@ -32,11 +36,14 @@ func ensureLedgerConstraints(ctx context.Context, db *bun.DB) error {
 		}
 	}
 
-	// A posted entry has at least two postings and balances in each currency.
-	// Nothing freezes it, so the check runs for every entry a transaction
-	// touched, through the entry or through one of its postings, and at commit,
-	// when a write made of several statements is complete. An entry that is gone
-	// by then, or is not posted, has nothing to check.
+	// A posted entry has at least two postings and balances in each currency,
+	// and a category only on a posting to an account of the category's kind. A
+	// category is income or expense, so that also keeps one off every other
+	// kind of account. Nothing freezes the entry, so the check runs for every
+	// entry a transaction touched, through the entry or through one of its
+	// postings, and at commit, when a write made of several statements is
+	// complete. An entry that is gone by then, or is not posted, has nothing to
+	// check.
 	if _, err := db.ExecContext(ctx, `
 		CREATE OR REPLACE FUNCTION ledger.validate_posted_journal_entry() RETURNS trigger AS $$
 		DECLARE entry_ids bigint[]; entry_id bigint; posting_count integer;
@@ -60,6 +67,14 @@ func ensureLedgerConstraints(ctx context.Context, db *bun.DB) error {
 					HAVING SUM(CASE WHEN p.side = 'debit' THEN p.amount ELSE -p.amount END) <> 0
 				) THEN
 					RAISE EXCEPTION 'posted journal entry % is not balanced by currency', entry_id;
+				END IF;
+				IF EXISTS (
+					SELECT 1 FROM ledger.posting p
+					JOIN ledger.ledger_account a ON a.id = p.ledger_account_id
+					JOIN ledger.category c ON c.id = p.category_id
+					WHERE p.journal_entry_id = entry_id AND c.kind <> a.kind
+				) THEN
+					RAISE EXCEPTION 'posted journal entry % has a category on an account of another kind', entry_id;
 				END IF;
 			END LOOP;
 			RETURN NULL;

@@ -78,7 +78,7 @@ export function RecordTransactionForm({ type, onRecorded, Footer }: RecordTransa
   )
   const allCategories = categories.data?.categories ?? []
   const values = form.watch()
-  const sides = pickers(values.type, balances, allCategories, values.fromId, values.toId)
+  const sides = pickers(values.type, balances, allCategories, values.fromId)
   const crossing = crossesCurrencies(values, balances)
   const mutation = recording[values.type]
 
@@ -133,7 +133,7 @@ export function RecordTransactionForm({ type, onRecorded, Footer }: RecordTransa
                 field.onChange(fromId)
                 // Only a choice the new one rules out is cleared, so the
                 // sides can be chosen in either order.
-                if (!offers(pickers(values.type, balances, allCategories, fromId, values.toId).to, values.toId)) {
+                if (!offers(pickers(values.type, balances, allCategories, fromId).to, values.toId)) {
                   form.resetField("toId")
                 }
               }}
@@ -151,12 +151,7 @@ export function RecordTransactionForm({ type, onRecorded, Footer }: RecordTransa
               id="toId"
               label={sides.to.label}
               value={field.value}
-              onChange={(toId) => {
-                field.onChange(toId)
-                if (!offers(pickers(values.type, balances, allCategories, values.fromId, toId).from, values.fromId)) {
-                  form.resetField("fromId")
-                }
-              }}
+              onChange={field.onChange}
               options={choiceOptions(sides.to.choices)}
               placeholder="Choose…"
               error={fieldState.error}
@@ -209,7 +204,7 @@ export function RecordTransactionForm({ type, onRecorded, Footer }: RecordTransa
 // other side may be.
 function choiceOptions(choices: Choice[]): SelectOption[] {
   return choices.map((choice) => ({
-    value: String(choice.ledgerAccountId),
+    value: String(choice.id),
     label: `${choice.label} · ${choice.currencyCode}`,
     depth: choice.depth,
   }))

@@ -35,7 +35,7 @@ func newDeleteFinancialAccountFixture(s *UnitTestSuite) *deleteFinancialAccountF
 	temporaltesting.Insert(t, s.DB, f.currency)
 	temporaltesting.Insert(t, s.DB, f.institution)
 	temporaltesting.Insert(t, s.DB, f.asset)
-	f.bank = f.ledgerAccount(t, "Bank", nil, nil)
+	f.bank = f.ledgerAccount(t, "Bank", nil)
 	return f
 }
 
@@ -45,15 +45,12 @@ func (f *deleteFinancialAccountFixture) financialAccount(t *testing.T, name stri
 	return account
 }
 
-// ledgerAccount inserts an asset account named name, in financialAccount and
-// under parent when they are not nil.
-func (f *deleteFinancialAccountFixture) ledgerAccount(t *testing.T, name string, financialAccount *model.FinancialAccount, parent *model.LedgerAccount) *model.LedgerAccount {
+// ledgerAccount inserts an asset account named name, in financialAccount when
+// it is not nil.
+func (f *deleteFinancialAccountFixture) ledgerAccount(t *testing.T, name string, financialAccount *model.FinancialAccount) *model.LedgerAccount {
 	account := &model.LedgerAccount{Name: name, CurrencyID: f.currency.ID, Kind: model.LedgerAccountAsset}
 	if financialAccount != nil {
 		account.FinancialAccountID = &financialAccount.ID
-	}
-	if parent != nil {
-		account.ParentID = &parent.ID
 	}
 	temporaltesting.Insert(t, f.s.DB, account)
 	return account
@@ -101,14 +98,12 @@ func (s *UnitTestSuite) TestDeleteFinancialAccount() {
 		"an account without ledger accounts": {
 			account: func(t *testing.T) int64 { return f.financialAccount(t, "Revolut bare").ID },
 		},
-		"an account with nested ledger accounts": {
+		"an account with several ledger accounts": {
 			account: func(t *testing.T) int64 {
-				account := f.financialAccount(t, "Revolut nested")
-				cash := f.ledgerAccount(t, "Nested cash", account, nil)
-				pot := f.ledgerAccount(t, "Nested pot", account, cash)
-				f.ledgerAccount(t, "Nested pot savings", account, pot)
-				f.ledgerAccount(t, "Nested pot holiday", account, pot)
-				f.ledgerAccount(t, "Nested card", account, nil)
+				account := f.financialAccount(t, "Revolut several")
+				f.ledgerAccount(t, "Several cash", account)
+				f.ledgerAccount(t, "Several pot", account)
+				f.ledgerAccount(t, "Several card", account)
 				return account.ID
 			},
 		},
@@ -118,8 +113,8 @@ func (s *UnitTestSuite) TestDeleteFinancialAccount() {
 		"a ledger account with postings": {
 			account: func(t *testing.T) int64 {
 				account := f.financialAccount(t, "Revolut posted")
-				cash := f.ledgerAccount(t, "Posted cash", account, nil)
-				f.ledgerAccount(t, "Posted pot", account, cash)
+				cash := f.ledgerAccount(t, "Posted cash", account)
+				f.ledgerAccount(t, "Posted pot", account)
 				f.post(t, cash)
 				return account.ID
 			},
@@ -128,21 +123,11 @@ func (s *UnitTestSuite) TestDeleteFinancialAccount() {
 		"an account with movements": {
 			account: func(t *testing.T) int64 {
 				account := f.financialAccount(t, "Revolut held")
-				f.ledgerAccount(t, "Held cash", account, nil)
+				f.ledgerAccount(t, "Held cash", account)
 				f.hold(t, account)
 				return account.ID
 			},
 			errStr: "resource FinancialAccount conflict: still referenced by asset.position_movement.financial_account_id",
-		},
-		"a ledger account with a child outside it": {
-			account: func(t *testing.T) int64 {
-				account := f.financialAccount(t, "Revolut parent")
-				cash := f.ledgerAccount(t, "Parent cash", account, nil)
-				f.ledgerAccount(t, "Parent leaf", account, nil)
-				f.ledgerAccount(t, "Parent cash pot", nil, cash)
-				return account.ID
-			},
-			errStr: "has child accounts outside it; delete or move them first",
 		},
 		"an id that is not positive": {
 			account: func(*testing.T) int64 { return 0 },
@@ -174,8 +159,8 @@ func (s *UnitTestSuite) TestDeleteFinancialAccount_Idempotency() {
 	t := s.T()
 	f := newDeleteFinancialAccountFixture(s)
 	account := f.financialAccount(t, "Revolut EUR")
-	cash := f.ledgerAccount(t, "Revolut cash", account, nil)
-	f.ledgerAccount(t, "Revolut pot", account, cash)
+	f.ledgerAccount(t, "Revolut cash", account)
+	f.ledgerAccount(t, "Revolut pot", account)
 	input := lt.DeleteFinancialAccountInput{FinancialAccountID: account.ID}
 
 	for range 2 {

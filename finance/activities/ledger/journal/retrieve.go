@@ -26,7 +26,7 @@ func (a *Activities) RetrieveJournalEntry(ctx context.Context, params lt.Retriev
 		}
 		return nil, err
 	}
-	if err := model.FindPostingsByJournalEntryIDQuery(db, params.ID).Relation("LedgerAccount").Scan(ctx, &entry.Postings); err != nil {
+	if err := model.FindPostingsByJournalEntryIDQuery(db, params.ID).Relation("LedgerAccount").Relation("Category").Scan(ctx, &entry.Postings); err != nil {
 		return nil, err
 	}
 

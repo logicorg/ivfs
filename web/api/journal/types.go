@@ -19,6 +19,11 @@ type Posting struct {
 	CurrencyID int64          `json:"currencyId"`
 	Amount     gateway.Amount `json:"amount"`
 	Side       string         `json:"side" enum:"debit,credit"`
+	// CategoryID and CategoryName are absent on a posting without a category:
+	// one to an account that is neither income nor expense, or an
+	// uncategorized one.
+	CategoryID   *int64 `json:"categoryId,omitempty"`
+	CategoryName string `json:"categoryName,omitempty"`
 }
 
 // Entry is a journal entry with its postings, in line order.
@@ -50,6 +55,7 @@ type EntryDetail struct {
 // ListJournalEntriesInput is the request of GET /api/journal-entries.
 type ListJournalEntriesInput struct {
 	LedgerAccountID int64     `query:"ledgerAccountId" minimum:"1" doc:"only entries with a posting on this ledger account"`
+	CategoryIDs     []int64   `query:"categoryId,explode" doc:"only entries with a posting in any of these categories or in one under them"`
 	CounterpartyID  int64     `query:"counterpartyId" minimum:"1" doc:"only entries with this counterparty"`
 	Statuses        []string  `query:"status,explode" enum:"draft,posted" doc:"only entries in any of these states; every state if omitted"`
 	From            time.Time `query:"from" doc:"only entries that occurred at or after this instant"`
@@ -104,11 +110,18 @@ func newEntry(entry *model.JournalEntry) (Entry, error) {
 		if posting.LedgerAccount == nil {
 			return Entry{}, fmt.Errorf("posting %d of journal entry %d has no ledger account loaded", posting.ID, entry.ID)
 		}
-		out.Postings = append(out.Postings, Posting{
+		line := Posting{
 			LineNumber: posting.LineNumber, LedgerAccountID: posting.LedgerAccountID,
 			LedgerAccountName: posting.LedgerAccount.Name, Kind: string(posting.LedgerAccount.Kind),
 			CurrencyID: posting.LedgerAccount.CurrencyID, Amount: gateway.NewAmount(posting.Amount), Side: string(posting.Side),
-		})
+		}
+		if posting.CategoryID != nil {
+			if posting.Category == nil {
+				return Entry{}, fmt.Errorf("posting %d of journal entry %d has no category loaded", posting.ID, entry.ID)
+			}
+			line.CategoryID, line.CategoryName = posting.CategoryID, posting.Category.Name
+		}
+		out.Postings = append(out.Postings, line)
 	}
 	return out, nil
 }

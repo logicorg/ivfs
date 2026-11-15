@@ -34,6 +34,7 @@ type PostingSummary struct {
 	LineNumber      int             `json:"lineNumber"`
 	Amount          decimal.Decimal `json:"amount"`
 	Side            string          `json:"side"`
+	CategoryID      *int64          `json:"categoryId,omitempty"`
 }
 
 type JournalEntrySummary struct {

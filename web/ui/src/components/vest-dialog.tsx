@@ -91,9 +91,9 @@ function RecordVestForm({ onDone }: { onDone: () => void }) {
       soldFee: "",
     },
   })
-  const [financialAccountId, currencyCode, assetId, sellToCover] = useWatch({
+  const [financialAccountId, assetId, sellToCover] = useWatch({
     control: form.control,
-    name: ["financialAccountId", "currencyCode", "assetId", "sellToCover"],
+    name: ["financialAccountId", "assetId", "sellToCover"],
   })
   const balances = useQuery({
     ...getAccountBalancesOptions({ path: { id: Number(financialAccountId) } }),
@@ -179,16 +179,13 @@ function RecordVestForm({ onDone }: { onDone: () => void }) {
       .map((asset) => ({ value: String(asset.id), label: assetLabel(asset) })),
     { value: newAsset, label: "New asset…" },
   ]
-  // Only in the vest's currency, the one category and Investments share.
   const categoryOptions = (kind: "income" | "expense"): SelectOption[] =>
-    currencyCode === ""
-      ? []
-      : categoryChoices(categories.data?.categories ?? [], kind, currencyCode).map((choice) => ({
-          value: String(choice.ledgerAccountId),
-          label: choice.label,
-          depth: choice.depth,
-        }))
-  const categoryPlaceholder = currencyCode === "" ? "Choose a currency first" : "Choose…"
+    categoryChoices(categories.data?.categories ?? [], kind).map((choice) => ({
+      value: String(choice.id),
+      label: choice.label,
+      depth: choice.depth,
+    }))
+  const categoryPlaceholder = "Choose…"
   const vested = vestedAssetId !== undefined
   const pending = createAsset.isPending || vestAsset.isPending || sellAsset.isPending
 
@@ -207,8 +204,6 @@ function RecordVestForm({ onDone }: { onDone: () => void }) {
                 onChange={(id) => {
                   field.onChange(id)
                   form.resetField("currencyCode")
-                  form.resetField("incomeCategoryId")
-                  form.resetField("taxCategoryId")
                 }}
                 options={accountOptions}
                 placeholder="Choose…"
@@ -223,13 +218,9 @@ function RecordVestForm({ onDone }: { onDone: () => void }) {
               <SelectField
                 id="currencyCode"
                 label="Valued in"
-                description="The account's Investments holds the value, and the categories take it, in this currency."
+                description="The account's Investments holds the value in this currency."
                 value={field.value || undefined}
-                onChange={(code) => {
-                  field.onChange(code)
-                  form.resetField("incomeCategoryId")
-                  form.resetField("taxCategoryId")
-                }}
+                onChange={field.onChange}
                 options={currencyOptions}
                 placeholder={financialAccountId === "" ? "Choose an account first" : "Choose…"}
                 error={fieldState.error}

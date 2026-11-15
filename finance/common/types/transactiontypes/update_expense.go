@@ -12,9 +12,9 @@ import (
 // these fields, whatever the entry was before. It has the fields of
 // RecordExpenseInput but the idempotency key, since the entry keeps its own.
 type UpdateExpenseInput struct {
-	JournalEntryID          int64 `json:"journalEntryId" cue:">0" jsonschema:"the journal entry to correct"`
-	BalanceLedgerAccountID  int64 `json:"balanceLedgerAccountId" cue:">0" jsonschema:"the balance paid from, an asset or liability of a financial account"`
-	CategoryLedgerAccountID int64 `json:"categoryLedgerAccountId" cue:">0" jsonschema:"the expense category paid for"`
+	JournalEntryID         int64 `json:"journalEntryId" cue:">0" jsonschema:"the journal entry to correct"`
+	BalanceLedgerAccountID int64 `json:"balanceLedgerAccountId" cue:">0" jsonschema:"the balance paid from, an asset or liability of a financial account"`
+	CategoryID             int64 `json:"categoryId" cue:">0" jsonschema:"the expense category paid for"`
 	// Amount is compared as a string, as a decimal is encoded as one.
 	Amount      decimal.Decimal `json:"amount" cue:"!=\"0\" & !~\"^-\"" jsonschema:"the amount paid, positive"`
 	OccurredAt  time.Time       `json:"occurredAt" jsonschema:"the instant it was paid, such as 2026-10-03T10:00:00Z"`
@@ -33,7 +33,7 @@ func (i *UpdateExpenseInput) Validate() error {
 // a key.
 func (i *UpdateExpenseInput) Expense() RecordExpenseInput {
 	return RecordExpenseInput{
-		BalanceLedgerAccountID: i.BalanceLedgerAccountID, CategoryLedgerAccountID: i.CategoryLedgerAccountID,
+		BalanceLedgerAccountID: i.BalanceLedgerAccountID, CategoryID: i.CategoryID,
 		Amount: i.Amount, OccurredAt: i.OccurredAt, Description: i.Description,
 	}
 }

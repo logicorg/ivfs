@@ -153,7 +153,7 @@ function IncomeAndExpenses() {
                 </TableHeader>
                 <TableBody>
                   {rows.map((row) => (
-                    <TableRow key={row.id}>
+                    <TableRow key={`${row.kind}-${row.id ?? "none"}`}>
                       <TableCell>
                         <span className="flex items-center gap-2">
                           {row.name}

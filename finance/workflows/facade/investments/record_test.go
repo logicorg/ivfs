@@ -111,27 +111,40 @@ func (s *WorkflowUnitTestSuite) TestRecordInvestment_Vest() {
 			input: it.VestInput{
 				IdempotencyKey: "a71f", FinancialAccountID: ibkr, AssetID: 7,
 				UnitsVested: decimal.NewFromInt(100), UnitsWithheld: decimal.NewFromInt(40), FairMarketValue: decimal.RequireFromString("10.00"),
-				CurrencyCode: "eur", IncomeCategoryLedgerAccountID: compensation.ID, TaxCategoryLedgerAccountID: taxWithheld.ID,
+				CurrencyCode: "eur", IncomeCategoryID: compensation.ID, TaxCategoryID: taxWithheld.ID,
 				OccurredAt: occurredAt,
 			},
 			postings: []lt.PostingInput{
 				{LedgerAccountID: investments.ID, Amount: decimal.NewFromInt(600), Side: model.PostingDebit},
-				{LedgerAccountID: taxWithheld.ID, Amount: decimal.NewFromInt(400), Side: model.PostingDebit},
-				{LedgerAccountID: compensation.ID, Amount: decimal.NewFromInt(1000), Side: model.PostingCredit},
+				{LedgerAccountID: expenses.ID, Amount: decimal.NewFromInt(400), Side: model.PostingDebit, CategoryID: ptr.NewPtr(taxWithheld.ID)},
+				{LedgerAccountID: income.ID, Amount: decimal.NewFromInt(1000), Side: model.PostingCredit, CategoryID: ptr.NewPtr(compensation.ID)},
 			},
 			units: decimal.NewFromInt(60),
+		},
+		"with a closed income category": {
+			input: it.VestInput{
+				IdempotencyKey: "a71f", FinancialAccountID: ibkr, AssetID: 7,
+				UnitsVested: decimal.NewFromInt(100), FairMarketValue: decimal.RequireFromString("10.00"),
+				CurrencyCode: "EUR", IncomeCategoryID: oldPlan.ID,
+				OccurredAt: occurredAt,
+			},
+			postings: []lt.PostingInput{
+				{LedgerAccountID: investments.ID, Amount: decimal.NewFromInt(1000), Side: model.PostingDebit},
+				{LedgerAccountID: income.ID, Amount: decimal.NewFromInt(1000), Side: model.PostingCredit, CategoryID: ptr.NewPtr(oldPlan.ID)},
+			},
+			units: decimal.NewFromInt(100),
 		},
 		// The unknown tax category would fail the vest if it were retrieved.
 		"without withholding, leaving the tax category unused": {
 			input: it.VestInput{
 				IdempotencyKey: "a71f", FinancialAccountID: ibkr, AssetID: 7,
 				UnitsVested: decimal.NewFromInt(100), FairMarketValue: decimal.RequireFromString("10.00"),
-				CurrencyCode: "EUR", IncomeCategoryLedgerAccountID: compensation.ID, TaxCategoryLedgerAccountID: unknownCategory,
+				CurrencyCode: "EUR", IncomeCategoryID: compensation.ID, TaxCategoryID: unknownCategory,
 				OccurredAt: occurredAt,
 			},
 			postings: []lt.PostingInput{
 				{LedgerAccountID: investments.ID, Amount: decimal.NewFromInt(1000), Side: model.PostingDebit},
-				{LedgerAccountID: compensation.ID, Amount: decimal.NewFromInt(1000), Side: model.PostingCredit},
+				{LedgerAccountID: income.ID, Amount: decimal.NewFromInt(1000), Side: model.PostingCredit, CategoryID: ptr.NewPtr(compensation.ID)},
 			},
 			units: decimal.NewFromInt(100),
 		},
@@ -166,8 +179,8 @@ func (s *WorkflowUnitTestSuite) TestRecordInvestment_Vest() {
 }
 
 // TestRecordInvestment_Errors checks that an invalid request, an unknown
-// currency, an account without the two balances in it, or a vest's category of
-// the wrong kind or currency fail before anything is written, since neither
+// currency, an account without the two balances in it, or a vest's category
+// that is unknown or of the wrong kind fail before anything is written, since neither
 // register workflow is mocked where a case does not reach it, and that a
 // failing write's error is returned.
 func (s *WorkflowUnitTestSuite) TestRecordInvestment_Errors() {
@@ -188,7 +201,7 @@ func (s *WorkflowUnitTestSuite) TestRecordInvestment_Errors() {
 		return it.RecordInvestmentInput{Kind: it.KindVest, Vest: &it.VestInput{
 			IdempotencyKey: "a71f", FinancialAccountID: ibkr, AssetID: 7,
 			UnitsVested: decimal.NewFromInt(100), UnitsWithheld: decimal.NewFromInt(40), FairMarketValue: decimal.NewFromInt(10),
-			CurrencyCode: "EUR", IncomeCategoryLedgerAccountID: income, TaxCategoryLedgerAccountID: tax, OccurredAt: occurredAt,
+			CurrencyCode: "EUR", IncomeCategoryID: income, TaxCategoryID: tax, OccurredAt: occurredAt,
 		}}
 	}
 	failedTrade := func(err error) func(env *testsuite.TestWorkflowEnvironment) {
@@ -223,21 +236,17 @@ func (s *WorkflowUnitTestSuite) TestRecordInvestment_Errors() {
 			mock:      failedTrade(errors.New("resource FinancialAccount with ID: 20 is closed")),
 			wantError: "register buy: ",
 		},
-		"a vest whose income category is in another currency": {
-			input:     vest(compensationUSD.ID, taxWithheld.ID),
-			wantError: `invalid parameter: "RSU compensation (USD)" is not in EUR, the currency of the vest: pick a category in EUR`,
-		},
 		"a vest whose income category is an expense one": {
 			input:     vest(taxWithheld.ID, taxWithheld.ID),
 			wantError: `invalid parameter: "Tax withheld" is an expense category, not an income one`,
 		},
-		"a vest whose tax category is a balance": {
-			input:     vest(compensation.ID, cash.ID),
-			wantError: `invalid parameter: "Cash" is not an expense category: its kind is asset`,
+		"a vest whose tax category is an income one": {
+			input:     vest(compensation.ID, compensation.ID),
+			wantError: `invalid parameter: "RSU compensation" is an income category, not an expense one`,
 		},
 		"a vest whose tax category is unknown": {
 			input:     vest(compensation.ID, unknownCategory),
-			wantError: "retrieve ledger account 999: ",
+			wantError: "retrieve category 999: ",
 		},
 		"a failed vest": {
 			input: vest(compensation.ID, taxWithheld.ID),

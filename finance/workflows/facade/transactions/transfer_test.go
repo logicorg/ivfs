@@ -171,9 +171,9 @@ func (s *WorkflowUnitTestSuite) TestRecordTransfer_Errors() {
 			input:     input(cash, cash, "0"),
 			wantError: "invalid parameter: a transfer moves money between two different balances",
 		},
-		"a source that is a category": {
-			input:     input(salary, cash, "0"),
-			wantError: `invalid parameter: "Salary" is not a balance`,
+		"a source that is not a balance": {
+			input:     input(income, cash, "0"),
+			wantError: `invalid parameter: "Income" is not a balance`,
 		},
 		"a destination of no financial account": {
 			input:     input(cash, fxClearing, "0"),

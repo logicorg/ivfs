@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { formatDate } from "@/lib/dates"
 import { entryAmounts } from "@/lib/entry-amounts"
 import { formatAmount } from "@/lib/money"
+import { postingName } from "@/lib/statement"
 
 // pageSize is how many entries each "Show older entries" loads.
 const pageSize = 50
@@ -138,7 +139,7 @@ function Entries({ counterpartyId, onSelect }: { counterpartyId: number; onSelec
                 </button>
               </TableCell>
               <TableCell className="text-muted-foreground">
-                {[...new Set(item.postings.map((posting) => posting.ledgerAccountName))].join(", ")}
+                {[...new Set(item.postings.map(postingName))].join(", ")}
               </TableCell>
               <TableCell className="text-right tabular-nums">
                 {entryAmounts(item).map(({ currencyId, amount }) => {

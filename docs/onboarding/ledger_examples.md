@@ -2,18 +2,19 @@
 
 This page is a reading path through `Institution`, `FinancialAccount`,
 `LedgerAccount`, `Counterparty`, `JournalEntry`/`Posting`, and
-`PositionMovement`, told through six worked examples. It is meant to be
+`Category`, and `PositionMovement`, told through six worked examples. It is meant to be
 useful to a human onboarding onto the codebase and to an agent implementing a
-new activity or workflow, without having to first read all three ADRs.
+new activity or workflow, without having to first read all the ADRs.
 
-For the design rationale, see [ADR 0001](adrs/0001-double-entry-ledger.md)
-(the ledger), [ADR 0002](adrs/0002-ledger-domain-and-application-api.md)
-(the domain model and API), and
-[ADR 0003](adrs/0003-categories-and-tags.md) (categories and tags). This page
+For the design rationale, see [ADR 0001](../adrs/0001-double-entry-ledger.md)
+(the ledger), [ADR 0002](../adrs/0002-ledger-domain-and-application-api.md)
+(the domain model and API),
+[ADR 0003](../adrs/0003-categories-and-tags.md) (tags), and
+[ADR 0019](../adrs/0019-currency-neutral-categories.md) (categories). This page
 only restates what's needed to read the examples; it is not a replacement for
 the ADRs' invariants.
 
-## The five entities, in one paragraph each
+## The entities, in one paragraph each
 
 **`Institution`** (`pkg/model/institution.go`) is just identity: a bank, a
 broker, an employer's payroll system if you want to track it. It has a
@@ -32,13 +33,17 @@ bucket — the thing debits and credits move in and out of. Every
 `LedgerAccount` has exactly one `CurrencyID` and one `Kind` (`asset`,
 `liability`, `equity`, `income`, or `expense`). It *optionally* points at a
 `FinancialAccountID` when it represents a real institution-held balance (e.g.
-"Revolut EUR cash"); when it doesn't, it's a pure chart-of-accounts entry
-such as `Expenses:Groceries` or `Income:Salary`. **A "category" in the
-personal-finance sense is nothing but an income- or expense-kind
-`LedgerAccount` with no `FinancialAccountID`** — there is no separate
-category table (see ADR 0003). `LedgerAccount` also has an optional
-`ParentID` for a two-level-deep hierarchy (e.g. `Expenses` →
-`Expenses:Food` → `Expenses:Food:Groceries`).
+"Revolut EUR cash"); when it doesn't, it's a shared chart-of-accounts entry
+such as "Opening balances", "FX clearing", "Expenses", or "Income", one per
+currency. "Expenses" and "Income" are the only expense and income accounts,
+and ledger accounts have no hierarchy.
+
+**`Category`** (`pkg/model/category.go`) says what an income or an expense
+was for: "Groceries", "Salary". It has a `Kind` (`income` or `expense`), an
+optional `ParentID` for a hierarchy at most two parent links deep, and **no
+currency and no balance**. It is carried by a posting (`Posting.CategoryID`)
+to the income or expense account of the same kind, and its total is the sum
+of those postings (see ADR 0019).
 
 **`Counterparty`** (`pkg/model/ledger.go`) is optional descriptive metadata
 on a `JournalEntry` — a merchant, an employer, a person. It is attached via
@@ -50,8 +55,8 @@ name it keep their postings and lose the counterparty, so no balance moves.
 double-entry record and the one thing every example below produces.
 A `JournalEntry` is the header (when it happened, its description, its
 counterparty, its status). Each `Posting` is one accounting line: a
-`LedgerAccountID`, a positive `Amount` (in that account's currency), and a
-`Side` (`debit` or `credit`). A *posted* entry must have at least two
+`LedgerAccountID`, a positive `Amount` (in that account's currency), a
+`Side` (`debit` or `credit`), and an optional `CategoryID`. A *posted* entry must have at least two
 postings, and for every currency present, the debits must sum to the
 credits. The database checks this on every write, so a posted entry can be
 edited or deleted, but never left unbalanced.
@@ -73,8 +78,8 @@ the same command**: `PostJournalEntryInput` (`finance/common/types/
 ledgertypes/types.go`), executed by the `PostJournalEntry` activity/workflow
 (`finance/activities/ledger/journal`, `finance/workflows/ledger/journal`).
 It takes an `OccurredAt`, an optional `Description`/`CounterpartyID`, and a
-list of `PostingInput{LedgerAccountID, Amount, Side}` — at least two,
-balanced per currency. What makes an entry "an expense" versus "a transfer"
+list of `PostingInput{LedgerAccountID, Amount, Side, CategoryID}` — at least
+two, balanced per currency. What makes an entry "an expense" versus "a transfer"
 is purely which `LedgerAccount`s and how many postings appear in that list;
 there's no separate expense/transfer/income table or command.
 
@@ -97,15 +102,16 @@ Buying groceries at Tesco with a Revolut EUR card.
 
 ```text
 JournalEntry: counterparty = Tesco (optional)
-  Debit  Expenses:Groceries:EUR   45.00   (LedgerAccount, kind=expense, no FinancialAccountID)
+  Debit  Expenses:EUR             45.00   (LedgerAccount, kind=expense, no FinancialAccountID; category = Groceries)
   Credit Assets:Revolut:EUR       45.00   (LedgerAccount, kind=asset, FinancialAccountID = Revolut)
 ```
 
 - Two postings, one currency (EUR), debits = credits. Done with one
   `PostJournalEntry` call.
-- `Expenses:Groceries:EUR` is a plain category `LedgerAccount` — created once
-  via `CreateCategory` (the `categories` facade) or `CreateLedgerAccount`
-  directly, then reused for every grocery purchase.
+- `Expenses:EUR` is the shared "Expenses" `LedgerAccount` of the currency,
+  which the `RecordExpense` workflow finds or creates. "Groceries" is a
+  `Category`, created once with `CreateCategory` and reused in every
+  currency; the debit carries its id.
 - `Assets:Revolut:EUR` is the cash `LedgerAccount` linked to the Revolut
   `FinancialAccount`. It's typically created alongside the `FinancialAccount`
   itself (`CreateFinancialAccount` can create a first cash ledger account in
@@ -120,14 +126,14 @@ Salary paid into the same Revolut EUR account.
 ```text
 JournalEntry: counterparty = Employer (optional)
   Debit  Assets:Revolut:EUR   3000.00
-  Credit Income:Salary:EUR    3000.00
+  Credit Income:EUR           3000.00   (category = Salary)
 ```
 
 - Same primitive, same shape as example 1, just with the asset account on
-  the debit side and an income-kind category on the credit side. There is no
+  the debit side and the income account on the credit side. There is no
   separate "income" command — this is still one `PostJournalEntry` call.
-- `Income:Salary:EUR` is another income/expense `LedgerAccount`, created once
-  through the same category facade as `Expenses:Groceries:EUR`.
+- `Income:EUR` is the shared "Income" account of the currency, and "Salary"
+  an income `Category` on its posting.
 
 ## Example 3 — transfer between two owned accounts, same currency
 
@@ -158,7 +164,7 @@ JournalEntry metadata: { type: "fx_conversion", effective_rate: "90/99" }
 
   USD postings (balance among themselves)
     Debit  Assets:FX-Clearing:USD   99.00
-    Debit  Expenses:FX-Fees:USD      1.00
+    Debit  Expenses:USD              1.00   (category = FX fees)
     Credit Assets:Revolut:USD      100.00
 
   EUR postings (balance among themselves)
@@ -175,17 +181,17 @@ JournalEntry metadata: { type: "fx_conversion", effective_rate: "90/99" }
   single-currency `Assets:FX-Clearing:*` ledger accounts bridges the two
   legs. They're ordinary asset `LedgerAccount`s, just conventionally named
   `FX-Clearing`.
-- The fee (`Expenses:FX-Fees:USD`) is an explicit posting in the currency it
-  was actually charged in — never netted into the exchange rate. Any
-  rounding residual from currency-precision quantization would similarly go
-  to an explicit account (e.g. `Expenses:FX-Rounding:EUR`), never silently
-  dropped.
+- The fee is an explicit posting to "Expenses" in the currency it was
+  actually charged in, under an expense category — never netted into the
+  exchange rate. Any rounding residual from currency-precision quantization
+  would similarly be an explicit posting, never silently dropped.
 - The quoted/effective rate and provider reference live in the journal
   entry's free-form `Metadata` map, for audit purposes — they don't affect
   posting validation.
 - `RegisterFXConversion` builds exactly this entry from the two settled
-  amounts, the source, destination, clearing, and fee ledger accounts, and an
-  idempotency key. It records the rate as the fraction `90/99` in the entry
+  amounts, the source, destination, and clearing ledger accounts, the fee's
+  category, and an idempotency key. The workflow finds "Expenses" in the
+  source currency for the fee. It records the rate as the fraction `90/99` in the entry
   metadata, since it has no exact decimal form. Building the same entry by
   hand with `PostJournalEntry` remains possible.
 
@@ -243,14 +249,14 @@ two facts, so they are two commands.
 ```text
 RegisterVest
   JournalEntry
-    Credit Income:Compensation:RSU       1000.00
+    Credit Income:EUR                    1000.00   (category = RSU compensation)
     Debit  Assets:IBKR:Investments:EUR   1000.00
   PositionMovement (same DB transaction)
     Kind = vest, UnitsDelta = +100, CostBasisAmount = 1000.00, CostBasisCurrencyID = EUR
 
 RegisterInvestmentTrade (an hour later)
   JournalEntry
-    Debit  Expenses:Tax:Withheld         400.00
+    Debit  Expenses:EUR                  400.00    (category = Tax withheld)
     Debit  Assets:IBKR:Cash:EUR          100.00
     Credit Assets:IBKR:Investments:EUR   500.00
   PositionMovement (same DB transaction)
@@ -270,9 +276,9 @@ RegisterInvestmentTrade (an hour later)
   withholding posting. The vest has to be recorded first, since holdings never
   go negative and movements of the same instant are ordered by when they were
   written.
-- Everything can be read back: the units from `PositionAt` (50), the income,
-  tax, and cash proceeds from the balances of their ledger accounts (1000, 400,
-  and 100), and the cost basis by summing the basis of the history from
+- Everything can be read back: the units from `PositionAt` (50), the income
+  and tax from the totals of their categories (1000 and 400), the cash
+  proceeds from the balance of its ledger account (100), and the cost basis by summing the basis of the history from
   `ListPositionMovements` (500).
 - A vest is corrected by deleting its entry with `DeleteJournalEntry` and
   recording it again. A holding left negative by it is reported as a warning.
@@ -287,7 +293,8 @@ RegisterInvestmentTrade (an hour later)
 ## Reading entries back
 
 `ListJournalEntries` returns a page of entries, each with its postings. Filter
-it by ledger account (the entries that have a posting on it), counterparty,
+it by ledger account (the entries that have a posting on it), category (a
+posting carrying it or one of its sub-categories), counterparty,
 exact external ID, status, and a date range where `From` is included and `To`
 is not. It lists oldest first, or newest first with `Descending`. When more
 entries follow the page it comes with a `Next` cursor: pass it as `After` in the
@@ -304,12 +311,12 @@ use `ListPostings`, and for what an account holds, `LedgerAccountBalance` or
 | I want to... | Entity/ies involved | Command |
 | --- | --- | --- |
 | Record any plain expense/income/transfer movement | `LedgerAccount`(s), optional `Counterparty` | `PostJournalEntry` |
-| Convert money between two currencies | source/destination/clearing/fee `LedgerAccount`s | `RegisterFXConversion` |
+| Convert money between two currencies | source/destination/clearing `LedgerAccount`s, a fee `Category` | `RegisterFXConversion` |
 | Buy or sell an asset | `LedgerAccount`(s) + `PositionMovement` | `RegisterInvestmentTrade` |
 | Receive units from an RSU vest | `LedgerAccount`(s) + `PositionMovement` of kind `vest` | `RegisterVest` |
 | Split, move units between own accounts, or correct units | `PositionMovement` only, no `JournalEntry` | `RegisterPositionMovement` (undo with `DeletePositionMovement`, read with `ListPositionMovements`) |
 | Set up a new provider relationship | `Institution`, `FinancialAccount` | `CreateFinancialAccount` (can create a first cash `LedgerAccount` in the same call) |
-| Add a spending/income category | `LedgerAccount` (income/expense kind, no `FinancialAccountID`) | `CreateCategory` (facade) or `CreateLedgerAccount` |
+| Add a spending/income category | `Category` (income/expense kind, no currency) | `CreateCategory` |
 | Correct a posted entry | the `JournalEntry` is deleted and recorded again | `DeleteJournalEntry` |
 | Page through entries by account, counterparty, external ID, status or date | `JournalEntry` + `Posting` | `ListJournalEntries` |
 | Delete a counterparty, clearing it from its entries | `Counterparty`, the `JournalEntry` rows naming it | `DeleteCounterparty` |
@@ -321,4 +328,5 @@ feature. If it's a movement of money, it's a `PostJournalEntryInput` with the
 right set of postings; the only structural extension in the whole model is
 the units subledger (`PositionMovement`) for investments. `Counterparty`
 never goes in a posting, `FinancialAccount` never holds a balance directly,
-and a "category" is just a `LedgerAccount` — not a separate concept.
+and a `Category` never holds money: it labels a posting to "Expenses" or
+"Income".

@@ -10,9 +10,9 @@ export const transactionTypes = ["expense", "income", "transfer"] as const
 export type TransactionType = (typeof transactionTypes)[number]
 
 // recordTransactionForm is the form as the person fills it in. The money
-// moves from fromId to toId, both ledger account ids as the selects hold
-// them: a balance to a category for an expense, a category to a balance for
-// an income, and a balance to another for a transfer.
+// moves from fromId to toId, ids as the selects hold them: a balance's ledger
+// account to a category for an expense, a category to a balance for an
+// income, and a balance to another for a transfer.
 export const recordTransactionForm = z.object({
   type: z.enum(transactionTypes),
   fromId: z.string().min(1, "Choose one"),
@@ -25,9 +25,10 @@ export const recordTransactionForm = z.object({
 
 export type RecordTransactionFormValues = z.infer<typeof recordTransactionForm>
 
-// A Choice is a ledger account a picker offers, with its currency. depth
+// A Choice is what a picker offers: a balance, by its ledger account's id and
+// with its currency, or a category, by its own id and with none. depth
 // indents a category inside its tree.
-export type Choice = { ledgerAccountId: number; label: string; currencyCode: string; depth?: number }
+export type Choice = { id: number; label: string; currencyCode?: string; depth?: number }
 
 // A Picker is one side of the transaction: what it is called and what it
 // offers.
@@ -48,7 +49,7 @@ export function balanceChoices(accounts: FinancialAccount[], balances: AccountBa
       .filter((balance) => !balance.closed && (balance.kind === "asset" || balance.kind === "liability"))
       .sort((a, b) => a.ledgerAccountName.localeCompare(b.ledgerAccountName))
       .map((balance) => ({
-        ledgerAccountId: balance.ledgerAccountId,
+        id: balance.ledgerAccountId,
         label:
           balance.ledgerAccountName === account.name
             ? `${account.institutionName} · ${account.name}`
@@ -58,58 +59,44 @@ export function balanceChoices(accounts: FinancialAccount[], balances: AccountBa
   )
 }
 
-// categoryChoices lists the open categories of kind in tree order, only those
-// in currencyCode when one is given.
-export function categoryChoices(categories: Category[], kind: Category["kind"], currencyCode?: string): Choice[] {
-  const offered = categories.filter(
-    (category) =>
-      !category.closed &&
-      category.kind === kind &&
-      (currencyCode === undefined || category.currencyCode === currencyCode),
-  )
-  return categoryRows(offered).map(({ category, depth }) => ({
-    ledgerAccountId: category.id,
-    label: category.name,
-    currencyCode: category.currencyCode,
-    depth,
-  }))
+// categoryChoices lists the open categories of kind in tree order.
+export function categoryChoices(categories: Category[], kind: Category["kind"]): Choice[] {
+  const offered = categories.filter((category) => !category.closed && category.kind === kind)
+  return categoryRows(offered).map(({ category, depth }) => ({ id: category.id, label: category.name, depth }))
 }
 
-// pickers are the two sides the type asks for. A category is offered only in
-// the currency of the balance already chosen, since a category takes money in
-// its own currency only, and a transfer does not offer its source as its
+// pickers are the two sides the type asks for. A category is offered whatever
+// the balance's currency, and a transfer does not offer its source as its
 // destination.
 export function pickers(
   type: TransactionType,
   balances: Choice[],
   categories: Category[],
   fromId: string,
-  toId: string,
 ): { from: Picker; to: Picker } {
-  const currencyOf = (id: string) => balances.find((choice) => String(choice.ledgerAccountId) === id)?.currencyCode
   switch (type) {
     case "expense":
       return {
         from: { label: "Paid from", choices: balances },
-        to: { label: "Category", choices: categoryChoices(categories, "expense", currencyOf(fromId)) },
+        to: { label: "Category", choices: categoryChoices(categories, "expense") },
       }
     case "income":
       return {
-        from: { label: "Category", choices: categoryChoices(categories, "income", currencyOf(toId)) },
+        from: { label: "Category", choices: categoryChoices(categories, "income") },
         to: { label: "Received into", choices: balances },
       }
     case "transfer":
       return {
         from: { label: "From", choices: balances },
-        to: { label: "To", choices: balances.filter((choice) => String(choice.ledgerAccountId) !== fromId) },
+        to: { label: "To", choices: balances.filter((choice) => String(choice.id) !== fromId) },
       }
   }
 }
 
-// offers tells whether picker still offers the ledger account id chosen on
-// its side, after the other side changed what it offers.
+// offers tells whether picker still offers the id chosen on its side, after
+// the other side changed what it offers.
 export function offers(picker: Picker, id: string): boolean {
-  return picker.choices.some((choice) => String(choice.ledgerAccountId) === id)
+  return picker.choices.some((choice) => String(choice.id) === id)
 }
 
 // crossesCurrencies tells whether a transfer between the chosen balances
@@ -118,7 +105,7 @@ export function crossesCurrencies(values: RecordTransactionFormValues, balances:
   if (values.type !== "transfer") {
     return false
   }
-  const currencyOf = (id: string) => balances.find((choice) => String(choice.ledgerAccountId) === id)?.currencyCode
+  const currencyOf = (id: string) => balances.find((choice) => String(choice.id) === id)?.currencyCode
   const from = currencyOf(values.fromId)
   const to = currencyOf(values.toId)
   return from !== undefined && to !== undefined && from !== to
@@ -149,9 +136,9 @@ export function newTransaction(
   const to = Number(values.toId)
   switch (values.type) {
     case "expense":
-      return { type: "expense", body: { ...common, balanceLedgerAccountId: from, categoryLedgerAccountId: to } }
+      return { type: "expense", body: { ...common, balanceLedgerAccountId: from, categoryId: to } }
     case "income":
-      return { type: "income", body: { ...common, balanceLedgerAccountId: to, categoryLedgerAccountId: from } }
+      return { type: "income", body: { ...common, balanceLedgerAccountId: to, categoryId: from } }
     case "transfer":
       return {
         type: "transfer",

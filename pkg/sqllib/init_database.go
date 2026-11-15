@@ -21,6 +21,7 @@ func InitDatabase(ctx context.Context, db *bun.DB) error {
 	db.RegisterModel(
 		(*model.FinancialAccount)(nil),
 		(*model.LedgerAccount)(nil),
+		(*model.Category)(nil),
 		(*model.Counterparty)(nil),
 		(*model.JournalEntry)(nil),
 		(*model.Posting)(nil),
@@ -90,6 +91,13 @@ func InitDatabase(ctx context.Context, db *bun.DB) error {
 		Exec(ctx)
 	if err != nil {
 		return fmt.Errorf(errCreateTableFmt, "ledger_account", err)
+	}
+
+	_, err = db.NewCreateTable().Model((*model.Category)(nil)).
+		IfNotExists().
+		Exec(ctx)
+	if err != nil {
+		return fmt.Errorf(errCreateTableFmt, "category", err)
 	}
 
 	_, err = db.NewCreateTable().Model((*model.JournalEntry)(nil)).

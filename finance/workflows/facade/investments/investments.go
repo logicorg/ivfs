@@ -139,7 +139,7 @@ func register(ctx workflow.Context, t trade) (*it.TradeResult, error) {
 }
 
 // registerVest writes the vest's entry and movement in one transaction. A
-// closed account or category, or an unknown asset, fails here, inside it.
+// closed account or an unknown asset fails here, inside it.
 func registerVest(ctx workflow.Context, input lt.RegisterVestInput) (*it.TradeResult, error) {
 	var result lt.RegisterVestResult
 	if err := workflow.ExecuteChildWorkflow(ctx, portfoliowf.RegisterVest, input).Get(ctx, &result); err != nil {
@@ -172,22 +172,4 @@ func replace(ctx workflow.Context, journalEntryID int64, kind it.Kind, entry lt.
 		PositionMovementID: result.PositionMovementIDs[0],
 		Warnings:           result.Warnings,
 	}, nil
-}
-
-// retrieveLedgerAccounts retrieves the given ledger accounts concurrently.
-func retrieveLedgerAccounts(ctx workflow.Context, ids ...int64) ([]*model.LedgerAccount, error) {
-	futures := make([]workflow.ChildWorkflowFuture, len(ids))
-	for i, id := range ids {
-		futures[i] = workflow.ExecuteChildWorkflow(ctx, ledgeraccountswf.RetrieveLedgerAccount, lt.RetrieveLedgerAccountParams{ID: id})
-	}
-
-	accounts := make([]*model.LedgerAccount, len(ids))
-	for i, future := range futures {
-		var result lt.RetrieveLedgerAccountResult
-		if err := future.Get(ctx, &result); err != nil {
-			return nil, fmt.Errorf("retrieve ledger account %d: %w", ids[i], err)
-		}
-		accounts[i] = result.LedgerAccount
-	}
-	return accounts, nil
 }

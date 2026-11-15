@@ -37,9 +37,9 @@ Institution: Physical cash
     └── LedgerAccount: Cash                (asset, EUR)
 
 No institution, no financial account:
-├── LedgerAccount: Food                    (expense, EUR)
-│   └── LedgerAccount: Groceries           (expense, EUR)
-├── LedgerAccount: Salary                  (income, EUR)
+├── LedgerAccount: Expenses                (expense, EUR)
+├── LedgerAccount: Expenses                (expense, USD)
+├── LedgerAccount: Income                  (income, EUR)
 ├── LedgerAccount: Opening balances        (equity, EUR)
 ├── LedgerAccount: Opening balances        (equity, USD)
 ├── LedgerAccount: FX clearing             (asset, EUR)
@@ -53,13 +53,17 @@ No institution, no financial account:
   same currency when the money is kept apart, like a savings vault.
 - A ledger account's name only has to make sense within its financial account
   and currency: "Cash" appears several times above, and each is a different
-  balance. A top-level account is unique by its name, kind, and currency, so
-  each currency has its own "Opening balances" and "FX clearing".
+  balance. An account with no financial account is unique by its name, kind,
+  and currency, so each currency has its own "Opening balances", "FX
+  clearing", "Expenses", and "Income".
 - Shares are not a balance: units of an asset are held by the financial account
   itself, through position movements.
-- Categories, equity, and clearing accounts belong to no institution. Categories
-  nest under another category of the same kind and currency, at most three
-  levels deep (Food > Groceries > Supermarket).
+- Equity and clearing accounts, "Expenses", and "Income" belong to no
+  institution.
+- A category is not a ledger account. It has a kind and no currency, and nests
+  under another category of the same kind, at most three levels deep
+  (Food > Groceries > Supermarket). An expense in any currency debits
+  "Expenses" of that currency, with the category on the posting.
 - This is the structure the account setup facade creates
   ([ADR 0006](../adrs/0006-intent-level-account-setup.md)): `OpenAccount` gives
   a bank or cash account "Cash", a card "Card balance", and a brokerage "Cash"
@@ -82,7 +86,6 @@ key, `FK` a foreign key, and `UK` a field that is unique on its own.
 erDiagram
     Institution ||--o{ FinancialAccount : "holds"
     FinancialAccount |o--o{ LedgerAccount : "groups"
-    LedgerAccount |o--o{ LedgerAccount : "parent of"
     Currency ||--o{ LedgerAccount : "denominates"
 
     Institution {
@@ -98,7 +101,6 @@ erDiagram
     }
     LedgerAccount {
         int64 id PK
-        int64 parent_id FK "optional"
         int64 financial_account_id FK "optional"
         int64 currency_id FK
         string name
@@ -119,13 +121,10 @@ ledger accounts that belong to it, which is how one Revolut account holds a EUR
 balance and a USD balance at the same time: two ledger accounts under one
 financial account.
 
-`financial_account_id` is optional. Categories (income and expense accounts
-such as "Groceries"), equity accounts, and clearing accounts belong to no
-institution, so they have none.
-
-A ledger account may have a parent ledger account, which is how categories
-like "Food > Groceries" are built. The hierarchy is at most two parent links
-deep, and a parent has the same kind and currency as its children.
+`financial_account_id` is optional. Equity accounts, clearing accounts, and
+the "Expenses" and "Income" of each currency belong to no institution, so
+they have none. Those two are the only expense and income accounts: what the
+money was for is the category of a posting, below.
 
 ## Money movements
 
@@ -133,6 +132,8 @@ deep, and a parent has the same kind and currency as its children.
 erDiagram
     JournalEntry ||--|{ Posting : "has"
     LedgerAccount ||--o{ Posting : "is posted to by"
+    Category |o--o{ Posting : "classifies"
+    Category |o--o{ Category : "parent of"
     Counterparty |o--o{ JournalEntry : "is named by"
 
     JournalEntry {
@@ -147,8 +148,15 @@ erDiagram
         int64 journal_entry_id FK
         int line_number
         int64 ledger_account_id FK
+        int64 category_id FK "optional"
         decimal amount "always positive"
         string side "debit, credit"
+    }
+    Category {
+        int64 id PK
+        int64 parent_id FK "optional"
+        string kind "income, expense"
+        string name
     }
     Counterparty {
         int64 id PK
@@ -161,6 +169,15 @@ A `JournalEntry` is one financial event. Once posted it has at least two
 `Posting` rows, each a debit or a credit on one ledger account, and they
 balance per currency. A counterparty is optional descriptive metadata on the
 entry, not an account, and deleting one leaves its entries in place without it.
+
+A `Category` says what an income or an expense was for. Only a posting to an
+income or expense account may carry one, of the account's kind, and it must be
+a category with no children. It has no currency, so "Groceries" is one row
+however many currencies it is spent in, and no balance: its total is the sum
+of its postings. Categories nest at most two parent links deep, and a child
+has its parent's kind. Deleting one clears it from its postings, or sets a
+replacement, and moves no money
+([ADR 0019](../adrs/0019-currency-neutral-categories.md)).
 A correction deletes the entry and records it again
 ([ADR 0011](../adrs/0011-deleting-journal-entries.md)). Reversing entries were
 removed, and editing in place is decided but not built yet

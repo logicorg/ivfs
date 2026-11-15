@@ -12,7 +12,7 @@ import (
 )
 
 // DeleteLedgerAccount is an activity that deletes a ledger account.
-// If the account has postings, or has child accounts, it will return an error indicating that the account cannot be deleted.
+// If the account has postings, it will return an error indicating that the account cannot be deleted.
 func (a *Activities) DeleteLedgerAccount(ctx context.Context, input lt.DeleteLedgerAccountInput) error {
 	db, err := a.Pools.For(ctx)
 	if err != nil {
@@ -32,14 +32,6 @@ func (a *Activities) DeleteLedgerAccount(ctx context.Context, input lt.DeleteLed
 			return err
 		} else if hasPostings {
 			return internalerrors.ErrResourceConflict{ResourceType: "LedgerAccount", Reason: "ledger account has postings; close it instead"}
-		}
-
-		children, err := tx.NewSelect().Model((*model.LedgerAccount)(nil)).Where("la.parent_id = ?", input.LedgerAccountID).Exists(ctx)
-		if err != nil {
-			return fmt.Errorf("check child ledger accounts: %w", err)
-		}
-		if children {
-			return internalerrors.ErrResourceConflict{ResourceType: "LedgerAccount", Reason: "ledger account has children"}
 		}
 
 		if _, err := tx.NewDelete().Model((*model.LedgerAccount)(nil)).Where("id = ?", input.LedgerAccountID).Exec(ctx); err != nil {

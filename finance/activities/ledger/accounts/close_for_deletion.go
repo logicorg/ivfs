@@ -21,9 +21,8 @@ import (
 // account's ledger accounts with it. A target that does not exist is reported
 // gone. It is idempotent: an account already closed keeps its ClosedAt.
 //
-// It refuses, with ErrResourceConflict, an account with child ledger accounts,
-// whose rows could not be deleted after it, and a shared or stray account that
-// has postings or movements.
+// It refuses, with ErrResourceConflict, a shared or stray account that has
+// postings or movements.
 func (a *Activities) CloseAccountForDeletion(ctx context.Context, target lt.DeletionTarget) (*lt.CloseAccountForDeletionResult, error) {
 	db, err := a.Pools.For(ctx)
 	if err != nil {
@@ -63,10 +62,6 @@ func closeLedgerAccountForDeletionTx(ctx context.Context, tx bun.Tx, id int64, n
 		return false, fmt.Errorf("lock ledger account: %w", err)
 	}
 
-	if err := refuseChildAccountsTx(ctx, tx, id); err != nil {
-		return false, err
-	}
-
 	if lt.IsReservedLedgerAccount(&account) {
 		hasPostings, err := ledgerAccountHasPostings(ctx, tx, id)
 		if err != nil {
@@ -100,10 +95,6 @@ func closeFinancialAccountForDeletionTx(ctx context.Context, tx bun.Tx, id int64
 		return false, fmt.Errorf("lock ledger accounts: %w", err)
 	}
 
-	if err := refuseForeignChildrenTx(ctx, tx, id, ledgerIDs); err != nil {
-		return false, err
-	}
-
 	stray, err := isStrayFinancialAccountTx(ctx, tx, account)
 	if err != nil {
 		return false, err
@@ -125,39 +116,6 @@ func closeFinancialAccountForDeletionTx(ctx context.Context, tx bun.Tx, id int64
 		return false, nil
 	}
 	return false, closeOpenTx(ctx, tx, (*model.LedgerAccount)(nil), "la.id IN (?)", bun.List(ledgerIDs), now)
-}
-
-// refuseChildAccountsTx refuses a ledger account with child accounts, whose
-// rows could not be deleted after it.
-func refuseChildAccountsTx(ctx context.Context, tx bun.Tx, id int64) error {
-	children, err := tx.NewSelect().Model((*model.LedgerAccount)(nil)).Where("la.parent_id = ?", id).Exists(ctx)
-	if err != nil {
-		return fmt.Errorf("check child ledger accounts: %w", err)
-	}
-	if children {
-		return internalerrors.ErrResourceConflict{ResourceType: "LedgerAccount", Reason: fmt.Sprintf("ledger account %d has child accounts; delete them first", id)}
-	}
-	return nil
-}
-
-// refuseForeignChildrenTx refuses a financial account whose ledger accounts,
-// ledgerIDs, have children outside it. Its children of its own are deleted
-// with them.
-func refuseForeignChildrenTx(ctx context.Context, tx bun.Tx, id int64, ledgerIDs []int64) error {
-	if len(ledgerIDs) == 0 {
-		return nil
-	}
-	foreignChildren, err := tx.NewSelect().Model((*model.LedgerAccount)(nil)).
-		Where("la.parent_id IN (?)", bun.List(ledgerIDs)).
-		Where("la.financial_account_id IS DISTINCT FROM ?", id).
-		Exists(ctx)
-	if err != nil {
-		return fmt.Errorf("check child ledger accounts: %w", err)
-	}
-	if foreignChildren {
-		return foreignChildrenConflict(id)
-	}
-	return nil
 }
 
 // isStrayFinancialAccountTx reports whether the account is "Untracked

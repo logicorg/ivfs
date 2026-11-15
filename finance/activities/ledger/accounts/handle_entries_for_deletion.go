@@ -172,7 +172,7 @@ func (t *deletionTarget) keepsTx(ctx context.Context, tx bun.Tx, entry *model.Jo
 }
 
 // moveLinesTx moves the lines the kept entries have on the target to the
-// strays: each posting to the stray of its account's kind and currency, and
+// strays: each posting to the stray of its account's currency, and
 // each movement to the stray financial account. A stray has the currency of the
 // account it replaces, so the entries stay balanced.
 func (t *deletionTarget) moveLinesTx(ctx context.Context, tx bun.Tx, kept []*model.JournalEntry) error {

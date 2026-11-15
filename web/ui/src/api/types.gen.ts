@@ -195,16 +195,24 @@ export type BuyForm = {
 };
 
 export type Category = {
+    /**
+     * no longer offered for new entries, which can still take it
+     */
     closed: boolean;
-    currencyCode: string;
-    currencyId: number;
     id: number;
     kind: 'income' | 'expense';
     name: string;
     /**
-     * the parent category, of the same kind and currency; none for a top-level one
+     * the parent category, of the same kind; none for a top-level one
      */
     parentId?: number;
+};
+
+export type CategoryDeletionPreview = {
+    /**
+     * journal entries that would lose the category, or take the replacement
+     */
+    entries: number;
 };
 
 export type CategoryList = {
@@ -217,22 +225,22 @@ export type CategoryName = {
 
 export type CategoryParent = {
     /**
-     * the new parent, of the same kind and currency; top level if omitted
+     * the new parent, of the same kind; top level if omitted
      */
     parentId?: number;
 };
 
 export type CategoryResult = {
-    ledgerAccountId: number;
+    categoryId: number;
 };
 
 export type CategoryTotal = {
+    /**
+     * the category; absent on the total of what has none, of its kind and currency
+     */
+    categoryId?: number;
     currencyCode: string;
     currencyId: number;
-    /**
-     * the category
-     */
-    id: number;
     kind: 'income' | 'expense';
     /**
      * earned for income, spent for an expense; negative when refunds outweigh the spending
@@ -415,9 +423,9 @@ export type ExpenseForm = {
      */
     balanceLedgerAccountId: number;
     /**
-     * the expense category it is spent on, in the balance's currency
+     * the expense category it is spent on
      */
-    categoryLedgerAccountId: number;
+    categoryId: number;
     /**
      * a note on the entry
      */
@@ -487,9 +495,9 @@ export type IncomeForm = {
      */
     balanceLedgerAccountId: number;
     /**
-     * the income category it is earned on, in the balance's currency
+     * the income category it is earned on
      */
-    categoryLedgerAccountId: number;
+    categoryId: number;
     /**
      * a note on the entry
      */
@@ -585,11 +593,10 @@ export type NetWorthUnits = {
 };
 
 export type NewCategory = {
-    currencyId: number;
     kind: 'income' | 'expense';
     name: string;
     /**
-     * the parent category, of the same kind and currency; top level if omitted
+     * the parent category, of the same kind; top level if omitted
      */
     parentId?: number;
 };
@@ -631,6 +638,8 @@ export type Posting = {
      * a decimal amount, as a string so it stays exact
      */
     amount: string;
+    categoryId?: number;
+    categoryName?: string;
     currencyId: number;
     kind: 'asset' | 'liability' | 'equity' | 'income' | 'expense';
     ledgerAccountId: number;
@@ -715,8 +724,6 @@ export type StrayAmount = {
      */
     amount: string;
     currencyCode: string;
-    kind: string;
-    name: string;
 };
 
 export type StrayUnits = {
@@ -794,7 +801,7 @@ export type VestForm = {
      */
     assetId: number;
     /**
-     * the currency of the value, such as EUR, in which the account has its Cash and Investments balances and the categories are
+     * the currency of the value, such as EUR, in which the account has its Cash and Investments balances
      */
     currencyCode: string;
     /**
@@ -814,17 +821,17 @@ export type VestForm = {
      */
     idempotencyKey: string;
     /**
-     * the income category credited with the value of the units vested
+     * the income category of the value of the units vested
      */
-    incomeCategoryLedgerAccountId: number;
+    incomeCategoryId: number;
     /**
      * the instant of the vest
      */
     occurredAt: string;
     /**
-     * the expense category debited with the value of the units withheld; required when units are withheld
+     * the expense category of the value of the units withheld; required when units are withheld
      */
-    taxCategoryLedgerAccountId?: number;
+    taxCategoryId?: number;
     /**
      * every unit vested, those withheld included, greater than zero
      */
@@ -1095,7 +1102,7 @@ export type DeleteCategoryData = {
     };
     query?: {
         /**
-         * the category to merge this one into; merging is not supported yet
+         * an open category of the same kind, with none under it, that the entries take instead of losing their category
          */
         replacementId?: number;
     };
@@ -1121,13 +1128,9 @@ export type DeleteCategoryError = DeleteCategoryErrors[keyof DeleteCategoryError
 
 export type DeleteCategoryResponses = {
     /**
-     * OK
+     * No Content
      */
-    200: AccountDeletion;
-    /**
-     * The deletion is still running; deleting again waits on it
-     */
-    202: AccountDeletion;
+    204: void;
 };
 
 export type DeleteCategoryResponse = DeleteCategoryResponses[keyof DeleteCategoryResponses];
@@ -1201,7 +1204,7 @@ export type PreviewCategoryDeletionResponses = {
     /**
      * OK
      */
-    200: AccountDeletionPreview;
+    200: CategoryDeletionPreview;
 };
 
 export type PreviewCategoryDeletionResponse = PreviewCategoryDeletionResponses[keyof PreviewCategoryDeletionResponses];
@@ -2227,6 +2230,10 @@ export type ListJournalEntriesData = {
          * only entries with a posting on this ledger account
          */
         ledgerAccountId?: number;
+        /**
+         * only entries with a posting in any of these categories or in one under them
+         */
+        categoryId?: Array<number>;
         /**
          * only entries with this counterparty
          */

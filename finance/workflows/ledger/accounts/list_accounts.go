@@ -50,7 +50,6 @@ func ListAccounts(ctx workflow.Context, params lt.ListAccountsParams) (*lt.ListA
 			LedgerAccountID:    ledgerAccount.ID,
 			LedgerAccountName:  ledgerAccount.Name,
 			Kind:               ledgerAccount.Kind,
-			ParentID:           ledgerAccount.ParentID,
 			CurrencyID:         ledgerAccount.CurrencyID,
 			FinancialAccountID: ledgerAccount.FinancialAccountID,
 			Closed:             ledgerAccount.ClosedAt != nil,

@@ -99,12 +99,14 @@ export const zBuyForm = z.object({
 
 export const zCategory = z.object({
     closed: z.boolean(),
-    currencyCode: z.string(),
-    currencyId: z.int(),
     id: z.int(),
     kind: z.enum(['income', 'expense']),
     name: z.string(),
     parentId: z.int().optional()
+});
+
+export const zCategoryDeletionPreview = z.object({
+    entries: z.int()
 });
 
 export const zCategoryList = z.object({
@@ -120,13 +122,13 @@ export const zCategoryParent = z.object({
 });
 
 export const zCategoryResult = z.object({
-    ledgerAccountId: z.int()
+    categoryId: z.int()
 });
 
 export const zCategoryTotal = z.object({
+    categoryId: z.int().optional(),
     currencyCode: z.string(),
     currencyId: z.int(),
-    id: z.int(),
     kind: z.enum(['income', 'expense']),
     total: z.string().regex(/^-?[0-9]+(\.[0-9]+)?$/)
 });
@@ -212,7 +214,7 @@ export const zErrorModel = z.object({
 export const zExpenseForm = z.object({
     amount: z.string().regex(/^-?[0-9]+(\.[0-9]+)?$/),
     balanceLedgerAccountId: z.int().gte(1),
-    categoryLedgerAccountId: z.int().gte(1),
+    categoryId: z.int().gte(1),
     description: z.string().optional(),
     idempotencyKey: z.string().min(1),
     occurredAt: z.iso.datetime()
@@ -251,7 +253,7 @@ export const zHoldingList = z.object({
 export const zIncomeForm = z.object({
     amount: z.string().regex(/^-?[0-9]+(\.[0-9]+)?$/),
     balanceLedgerAccountId: z.int().gte(1),
-    categoryLedgerAccountId: z.int().gte(1),
+    categoryId: z.int().gte(1),
     description: z.string().optional(),
     idempotencyKey: z.string().min(1),
     occurredAt: z.iso.datetime()
@@ -329,7 +331,6 @@ export const zNetWorthSeries = z.object({
 });
 
 export const zNewCategory = z.object({
-    currencyId: z.int().gte(1),
     kind: z.enum(['income', 'expense']),
     name: z.string().min(1),
     parentId: z.int().gte(1).optional()
@@ -374,6 +375,8 @@ export const zAccountForm = z.object({
 
 export const zPosting = z.object({
     amount: z.string().regex(/^-?[0-9]+(\.[0-9]+)?$/),
+    categoryId: z.int().optional(),
+    categoryName: z.string().optional(),
     currencyId: z.int(),
     kind: z.enum([
         'asset',
@@ -464,9 +467,7 @@ export const zSellForm = z.object({
 
 export const zStrayAmount = z.object({
     amount: z.string().regex(/^-?[0-9]+(\.[0-9]+)?$/),
-    currencyCode: z.string(),
-    kind: z.string(),
-    name: z.string()
+    currencyCode: z.string()
 });
 
 export const zStrayUnits = z.object({
@@ -522,9 +523,9 @@ export const zVestForm = z.object({
     fairMarketValue: z.string().regex(/^-?[0-9]+(\.[0-9]+)?$/),
     financialAccountId: z.int().gte(1),
     idempotencyKey: z.string().min(1),
-    incomeCategoryLedgerAccountId: z.int().gte(1),
+    incomeCategoryId: z.int().gte(1),
     occurredAt: z.iso.datetime(),
-    taxCategoryLedgerAccountId: z.int().gte(1).optional(),
+    taxCategoryId: z.int().gte(1).optional(),
     unitsVested: z.string().regex(/^-?[0-9]+(\.[0-9]+)?$/),
     unitsWithheld: z.string().regex(/^-?[0-9]+(\.[0-9]+)?$/).optional()
 });
@@ -607,9 +608,9 @@ export const zDeleteCategoryQuery = z.object({
 });
 
 /**
- * OK
+ * No Content
  */
-export const zDeleteCategoryResponse = zAccountDeletion;
+export const zDeleteCategoryResponse = z.void();
 
 export const zCloseCategoryPath = z.object({
     id: z.int().gte(1)
@@ -627,7 +628,7 @@ export const zPreviewCategoryDeletionPath = z.object({
 /**
  * OK
  */
-export const zPreviewCategoryDeletionResponse = zAccountDeletionPreview;
+export const zPreviewCategoryDeletionResponse = zCategoryDeletionPreview;
 
 export const zMoveCategoryBody = zCategoryParent;
 
@@ -901,6 +902,7 @@ export const zVestAssetResponse = zRecordedTrade;
 
 export const zListJournalEntriesQuery = z.object({
     ledgerAccountId: z.int().gte(1).optional(),
+    categoryId: z.array(z.int()).optional(),
     counterpartyId: z.int().gte(1).optional(),
     status: z.array(z.enum(['draft', 'posted'])).optional(),
     from: z.iso.datetime().optional(),

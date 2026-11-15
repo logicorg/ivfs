@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// previewOutcome is a preview with its strays as text, "name kind currency
-// amount" and "asset units", so amounts compare by value.
+// previewOutcome is a preview with its strays as text, "currency amount" and
+// "asset units", so amounts compare by value.
 type previewOutcome struct {
 	deletedEntries, keptEntries               int
 	deletedMovementGroups, keptMovementGroups int
@@ -25,7 +25,7 @@ func outcomeOf(preview *lt.AccountDeletionPreview) previewOutcome {
 		conflicts: preview.Conflicts,
 	}
 	for _, amount := range preview.StrayAmounts {
-		got.amounts = append(got.amounts, fmt.Sprintf("%s %s %s %s", amount.Name, amount.Kind, amount.CurrencyCode, amount.Amount))
+		got.amounts = append(got.amounts, fmt.Sprintf("%s %s", amount.CurrencyCode, amount.Amount))
 	}
 	for _, units := range preview.StrayUnits {
 		got.units = append(got.units, fmt.Sprintf("%s %s", units.AssetName, units.Units))
@@ -66,20 +66,20 @@ func (s *UnitTestSuite) TestPreviewAccountDeletion() {
 		"a ledger account's expense is deleted and its transfer kept": {
 			setup: func(t *testing.T) (lt.PreviewAccountDeletionInput, previewOutcome) {
 				wallet := f.ledgerAccount(t, "Wallet", model.LedgerAccountAsset, nil)
-				f.entry(t, f.groceries, wallet)
+				f.entry(t, f.expenses, wallet)
 				f.entry(t, wallet, f.bank)
 				f.draft(t, wallet, f.bank)
 				return ledgerInput(wallet), previewOutcome{
 					deletedEntries: 2, keptEntries: 1,
-					amounts: []string{"Untracked accounts equity EUR 100"},
+					amounts: []string{"EUR 100"},
 				}
 			},
 		},
-		"a category's kept expense lands on uncategorized": {
+		"an equity account's kept entry lands on untracked accounts": {
 			setup: func(t *testing.T) (lt.PreviewAccountDeletionInput, previewOutcome) {
-				coffee := f.ledgerAccount(t, "Coffee", model.LedgerAccountExpense, nil)
-				f.entry(t, coffee, f.bank)
-				return ledgerInput(coffee), previewOutcome{keptEntries: 1, amounts: []string{"Uncategorized expense EUR 100"}}
+				adjustments := f.ledgerAccount(t, "Adjustments", model.LedgerAccountEquity, nil)
+				f.entry(t, adjustments, f.bank)
+				return ledgerInput(adjustments), previewOutcome{keptEntries: 1, amounts: []string{"EUR 100"}}
 			},
 		},
 		"a kept entry and one undoing it land nothing": {
@@ -95,22 +95,12 @@ func (s *UnitTestSuite) TestPreviewAccountDeletion() {
 				return ledgerInput(f.ledgerAccount(t, "Unused cash", model.LedgerAccountAsset, nil)), previewOutcome{}
 			},
 		},
-		"a ledger account with children": {
-			setup: func(t *testing.T) (lt.PreviewAccountDeletionInput, previewOutcome) {
-				parent := f.ledgerAccount(t, "Parent cash", model.LedgerAccountAsset, nil)
-				child := &model.LedgerAccount{Name: "Parent cash pot", CurrencyID: f.currency.ID, Kind: model.LedgerAccountAsset, ParentID: &parent.ID}
-				temporaltesting.Insert(t, s.DB, child)
-				return ledgerInput(parent), previewOutcome{
-					conflicts: []string{fmt.Sprintf("ledger account %d has child accounts; delete them first", parent.ID)},
-				}
-			},
-		},
 		"a shared ledger account with entries": {
 			setup: func(t *testing.T) (lt.PreviewAccountDeletionInput, previewOutcome) {
 				f.entry(t, f.bank, f.clearing)
 				return ledgerInput(f.clearing), previewOutcome{
 					keptEntries: 1,
-					amounts:     []string{"Untracked accounts equity EUR -100"},
+					amounts:     []string{"EUR -100"},
 					conflicts:   []string{`"FX clearing" is shared by the ledger and cannot be deleted while it has postings`},
 				}
 			},
@@ -124,7 +114,7 @@ func (s *UnitTestSuite) TestPreviewAccountDeletion() {
 				f.entry(t, investments, f.bank, f.units(account))
 				return financialInput(account), previewOutcome{
 					deletedEntries: 1, keptEntries: 1,
-					amounts: []string{"Untracked accounts equity EUR 100"},
+					amounts: []string{"EUR 100"},
 					units:   []string{"AAPL 5"},
 				}
 			},
@@ -143,21 +133,10 @@ func (s *UnitTestSuite) TestPreviewAccountDeletion() {
 				}
 			},
 		},
-		"a financial account with a child outside it": {
-			setup: func(t *testing.T) (lt.PreviewAccountDeletionInput, previewOutcome) {
-				account := f.financialAccount(t, "Revolut parent")
-				cash := f.ledgerAccount(t, "Revolut parent cash", model.LedgerAccountAsset, &account.ID)
-				child := &model.LedgerAccount{Name: "Revolut parent pot", CurrencyID: f.currency.ID, Kind: model.LedgerAccountAsset, ParentID: &cash.ID}
-				temporaltesting.Insert(t, s.DB, child)
-				return financialInput(account), previewOutcome{
-					conflicts: []string{fmt.Sprintf("a ledger account of financial account %d has child accounts outside it; delete or move them first", account.ID)},
-				}
-			},
-		},
 		"the stray financial account with entries": {
 			setup: func(t *testing.T) (lt.PreviewAccountDeletionInput, previewOutcome) {
 				stray := f.strayFinancialAccount(t)
-				f.entry(t, f.groceries, f.salary, f.units(stray))
+				f.entry(t, f.expenses, f.income, f.units(stray))
 				return financialInput(stray), previewOutcome{
 					deletedEntries: 1,
 					conflicts:      []string{`"Untracked accounts" holds the lines of deleted accounts and cannot be deleted while it has postings or movements`},
@@ -171,7 +150,7 @@ func (s *UnitTestSuite) TestPreviewAccountDeletion() {
 				f.entry(t, cash[0], f.bank)
 				return lt.PreviewAccountDeletionInput{InstitutionID: &institution.ID}, previewOutcome{
 					deletedEntries: 1, keptEntries: 1,
-					amounts: []string{"Untracked accounts equity EUR 100"},
+					amounts: []string{"EUR 100"},
 				}
 			},
 		},
@@ -240,7 +219,7 @@ func (s *UnitTestSuite) TestPreviewAccountDeletion_Untracked() {
 	t := s.T()
 	f := newEntriesForDeletionFixture(s)
 	stray := f.strayFinancialAccount(t)
-	f.entry(t, f.groceries, f.salary, f.units(stray))
+	f.entry(t, f.expenses, f.income, f.units(stray))
 
 	result, err := s.Env.ExecuteActivity(s.aa.PreviewAccountDeletion, lt.PreviewAccountDeletionInput{InstitutionID: &stray.InstitutionID})
 

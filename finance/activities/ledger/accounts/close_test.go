@@ -22,8 +22,8 @@ type balanceFixture struct {
 	drafted *model.LedgerAccount
 	// card is a liability owing 30.
 	card *model.LedgerAccount
-	// salary is income of 150.
-	salary *model.LedgerAccount
+	// income is income of 150.
+	income *model.LedgerAccount
 	// unused is an asset with no entries.
 	unused *model.LedgerAccount
 }
@@ -46,10 +46,10 @@ func insertBalanceFixture(t *testing.T, s *UnitTestSuite) balanceFixture {
 		emptied: account("Emptied", model.LedgerAccountAsset),
 		drafted: account("Drafted", model.LedgerAccountAsset),
 		card:    account("Card", model.LedgerAccountLiability),
-		salary:  account("Salary", model.LedgerAccountIncome),
+		income:  account(lt.IncomeAccountName, model.LedgerAccountIncome),
 		unused:  account("Unused", model.LedgerAccountAsset),
 	}
-	groceries := account("Groceries", model.LedgerAccountExpense)
+	expenses := account(lt.ExpensesAccountName, model.LedgerAccountExpense)
 
 	occurredAt := time.Date(2026, 1, 15, 0, 0, 0, 0, time.UTC)
 	post := func(debit, credit *model.LedgerAccount, amount int64) {
@@ -58,10 +58,10 @@ func insertBalanceFixture(t *testing.T, s *UnitTestSuite) balanceFixture {
 			model.Posting{LedgerAccountID: credit.ID, Amount: decimal.NewFromInt(amount), Side: model.PostingCredit},
 		)
 	}
-	post(f.cash, f.salary, 100)
-	post(f.emptied, f.salary, 50)
-	post(groceries, f.emptied, 50)
-	post(groceries, f.card, 30)
+	post(f.cash, f.income, 100)
+	post(f.emptied, f.income, 50)
+	post(expenses, f.emptied, 50)
+	post(expenses, f.card, 30)
 
 	draft := &model.JournalEntry{OccurredAt: occurredAt, Status: model.JournalEntryDraft}
 	temporaltesting.Insert(t, s.DB, draft)
@@ -93,7 +93,7 @@ func (s *UnitTestSuite) TestCloseLedgerAccountRefusesStrandedBalance() {
 		"an asset that was emptied":         {account: f.emptied},
 		"an asset with only a draft entry":  {account: f.drafted},
 		"an asset with no entries":          {account: f.unused},
-		"income with a balance, as history": {account: f.salary},
+		"income with a balance, as history": {account: f.income},
 	}
 
 	for name, tc := range tests {

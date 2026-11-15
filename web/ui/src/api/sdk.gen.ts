@@ -80,21 +80,21 @@ export const createCategory = <ThrowOnError extends boolean = false>(options: Op
 /**
  * Total what each category earned or spent over a period
  *
- * The period is half-open: an entry that occurred at its start counts, one at its end does not, so consecutive periods neither overlap nor leave a gap. Only posted entries count.
+ * A total is per category and currency, and what has no category is totalled per kind and currency. The period is half-open: an entry that occurred at its start counts, one at its end does not, so consecutive periods neither overlap nor leave a gap. Only posted entries count.
  */
 export const getCategoryTotals = <ThrowOnError extends boolean = false>(options: Options<GetCategoryTotalsData, ThrowOnError>): RequestResult<GetCategoryTotalsResponses, GetCategoryTotalsErrors, ThrowOnError> => (options.client ?? client).get<GetCategoryTotalsResponses, GetCategoryTotalsErrors, ThrowOnError>({ url: '/api/categories/totals', ...options });
 
 /**
- * Delete a category with the entries recorded on it
+ * Delete a category, or merge it into another
  *
- * An entry that also moves money in a financial account is kept, with this category's lines moved to the untracked accounts. A category with categories under it cannot be deleted until they are. Deleting a category that does not exist changes nothing. A deletion still running after a while is answered with 202 Accepted, and deleting again waits on it.
+ * No entry is deleted and no balance moves: the entries filed under the category lose it, or take the replacement. A category with categories under it cannot be deleted until they are. Deleting a category that does not exist changes nothing.
  */
 export const deleteCategory = <ThrowOnError extends boolean = false>(options: Options<DeleteCategoryData, ThrowOnError>): RequestResult<DeleteCategoryResponses, DeleteCategoryErrors, ThrowOnError> => (options.client ?? client).delete<DeleteCategoryResponses, DeleteCategoryErrors, ThrowOnError>({ url: '/api/categories/{id}', ...options });
 
 /**
  * Close a category
  *
- * A category with open categories under it cannot be closed until they are. Closing keeps its history; to remove it, delete it.
+ * A category with open categories under it cannot be closed until they are. A closed category is only no longer offered: entries keep it, and can still take it. To remove it, delete it.
  */
 export const closeCategory = <ThrowOnError extends boolean = false>(options: Options<CloseCategoryData, ThrowOnError>): RequestResult<CloseCategoryResponses, CloseCategoryErrors, ThrowOnError> => (options.client ?? client).post<CloseCategoryResponses, CloseCategoryErrors, ThrowOnError>({ url: '/api/categories/{id}/close', ...options });
 
@@ -108,7 +108,7 @@ export const previewCategoryDeletion = <ThrowOnError extends boolean = false>(op
 /**
  * Move a category under another, or to the top level
  *
- * A category can move only while it and the categories under it have no postings.
+ * A category can move only while it and the categories under it have no entries.
  */
 export const moveCategory = <ThrowOnError extends boolean = false>(options: Options<MoveCategoryData, ThrowOnError>): RequestResult<MoveCategoryResponses, MoveCategoryErrors, ThrowOnError> => (options.client ?? client).post<MoveCategoryResponses, MoveCategoryErrors, ThrowOnError>({
     url: '/api/categories/{id}/move',
@@ -344,7 +344,7 @@ export const sellAsset = <ThrowOnError extends boolean = false>(options: Options
 /**
  * Record units of an asset received as compensation in a brokerage account
  *
- * The income category is credited with the value of every unit vested, Investments with that of the units delivered, and the tax category with that of the units withheld; the delivered units are added at their value. Shares sold to cover the tax are a separate sale. A repeated idempotency key returns the vest first recorded with it, recording nothing.
+ * Income is credited with the value of every unit vested, under the income category; Investments is debited with that of the units delivered, and Expenses with that of the units withheld, under the tax category. The delivered units are added at their value. Shares sold to cover the tax are a separate sale. A repeated idempotency key returns the vest first recorded with it, recording nothing.
  */
 export const vestAsset = <ThrowOnError extends boolean = false>(options: Options<VestAssetData, ThrowOnError>): RequestResult<VestAssetResponses, VestAssetErrors, ThrowOnError> => (options.client ?? client).post<VestAssetResponses, VestAssetErrors, ThrowOnError>({
     url: '/api/investments/vests',

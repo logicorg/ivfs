@@ -157,7 +157,7 @@ export const getCategoryTotalsQueryKey = (options: Options<GetCategoryTotalsData
 /**
  * Total what each category earned or spent over a period
  *
- * The period is half-open: an entry that occurred at its start counts, one at its end does not, so consecutive periods neither overlap nor leave a gap. Only posted entries count.
+ * A total is per category and currency, and what has no category is totalled per kind and currency. The period is half-open: an entry that occurred at its start counts, one at its end does not, so consecutive periods neither overlap nor leave a gap. Only posted entries count.
  */
 export const getCategoryTotalsOptions = (options: Options<GetCategoryTotalsData>) => queryOptions<GetCategoryTotalsResponse, GetCategoryTotalsError, GetCategoryTotalsResponse, ReturnType<typeof getCategoryTotalsQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {
@@ -173,9 +173,9 @@ export const getCategoryTotalsOptions = (options: Options<GetCategoryTotalsData>
 });
 
 /**
- * Delete a category with the entries recorded on it
+ * Delete a category, or merge it into another
  *
- * An entry that also moves money in a financial account is kept, with this category's lines moved to the untracked accounts. A category with categories under it cannot be deleted until they are. Deleting a category that does not exist changes nothing. A deletion still running after a while is answered with 202 Accepted, and deleting again waits on it.
+ * No entry is deleted and no balance moves: the entries filed under the category lose it, or take the replacement. A category with categories under it cannot be deleted until they are. Deleting a category that does not exist changes nothing.
  */
 export const deleteCategoryMutation = (options?: Partial<Options<DeleteCategoryData>>): UseMutationOptions<DeleteCategoryResponse, DeleteCategoryError, Options<DeleteCategoryData>> => {
     const mutationOptions: UseMutationOptions<DeleteCategoryResponse, DeleteCategoryError, Options<DeleteCategoryData>> = {
@@ -194,7 +194,7 @@ export const deleteCategoryMutation = (options?: Partial<Options<DeleteCategoryD
 /**
  * Close a category
  *
- * A category with open categories under it cannot be closed until they are. Closing keeps its history; to remove it, delete it.
+ * A category with open categories under it cannot be closed until they are. A closed category is only no longer offered: entries keep it, and can still take it. To remove it, delete it.
  */
 export const closeCategoryMutation = (options?: Partial<Options<CloseCategoryData>>): UseMutationOptions<CloseCategoryResponse, CloseCategoryError, Options<CloseCategoryData>> => {
     const mutationOptions: UseMutationOptions<CloseCategoryResponse, CloseCategoryError, Options<CloseCategoryData>> = {
@@ -233,7 +233,7 @@ export const previewCategoryDeletionOptions = (options: Options<PreviewCategoryD
 /**
  * Move a category under another, or to the top level
  *
- * A category can move only while it and the categories under it have no postings.
+ * A category can move only while it and the categories under it have no entries.
  */
 export const moveCategoryMutation = (options?: Partial<Options<MoveCategoryData>>): UseMutationOptions<MoveCategoryResponse, MoveCategoryError, Options<MoveCategoryData>> => {
     const mutationOptions: UseMutationOptions<MoveCategoryResponse, MoveCategoryError, Options<MoveCategoryData>> = {
@@ -782,7 +782,7 @@ export const sellAssetMutation = (options?: Partial<Options<SellAssetData>>): Us
 /**
  * Record units of an asset received as compensation in a brokerage account
  *
- * The income category is credited with the value of every unit vested, Investments with that of the units delivered, and the tax category with that of the units withheld; the delivered units are added at their value. Shares sold to cover the tax are a separate sale. A repeated idempotency key returns the vest first recorded with it, recording nothing.
+ * Income is credited with the value of every unit vested, under the income category; Investments is debited with that of the units delivered, and Expenses with that of the units withheld, under the tax category. The delivered units are added at their value. Shares sold to cover the tax are a separate sale. A repeated idempotency key returns the vest first recorded with it, recording nothing.
  */
 export const vestAssetMutation = (options?: Partial<Options<VestAssetData>>): UseMutationOptions<VestAssetResponse, VestAssetError, Options<VestAssetData>> => {
     const mutationOptions: UseMutationOptions<VestAssetResponse, VestAssetError, Options<VestAssetData>> = {

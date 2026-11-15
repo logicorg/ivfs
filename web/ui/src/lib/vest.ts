@@ -71,8 +71,8 @@ export function newVest(values: VestFormValues, assetId: number, idempotencyKey:
     unitsVested: values.unitsVested,
     unitsWithheld: withheld ? values.unitsWithheld : undefined,
     fairMarketValue: values.fairMarketValue,
-    incomeCategoryLedgerAccountId: Number(values.incomeCategoryId),
-    taxCategoryLedgerAccountId: withheld ? Number(values.taxCategoryId) : undefined,
+    incomeCategoryId: Number(values.incomeCategoryId),
+    taxCategoryId: withheld ? Number(values.taxCategoryId) : undefined,
     occurredAt: vestedAt(values, now),
     description: values.description || undefined,
   }

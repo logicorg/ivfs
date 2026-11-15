@@ -31,7 +31,7 @@ type ListAccountsParams struct {
 	Search        string                    `json:"search,omitempty" jsonschema:"words that must each appear, case-insensitively, in the ledger account's, financial account's, or institution's name, or the currency code, such as \"revolut eur\""`
 	CurrencyCode  string                    `json:"currencyCode,omitempty" jsonschema:"keep only accounts in this currency, such as EUR"`
 	Kinds         []model.LedgerAccountKind `json:"kinds,omitempty" jsonschema:"keep only accounts of these kinds: asset, liability, equity, income, or expense"`
-	Scope         AccountScope              `json:"scope,omitempty" jsonschema:"financial for accounts that belong to a financial account, unlinked for those that belong to none, such as categories; both if omitted"`
+	Scope         AccountScope              `json:"scope,omitempty" jsonschema:"financial for accounts that belong to a financial account, unlinked for those that belong to none, such as Expenses and Income; both if omitted"`
 	IncludeClosed bool                      `json:"includeClosed,omitempty" jsonschema:"also list closed accounts, and accounts of a closed financial account"`
 }
 
@@ -54,7 +54,6 @@ type AccountSummary struct {
 	LedgerAccountID      int64                   `json:"ledgerAccountId"`
 	LedgerAccountName    string                  `json:"ledgerAccountName"`
 	Kind                 model.LedgerAccountKind `json:"kind"`
-	ParentID             *int64                  `json:"parentId,omitempty"`
 	CurrencyID           int64                   `json:"currencyId"`
 	CurrencyCode         string                  `json:"currencyCode"`
 	FinancialAccountID   *int64                  `json:"financialAccountId,omitempty"`

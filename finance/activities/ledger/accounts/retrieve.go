@@ -25,7 +25,6 @@ func (a *Activities) RetrieveLedgerAccount(ctx context.Context, params lt.Retrie
 	err = model.FindLedgerAccountByIDQuery(db, params.ID).
 		Relation("Currency").
 		Relation("FinancialAccount").
-		Relation("Parent").
 		Scan(ctx, account)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -48,12 +47,9 @@ func (a *Activities) ListLedgerAccounts(ctx context.Context, params lt.ListLedge
 
 	query := db.NewSelect().Model((*model.LedgerAccount)(nil)).
 		Relation("Currency").
-		OrderExpr("la.parent_id NULLS FIRST, la.id ASC")
+		OrderExpr("la.id ASC")
 	if params.FinancialAccountID != nil {
 		query = query.Where("la.financial_account_id = ?", *params.FinancialAccountID)
-	}
-	if params.ParentID != nil {
-		query = query.Where("la.parent_id = ?", *params.ParentID)
 	}
 	if params.CurrencyID != nil {
 		query = query.Where("la.currency_id = ?", *params.CurrencyID)

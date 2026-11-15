@@ -19,24 +19,20 @@ describe("describeDeletionPreview", () => {
         ...none,
         deletedEntries: 1,
         keptEntries: 1,
-        strayAmounts: [{ name: "Untracked accounts", kind: "equity", currencyCode: "EUR", amount: "1200.5" }],
+        strayAmounts: [{ currencyCode: "EUR", amount: "1200.5" }],
       },
       want: [
         "Deletes 1 journal entry.",
         "Keeps 1 journal entry: each also touches an account that stays, so only this side moves to the untracked accounts.",
-        "Untracked accounts (equity) receives €1,200.50.",
+        "Untracked accounts receives €1,200.50.",
       ],
     },
     {
-      name: "income reads as earned",
-      preview: {
-        ...none,
-        keptEntries: 3,
-        strayAmounts: [{ name: "Uncategorized", kind: "income", currencyCode: "EUR", amount: "-300" }],
-      },
+      name: "a kept entry moving a balance off",
+      preview: { ...none, keptEntries: 3, strayAmounts: [{ currencyCode: "EUR", amount: "-300" }] },
       want: [
         "Keeps 3 journal entries: each also touches an account that stays, so only this side moves to the untracked accounts.",
-        "Uncategorized (income) receives €300.00.",
+        "Untracked accounts receives -€300.00.",
       ],
     },
     {

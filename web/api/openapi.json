@@ -456,13 +456,8 @@
         "additionalProperties": false,
         "properties": {
           "closed": {
+            "description": "no longer offered for new entries, which can still take it",
             "type": "boolean"
-          },
-          "currencyCode": {
-            "type": "string"
-          },
-          "currencyId": {
-            "type": "integer"
           },
           "id": {
             "type": "integer"
@@ -478,7 +473,7 @@
             "type": "string"
           },
           "parentId": {
-            "description": "the parent category, of the same kind and currency; none for a top-level one",
+            "description": "the parent category, of the same kind; none for a top-level one",
             "type": "integer"
           }
         },
@@ -486,9 +481,20 @@
           "id",
           "name",
           "kind",
-          "currencyId",
-          "currencyCode",
           "closed"
+        ],
+        "type": "object"
+      },
+      "CategoryDeletionPreview": {
+        "additionalProperties": false,
+        "properties": {
+          "entries": {
+            "description": "journal entries that would lose the category, or take the replacement",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "entries"
         ],
         "type": "object"
       },
@@ -524,7 +530,7 @@
         "additionalProperties": false,
         "properties": {
           "parentId": {
-            "description": "the new parent, of the same kind and currency; top level if omitted",
+            "description": "the new parent, of the same kind; top level if omitted",
             "minimum": 1,
             "type": "integer"
           }
@@ -534,26 +540,26 @@
       "CategoryResult": {
         "additionalProperties": false,
         "properties": {
-          "ledgerAccountId": {
+          "categoryId": {
             "type": "integer"
           }
         },
         "required": [
-          "ledgerAccountId"
+          "categoryId"
         ],
         "type": "object"
       },
       "CategoryTotal": {
         "additionalProperties": false,
         "properties": {
+          "categoryId": {
+            "description": "the category; absent on the total of what has none, of its kind and currency",
+            "type": "integer"
+          },
           "currencyCode": {
             "type": "string"
           },
           "currencyId": {
-            "type": "integer"
-          },
-          "id": {
-            "description": "the category",
             "type": "integer"
           },
           "kind": {
@@ -573,7 +579,6 @@
           }
         },
         "required": [
-          "id",
           "kind",
           "currencyId",
           "currencyCode",
@@ -1029,8 +1034,8 @@
             "minimum": 1,
             "type": "integer"
           },
-          "categoryLedgerAccountId": {
-            "description": "the expense category it is spent on, in the balance's currency",
+          "categoryId": {
+            "description": "the expense category it is spent on",
             "minimum": 1,
             "type": "integer"
           },
@@ -1052,7 +1057,7 @@
         "required": [
           "idempotencyKey",
           "balanceLedgerAccountId",
-          "categoryLedgerAccountId",
+          "categoryId",
           "amount",
           "occurredAt"
         ],
@@ -1194,8 +1199,8 @@
             "minimum": 1,
             "type": "integer"
           },
-          "categoryLedgerAccountId": {
-            "description": "the income category it is earned on, in the balance's currency",
+          "categoryId": {
+            "description": "the income category it is earned on",
             "minimum": 1,
             "type": "integer"
           },
@@ -1217,7 +1222,7 @@
         "required": [
           "idempotencyKey",
           "balanceLedgerAccountId",
-          "categoryLedgerAccountId",
+          "categoryId",
           "amount",
           "occurredAt"
         ],
@@ -1459,10 +1464,6 @@
       "NewCategory": {
         "additionalProperties": false,
         "properties": {
-          "currencyId": {
-            "minimum": 1,
-            "type": "integer"
-          },
           "kind": {
             "enum": [
               "income",
@@ -1475,15 +1476,14 @@
             "type": "string"
           },
           "parentId": {
-            "description": "the parent category, of the same kind and currency; top level if omitted",
+            "description": "the parent category, of the same kind; top level if omitted",
             "minimum": 1,
             "type": "integer"
           }
         },
         "required": [
           "name",
-          "kind",
-          "currencyId"
+          "kind"
         ],
         "type": "object"
       },
@@ -1581,6 +1581,12 @@
               "1234.56"
             ],
             "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+            "type": "string"
+          },
+          "categoryId": {
+            "type": "integer"
+          },
+          "categoryName": {
             "type": "string"
           },
           "currencyId": {
@@ -1795,17 +1801,9 @@
           },
           "currencyCode": {
             "type": "string"
-          },
-          "kind": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
           }
         },
         "required": [
-          "name",
-          "kind",
           "currencyCode",
           "amount"
         ],
@@ -1968,7 +1966,7 @@
             "type": "integer"
           },
           "currencyCode": {
-            "description": "the currency of the value, such as EUR, in which the account has its Cash and Investments balances and the categories are",
+            "description": "the currency of the value, such as EUR, in which the account has its Cash and Investments balances",
             "minLength": 1,
             "type": "string"
           },
@@ -1994,8 +1992,8 @@
             "minLength": 1,
             "type": "string"
           },
-          "incomeCategoryLedgerAccountId": {
-            "description": "the income category credited with the value of the units vested",
+          "incomeCategoryId": {
+            "description": "the income category of the value of the units vested",
             "minimum": 1,
             "type": "integer"
           },
@@ -2004,8 +2002,8 @@
             "format": "date-time",
             "type": "string"
           },
-          "taxCategoryLedgerAccountId": {
-            "description": "the expense category debited with the value of the units withheld; required when units are withheld",
+          "taxCategoryId": {
+            "description": "the expense category of the value of the units withheld; required when units are withheld",
             "minimum": 1,
             "type": "integer"
           },
@@ -2033,7 +2031,7 @@
           "unitsVested",
           "fairMarketValue",
           "currencyCode",
-          "incomeCategoryLedgerAccountId",
+          "incomeCategoryId",
           "occurredAt"
         ],
         "type": "object"
@@ -2439,7 +2437,7 @@
     },
     "/api/categories/totals": {
       "get": {
-        "description": "The period is half-open: an entry that occurred at its start counts, one at its end does not, so consecutive periods neither overlap nor leave a gap. Only posted entries count.",
+        "description": "A total is per category and currency, and what has no category is totalled per kind and currency. The period is half-open: an entry that occurred at its start counts, one at its end does not, so consecutive periods neither overlap nor leave a gap. Only posted entries count.",
         "operationId": "get-category-totals",
         "parameters": [
           {
@@ -2507,7 +2505,7 @@
     },
     "/api/categories/{id}": {
       "delete": {
-        "description": "An entry that also moves money in a financial account is kept, with this category's lines moved to the untracked accounts. A category with categories under it cannot be deleted until they are. Deleting a category that does not exist changes nothing. A deletion still running after a while is answered with 202 Accepted, and deleting again waits on it.",
+        "description": "No entry is deleted and no balance moves: the entries filed under the category lose it, or take the replacement. A category with categories under it cannot be deleted until they are. Deleting a category that does not exist changes nothing.",
         "operationId": "delete-category",
         "parameters": [
           {
@@ -2520,37 +2518,20 @@
             }
           },
           {
-            "description": "the category to merge this one into; merging is not supported yet",
+            "description": "an open category of the same kind, with none under it, that the entries take instead of losing their category",
             "explode": false,
             "in": "query",
             "name": "replacementId",
             "schema": {
-              "description": "the category to merge this one into; merging is not supported yet",
+              "description": "an open category of the same kind, with none under it, that the entries take instead of losing their category",
               "minimum": 1,
               "type": "integer"
             }
           }
         ],
         "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AccountDeletion"
-                }
-              }
-            },
-            "description": "OK"
-          },
-          "202": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AccountDeletion"
-                }
-              }
-            },
-            "description": "The deletion is still running; deleting again waits on it"
+          "204": {
+            "description": "No Content"
           },
           "409": {
             "content": {
@@ -2583,7 +2564,7 @@
             "description": "Internal Server Error"
           }
         },
-        "summary": "Delete a category with the entries recorded on it",
+        "summary": "Delete a category, or merge it into another",
         "tags": [
           "categories"
         ]
@@ -2591,7 +2572,7 @@
     },
     "/api/categories/{id}/close": {
       "post": {
-        "description": "A category with open categories under it cannot be closed until they are. Closing keeps its history; to remove it, delete it.",
+        "description": "A category with open categories under it cannot be closed until they are. A closed category is only no longer offered: entries keep it, and can still take it. To remove it, delete it.",
         "operationId": "close-category",
         "parameters": [
           {
@@ -2675,7 +2656,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AccountDeletionPreview"
+                  "$ref": "#/components/schemas/CategoryDeletionPreview"
                 }
               }
             },
@@ -2720,7 +2701,7 @@
     },
     "/api/categories/{id}/move": {
       "post": {
-        "description": "A category can move only while it and the categories under it have no postings.",
+        "description": "A category can move only while it and the categories under it have no entries.",
         "operationId": "move-category",
         "parameters": [
           {
@@ -4508,7 +4489,7 @@
     },
     "/api/investments/vests": {
       "post": {
-        "description": "The income category is credited with the value of every unit vested, Investments with that of the units delivered, and the tax category with that of the units withheld; the delivered units are added at their value. Shares sold to cover the tax are a separate sale. A repeated idempotency key returns the vest first recorded with it, recording nothing.",
+        "description": "Income is credited with the value of every unit vested, under the income category; Investments is debited with that of the units delivered, and Expenses with that of the units withheld, under the tax category. The delivered units are added at their value. Shares sold to cover the tax are a separate sale. A repeated idempotency key returns the vest first recorded with it, recording nothing.",
         "operationId": "vest-asset",
         "requestBody": {
           "content": {
@@ -4591,6 +4572,19 @@
               "description": "only entries with a posting on this ledger account",
               "minimum": 1,
               "type": "integer"
+            }
+          },
+          {
+            "description": "only entries with a posting in any of these categories or in one under them",
+            "explode": true,
+            "in": "query",
+            "name": "categoryId",
+            "schema": {
+              "description": "only entries with a posting in any of these categories or in one under them",
+              "items": {
+                "type": "integer"
+              },
+              "type": "array"
             }
           },
           {

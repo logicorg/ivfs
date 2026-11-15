@@ -19,10 +19,15 @@ const FXConversionEntryType = "fx_conversion"
 const FXClearingAccountName = "FX clearing"
 
 // FXFee is a fee charged in the source currency of a conversion. It is posted
-// as its own expense line and is never folded into the exchange rate.
+// as its own expense line, under its category, and is never folded into the
+// exchange rate.
 type FXFee struct {
-	LedgerAccountID int64           `json:"ledgerAccountId"`
-	Amount          decimal.Decimal `json:"amount"`
+	CategoryID int64           `json:"categoryId"`
+	Amount     decimal.Decimal `json:"amount"`
+	// LedgerAccountID is the "Expenses" account of the source currency, which
+	// the fee is debited on. The RegisterFXConversion workflow finds it, so
+	// what a caller sends is overwritten.
+	LedgerAccountID int64 `json:"ledgerAccountId,omitempty"`
 }
 
 // RegisterFXConversionInput converts money between two currencies as one
@@ -92,6 +97,10 @@ func (i *RegisterFXConversionInput) Validate() error {
 		return internalerrors.ErrMissingRequiredParameter{Parameters: missing}
 	}
 
+	if i.Fee != nil && i.Fee.CategoryID <= 0 {
+		return internalerrors.ErrMissingRequiredParameter{Parameters: []string{"Fee.CategoryID"}}
+	}
+
 	seen := make(map[int64]struct{})
 	for _, id := range i.AccountIDs() {
 		if id <= 0 {
@@ -126,7 +135,7 @@ func (i *RegisterFXConversionInput) ToJournalEntry() PostJournalEntryInput {
 		{LedgerAccountID: i.SourceClearingLedgerAccountID, Amount: i.NetSourceAmount(), Side: model.PostingDebit},
 	}
 	if i.Fee != nil {
-		postings = append(postings, PostingInput{LedgerAccountID: i.Fee.LedgerAccountID, Amount: i.Fee.Amount, Side: model.PostingDebit})
+		postings = append(postings, PostingInput{LedgerAccountID: i.Fee.LedgerAccountID, Amount: i.Fee.Amount, Side: model.PostingDebit, CategoryID: &i.Fee.CategoryID})
 	}
 	postings = append(postings,
 		PostingInput{LedgerAccountID: i.SourceLedgerAccountID, Amount: i.SourceAmount, Side: model.PostingCredit},

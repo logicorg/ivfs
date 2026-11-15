@@ -9,7 +9,8 @@ import (
 	"go.temporal.io/sdk/workflow"
 )
 
-// CategoryTotals totals each income and expense category over a period.
+// CategoryTotals totals each income and expense category, and what has
+// none, by currency over a period.
 func CategoryTotals(ctx workflow.Context, params lt.CategoryTotalsParams) (*lt.CategoryTotalsResult, error) {
 	ctx = workflow.WithActivityOptions(ctx, workflows.GetDefaultActivityOptions())
 	la := (*ledgeractivity.Activities)(nil)

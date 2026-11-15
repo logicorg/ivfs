@@ -9,7 +9,8 @@ import (
 )
 
 // RenameLedgerAccount renames a ledger account. It refuses to rename a shared
-// or stray account, or to give a top-level account one of their names.
+// or stray account, or to give an account of no financial account one of
+// their names.
 func RenameLedgerAccount(ctx workflow.Context, input lt.RenameLedgerAccountInput) (*lt.LedgerAccountMutationResult, error) {
 	ctx = workflow.WithActivityOptions(ctx, workflows.GetDefaultActivityOptions())
 

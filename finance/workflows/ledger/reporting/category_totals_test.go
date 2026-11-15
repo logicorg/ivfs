@@ -6,6 +6,7 @@ import (
 	activity "github.com/logicorg/ivfs/finance/activities/ledger/reporting"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	"github.com/logicorg/ivfs/pkg/model"
+	"github.com/logicorg/ivfs/pkg/ptr"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -16,7 +17,7 @@ func (s *WorkflowUnitTestSuite) TestCategoryTotals() {
 	january := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 	input := lt.CategoryTotalsParams{From: january, To: january.AddDate(0, 1, 0)}
 	totals := &lt.CategoryTotalsResult{Totals: []lt.CategoryTotal{
-		{LedgerAccountID: 1, Kind: model.LedgerAccountExpense, CurrencyID: 2, CurrencyCode: "EUR", Total: decimal.NewFromInt(120)},
+		{CategoryID: ptr.Int64(1), Kind: model.LedgerAccountExpense, CurrencyID: 2, CurrencyCode: "EUR", Total: decimal.NewFromInt(120)},
 	}}
 
 	tests := map[string]struct {

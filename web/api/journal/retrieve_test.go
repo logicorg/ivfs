@@ -16,18 +16,22 @@ import (
 
 // TestRetrieve checks that an entry's detail has its counterparty's name and
 // its dates besides what the list shows, that an entry without them leaves
-// them out, and that a missing entry is a 404.
+// them out, that a posting has its category when it carries one, and that a
+// missing entry is a 404.
 func TestRetrieve(t *testing.T) {
 	day := time.Date(2026, 1, 31, 10, 0, 0, 0, time.UTC)
 	cash := &model.LedgerAccount{ID: 100, Name: "Cash", Kind: model.LedgerAccountAsset, CurrencyID: 1}
 	salary := &model.LedgerAccount{ID: 300, Name: "Salary", Kind: model.LedgerAccountIncome, CurrencyID: 1}
 	postings := []model.Posting{
 		{ID: 70, LineNumber: 1, LedgerAccountID: 100, LedgerAccount: cash, Amount: decimal.RequireFromString("2500"), Side: model.PostingDebit},
-		{ID: 71, LineNumber: 2, LedgerAccountID: 300, LedgerAccount: salary, Amount: decimal.RequireFromString("2500"), Side: model.PostingCredit},
+		{
+			ID: 71, LineNumber: 2, LedgerAccountID: 300, LedgerAccount: salary, Amount: decimal.RequireFromString("2500"), Side: model.PostingCredit,
+			CategoryID: ptr.Int64(40), Category: &model.Category{ID: 40, Name: "Wages", Kind: model.LedgerAccountIncome},
+		},
 	}
 	postingsBody := `"postings":[` +
 		`{"lineNumber":1,"ledgerAccountId":100,"ledgerAccountName":"Cash","kind":"asset","currencyId":1,"amount":"2500","side":"debit"},` +
-		`{"lineNumber":2,"ledgerAccountId":300,"ledgerAccountName":"Salary","kind":"income","currencyId":1,"amount":"2500","side":"credit"}]`
+		`{"lineNumber":2,"ledgerAccountId":300,"ledgerAccountName":"Salary","kind":"income","currencyId":1,"amount":"2500","side":"credit","categoryId":40,"categoryName":"Wages"}]`
 
 	apitest.RunCases(t, Register, map[string]apitest.Case{
 		"an entry with a counterparty": {

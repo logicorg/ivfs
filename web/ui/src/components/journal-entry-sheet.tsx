@@ -155,7 +155,10 @@ function Postings({ entry, currencies }: { entry: EntryDetail; currencies: Curre
         <TableBody>
           {entry.postings.map((posting) => (
             <TableRow key={posting.lineNumber}>
-              <TableCell>{posting.ledgerAccountName}</TableCell>
+              <TableCell>
+                {posting.ledgerAccountName}
+                {posting.categoryName && <span className="text-muted-foreground"> · {posting.categoryName}</span>}
+              </TableCell>
               <TableCell className="text-right tabular-nums">
                 {posting.side === "debit" && amount(posting.amount, posting.currencyId)}
               </TableCell>

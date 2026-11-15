@@ -14,20 +14,20 @@ import (
 // fixture records journal entries that name counterparties, on two
 // accounts inserted once per test.
 type fixture struct {
-	s               *UnitTestSuite
-	cash, groceries *model.LedgerAccount
+	s              *UnitTestSuite
+	cash, expenses *model.LedgerAccount
 }
 
 func newFixture(s *UnitTestSuite) *fixture {
 	eur := testhelpers.Euro()
 	temporaltesting.Insert(s.T(), s.DB, eur)
 	e := &fixture{
-		s:         s,
-		cash:      &model.LedgerAccount{CurrencyID: eur.ID, Name: "Cash", Kind: model.LedgerAccountAsset},
-		groceries: &model.LedgerAccount{CurrencyID: eur.ID, Name: "Groceries", Kind: model.LedgerAccountExpense},
+		s:        s,
+		cash:     &model.LedgerAccount{CurrencyID: eur.ID, Name: "Cash", Kind: model.LedgerAccountAsset},
+		expenses: &model.LedgerAccount{CurrencyID: eur.ID, Name: lt.ExpensesAccountName, Kind: model.LedgerAccountExpense},
 	}
 	temporaltesting.Insert(s.T(), s.DB, e.cash)
-	temporaltesting.Insert(s.T(), s.DB, e.groceries)
+	temporaltesting.Insert(s.T(), s.DB, e.expenses)
 	return e
 }
 
@@ -35,7 +35,7 @@ func newFixture(s *UnitTestSuite) *fixture {
 func (e *fixture) post(counterpartyID int64) *model.JournalEntry {
 	entry := &model.JournalEntry{OccurredAt: time.Date(2026, 1, 15, 0, 0, 0, 0, time.UTC), CounterpartyID: &counterpartyID}
 	temporaltesting.InsertPostedJournalEntry(e.s.T(), e.s.DB, entry,
-		model.Posting{LedgerAccountID: e.groceries.ID, Amount: decimal.NewFromInt(10), Side: model.PostingDebit},
+		model.Posting{LedgerAccountID: e.expenses.ID, Amount: decimal.NewFromInt(10), Side: model.PostingDebit},
 		model.Posting{LedgerAccountID: e.cash.ID, Amount: decimal.NewFromInt(10), Side: model.PostingCredit},
 	)
 	return entry

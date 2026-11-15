@@ -115,7 +115,3 @@ func sharedLedgerAccountConflict(name string) error {
 func strayFinancialAccountConflict(name string) error {
 	return internalerrors.ErrResourceConflict{ResourceType: "FinancialAccount", Reason: fmt.Sprintf("%q holds the lines of deleted accounts and cannot be deleted while it has postings or movements", name)}
 }
-
-func foreignChildrenConflict(financialAccountID int64) error {
-	return internalerrors.ErrResourceConflict{ResourceType: "FinancialAccount", Reason: fmt.Sprintf("a ledger account of financial account %d has child accounts outside it; delete or move them first", financialAccountID)}
-}

@@ -38,15 +38,21 @@ func (s *WorkflowUnitTestSuite) TestRenameLedgerAccount() {
 		},
 		{
 			name:    "a stray account",
-			account: model.LedgerAccount{ID: 7, Name: "Uncategorized", Kind: model.LedgerAccountIncome},
+			account: model.LedgerAccount{ID: 7, Name: "Income", Kind: model.LedgerAccountIncome},
 			newName: "Other income",
-			wantErr: `"Uncategorized" (income) is managed by the ledger and cannot be renamed`,
+			wantErr: `"Income" (income) is managed by the ledger and cannot be renamed`,
 		},
 		{
-			name:    "a top-level account onto a shared name",
+			name:    "an account of no financial account onto a shared name",
 			account: model.LedgerAccount{ID: 7, Name: "Starting point", Kind: model.LedgerAccountEquity},
 			newName: "opening balances",
-			wantErr: `"Starting point" cannot be renamed: a top-level equity account named "opening balances" is managed by the ledger`,
+			wantErr: `"Starting point" cannot be renamed: the account named "opening balances", of no financial account, is managed by the ledger`,
+		},
+		{
+			name:    "an account of no financial account onto a shared name of another kind",
+			account: model.LedgerAccount{ID: 7, Name: "Starting point", Kind: model.LedgerAccountEquity},
+			newName: "FX clearing",
+			wantErr: `"Starting point" cannot be renamed: the account named "FX clearing", of no financial account, is managed by the ledger`,
 		},
 	}
 	for _, tc := range tests {
