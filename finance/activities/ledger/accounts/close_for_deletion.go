@@ -21,9 +21,8 @@ import (
 // account's ledger accounts with it. A target that does not exist is reported
 // gone. It is idempotent: an account already closed keeps its ClosedAt.
 //
-// It refuses, with ErrResourceConflict, an account with child ledger accounts,
-// whose rows could not be deleted after it, and a shared or stray account that
-// has postings or movements.
+// It refuses, with ErrResourceConflict, a shared or stray account that has
+// postings or movements.
 func (a *Activities) CloseAccountForDeletion(ctx context.Context, target lt.DeletionTarget) (*lt.CloseAccountForDeletionResult, error) {
 	db, err := a.Pools.For(ctx)
 	if err != nil {

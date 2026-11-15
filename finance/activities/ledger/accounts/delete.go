@@ -12,7 +12,7 @@ import (
 )
 
 // DeleteLedgerAccount is an activity that deletes a ledger account.
-// If the account has postings, or has child accounts, it will return an error indicating that the account cannot be deleted.
+// If the account has postings, it will return an error indicating that the account cannot be deleted.
 func (a *Activities) DeleteLedgerAccount(ctx context.Context, input lt.DeleteLedgerAccountInput) error {
 	db, err := a.Pools.For(ctx)
 	if err != nil {

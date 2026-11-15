@@ -149,8 +149,7 @@ type ListLedgerAccountsParams struct {
 	FinancialAccountID *int64 `json:"financialAccountId,omitempty" cue:">0"`
 	CurrencyID         *int64 `json:"currencyId,omitempty" cue:">0"`
 	// NameContains matches a case-insensitive substring of the ledger
-	// account's own name, for example to resolve "groceries" to a category
-	// before a write command.
+	// account's own name.
 	NameContains string `json:"nameContains,omitempty"`
 	// Kinds keeps only accounts of these kinds; empty matches every kind.
 	Kinds         []model.LedgerAccountKind `json:"kinds,omitempty"`

@@ -41,7 +41,8 @@ func scaffold(accountType ast.AccountType) []balanceSpec {
 	}
 }
 
-// sharedAccounts returns the top-level accounts every currency gets once,
+// sharedAccounts returns the accounts of no financial account every currency
+// gets once,
 // shared by every account in it; "Opening balances" is the first.
 func sharedAccounts() []balanceSpec {
 	return []balanceSpec{{openingBalances, model.LedgerAccountEquity}, {fxClearing, model.LedgerAccountAsset}}

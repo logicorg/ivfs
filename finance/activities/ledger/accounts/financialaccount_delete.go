@@ -13,13 +13,11 @@ import (
 )
 
 // DeleteFinancialAccount deletes the rows of a financial account emptied by a
-// deletion (ADR 0012): its ledger accounts, children first, and then the
-// account itself. An account that does not exist is already deleted.
+// deletion (ADR 0012): its ledger accounts, and then the account itself. An account that does not exist is already deleted.
 //
 // A row something still refers to, such as a posting or a movement recorded
 // since the batches emptied it, fails with ErrResourceConflict and deletes
-// nothing, so the deletion can empty it again. So does a ledger account with a
-// child outside the financial account.
+// nothing, so the deletion can empty it again.
 func (a *Activities) DeleteFinancialAccount(ctx context.Context, input lt.DeleteFinancialAccountInput) error {
 	db, err := a.Pools.For(ctx)
 	if err != nil {
