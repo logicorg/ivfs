@@ -80,7 +80,7 @@ export const createCategory = <ThrowOnError extends boolean = false>(options: Op
 /**
  * Total what each category earned or spent over a period
  *
- * The period is half-open: an entry that occurred at its start counts, one at its end does not, so consecutive periods neither overlap nor leave a gap. Only posted entries count.
+ * A total is per category and currency, and what has no category is totalled per kind and currency. The period is half-open: an entry that occurred at its start counts, one at its end does not, so consecutive periods neither overlap nor leave a gap. Only posted entries count.
  */
 export const getCategoryTotals = <ThrowOnError extends boolean = false>(options: Options<GetCategoryTotalsData, ThrowOnError>): RequestResult<GetCategoryTotalsResponses, GetCategoryTotalsErrors, ThrowOnError> => (options.client ?? client).get<GetCategoryTotalsResponses, GetCategoryTotalsErrors, ThrowOnError>({ url: '/api/categories/totals', ...options });
 

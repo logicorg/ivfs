@@ -77,17 +77,19 @@ type CloseCategoryInput struct {
 }
 
 // CategoryTotal is what was earned in an income category, or spent in an
-// expense category, during a period.
+// expense category, in one currency during a period.
 type CategoryTotal struct {
-	ID           int64          `json:"id" doc:"the category"`
+	CategoryID   *int64         `json:"categoryId,omitempty" doc:"the category; absent on the total of what has none, of its kind and currency"`
 	Kind         string         `json:"kind" enum:"income,expense"`
 	CurrencyID   int64          `json:"currencyId"`
 	CurrencyCode string         `json:"currencyCode"`
 	Total        gateway.Amount `json:"total" doc:"earned for income, spent for an expense; negative when refunds outweigh the spending"`
 }
 
-// CategoryTotalList is the total of each category with a posted entry in the
-// period. A category without one is left out.
+// CategoryTotalList is the total of each category and currency with a posted
+// entry in the period, and of what has no category. A category without an
+// entry is left out, and a total is of the category itself, not of those
+// under it.
 type CategoryTotalList struct {
 	Totals []CategoryTotal `json:"totals"`
 }

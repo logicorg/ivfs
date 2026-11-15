@@ -27,7 +27,7 @@ func registerList(api huma.API, c client.Client) {
 				&huma.ErrorDetail{Location: "query.after", Value: in.After, Message: "not the next of a page"})
 		}
 		params := lt.ListJournalEntriesParams{
-			LedgerAccountID: in.LedgerAccountID, CounterpartyID: in.CounterpartyID, From: in.From, To: in.To,
+			LedgerAccountID: in.LedgerAccountID, CategoryIDs: in.CategoryIDs, CounterpartyID: in.CounterpartyID, From: in.From, To: in.To,
 			Descending: in.Descending, Limit: in.Limit, After: after,
 		}
 		for _, status := range in.Statuses {

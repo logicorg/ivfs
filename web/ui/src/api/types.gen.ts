@@ -235,12 +235,12 @@ export type CategoryResult = {
 };
 
 export type CategoryTotal = {
+    /**
+     * the category; absent on the total of what has none, of its kind and currency
+     */
+    categoryId?: number;
     currencyCode: string;
     currencyId: number;
-    /**
-     * the category
-     */
-    id: number;
     kind: 'income' | 'expense';
     /**
      * earned for income, spent for an expense; negative when refunds outweigh the spending
@@ -2232,6 +2232,10 @@ export type ListJournalEntriesData = {
          * only entries with a posting on this ledger account
          */
         ledgerAccountId?: number;
+        /**
+         * only entries with a posting in any of these categories or in one under them
+         */
+        categoryId?: Array<number>;
         /**
          * only entries with this counterparty
          */

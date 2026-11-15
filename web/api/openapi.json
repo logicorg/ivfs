@@ -552,14 +552,14 @@
       "CategoryTotal": {
         "additionalProperties": false,
         "properties": {
+          "categoryId": {
+            "description": "the category; absent on the total of what has none, of its kind and currency",
+            "type": "integer"
+          },
           "currencyCode": {
             "type": "string"
           },
           "currencyId": {
-            "type": "integer"
-          },
-          "id": {
-            "description": "the category",
             "type": "integer"
           },
           "kind": {
@@ -579,7 +579,6 @@
           }
         },
         "required": [
-          "id",
           "kind",
           "currencyId",
           "currencyCode",
@@ -2446,7 +2445,7 @@
     },
     "/api/categories/totals": {
       "get": {
-        "description": "The period is half-open: an entry that occurred at its start counts, one at its end does not, so consecutive periods neither overlap nor leave a gap. Only posted entries count.",
+        "description": "A total is per category and currency, and what has no category is totalled per kind and currency. The period is half-open: an entry that occurred at its start counts, one at its end does not, so consecutive periods neither overlap nor leave a gap. Only posted entries count.",
         "operationId": "get-category-totals",
         "parameters": [
           {
@@ -4581,6 +4580,19 @@
               "description": "only entries with a posting on this ledger account",
               "minimum": 1,
               "type": "integer"
+            }
+          },
+          {
+            "description": "only entries with a posting in any of these categories or in one under them",
+            "explode": true,
+            "in": "query",
+            "name": "categoryId",
+            "schema": {
+              "description": "only entries with a posting in any of these categories or in one under them",
+              "items": {
+                "type": "integer"
+              },
+              "type": "array"
             }
           },
           {

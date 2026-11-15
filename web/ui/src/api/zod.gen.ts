@@ -126,9 +126,9 @@ export const zCategoryResult = z.object({
 });
 
 export const zCategoryTotal = z.object({
+    categoryId: z.int().optional(),
     currencyCode: z.string(),
     currencyId: z.int(),
-    id: z.int(),
     kind: z.enum(['income', 'expense']),
     total: z.string().regex(/^-?[0-9]+(\.[0-9]+)?$/)
 });
@@ -904,6 +904,7 @@ export const zVestAssetResponse = zRecordedTrade;
 
 export const zListJournalEntriesQuery = z.object({
     ledgerAccountId: z.int().gte(1).optional(),
+    categoryId: z.array(z.int()).optional(),
     counterpartyId: z.int().gte(1).optional(),
     status: z.array(z.enum(['draft', 'posted'])).optional(),
     from: z.iso.datetime().optional(),

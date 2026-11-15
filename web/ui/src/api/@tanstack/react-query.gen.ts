@@ -157,7 +157,7 @@ export const getCategoryTotalsQueryKey = (options: Options<GetCategoryTotalsData
 /**
  * Total what each category earned or spent over a period
  *
- * The period is half-open: an entry that occurred at its start counts, one at its end does not, so consecutive periods neither overlap nor leave a gap. Only posted entries count.
+ * A total is per category and currency, and what has no category is totalled per kind and currency. The period is half-open: an entry that occurred at its start counts, one at its end does not, so consecutive periods neither overlap nor leave a gap. Only posted entries count.
  */
 export const getCategoryTotalsOptions = (options: Options<GetCategoryTotalsData>) => queryOptions<GetCategoryTotalsResponse, GetCategoryTotalsError, GetCategoryTotalsResponse, ReturnType<typeof getCategoryTotalsQueryKey>>({
     queryFn: async ({ queryKey, signal }) => {

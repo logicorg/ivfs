@@ -22,7 +22,7 @@ const categories = [food, groceries, bakery, travel, salary, gifts]
 
 // total is what a category took in a currency, the euro unless dollars is set.
 const total = ({ id, kind }: Category, amount: string, dollars = false): CategoryTotal => ({
-  id,
+  categoryId: id,
   kind,
   currencyId: dollars ? 2 : 1,
   currencyCode: dollars ? "USD" : "EUR",
@@ -89,6 +89,28 @@ describe("periodTotals", () => {
       want: [
         { currencyCode: "EUR", income: "0", expenses: "10", net: "-10", rows: [{ id: 4, name: "Travel", kind: "expense", total: "10" }] },
         { currencyCode: "USD", income: "0", expenses: "30", net: "-30", rows: [{ id: 4, name: "Travel", kind: "expense", total: "30" }] },
+      ],
+    },
+    {
+      name: "what has no category as a row of its own in each kind",
+      totals: [
+        total(travel, "10"),
+        { kind: "expense", currencyId: 1, currencyCode: "EUR", total: "15" },
+        { kind: "income", currencyId: 1, currencyCode: "EUR", total: "7" },
+      ],
+      categories,
+      want: [
+        {
+          currencyCode: "EUR",
+          income: "7",
+          expenses: "25",
+          net: "-18",
+          rows: [
+            { id: undefined, name: "Uncategorized", kind: "income", total: "7" },
+            { id: undefined, name: "Uncategorized", kind: "expense", total: "15" },
+            { id: 4, name: "Travel", kind: "expense", total: "10" },
+          ],
+        },
       ],
     },
     {

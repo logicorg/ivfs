@@ -21,9 +21,10 @@ func listAt(day int) time.Time { return listDay.AddDate(0, 0, day) }
 type journalFixture struct {
 	cash, groceries, salary, rent, tax *model.LedgerAccount
 	tesco, employer                    *model.Counterparty
-	// taxes is the category of the tax posting of entry 0, the only posting
-	// with one.
-	taxes *model.Category
+	// taxes is the category of the tax posting of entry 0 and food that of
+	// the groceries posting of entry 1, the only postings with one. taxes is
+	// under duties, and leisure has no posting.
+	duties, taxes, food, leisure *model.Category
 	// entries are in the order the list returns them, oldest first:
 	//
 	//	0  day 1  posted  salary: cash 80 and tax 20 against salary 100  (employer, payroll-1)
@@ -48,10 +49,16 @@ func (s *UnitTestSuite) seedJournal() journalFixture {
 		tax:       testLedgerAccount(s.T(), s.DB, eur.ID, "tax", model.LedgerAccountExpense),
 		tesco:     &model.Counterparty{Name: "Tesco"},
 		employer:  &model.Counterparty{Name: "Employer"},
-		taxes:     &model.Category{Kind: model.LedgerAccountExpense, Name: "Taxes"},
+		duties:    &model.Category{Kind: model.LedgerAccountExpense, Name: "Duties"},
+		food:      &model.Category{Kind: model.LedgerAccountExpense, Name: "Food"},
+		leisure:   &model.Category{Kind: model.LedgerAccountExpense, Name: "Leisure"},
 	}
 	temporaltesting.Insert(s.T(), s.DB, f.tesco)
 	temporaltesting.Insert(s.T(), s.DB, f.employer)
+	for _, category := range []*model.Category{f.duties, f.food, f.leisure} {
+		temporaltesting.Insert(s.T(), s.DB, category)
+	}
+	f.taxes = &model.Category{ParentID: &f.duties.ID, Kind: model.LedgerAccountExpense, Name: "Taxes"}
 	temporaltesting.Insert(s.T(), s.DB, f.taxes)
 
 	debit := func(account *model.LedgerAccount, amount int64) model.Posting {
@@ -82,7 +89,9 @@ func (s *UnitTestSuite) seedJournal() journalFixture {
 	taxed := debit(f.tax, 20)
 	taxed.CategoryID = &f.taxes.ID
 	temporaltesting.InsertPostedJournalEntry(s.T(), s.DB, f.entries[0], debit(f.cash, 80), taxed, credit(f.salary, 100))
-	temporaltesting.InsertPostedJournalEntry(s.T(), s.DB, f.entries[1], debit(f.groceries, 20), credit(f.cash, 20))
+	eaten := debit(f.groceries, 20)
+	eaten.CategoryID = &f.food.ID
+	temporaltesting.InsertPostedJournalEntry(s.T(), s.DB, f.entries[1], eaten, credit(f.cash, 20))
 	temporaltesting.InsertPostedJournalEntry(s.T(), s.DB, f.entries[2], debit(f.groceries, 30), credit(f.cash, 30))
 	temporaltesting.InsertPostedJournalEntry(s.T(), s.DB, f.entries[3], debit(f.rent, 50), credit(f.cash, 50))
 	s.insertDraft(f.entries[4], debit(f.groceries, 5), credit(f.cash, 5))
@@ -159,6 +168,26 @@ func (s *UnitTestSuite) Test_ListJournalEntries() {
 		"a ledger account of one posting in one entry": {
 			params: lt.ListJournalEntriesParams{LedgerAccountID: f.tax.ID},
 			want:   []int{0},
+		},
+		"a category": {
+			params: lt.ListJournalEntriesParams{CategoryIDs: []int64{f.food.ID}},
+			want:   []int{1},
+		},
+		"a category, by the one it is under": {
+			params: lt.ListJournalEntriesParams{CategoryIDs: []int64{f.duties.ID}},
+			want:   []int{0},
+		},
+		"several categories": {
+			params: lt.ListJournalEntriesParams{CategoryIDs: []int64{f.food.ID, f.taxes.ID, f.leisure.ID}},
+			want:   []int{0, 1},
+		},
+		"a category without postings": {
+			params: lt.ListJournalEntriesParams{CategoryIDs: []int64{f.leisure.ID}},
+			want:   []int{},
+		},
+		"a category and a counterparty together": {
+			params: lt.ListJournalEntriesParams{CategoryIDs: []int64{f.duties.ID, f.food.ID}, CounterpartyID: f.tesco.ID},
+			want:   []int{1},
 		},
 		"a counterparty": {
 			params: lt.ListJournalEntriesParams{CounterpartyID: f.tesco.ID},

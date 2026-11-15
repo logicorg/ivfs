@@ -74,6 +74,15 @@ func TestList(t *testing.T) {
 			},
 			WantStatus: http.StatusOK, WantBody: `{"entries":[` + shoppingBody + `]}`,
 		},
+		"the entries of several categories": {
+			Method: http.MethodGet, Path: "/api/journal-entries?categoryId=40&categoryId=41",
+			Call: &apitest.WorkflowCall{
+				Workflow: journalwf.ListJournalEntries,
+				Params:   lt.ListJournalEntriesParams{CategoryIDs: []int64{40, 41}},
+				Result:   lt.ListJournalEntriesResult{Entries: []model.JournalEntry{shopping}},
+			},
+			WantStatus: http.StatusOK, WantBody: `{"entries":[` + shoppingBody + `]}`,
+		},
 		"every entry, in a date range and several states": {
 			Method: http.MethodGet,
 			Path:   "/api/journal-entries?from=2026-01-01T00:00:00Z&to=2026-02-01T00:00:00Z&status=draft&status=posted",

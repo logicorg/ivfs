@@ -8,6 +8,7 @@ import (
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	reportingwf "github.com/logicorg/ivfs/finance/workflows/ledger/reporting"
 	"github.com/logicorg/ivfs/pkg/model"
+	"github.com/logicorg/ivfs/pkg/ptr"
 	"github.com/logicorg/ivfs/web/api/apitest"
 	"github.com/shopspring/decimal"
 	"go.temporal.io/sdk/temporal"
@@ -28,14 +29,16 @@ func TestTotals(t *testing.T) {
 			Call: &apitest.WorkflowCall{
 				Workflow: reportingwf.CategoryTotals, Params: month,
 				Result: lt.CategoryTotalsResult{Totals: []lt.CategoryTotal{
-					{LedgerAccountID: 10, Kind: model.LedgerAccountIncome, CurrencyID: 1, CurrencyCode: "EUR", Total: decimal.RequireFromString("2000")},
-					{LedgerAccountID: 11, Kind: model.LedgerAccountExpense, CurrencyID: 1, CurrencyCode: "EUR", Total: decimal.RequireFromString("-20.5")},
+					{CategoryID: ptr.Int64(10), Kind: model.LedgerAccountIncome, CurrencyID: 1, CurrencyCode: "EUR", Total: decimal.RequireFromString("2000")},
+					{CategoryID: ptr.Int64(11), Kind: model.LedgerAccountExpense, CurrencyID: 1, CurrencyCode: "EUR", Total: decimal.RequireFromString("-20.5")},
+					{Kind: model.LedgerAccountExpense, CurrencyID: 2, CurrencyCode: "USD", Total: decimal.RequireFromString("15")},
 				}},
 			},
 			WantStatus: http.StatusOK,
 			WantBody: `{"totals":[` +
-				`{"id":10,"kind":"income","currencyId":1,"currencyCode":"EUR","total":"2000"},` +
-				`{"id":11,"kind":"expense","currencyId":1,"currencyCode":"EUR","total":"-20.5"}]}`,
+				`{"categoryId":10,"kind":"income","currencyId":1,"currencyCode":"EUR","total":"2000"},` +
+				`{"categoryId":11,"kind":"expense","currencyId":1,"currencyCode":"EUR","total":"-20.5"},` +
+				`{"kind":"expense","currencyId":2,"currencyCode":"USD","total":"15"}]}`,
 		},
 		"total a month without entries": {
 			Method: http.MethodGet, Path: path,

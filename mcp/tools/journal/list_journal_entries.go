@@ -39,7 +39,7 @@ func listJournalEntriesHandler(c client.Client) func(
 		for i, je := range result.Entries {
 			postings := make([]PostingSummary, len(je.Postings))
 			for j, p := range je.Postings {
-				postings[j] = PostingSummary{LedgerAccountID: p.LedgerAccountID, LineNumber: p.LineNumber, Amount: p.Amount, Side: string(p.Side)}
+				postings[j] = PostingSummary{LedgerAccountID: p.LedgerAccountID, LineNumber: p.LineNumber, Amount: p.Amount, Side: string(p.Side), CategoryID: p.CategoryID}
 			}
 			out.Entries[i] = JournalEntrySummary{
 				ID: je.ID, Status: string(je.Status), OccurredAt: je.OccurredAt,

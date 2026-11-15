@@ -26,7 +26,7 @@ func TestListJournalEntriesParams_Validate(t *testing.T) {
 		failure string
 	}{
 		"no filter":                          {params: ListJournalEntriesParams{}},
-		"every filter":                       {params: ListJournalEntriesParams{LedgerAccountID: 1, CounterpartyID: 2, ExternalID: "bank-42", Statuses: []model.JournalEntryStatus{model.JournalEntryPosted}, From: day, To: day.Add(time.Hour)}},
+		"every filter":                       {params: ListJournalEntriesParams{LedgerAccountID: 1, CategoryIDs: []int64{4, 5}, CounterpartyID: 2, ExternalID: "bank-42", Statuses: []model.JournalEntryStatus{model.JournalEntryPosted}, From: day, To: day.Add(time.Hour)}},
 		"several statuses":                   {params: ListJournalEntriesParams{Statuses: []model.JournalEntryStatus{model.JournalEntryDraft, model.JournalEntryPosted}}},
 		"newest first":                       {params: ListJournalEntriesParams{Descending: true}},
 		"a range with no start":              {params: ListJournalEntriesParams{To: day}},
@@ -34,6 +34,7 @@ func TestListJournalEntriesParams_Validate(t *testing.T) {
 		"the largest page":                   {params: ListJournalEntriesParams{Limit: MaxJournalEntriesLimit}},
 		"a cursor":                           {params: ListJournalEntriesParams{After: &JournalEntryCursor{OccurredAt: day, ID: 3}}},
 		"a negative account":                 {failure: constraint, params: ListJournalEntriesParams{LedgerAccountID: -1}},
+		"a category that is not an id":       {failure: rule, params: ListJournalEntriesParams{CategoryIDs: []int64{4, 0}}},
 		"a negative counterparty":            {failure: constraint, params: ListJournalEntriesParams{CounterpartyID: -1}},
 		"a negative limit":                   {failure: constraint, params: ListJournalEntriesParams{Limit: -1}},
 		"a page that is too large":           {failure: rule, params: ListJournalEntriesParams{Limit: MaxJournalEntriesLimit + 1}},

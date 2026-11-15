@@ -28,6 +28,16 @@ func (a *Activities) ListJournalEntries(ctx context.Context, params lt.ListJourn
 	if params.LedgerAccountID > 0 {
 		query = query.Where("EXISTS (SELECT 1 FROM ledger.posting AS p WHERE p.journal_entry_id = je.id AND p.ledger_account_id = ?)", params.LedgerAccountID)
 	}
+	if len(params.CategoryIDs) > 0 {
+		// A parent has no postings of its own, so naming it means the leaves
+		// under it.
+		query = query.Where(`EXISTS (SELECT 1 FROM ledger.posting AS p WHERE p.journal_entry_id = je.id AND p.category_id IN (
+			WITH RECURSIVE subtree AS (
+				SELECT cat.id FROM ledger.category AS cat WHERE cat.id IN (?)
+				UNION
+				SELECT child.id FROM ledger.category AS child JOIN subtree ON child.parent_id = subtree.id
+			) SELECT id FROM subtree))`, bun.List(params.CategoryIDs))
+	}
 	if params.CounterpartyID > 0 {
 		query = query.Where("je.counterparty_id = ?", params.CounterpartyID)
 	}

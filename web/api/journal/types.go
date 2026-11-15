@@ -55,6 +55,7 @@ type EntryDetail struct {
 // ListJournalEntriesInput is the request of GET /api/journal-entries.
 type ListJournalEntriesInput struct {
 	LedgerAccountID int64     `query:"ledgerAccountId" minimum:"1" doc:"only entries with a posting on this ledger account"`
+	CategoryIDs     []int64   `query:"categoryId,explode" doc:"only entries with a posting in any of these categories or in one under them"`
 	CounterpartyID  int64     `query:"counterpartyId" minimum:"1" doc:"only entries with this counterparty"`
 	Statuses        []string  `query:"status,explode" enum:"draft,posted" doc:"only entries in any of these states; every state if omitted"`
 	From            time.Time `query:"from" doc:"only entries that occurred at or after this instant"`
