@@ -7,7 +7,9 @@
 - Amends: ADR 0001 (a posting's account never changes), ADR 0003 (used
   accounts are closed, never deleted), ADR 0004 (movements are append-only),
   ADR 0005 (names are reserved forever), ADR 0006 (the shared accounts)
-- Amended by: [ADR 0017](0017-editing-journal-entries.md)
+- Amended by: [ADR 0017](0017-editing-journal-entries.md) and
+  [ADR 0019](0019-currency-neutral-categories.md) (deleting a category moves
+  no posting, and "Uncategorized" is removed)
 - Related: [RFC 0004](../rfcs/0004-deleting-accounts.md) (the discussion this
   ADR decides), [ADR 0005](0005-uniqueness-and-idempotent-creation.md)
   (uniqueness keys), [ADR 0006](0006-intent-level-account-setup.md) (account

@@ -1,6 +1,6 @@
 # ADR 0019: Currency-neutral categories, as a dimension of postings
 
-- Status: Proposed
+- Status: Implemented
 - Date: 2026-11-14
 - Depends on: [ADR 0001](0001-double-entry-ledger.md) (one currency per ledger
   account), [ADR 0003](0003-categories-and-tags.md) (categories as ledger
