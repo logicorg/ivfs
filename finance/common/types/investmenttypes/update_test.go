@@ -12,7 +12,7 @@ func TestUpdateInvestmentInput_Validate(t *testing.T) {
 	occurredAt := time.Date(2026, 10, 3, 10, 0, 0, 0, time.UTC)
 	buy := UpdateBuyInput{FinancialAccountID: 1, AssetID: 2, Units: decimal.NewFromInt(10), Amount: decimal.RequireFromString("1050.00"), CurrencyCode: "EUR", OccurredAt: occurredAt}
 	sell := UpdateSellInput{FinancialAccountID: 1, AssetID: 2, Units: decimal.NewFromInt(4), Amount: decimal.RequireFromString("480.00"), CurrencyCode: "EUR", OccurredAt: occurredAt}
-	vest := UpdateVestInput{FinancialAccountID: 1, AssetID: 2, UnitsVested: decimal.NewFromInt(100), FairMarketValue: decimal.RequireFromString("10.00"), CurrencyCode: "USD", IncomeCategoryLedgerAccountID: 3, OccurredAt: occurredAt}
+	vest := UpdateVestInput{FinancialAccountID: 1, AssetID: 2, UnitsVested: decimal.NewFromInt(100), FairMarketValue: decimal.RequireFromString("10.00"), CurrencyCode: "USD", IncomeCategoryID: 3, OccurredAt: occurredAt}
 
 	buyNoDate, sellFeeAll, vestAllWithheld, vestNoTaxCategory := buy, sell, vest, vest
 	buyNoDate.OccurredAt = time.Time{}
@@ -41,7 +41,7 @@ func TestUpdateInvestmentInput_Validate(t *testing.T) {
 		{name: "a buy without a date", input: UpdateInvestmentInput{JournalEntryID: 41, Kind: KindBuy, Buy: &buyNoDate}, wantError: "missing required parameters: OccurredAt"},
 		{name: "a sale whose fee takes all the proceeds", input: UpdateInvestmentInput{JournalEntryID: 41, Kind: KindSell, Sell: &sellFeeAll}, wantError: "invalid parameter: the fee of a sale must be less than its amount"},
 		{name: "a vest that delivers nothing", input: UpdateInvestmentInput{JournalEntryID: 41, Kind: KindVest, Vest: &vestAllWithheld}, wantError: "invalid parameter: the units withheld for tax must be fewer than the units vested"},
-		{name: "a vest with withholding and no tax category", input: UpdateInvestmentInput{JournalEntryID: 41, Kind: KindVest, Vest: &vestNoTaxCategory}, wantError: "missing required parameters: TaxCategoryLedgerAccountID"},
+		{name: "a vest with withholding and no tax category", input: UpdateInvestmentInput{JournalEntryID: 41, Kind: KindVest, Vest: &vestNoTaxCategory}, wantError: "missing required parameters: TaxCategoryID"},
 	}
 
 	for _, tc := range tests {
@@ -67,6 +67,6 @@ func TestUpdateInvestmentInput_Facts(t *testing.T) {
 	sell := UpdateSellInput{FinancialAccountID: 1, AssetID: 2, Units: decimal.NewFromInt(4), Amount: decimal.NewFromInt(480), Fee: decimal.NewFromInt(3), CurrencyCode: "EUR", OccurredAt: occurredAt, Description: "a note"}
 	require.Equal(t, &SellAssetInput{FinancialAccountID: 1, AssetID: 2, Units: decimal.NewFromInt(4), Amount: decimal.NewFromInt(480), Fee: decimal.NewFromInt(3), CurrencyCode: "EUR", OccurredAt: occurredAt, Description: "a note"}, sell.Sell())
 
-	vest := UpdateVestInput{FinancialAccountID: 1, AssetID: 2, UnitsVested: decimal.NewFromInt(100), UnitsWithheld: decimal.NewFromInt(40), FairMarketValue: decimal.NewFromInt(10), CurrencyCode: "USD", IncomeCategoryLedgerAccountID: 3, TaxCategoryLedgerAccountID: 4, OccurredAt: occurredAt, Description: "a note"}
-	require.Equal(t, &VestInput{FinancialAccountID: 1, AssetID: 2, UnitsVested: decimal.NewFromInt(100), UnitsWithheld: decimal.NewFromInt(40), FairMarketValue: decimal.NewFromInt(10), CurrencyCode: "USD", IncomeCategoryLedgerAccountID: 3, TaxCategoryLedgerAccountID: 4, OccurredAt: occurredAt, Description: "a note"}, vest.Vest())
+	vest := UpdateVestInput{FinancialAccountID: 1, AssetID: 2, UnitsVested: decimal.NewFromInt(100), UnitsWithheld: decimal.NewFromInt(40), FairMarketValue: decimal.NewFromInt(10), CurrencyCode: "USD", IncomeCategoryID: 3, TaxCategoryID: 4, OccurredAt: occurredAt, Description: "a note"}
+	require.Equal(t, &VestInput{FinancialAccountID: 1, AssetID: 2, UnitsVested: decimal.NewFromInt(100), UnitsWithheld: decimal.NewFromInt(40), FairMarketValue: decimal.NewFromInt(10), CurrencyCode: "USD", IncomeCategoryID: 3, TaxCategoryID: 4, OccurredAt: occurredAt, Description: "a note"}, vest.Vest())
 }

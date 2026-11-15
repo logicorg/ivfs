@@ -139,7 +139,7 @@ func register(ctx workflow.Context, t trade) (*it.TradeResult, error) {
 }
 
 // registerVest writes the vest's entry and movement in one transaction. A
-// closed account or category, or an unknown asset, fails here, inside it.
+// closed account or an unknown asset fails here, inside it.
 func registerVest(ctx workflow.Context, input lt.RegisterVestInput) (*it.TradeResult, error) {
 	var result lt.RegisterVestResult
 	if err := workflow.ExecuteChildWorkflow(ctx, portfoliowf.RegisterVest, input).Get(ctx, &result); err != nil {

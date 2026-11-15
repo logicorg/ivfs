@@ -1975,7 +1975,7 @@
             "type": "integer"
           },
           "currencyCode": {
-            "description": "the currency of the value, such as EUR, in which the account has its Cash and Investments balances and the categories are",
+            "description": "the currency of the value, such as EUR, in which the account has its Cash and Investments balances",
             "minLength": 1,
             "type": "string"
           },
@@ -2001,8 +2001,8 @@
             "minLength": 1,
             "type": "string"
           },
-          "incomeCategoryLedgerAccountId": {
-            "description": "the income category credited with the value of the units vested",
+          "incomeCategoryId": {
+            "description": "the income category of the value of the units vested",
             "minimum": 1,
             "type": "integer"
           },
@@ -2011,8 +2011,8 @@
             "format": "date-time",
             "type": "string"
           },
-          "taxCategoryLedgerAccountId": {
-            "description": "the expense category debited with the value of the units withheld; required when units are withheld",
+          "taxCategoryId": {
+            "description": "the expense category of the value of the units withheld; required when units are withheld",
             "minimum": 1,
             "type": "integer"
           },
@@ -2040,7 +2040,7 @@
           "unitsVested",
           "fairMarketValue",
           "currencyCode",
-          "incomeCategoryLedgerAccountId",
+          "incomeCategoryId",
           "occurredAt"
         ],
         "type": "object"
@@ -4498,7 +4498,7 @@
     },
     "/api/investments/vests": {
       "post": {
-        "description": "The income category is credited with the value of every unit vested, Investments with that of the units delivered, and the tax category with that of the units withheld; the delivered units are added at their value. Shares sold to cover the tax are a separate sale. A repeated idempotency key returns the vest first recorded with it, recording nothing.",
+        "description": "Income is credited with the value of every unit vested, under the income category; Investments is debited with that of the units delivered, and Expenses with that of the units withheld, under the tax category. The delivered units are added at their value. Shares sold to cover the tax are a separate sale. A repeated idempotency key returns the vest first recorded with it, recording nothing.",
         "operationId": "vest-asset",
         "requestBody": {
           "content": {

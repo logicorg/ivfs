@@ -204,8 +204,6 @@ function RecordVestForm({ onDone }: { onDone: () => void }) {
                 onChange={(id) => {
                   field.onChange(id)
                   form.resetField("currencyCode")
-                  form.resetField("incomeCategoryId")
-                  form.resetField("taxCategoryId")
                 }}
                 options={accountOptions}
                 placeholder="Choose…"
@@ -220,13 +218,9 @@ function RecordVestForm({ onDone }: { onDone: () => void }) {
               <SelectField
                 id="currencyCode"
                 label="Valued in"
-                description="The account's Investments holds the value, and the categories take it, in this currency."
+                description="The account's Investments holds the value in this currency."
                 value={field.value || undefined}
-                onChange={(code) => {
-                  field.onChange(code)
-                  form.resetField("incomeCategoryId")
-                  form.resetField("taxCategoryId")
-                }}
+                onChange={field.onChange}
                 options={currencyOptions}
                 placeholder={financialAccountId === "" ? "Choose an account first" : "Choose…"}
                 error={fieldState.error}

@@ -12,31 +12,32 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestBuildVest checks that a vest credits the income with the value of every
-// unit vested, debits "Investments" and the tax category with the values of
-// the units delivered and withheld, each rounded to the currency's precision,
-// and adds the delivered units at their value.
+// TestBuildVest checks that a vest credits "Income" with the value of every
+// unit vested, under the income category, debits "Investments" and "Expenses"
+// with the values of the units delivered and withheld, the latter under the
+// tax category, each rounded to the currency's precision, and adds the
+// delivered units at their value.
 func TestBuildVest(t *testing.T) {
 	occurredAt := time.Date(2026, 10, 3, 10, 0, 0, 0, time.UTC)
 	b := &brokerage{currency: euro, cash: cash.ID, investments: investments.ID}
-	categories := &vestCategories{income: compensation.ID, tax: taxWithheld.ID}
+	categories := &vestCategories{income: compensation.ID, incomeAccount: income.ID, tax: taxWithheld.ID, expensesAccount: expenses.ID}
 	vest := func(vested, withheld, value string) it.VestInput {
 		in := it.VestInput{
 			IdempotencyKey: "a71f", FinancialAccountID: ibkr, AssetID: 7,
 			UnitsVested: decimal.RequireFromString(vested), FairMarketValue: decimal.RequireFromString(value),
-			CurrencyCode: "EUR", IncomeCategoryLedgerAccountID: compensation.ID, OccurredAt: occurredAt,
+			CurrencyCode: "EUR", IncomeCategoryID: compensation.ID, OccurredAt: occurredAt,
 		}
 		if withheld != "" {
-			in.UnitsWithheld, in.TaxCategoryLedgerAccountID = decimal.RequireFromString(withheld), taxWithheld.ID
+			in.UnitsWithheld, in.TaxCategoryID = decimal.RequireFromString(withheld), taxWithheld.ID
 		}
 		return in
 	}
-	postings := func(delivered, withheld, income string) []lt.PostingInput {
+	postings := func(delivered, withheld, vested string) []lt.PostingInput {
 		result := []lt.PostingInput{{LedgerAccountID: investments.ID, Amount: decimal.RequireFromString(delivered), Side: model.PostingDebit}}
 		if withheld != "" {
-			result = append(result, lt.PostingInput{LedgerAccountID: taxWithheld.ID, Amount: decimal.RequireFromString(withheld), Side: model.PostingDebit})
+			result = append(result, lt.PostingInput{LedgerAccountID: expenses.ID, Amount: decimal.RequireFromString(withheld), Side: model.PostingDebit, CategoryID: ptr.NewPtr(taxWithheld.ID)})
 		}
-		return append(result, lt.PostingInput{LedgerAccountID: compensation.ID, Amount: decimal.RequireFromString(income), Side: model.PostingCredit})
+		return append(result, lt.PostingInput{LedgerAccountID: income.ID, Amount: decimal.RequireFromString(vested), Side: model.PostingCredit, CategoryID: ptr.NewPtr(compensation.ID)})
 	}
 
 	tests := map[string]struct {

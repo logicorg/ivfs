@@ -60,14 +60,13 @@ type UpdateVestInput struct {
 	UnitsWithheld   decimal.Decimal `json:"unitsWithheld,omitzero" cue:"!~\"^-\"" jsonschema:"the units the employer kept for tax, zero or more and fewer than those vested"`
 	FairMarketValue decimal.Decimal `json:"fairMarketValue" cue:"!=\"0\" & !~\"^-\"" jsonschema:"the value of one unit on the vesting date, positive"`
 	CurrencyCode    string          `json:"currencyCode" cue:"!~\"^[[:space:]]*$\"" jsonschema:"the currency of the fair market value, an ISO 4217 code such as USD"`
-	// IncomeCategoryLedgerAccountID is credited with the value of every unit
-	// vested, and TaxCategoryLedgerAccountID debited with that of the units
-	// withheld. Without withheld units the tax category is not used, so a
-	// form may send the one it remembers.
-	IncomeCategoryLedgerAccountID int64     `json:"incomeCategoryLedgerAccountId" cue:">0" jsonschema:"the income category the compensation is booked to, such as RSU compensation"`
-	TaxCategoryLedgerAccountID    int64     `json:"taxCategoryLedgerAccountId,omitzero" cue:">=0" jsonschema:"the expense category the withheld units are booked to, such as Tax withheld; required when units are withheld"`
-	OccurredAt                    time.Time `json:"occurredAt" jsonschema:"the instant of the vest, such as 2026-10-03T10:00:00Z"`
-	Description                   string    `json:"description,omitempty" jsonschema:"a note"`
+	// IncomeCategoryID is the category of the value of every unit vested,
+	// and TaxCategoryID that of the units withheld. Without withheld units
+	// the tax category is not used, so a form may send the one it remembers.
+	IncomeCategoryID int64     `json:"incomeCategoryId" cue:">0" jsonschema:"the income category the compensation is booked to, such as RSU compensation"`
+	TaxCategoryID    int64     `json:"taxCategoryId,omitzero" cue:">=0" jsonschema:"the expense category the withheld units are booked to, such as Tax withheld; required when units are withheld"`
+	OccurredAt       time.Time `json:"occurredAt" jsonschema:"the instant of the vest, such as 2026-10-03T10:00:00Z"`
+	Description      string    `json:"description,omitempty" jsonschema:"a note"`
 }
 
 // Validate checks the entry's id, that the kind is known, that its facts and
@@ -148,15 +147,15 @@ func (i *UpdateSellInput) Sell() *SellAssetInput {
 // key.
 func (i *UpdateVestInput) Vest() *VestInput {
 	return &VestInput{
-		FinancialAccountID:            i.FinancialAccountID,
-		AssetID:                       i.AssetID,
-		UnitsVested:                   i.UnitsVested,
-		UnitsWithheld:                 i.UnitsWithheld,
-		FairMarketValue:               i.FairMarketValue,
-		CurrencyCode:                  i.CurrencyCode,
-		IncomeCategoryLedgerAccountID: i.IncomeCategoryLedgerAccountID,
-		TaxCategoryLedgerAccountID:    i.TaxCategoryLedgerAccountID,
-		OccurredAt:                    i.OccurredAt,
-		Description:                   i.Description,
+		FinancialAccountID: i.FinancialAccountID,
+		AssetID:            i.AssetID,
+		UnitsVested:        i.UnitsVested,
+		UnitsWithheld:      i.UnitsWithheld,
+		FairMarketValue:    i.FairMarketValue,
+		CurrencyCode:       i.CurrencyCode,
+		IncomeCategoryID:   i.IncomeCategoryID,
+		TaxCategoryID:      i.TaxCategoryID,
+		OccurredAt:         i.OccurredAt,
+		Description:        i.Description,
 	}
 }

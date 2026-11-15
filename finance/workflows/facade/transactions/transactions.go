@@ -86,31 +86,15 @@ func categorized(ctx workflow.Context, balanceID, categoryID int64, kind model.L
 	if err := checkBalance(balance); err != nil {
 		return nil, 0, err
 	}
-	if category.Kind != kind {
-		return nil, 0, internalerrors.ErrInvalidParameter{
-			Description: fmt.Sprintf("%q is an %s category, not an %s one", category.Name, category.Kind, kind),
-		}
+	if err := ct.CheckKind(category, kind); err != nil {
+		return nil, 0, err
 	}
 
-	account, err := ensureCategoryAccount(ctx, kind, balance.CurrencyID)
+	account, err := ledgeraccountswf.EnsureCategoryAccount(ctx, kind, balance.CurrencyID)
 	if err != nil {
 		return nil, 0, err
 	}
 	return balance, account, nil
-}
-
-// ensureCategoryAccount returns the id of the "Expenses" or "Income" account
-// of a currency, created the first time the currency needs it.
-func ensureCategoryAccount(ctx workflow.Context, kind model.LedgerAccountKind, currencyID int64) (int64, error) {
-	name := lt.CategoryAccountName(kind)
-	var created lt.CreateLedgerAccountResult
-	err := workflow.ExecuteChildWorkflow(ctx, ledgeraccountswf.CreateLedgerAccount, lt.CreateLedgerAccountInput{
-		CurrencyID: currencyID, Name: name, Kind: kind,
-	}).Get(ctx, &created)
-	if err != nil {
-		return 0, fmt.Errorf("find the %s account of currency %d: %w", name, currencyID, err)
-	}
-	return created.LedgerAccountID, nil
 }
 
 // entry is the movement as one journal entry, crediting the account the money

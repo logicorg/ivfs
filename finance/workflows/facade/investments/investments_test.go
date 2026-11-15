@@ -3,11 +3,14 @@ package investments
 import (
 	"errors"
 	"testing"
+	"time"
 
+	catt "github.com/logicorg/ivfs/finance/common/types/categorytypes"
 	ct "github.com/logicorg/ivfs/finance/common/types/currencytypes"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	currencieswf "github.com/logicorg/ivfs/finance/workflows/currencies"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
+	categorieswf "github.com/logicorg/ivfs/finance/workflows/ledger/categories"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/logicorg/ivfs/pkg/ptr"
 	"github.com/shopspring/decimal"
@@ -36,26 +39,37 @@ var (
 	investments = model.LedgerAccount{ID: 501, FinancialAccountID: ptr.Int64(ibkr), CurrencyID: 1, Name: "investments", Kind: model.LedgerAccountAsset}
 	cashUSD     = model.LedgerAccount{ID: 502, FinancialAccountID: ptr.Int64(ibkr), CurrencyID: 2, Name: "Cash", Kind: model.LedgerAccountAsset}
 
-	// The categories a vest books to: in EUR, as ibkr's investments are, and
-	// one in USD.
-	compensation    = model.LedgerAccount{ID: 600, CurrencyID: 1, Name: "RSU compensation", Kind: model.LedgerAccountIncome}
-	taxWithheld     = model.LedgerAccount{ID: 601, CurrencyID: 1, Name: "Tax withheld", Kind: model.LedgerAccountExpense}
-	compensationUSD = model.LedgerAccount{ID: 602, CurrencyID: 2, Name: "RSU compensation (USD)", Kind: model.LedgerAccountIncome}
+	// The shared accounts a vest's categories are booked on, in EUR as ibkr's
+	// investments are.
+	income   = model.LedgerAccount{ID: 600, CurrencyID: 1, Name: "Income", Kind: model.LedgerAccountIncome}
+	expenses = model.LedgerAccount{ID: 601, CurrencyID: 1, Name: "Expenses", Kind: model.LedgerAccountExpense}
+
+	// The categories a vest names, which have no currency. A closed one is
+	// still a category of an entry.
+	compensation = model.Category{ID: 30, Name: "RSU compensation", Kind: model.LedgerAccountIncome}
+	taxWithheld  = model.Category{ID: 31, Name: "Tax withheld", Kind: model.LedgerAccountExpense}
+	oldPlan      = model.Category{ID: 32, Name: "Old plan", Kind: model.LedgerAccountIncome, ClosedAt: ptr.NewPtr(time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC))}
 )
 
-// unknownCategory is a ledger account ID no account has.
+// unknownCategory is an ID no category has.
 const unknownCategory int64 = 999
 
-// mockCategories lets a vest retrieve its categories, or cash, by ID, and fail
-// on unknownCategory as RetrieveLedgerAccount does. The mocks are optional, as
-// a vest reads one category or two.
+// mockCategories lets a vest retrieve its categories by ID, failing on
+// unknownCategory as RetrieveCategory does, and find the "Income" and
+// "Expenses" accounts in EUR. The mocks are optional, as a vest reads one
+// category or two.
 func mockCategories(env *testsuite.TestWorkflowEnvironment) {
-	for _, account := range []model.LedgerAccount{compensation, taxWithheld, compensationUSD, cash} {
-		env.OnWorkflow(ledgeraccountswf.RetrieveLedgerAccount, mock.Anything, lt.RetrieveLedgerAccountParams{ID: account.ID}).
-			Return(&lt.RetrieveLedgerAccountResult{LedgerAccount: &account}, nil).Maybe()
+	for _, category := range []model.Category{compensation, taxWithheld, oldPlan} {
+		env.OnWorkflow(categorieswf.RetrieveCategory, mock.Anything, catt.RetrieveCategoryParams{ID: category.ID}).
+			Return(&catt.RetrieveCategoryResult{Category: &category}, nil).Maybe()
 	}
-	env.OnWorkflow(ledgeraccountswf.RetrieveLedgerAccount, mock.Anything, lt.RetrieveLedgerAccountParams{ID: unknownCategory}).
-		Return(nil, errors.New("resource LedgerAccount not found with ID: 999")).Maybe()
+	env.OnWorkflow(categorieswf.RetrieveCategory, mock.Anything, catt.RetrieveCategoryParams{ID: unknownCategory}).
+		Return(nil, errors.New("resource Category not found with ID: 999")).Maybe()
+	for _, account := range []model.LedgerAccount{income, expenses} {
+		env.OnWorkflow(ledgeraccountswf.CreateLedgerAccount, mock.Anything, lt.CreateLedgerAccountInput{
+			CurrencyID: account.CurrencyID, Name: account.Name, Kind: account.Kind,
+		}).Return(&lt.CreateLedgerAccountResult{LedgerAccountID: account.ID}, nil).Maybe()
+	}
 }
 
 // mockBrokerage lets the trades find the currencies, an unknown code failing

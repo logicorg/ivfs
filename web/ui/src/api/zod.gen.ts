@@ -525,9 +525,9 @@ export const zVestForm = z.object({
     fairMarketValue: z.string().regex(/^-?[0-9]+(\.[0-9]+)?$/),
     financialAccountId: z.int().gte(1),
     idempotencyKey: z.string().min(1),
-    incomeCategoryLedgerAccountId: z.int().gte(1),
+    incomeCategoryId: z.int().gte(1),
     occurredAt: z.iso.datetime(),
-    taxCategoryLedgerAccountId: z.int().gte(1).optional(),
+    taxCategoryId: z.int().gte(1).optional(),
     unitsVested: z.string().regex(/^-?[0-9]+(\.[0-9]+)?$/),
     unitsWithheld: z.string().regex(/^-?[0-9]+(\.[0-9]+)?$/).optional()
 });

@@ -344,7 +344,7 @@ export const sellAsset = <ThrowOnError extends boolean = false>(options: Options
 /**
  * Record units of an asset received as compensation in a brokerage account
  *
- * The income category is credited with the value of every unit vested, Investments with that of the units delivered, and the tax category with that of the units withheld; the delivered units are added at their value. Shares sold to cover the tax are a separate sale. A repeated idempotency key returns the vest first recorded with it, recording nothing.
+ * Income is credited with the value of every unit vested, under the income category; Investments is debited with that of the units delivered, and Expenses with that of the units withheld, under the tax category. The delivered units are added at their value. Shares sold to cover the tax are a separate sale. A repeated idempotency key returns the vest first recorded with it, recording nothing.
  */
 export const vestAsset = <ThrowOnError extends boolean = false>(options: Options<VestAssetData, ThrowOnError>): RequestResult<VestAssetResponses, VestAssetErrors, ThrowOnError> => (options.client ?? client).post<VestAssetResponses, VestAssetErrors, ThrowOnError>({
     url: '/api/investments/vests',

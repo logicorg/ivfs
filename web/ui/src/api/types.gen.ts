@@ -803,7 +803,7 @@ export type VestForm = {
      */
     assetId: number;
     /**
-     * the currency of the value, such as EUR, in which the account has its Cash and Investments balances and the categories are
+     * the currency of the value, such as EUR, in which the account has its Cash and Investments balances
      */
     currencyCode: string;
     /**
@@ -823,17 +823,17 @@ export type VestForm = {
      */
     idempotencyKey: string;
     /**
-     * the income category credited with the value of the units vested
+     * the income category of the value of the units vested
      */
-    incomeCategoryLedgerAccountId: number;
+    incomeCategoryId: number;
     /**
      * the instant of the vest
      */
     occurredAt: string;
     /**
-     * the expense category debited with the value of the units withheld; required when units are withheld
+     * the expense category of the value of the units withheld; required when units are withheld
      */
-    taxCategoryLedgerAccountId?: number;
+    taxCategoryId?: number;
     /**
      * every unit vested, those withheld included, greater than zero
      */
