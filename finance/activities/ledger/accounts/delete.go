@@ -34,14 +34,6 @@ func (a *Activities) DeleteLedgerAccount(ctx context.Context, input lt.DeleteLed
 			return internalerrors.ErrResourceConflict{ResourceType: "LedgerAccount", Reason: "ledger account has postings; close it instead"}
 		}
 
-		children, err := tx.NewSelect().Model((*model.LedgerAccount)(nil)).Where("la.parent_id = ?", input.LedgerAccountID).Exists(ctx)
-		if err != nil {
-			return fmt.Errorf("check child ledger accounts: %w", err)
-		}
-		if children {
-			return internalerrors.ErrResourceConflict{ResourceType: "LedgerAccount", Reason: "ledger account has children"}
-		}
-
 		if _, err := tx.NewDelete().Model((*model.LedgerAccount)(nil)).Where("id = ?", input.LedgerAccountID).Exec(ctx); err != nil {
 			if conflict := sqllib.StillReferenced(err, "LedgerAccount"); conflict != nil {
 				return conflict

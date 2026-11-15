@@ -20,8 +20,8 @@ type closeForDeletionFixture struct {
 	currency    *model.Currency
 	institution *model.Institution
 	asset       *model.Asset
-	// salary is the other side of every entry.
-	salary *model.LedgerAccount
+	// income is the other side of every entry.
+	income *model.LedgerAccount
 }
 
 func newCloseForDeletionFixture(s *UnitTestSuite) *closeForDeletionFixture {
@@ -35,7 +35,7 @@ func newCloseForDeletionFixture(s *UnitTestSuite) *closeForDeletionFixture {
 	temporaltesting.Insert(t, s.DB, f.currency)
 	temporaltesting.Insert(t, s.DB, f.institution)
 	temporaltesting.Insert(t, s.DB, f.asset)
-	f.salary = f.ledgerAccount(t, "Salary", model.LedgerAccountIncome, nil)
+	f.income = f.ledgerAccount(t, lt.IncomeAccountName, model.LedgerAccountIncome, nil)
 	return f
 }
 
@@ -51,11 +51,11 @@ func (f *closeForDeletionFixture) financialAccount(t *testing.T, institutionID i
 	return account
 }
 
-// post records an entry of 100 from salary to account.
+// post records an entry of 100 from income to account.
 func (f *closeForDeletionFixture) post(t *testing.T, account *model.LedgerAccount) {
 	temporaltesting.InsertPostedJournalEntry(t, f.s.DB, &model.JournalEntry{OccurredAt: time.Date(2026, 1, 15, 0, 0, 0, 0, time.UTC)},
 		model.Posting{LedgerAccountID: account.ID, Amount: decimal.NewFromInt(100), Side: model.PostingDebit},
-		model.Posting{LedgerAccountID: f.salary.ID, Amount: decimal.NewFromInt(100), Side: model.PostingCredit},
+		model.Posting{LedgerAccountID: f.income.ID, Amount: decimal.NewFromInt(100), Side: model.PostingCredit},
 	)
 }
 
@@ -102,15 +102,6 @@ func (s *UnitTestSuite) TestCloseAccountForDeletion() {
 				return lt.DeletionTarget{LedgerAccountID: &cash.ID}
 			},
 		},
-		"a ledger account with child accounts": {
-			target: func(t *testing.T) lt.DeletionTarget {
-				parent := f.ledgerAccount(t, "Savings", model.LedgerAccountAsset, nil)
-				child := &model.LedgerAccount{Name: "Savings pot", CurrencyID: f.currency.ID, Kind: model.LedgerAccountAsset, ParentID: &parent.ID}
-				temporaltesting.Insert(t, s.DB, child)
-				return lt.DeletionTarget{LedgerAccountID: &parent.ID}
-			},
-			errStr: "has child accounts; delete them first",
-		},
 		"a shared ledger account with postings": {
 			target: func(t *testing.T) lt.DeletionTarget {
 				clearing := f.ledgerAccount(t, lt.FXClearingAccountName, model.LedgerAccountAsset, nil)
@@ -133,21 +124,11 @@ func (s *UnitTestSuite) TestCloseAccountForDeletion() {
 			target: func(t *testing.T) lt.DeletionTarget {
 				account := f.financialAccount(t, f.institution.ID, "Revolut EUR")
 				cash := f.ledgerAccount(t, "Revolut cash", model.LedgerAccountAsset, &account.ID)
-				f.ledgerAccount(t, "Revolut fees", model.LedgerAccountExpense, &account.ID)
+				f.ledgerAccount(t, "Revolut pot", model.LedgerAccountAsset, &account.ID)
 				f.post(t, cash)
 				f.hold(t, account)
 				return lt.DeletionTarget{FinancialAccountID: &account.ID}
 			},
-		},
-		"a financial account whose ledger account has a child outside it": {
-			target: func(t *testing.T) lt.DeletionTarget {
-				account := f.financialAccount(t, f.institution.ID, "Revolut USD")
-				cash := f.ledgerAccount(t, "Revolut USD cash", model.LedgerAccountAsset, &account.ID)
-				child := &model.LedgerAccount{Name: "Revolut USD pot", CurrencyID: f.currency.ID, Kind: model.LedgerAccountAsset, ParentID: &cash.ID}
-				temporaltesting.Insert(t, s.DB, child)
-				return lt.DeletionTarget{FinancialAccountID: &account.ID}
-			},
-			errStr: "has child accounts outside it; delete or move them first",
 		},
 		"the stray financial account with movements": {
 			target: func(t *testing.T) lt.DeletionTarget {
@@ -221,8 +202,8 @@ func (s *UnitTestSuite) TestCloseAccountForDeletion_Idempotency() {
 	cash := f.ledgerAccount(t, "Revolut cash", model.LedgerAccountAsset, &account.ID)
 	f.post(t, cash)
 	earlier := time.Date(2025, 6, 1, 0, 0, 0, 0, time.UTC)
-	fees := &model.LedgerAccount{Name: "Revolut fees", CurrencyID: f.currency.ID, Kind: model.LedgerAccountExpense, FinancialAccountID: &account.ID, ClosedAt: &earlier}
-	temporaltesting.Insert(t, s.DB, fees)
+	pot := &model.LedgerAccount{Name: "Revolut pot", CurrencyID: f.currency.ID, Kind: model.LedgerAccountAsset, FinancialAccountID: &account.ID, ClosedAt: &earlier}
+	temporaltesting.Insert(t, s.DB, pot)
 	target := lt.DeletionTarget{FinancialAccountID: &account.ID}
 
 	_, err := s.Env.ExecuteActivity(s.aa.CloseAccountForDeletion, target)

@@ -38,9 +38,9 @@ func (s *WorkflowUnitTestSuite) TestRenameLedgerAccount() {
 		},
 		{
 			name:    "a stray account",
-			account: model.LedgerAccount{ID: 7, Name: "Uncategorized", Kind: model.LedgerAccountIncome},
+			account: model.LedgerAccount{ID: 7, Name: "Income", Kind: model.LedgerAccountIncome},
 			newName: "Other income",
-			wantErr: `"Uncategorized" (income) is managed by the ledger and cannot be renamed`,
+			wantErr: `"Income" (income) is managed by the ledger and cannot be renamed`,
 		},
 		{
 			name:    "a top-level account onto a shared name",

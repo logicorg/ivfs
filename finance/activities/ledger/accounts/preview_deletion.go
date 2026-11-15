@@ -80,8 +80,7 @@ func loadPreviewTargetTx(ctx context.Context, tx bun.Tx, input lt.PreviewAccount
 		if target == nil {
 			return nil, nil, internalerrors.ErrNotFound{ResourceType: "LedgerAccount", ID: *input.LedgerAccountID}
 		}
-		conflicts, err := appendConflict(nil, refuseChildAccountsTx(ctx, tx, *input.LedgerAccountID))
-		return target, conflicts, err
+		return target, nil, nil
 
 	case input.FinancialAccountID != nil:
 		target, err := loadDeletionTargetTx(ctx, tx, lt.DeletionTarget{FinancialAccountID: input.FinancialAccountID})
@@ -91,8 +90,7 @@ func loadPreviewTargetTx(ctx context.Context, tx bun.Tx, input lt.PreviewAccount
 		if target == nil {
 			return nil, nil, internalerrors.ErrNotFound{ResourceType: "FinancialAccount", ID: *input.FinancialAccountID}
 		}
-		conflicts, err := appendConflict(nil, refuseForeignChildrenTx(ctx, tx, *input.FinancialAccountID, target.ledgerIDs()))
-		return target, conflicts, err
+		return target, nil, nil
 	}
 
 	var institution model.Institution
@@ -126,11 +124,6 @@ func loadPreviewTargetTx(ctx context.Context, tx bun.Tx, input lt.PreviewAccount
 			target.ledgerAccounts[ledgerID] = ledgerAccount
 		}
 		target.financialAccounts[id] = account.financialAccount
-		// The accounts are deleted in turn, so a child in another of the
-		// institution's accounts can still refuse one.
-		if conflicts, err = appendConflict(conflicts, refuseForeignChildrenTx(ctx, tx, id, account.ledgerIDs())); err != nil {
-			return nil, nil, err
-		}
 	}
 	return target, conflicts, nil
 }
@@ -200,7 +193,7 @@ func (d *deletionTally) entryTx(ctx context.Context, tx bun.Tx, entry *model.Jou
 		if !deleted {
 			continue
 		}
-		stray := deletion.StrayLedgerAccount(account.Kind, account.CurrencyID)
+		stray := deletion.StrayLedgerAccount(account.CurrencyID)
 		key := strayKey{stray.Name, stray.Kind, stray.CurrencyID}
 		amount := posting.Amount
 		if posting.Side == model.PostingCredit {

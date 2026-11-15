@@ -24,18 +24,14 @@ const (
 )
 
 // UntrackedAccountsName is the name of the stray equity account, one per
-// currency, that receives the postings of a deleted balance or equity account,
-// and of the stray financial account that receives a deleted financial
+// currency, that receives the postings of a deleted ledger account, and of
+// the stray financial account that receives a deleted financial
 // account's units (ADR 0012).
 const UntrackedAccountsName = "Untracked accounts"
 
 // UntrackedInstitutionName is the name of the institution that holds the
 // stray financial account, "Untracked accounts" (ADR 0012).
 const UntrackedInstitutionName = "Untracked"
-
-// UncategorizedAccountName is the name of the stray category, one per kind and
-// currency, that receives the postings of a deleted category (ADR 0012).
-const UncategorizedAccountName = "Uncategorized"
 
 // reservedLedgerAccounts are the kinds each shared or stray ledger account's
 // name is reserved for.
@@ -45,15 +41,14 @@ var reservedLedgerAccounts = map[string][]model.LedgerAccountKind{
 	strings.ToLower(ExpensesAccountName):        {model.LedgerAccountExpense},
 	strings.ToLower(IncomeAccountName):          {model.LedgerAccountIncome},
 	strings.ToLower(UntrackedAccountsName):      {model.LedgerAccountEquity},
-	strings.ToLower(UncategorizedAccountName):   {model.LedgerAccountExpense, model.LedgerAccountIncome},
 }
 
 // IsReservedLedgerAccount reports whether the account is one of the shared or
-// stray accounts, which the ledger finds by name, kind, and being top-level
-// with no financial account. Names compare as the unique keys do, trimmed and
+// stray accounts, which the ledger finds by name, kind, and having no
+// financial account. Names compare as the unique keys do, trimmed and
 // case-insensitively (ADR 0005), so "fx clearing" is the one creation finds.
 func IsReservedLedgerAccount(account *model.LedgerAccount) bool {
-	if account.ParentID != nil || account.FinancialAccountID != nil {
+	if account.FinancialAccountID != nil {
 		return false
 	}
 	for _, kind := range reservedLedgerAccounts[normalizeName(account.Name)] {

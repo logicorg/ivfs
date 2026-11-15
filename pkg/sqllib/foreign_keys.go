@@ -53,7 +53,6 @@ var foreignKeys = []foreignKey{
 	{"currency.conversion", "from_currency_id", "currency.currency", "Currency"},
 	{"currency.conversion", "to_currency_id", "currency.currency", "Currency"},
 	{"account.financial_account", "institution_id", "institution.institution", "Institution"},
-	{"ledger.ledger_account", "parent_id", "ledger.ledger_account", "LedgerAccount"},
 	{"ledger.ledger_account", "financial_account_id", "account.financial_account", "FinancialAccount"},
 	{"ledger.ledger_account", "currency_id", "currency.currency", "Currency"},
 	{"ledger.category", "parent_id", "ledger.category", "Category"},

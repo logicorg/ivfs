@@ -54,7 +54,6 @@ type AccountSummary struct {
 	LedgerAccountID      int64                   `json:"ledgerAccountId"`
 	LedgerAccountName    string                  `json:"ledgerAccountName"`
 	Kind                 model.LedgerAccountKind `json:"kind"`
-	ParentID             *int64                  `json:"parentId,omitempty"`
 	CurrencyID           int64                   `json:"currencyId"`
 	CurrencyCode         string                  `json:"currencyCode"`
 	FinancialAccountID   *int64                  `json:"financialAccountId,omitempty"`

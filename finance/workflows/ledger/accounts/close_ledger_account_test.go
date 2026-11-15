@@ -46,8 +46,8 @@ func (s *WorkflowUnitTestSuite) TestCloseLedgerAccount() {
 		},
 		{
 			name:    "a stray account",
-			account: model.LedgerAccount{ID: 7, Name: "Uncategorized", Kind: model.LedgerAccountExpense},
-			wantErr: `"Uncategorized" (expense) is managed by the ledger and cannot be closed`,
+			account: model.LedgerAccount{ID: 7, Name: "Expenses", Kind: model.LedgerAccountExpense},
+			wantErr: `"Expenses" (expense) is managed by the ledger and cannot be closed`,
 		},
 	}
 	for _, tc := range tests {

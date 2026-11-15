@@ -141,7 +141,6 @@ func Register(r worker.Registry, pools tenancy.Pools) {
 	r.RegisterWorkflow(ledgeraccountswf.ListLedgerAccounts)
 	r.RegisterWorkflow(ledgeraccountswf.ListAccounts)
 	r.RegisterWorkflow(ledgeraccountswf.RenameLedgerAccount)
-	r.RegisterWorkflow(ledgeraccountswf.MoveLedgerAccount)
 	r.RegisterWorkflow(ledgeraccountswf.CloseLedgerAccount)
 	r.RegisterWorkflow(ledgeraccountswf.DeleteLedgerAccount)
 	r.RegisterWorkflow(ledgeraccountswf.DeleteFinancialAccount)

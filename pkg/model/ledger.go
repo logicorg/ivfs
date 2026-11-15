@@ -103,8 +103,6 @@ type LedgerAccount struct {
 	bun.BaseModel `bun:"table:ledger.ledger_account,alias:la"`
 
 	ID int64 `bun:"id,pk,autoincrement" json:"id"`
-	// ParentID is the parent ledger account, if any. It is used to create a hierarchy of ledger accounts.
-	ParentID *int64 `bun:"parent_id" json:"parentId,omitempty"`
 	// FinancialAccountID is the financial account that owns this ledger account, if any.
 	//
 	// Examples:
@@ -118,8 +116,6 @@ type LedgerAccount struct {
 	CreatedAt          time.Time         `bun:"created_at,nullzero,notnull,default:current_timestamp" json:"createdAt"`
 	UpdatedAt          time.Time         `bun:"updated_at,nullzero,notnull,default:current_timestamp" json:"updatedAt"`
 
-	Parent           *LedgerAccount    `bun:"rel:belongs-to,join:parent_id=id,on_delete:restrict" json:"parent,omitempty"`
-	Children         []LedgerAccount   `bun:"rel:has-many,join:id=parent_id" json:"children,omitempty"`
 	FinancialAccount *FinancialAccount `bun:"rel:belongs-to,join:financial_account_id=id,on_delete:restrict" json:"financialAccount,omitempty"`
 	Currency         *Currency         `bun:"rel:belongs-to,join:currency_id=id,on_delete:restrict" json:"currency,omitempty"`
 }

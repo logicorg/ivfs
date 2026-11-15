@@ -31,7 +31,6 @@ func (s *UnitTestSuite) Test_ForeignKeysAreDeclared() {
 		"currency.conversion.from_currency_id -> currency.currency",
 		"currency.conversion.to_currency_id -> currency.currency",
 		"account.financial_account.institution_id -> institution.institution",
-		"ledger.ledger_account.parent_id -> ledger.ledger_account",
 		"ledger.ledger_account.financial_account_id -> account.financial_account",
 		"ledger.ledger_account.currency_id -> currency.currency",
 		"ledger.category.parent_id -> ledger.category",

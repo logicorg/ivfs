@@ -127,7 +127,6 @@ func (i *CloseFinancialAccountInput) Validate() error {
 }
 
 type CreateLedgerAccountInput struct {
-	ParentID           *int64                  `json:"parentId,omitempty" jsonschema:"the parent ledger account, of the same kind and currency, if any"`
 	FinancialAccountID *int64                  `json:"financialAccountId,omitempty" jsonschema:"the financial account the ledger account belongs to, if any"`
 	CurrencyID         int64                   `json:"currencyId"`
 	Name               string                  `json:"name"`
@@ -148,7 +147,6 @@ type RetrieveLedgerAccountResult struct {
 
 type ListLedgerAccountsParams struct {
 	FinancialAccountID *int64 `json:"financialAccountId,omitempty" cue:">0"`
-	ParentID           *int64 `json:"parentId,omitempty" cue:">0"`
 	CurrencyID         *int64 `json:"currencyId,omitempty" cue:">0"`
 	// NameContains matches a case-insensitive substring of the ledger
 	// account's own name, for example to resolve "groceries" to a category
@@ -189,21 +187,6 @@ type RenameLedgerAccountInput struct {
 
 func (i *RenameLedgerAccountInput) Validate() error {
 	err := cuego.Validate(i)
-	if err != nil {
-		return errs.ValidationError{Err: err}
-	}
-
-	return nil
-}
-
-type MoveLedgerAccountInput struct {
-	LedgerAccountID int64  `json:"ledgerAccountId" cue:">0"`
-	ParentID        *int64 `json:"parentId,omitempty"`
-}
-
-func (i *MoveLedgerAccountInput) Validate() error {
-	err := cuego.Validate(i)
-
 	if err != nil {
 		return errs.ValidationError{Err: err}
 	}

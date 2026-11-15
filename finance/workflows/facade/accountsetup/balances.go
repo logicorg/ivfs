@@ -125,7 +125,6 @@ func summarise(ledgerAccount *model.LedgerAccount, account *financialAccountRef)
 		LedgerAccountID:   ledgerAccount.ID,
 		LedgerAccountName: ledgerAccount.Name,
 		Kind:              ledgerAccount.Kind,
-		ParentID:          ledgerAccount.ParentID,
 		CurrencyID:        ledgerAccount.CurrencyID,
 		Closed:            ledgerAccount.ClosedAt != nil,
 	}
