@@ -423,9 +423,9 @@ export type ExpenseForm = {
      */
     balanceLedgerAccountId: number;
     /**
-     * the expense category it is spent on, in the balance's currency
+     * the expense category it is spent on
      */
-    categoryLedgerAccountId: number;
+    categoryId: number;
     /**
      * a note on the entry
      */
@@ -495,9 +495,9 @@ export type IncomeForm = {
      */
     balanceLedgerAccountId: number;
     /**
-     * the income category it is earned on, in the balance's currency
+     * the income category it is earned on
      */
-    categoryLedgerAccountId: number;
+    categoryId: number;
     /**
      * a note on the entry
      */

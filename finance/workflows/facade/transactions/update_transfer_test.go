@@ -133,7 +133,7 @@ func (s *WorkflowUnitTestSuite) TestUpdateTransfer_Errors() {
 	}{
 		{name: "an invalid request", entry: 42, from: cash.ID, to: cash.ID, toAmount: "0", wantError: "invalid parameter: a transfer moves money between two different balances"},
 		{name: "no entry", from: cash.ID, to: savingsVault.ID, toAmount: "0", wantError: "validation error"},
-		{name: "a source that is a category", entry: 42, from: salary.ID, to: cash.ID, toAmount: "0", wantError: `invalid parameter: "Salary" is not a balance`},
+		{name: "a source that is not a balance", entry: 42, from: income.ID, to: cash.ID, toAmount: "0", wantError: `invalid parameter: "Income" is not a balance`},
 		{name: "a destination of no financial account", entry: 42, from: cash.ID, to: fxClearing.ID, toAmount: "0", wantError: `invalid parameter: "FX clearing" is not a balance`},
 		{name: "a different amount arriving in the same currency", entry: 42, from: cash.ID, to: savingsVault.ID, toAmount: "299", wantError: `invalid parameter: "Cash" and "Savings vault" are in the same currency`},
 		{name: "no amount arriving in another currency", entry: 42, from: cash.ID, to: cashUSD.ID, toAmount: "0", wantError: `are in different currencies; give the amount that arrives as toAmount`},

@@ -1035,8 +1035,8 @@
             "minimum": 1,
             "type": "integer"
           },
-          "categoryLedgerAccountId": {
-            "description": "the expense category it is spent on, in the balance's currency",
+          "categoryId": {
+            "description": "the expense category it is spent on",
             "minimum": 1,
             "type": "integer"
           },
@@ -1058,7 +1058,7 @@
         "required": [
           "idempotencyKey",
           "balanceLedgerAccountId",
-          "categoryLedgerAccountId",
+          "categoryId",
           "amount",
           "occurredAt"
         ],
@@ -1200,8 +1200,8 @@
             "minimum": 1,
             "type": "integer"
           },
-          "categoryLedgerAccountId": {
-            "description": "the income category it is earned on, in the balance's currency",
+          "categoryId": {
+            "description": "the income category it is earned on",
             "minimum": 1,
             "type": "integer"
           },
@@ -1223,7 +1223,7 @@
         "required": [
           "idempotencyKey",
           "balanceLedgerAccountId",
-          "categoryLedgerAccountId",
+          "categoryId",
           "amount",
           "occurredAt"
         ],

@@ -14,6 +14,15 @@ import (
 // against (ADR 0006).
 const OpeningBalancesAccountName = "Opening balances"
 
+// ExpensesAccountName and IncomeAccountName are the names of the shared
+// accounts, one per currency and of no financial account, that every expense
+// and income is booked on. What the money was for is the category of the
+// posting, not an account.
+const (
+	ExpensesAccountName = "Expenses"
+	IncomeAccountName   = "Income"
+)
+
 // UntrackedAccountsName is the name of the stray equity account, one per
 // currency, that receives the postings of a deleted balance or equity account,
 // and of the stray financial account that receives a deleted financial
@@ -33,6 +42,8 @@ const UncategorizedAccountName = "Uncategorized"
 var reservedLedgerAccounts = map[string][]model.LedgerAccountKind{
 	strings.ToLower(OpeningBalancesAccountName): {model.LedgerAccountEquity},
 	strings.ToLower(FXClearingAccountName):      {model.LedgerAccountAsset},
+	strings.ToLower(ExpensesAccountName):        {model.LedgerAccountExpense},
+	strings.ToLower(IncomeAccountName):          {model.LedgerAccountIncome},
 	strings.ToLower(UntrackedAccountsName):      {model.LedgerAccountEquity},
 	strings.ToLower(UncategorizedAccountName):   {model.LedgerAccountExpense, model.LedgerAccountIncome},
 }
@@ -51,6 +62,15 @@ func IsReservedLedgerAccount(account *model.LedgerAccount) bool {
 		}
 	}
 	return false
+}
+
+// CategoryAccountName returns the name of the shared account that the
+// postings of a category of this kind are booked on.
+func CategoryAccountName(kind model.LedgerAccountKind) string {
+	if kind == model.LedgerAccountIncome {
+		return IncomeAccountName
+	}
+	return ExpensesAccountName
 }
 
 // IsUntrackedInstitution reports whether an institution of this name is the

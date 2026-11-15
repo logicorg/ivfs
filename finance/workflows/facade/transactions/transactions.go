@@ -7,9 +7,11 @@ import (
 	"fmt"
 	"time"
 
+	ct "github.com/logicorg/ivfs/finance/common/types/categorytypes"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	tt "github.com/logicorg/ivfs/finance/common/types/transactiontypes"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
+	categorieswf "github.com/logicorg/ivfs/finance/workflows/ledger/categories"
 	journalwf "github.com/logicorg/ivfs/finance/workflows/ledger/journal"
 	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/logicorg/ivfs/pkg/model"
@@ -25,9 +27,12 @@ type movement struct {
 	kind           string
 	idempotencyKey string
 	from, to       int64
-	amount         decimal.Decimal
-	occurredAt     time.Time
-	description    string
+	// fromCategory and toCategory classify the posting of that side, which is
+	// then on "Income" or "Expenses". Zero is no category.
+	fromCategory, toCategory int64
+	amount                   decimal.Decimal
+	occurredAt               time.Time
+	description              string
 }
 
 // retrieveLedgerAccounts retrieves the given ledger accounts concurrently.
@@ -61,31 +66,51 @@ func checkBalance(account *model.LedgerAccount) error {
 	return nil
 }
 
-// checkCategory fails unless the account is a category of the given kind.
-func checkCategory(account *model.LedgerAccount, kind model.LedgerAccountKind) error {
-	if account.Kind == kind {
-		return nil
+// categorized checks the two things an expense and an income name, a balance
+// and a category of the kind, and returns the balance with the shared account
+// of that kind in the balance's currency, where the category's side is
+// booked. A category has no currency and may be closed: closing one only
+// stops it being offered.
+func categorized(ctx workflow.Context, balanceID, categoryID int64, kind model.LedgerAccountKind) (*model.LedgerAccount, int64, error) {
+	retrieval := workflow.ExecuteChildWorkflow(ctx, categorieswf.RetrieveCategory, ct.RetrieveCategoryParams{ID: categoryID})
+	accounts, err := retrieveLedgerAccounts(ctx, balanceID)
+	if err != nil {
+		return nil, 0, err
 	}
-	if account.Kind == model.LedgerAccountIncome || account.Kind == model.LedgerAccountExpense {
-		return internalerrors.ErrInvalidParameter{
-			Description: fmt.Sprintf("%q is an %s category, not an %s one", account.Name, account.Kind, kind),
+	var retrieved ct.RetrieveCategoryResult
+	if err := retrieval.Get(ctx, &retrieved); err != nil {
+		return nil, 0, fmt.Errorf("retrieve category %d: %w", categoryID, err)
+	}
+
+	balance, category := accounts[0], retrieved.Category
+	if err := checkBalance(balance); err != nil {
+		return nil, 0, err
+	}
+	if category.Kind != kind {
+		return nil, 0, internalerrors.ErrInvalidParameter{
+			Description: fmt.Sprintf("%q is an %s category, not an %s one", category.Name, category.Kind, kind),
 		}
 	}
-	return internalerrors.ErrInvalidParameter{
-		Description: fmt.Sprintf("%q is not an %s category: its kind is %s", account.Name, kind, account.Kind),
+
+	account, err := ensureCategoryAccount(ctx, kind, balance.CurrencyID)
+	if err != nil {
+		return nil, 0, err
 	}
+	return balance, account, nil
 }
 
-// checkSameCurrency fails when the two accounts are in different currencies,
-// naming the exchange such a movement is, rather than leaving it to the ledger,
-// whose unbalanced-entry error names only currency ids.
-func checkSameCurrency(a, b *model.LedgerAccount) error {
-	if a.CurrencyID != b.CurrencyID {
-		return internalerrors.ErrInvalidParameter{
-			Description: fmt.Sprintf("%q and %q are in different currencies; record an exchange between currencies with RegisterFXConversion", a.Name, b.Name),
-		}
+// ensureCategoryAccount returns the id of the "Expenses" or "Income" account
+// of a currency, created the first time the currency needs it.
+func ensureCategoryAccount(ctx workflow.Context, kind model.LedgerAccountKind, currencyID int64) (int64, error) {
+	name := lt.CategoryAccountName(kind)
+	var created lt.CreateLedgerAccountResult
+	err := workflow.ExecuteChildWorkflow(ctx, ledgeraccountswf.CreateLedgerAccount, lt.CreateLedgerAccountInput{
+		CurrencyID: currencyID, Name: name, Kind: kind,
+	}).Get(ctx, &created)
+	if err != nil {
+		return 0, fmt.Errorf("find the %s account of currency %d: %w", name, currencyID, err)
 	}
-	return nil
+	return created.LedgerAccountID, nil
 }
 
 // entry is the movement as one journal entry, crediting the account the money
@@ -95,14 +120,22 @@ func (m movement) entry() lt.PostJournalEntryInput {
 		IdempotencyKey: m.kind + ":" + m.idempotencyKey,
 		OccurredAt:     m.occurredAt,
 		Postings: []lt.PostingInput{
-			{LedgerAccountID: m.to, Amount: m.amount, Side: model.PostingDebit},
-			{LedgerAccountID: m.from, Amount: m.amount, Side: model.PostingCredit},
+			{LedgerAccountID: m.to, Amount: m.amount, Side: model.PostingDebit, CategoryID: categoryOf(m.toCategory)},
+			{LedgerAccountID: m.from, Amount: m.amount, Side: model.PostingCredit, CategoryID: categoryOf(m.fromCategory)},
 		},
 	}
 	if m.description != "" {
 		input.Description = &m.description
 	}
 	return input
+}
+
+// categoryOf is the category of a posting, none when id is zero.
+func categoryOf(id int64) *int64 {
+	if id == 0 {
+		return nil
+	}
+	return &id
 }
 
 // post posts the movement as one entry. A closed or unknown account fails

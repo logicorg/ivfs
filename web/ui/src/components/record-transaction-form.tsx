@@ -204,7 +204,7 @@ export function RecordTransactionForm({ type, onRecorded, Footer }: RecordTransa
 // other side may be.
 function choiceOptions(choices: Choice[]): SelectOption[] {
   return choices.map((choice) => ({
-    value: String(choice.ledgerAccountId),
+    value: String(choice.id),
     label: `${choice.label} · ${choice.currencyCode}`,
     depth: choice.depth,
   }))

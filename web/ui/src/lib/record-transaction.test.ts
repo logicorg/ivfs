@@ -78,9 +78,9 @@ describe("balanceChoices", () => {
         { financialAccountId: 1, balances: [balance(100, "Joint", "EUR")] },
       ],
       want: [
-        { ledgerAccountId: 100, label: "Revolut · Joint", currencyCode: "EUR" },
-        { ledgerAccountId: 101, label: "Revolut · Personal", currencyCode: "EUR" },
-        { ledgerAccountId: 102, label: "Revolut · Personal · Vault", currencyCode: "EUR" },
+        { id: 100, label: "Revolut · Joint", currencyCode: "EUR" },
+        { id: 101, label: "Revolut · Personal", currencyCode: "EUR" },
+        { id: 102, label: "Revolut · Personal · Vault", currencyCode: "EUR" },
       ],
     },
     {
@@ -91,15 +91,15 @@ describe("balanceChoices", () => {
         { financialAccountId: 2, balances: [balance(101, "Cash", "EUR")] },
       ],
       want: [
-        { ledgerAccountId: 101, label: "N26 · Personal · Cash", currencyCode: "EUR" },
-        { ledgerAccountId: 100, label: "Revolut · Personal · Cash", currencyCode: "EUR" },
+        { id: 101, label: "N26 · Personal · Cash", currencyCode: "EUR" },
+        { id: 100, label: "Revolut · Personal · Cash", currencyCode: "EUR" },
       ],
     },
     {
       name: "a card's balance that is owed",
       accounts: [account(3, "Amex")],
       balances: [{ financialAccountId: 3, balances: [balance(103, "Amex", "USD", { kind: "liability" })] }],
-      want: [{ ledgerAccountId: 103, label: "Revolut · Amex", currencyCode: "USD" }],
+      want: [{ id: 103, label: "Revolut · Amex", currencyCode: "USD" }],
     },
     {
       name: "closed accounts and balances left out",
@@ -108,7 +108,7 @@ describe("balanceChoices", () => {
         { financialAccountId: 1, balances: [balance(100, "Cash", "EUR"), balance(104, "Old vault", "EUR", { closed: true })] },
         { financialAccountId: 2, balances: [balance(105, "Old bank", "EUR")] },
       ],
-      want: [{ ledgerAccountId: 100, label: "Revolut · Cash", currencyCode: "EUR" }],
+      want: [{ id: 100, label: "Revolut · Cash", currencyCode: "EUR" }],
     },
     {
       name: "an account whose balances have not loaded",
@@ -138,15 +138,15 @@ describe("categoryChoices", () => {
       name: "open ones of the kind, in tree order",
       kind: "expense",
       want: [
-        { ledgerAccountId: 200, label: "Food", depth: 0 },
-        { ledgerAccountId: 201, label: "Restaurants", depth: 1 },
-        { ledgerAccountId: 202, label: "Travel", depth: 0 },
+        { id: 200, label: "Food", depth: 0 },
+        { id: 201, label: "Restaurants", depth: 1 },
+        { id: 202, label: "Travel", depth: 0 },
       ],
     },
     {
       name: "income ones",
       kind: "income",
-      want: [{ ledgerAccountId: 210, label: "Salary", depth: 0 }],
+      want: [{ id: 210, label: "Salary", depth: 0 }],
     },
   ]
 
@@ -158,16 +158,16 @@ describe("categoryChoices", () => {
 })
 
 describe("pickers", () => {
-  const cash: Choice = { ledgerAccountId: 100, label: "Cash", currencyCode: "EUR" }
-  const dollars: Choice = { ledgerAccountId: 103, label: "Cash (USD)", currencyCode: "USD" }
+  const cash: Choice = { id: 100, label: "Cash", currencyCode: "EUR" }
+  const dollars: Choice = { id: 103, label: "Cash (USD)", currencyCode: "USD" }
   const categories = [
     category(200, "Food", "expense"),
     category(202, "Travel", "expense"),
     category(210, "Salary", "income"),
   ]
-  const food: Choice = { ledgerAccountId: 200, label: "Food", depth: 0 }
-  const travel: Choice = { ledgerAccountId: 202, label: "Travel", depth: 0 }
-  const salary: Choice = { ledgerAccountId: 210, label: "Salary", depth: 0 }
+  const food: Choice = { id: 200, label: "Food", depth: 0 }
+  const travel: Choice = { id: 202, label: "Travel", depth: 0 }
+  const salary: Choice = { id: 210, label: "Salary", depth: 0 }
 
   const cases: {
     name: string
@@ -212,8 +212,8 @@ describe("offers", () => {
   const picker = {
     label: "Category",
     choices: [
-      { ledgerAccountId: 200, label: "Food" },
-      { ledgerAccountId: 201, label: "Rent" },
+      { id: 200, label: "Food" },
+      { id: 201, label: "Rent" },
     ],
   }
   const cases: { name: string; id: string; want: boolean }[] = [
@@ -231,9 +231,9 @@ describe("offers", () => {
 
 describe("crossesCurrencies", () => {
   const balances: Choice[] = [
-    { ledgerAccountId: 100, label: "Cash", currencyCode: "EUR" },
-    { ledgerAccountId: 101, label: "Revolut", currencyCode: "EUR" },
-    { ledgerAccountId: 103, label: "Cash (USD)", currencyCode: "USD" },
+    { id: 100, label: "Cash", currencyCode: "EUR" },
+    { id: 101, label: "Revolut", currencyCode: "EUR" },
+    { id: 103, label: "Cash (USD)", currencyCode: "USD" },
   ]
   const cases: { name: string; values: RecordTransactionFormValues; want: boolean }[] = [
     { name: "a transfer into dollars", values: { ...groceries, type: "transfer", fromId: "100", toId: "103" }, want: true },
@@ -261,7 +261,7 @@ describe("newTransaction", () => {
         body: {
           idempotencyKey: "3f2a",
           balanceLedgerAccountId: 100,
-          categoryLedgerAccountId: 200,
+          categoryId: 200,
           amount: "12.50",
           occurredAt: "2026-10-04T08:30:00.000Z",
         },
@@ -276,7 +276,7 @@ describe("newTransaction", () => {
         body: {
           idempotencyKey: "3f2a",
           balanceLedgerAccountId: 100,
-          categoryLedgerAccountId: 210,
+          categoryId: 210,
           amount: "2500",
           occurredAt: new Date(2026, 8, 30).toISOString(),
           description: "September salary",

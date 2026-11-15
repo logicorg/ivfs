@@ -214,7 +214,7 @@ export const zErrorModel = z.object({
 export const zExpenseForm = z.object({
     amount: z.string().regex(/^-?[0-9]+(\.[0-9]+)?$/),
     balanceLedgerAccountId: z.int().gte(1),
-    categoryLedgerAccountId: z.int().gte(1),
+    categoryId: z.int().gte(1),
     description: z.string().optional(),
     idempotencyKey: z.string().min(1),
     occurredAt: z.iso.datetime()
@@ -253,7 +253,7 @@ export const zHoldingList = z.object({
 export const zIncomeForm = z.object({
     amount: z.string().regex(/^-?[0-9]+(\.[0-9]+)?$/),
     balanceLedgerAccountId: z.int().gte(1),
-    categoryLedgerAccountId: z.int().gte(1),
+    categoryId: z.int().gte(1),
     description: z.string().optional(),
     idempotencyKey: z.string().min(1),
     occurredAt: z.iso.datetime()

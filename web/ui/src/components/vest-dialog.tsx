@@ -181,7 +181,7 @@ function RecordVestForm({ onDone }: { onDone: () => void }) {
   ]
   const categoryOptions = (kind: "income" | "expense"): SelectOption[] =>
     categoryChoices(categories.data?.categories ?? [], kind).map((choice) => ({
-      value: String(choice.ledgerAccountId),
+      value: String(choice.id),
       label: choice.label,
       depth: choice.depth,
     }))
