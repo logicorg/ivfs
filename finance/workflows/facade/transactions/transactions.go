@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"time"
 
-	ct "github.com/logicorg/ivfs/finance/common/types/categorytypes"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	tt "github.com/logicorg/ivfs/finance/common/types/transactiontypes"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
@@ -69,28 +68,18 @@ func checkBalance(account *model.LedgerAccount) error {
 // categorized checks the two things an expense and an income name, a balance
 // and a category of the kind, and returns the balance with the shared account
 // of that kind in the balance's currency, where the category's side is
-// booked. A category has no currency and may be closed: closing one only
-// stops it being offered.
+// booked.
 func categorized(ctx workflow.Context, balanceID, categoryID int64, kind model.LedgerAccountKind) (*model.LedgerAccount, int64, error) {
-	retrieval := workflow.ExecuteChildWorkflow(ctx, categorieswf.RetrieveCategory, ct.RetrieveCategoryParams{ID: categoryID})
 	accounts, err := retrieveLedgerAccounts(ctx, balanceID)
 	if err != nil {
 		return nil, 0, err
 	}
-	var retrieved ct.RetrieveCategoryResult
-	if err := retrieval.Get(ctx, &retrieved); err != nil {
-		return nil, 0, fmt.Errorf("retrieve category %d: %w", categoryID, err)
-	}
-
-	balance, category := accounts[0], retrieved.Category
+	balance := accounts[0]
 	if err := checkBalance(balance); err != nil {
 		return nil, 0, err
 	}
-	if err := ct.CheckKind(category, kind); err != nil {
-		return nil, 0, err
-	}
 
-	account, err := ledgeraccountswf.EnsureCategoryAccount(ctx, kind, balance.CurrencyID)
+	account, err := categorieswf.CategoryAccount(ctx, categoryID, kind, balance.CurrencyID)
 	if err != nil {
 		return nil, 0, err
 	}

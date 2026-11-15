@@ -1,12 +1,8 @@
 package investments
 
 import (
-	"fmt"
-
-	catt "github.com/logicorg/ivfs/finance/common/types/categorytypes"
 	it "github.com/logicorg/ivfs/finance/common/types/investmenttypes"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
-	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
 	categorieswf "github.com/logicorg/ivfs/finance/workflows/ledger/categories"
 	"github.com/logicorg/ivfs/pkg/model"
 	"go.temporal.io/sdk/workflow"
@@ -21,9 +17,8 @@ type vestCategories struct {
 	tax, expensesAccount  int64
 }
 
-// retrieveVestCategories finds the categories a vest names, checks each is of
-// the kind it is booked as, and finds the shared account of that kind in the
-// vest's currency. A category has no currency and may be closed.
+// retrieveVestCategories finds, for each category a vest names, the shared
+// account of the kind it is booked as in the vest's currency.
 func retrieveVestCategories(ctx workflow.Context, in *it.VestInput, currency *model.Currency) (*vestCategories, error) {
 	ids := []int64{in.IncomeCategoryID}
 	kinds := []model.LedgerAccountKind{model.LedgerAccountIncome}
@@ -32,20 +27,9 @@ func retrieveVestCategories(ctx workflow.Context, in *it.VestInput, currency *mo
 		kinds = append(kinds, model.LedgerAccountExpense)
 	}
 
-	futures := make([]workflow.ChildWorkflowFuture, len(ids))
-	for i, id := range ids {
-		futures[i] = workflow.ExecuteChildWorkflow(ctx, categorieswf.RetrieveCategory, catt.RetrieveCategoryParams{ID: id})
-	}
 	accounts := make([]int64, len(ids))
-	for i, future := range futures {
-		var retrieved catt.RetrieveCategoryResult
-		if err := future.Get(ctx, &retrieved); err != nil {
-			return nil, fmt.Errorf("retrieve category %d: %w", ids[i], err)
-		}
-		if err := catt.CheckKind(retrieved.Category, kinds[i]); err != nil {
-			return nil, err
-		}
-		account, err := ledgeraccountswf.EnsureCategoryAccount(ctx, kinds[i], currency.ID)
+	for i, id := range ids {
+		account, err := categorieswf.CategoryAccount(ctx, id, kinds[i], currency.ID)
 		if err != nil {
 			return nil, err
 		}

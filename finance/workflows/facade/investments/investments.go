@@ -173,21 +173,3 @@ func replace(ctx workflow.Context, journalEntryID int64, kind it.Kind, entry lt.
 		Warnings:           result.Warnings,
 	}, nil
 }
-
-// retrieveLedgerAccounts retrieves the given ledger accounts concurrently.
-func retrieveLedgerAccounts(ctx workflow.Context, ids ...int64) ([]*model.LedgerAccount, error) {
-	futures := make([]workflow.ChildWorkflowFuture, len(ids))
-	for i, id := range ids {
-		futures[i] = workflow.ExecuteChildWorkflow(ctx, ledgeraccountswf.RetrieveLedgerAccount, lt.RetrieveLedgerAccountParams{ID: id})
-	}
-
-	accounts := make([]*model.LedgerAccount, len(ids))
-	for i, future := range futures {
-		var result lt.RetrieveLedgerAccountResult
-		if err := future.Get(ctx, &result); err != nil {
-			return nil, fmt.Errorf("retrieve ledger account %d: %w", ids[i], err)
-		}
-		accounts[i] = result.LedgerAccount
-	}
-	return accounts, nil
-}
