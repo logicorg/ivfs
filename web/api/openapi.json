@@ -156,6 +156,53 @@
         ],
         "type": "object"
       },
+      "AppliedCategory": {
+        "additionalProperties": false,
+        "properties": {
+          "children": {
+            "items": {
+              "$ref": "#/components/schemas/AppliedCategory"
+            },
+            "type": "array"
+          },
+          "id": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "type": "object"
+      },
+      "AppliedPreset": {
+        "additionalProperties": false,
+        "properties": {
+          "categories": {
+            "items": {
+              "$ref": "#/components/schemas/AppliedCategory"
+            },
+            "type": "array"
+          },
+          "currencyIds": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "tagIds": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "currencyIds",
+          "tagIds",
+          "categories"
+        ],
+        "type": "object"
+      },
       "Asset": {
         "additionalProperties": false,
         "properties": {
@@ -1627,6 +1674,82 @@
           "currencyId",
           "amount",
           "side"
+        ],
+        "type": "object"
+      },
+      "Preset": {
+        "additionalProperties": false,
+        "properties": {
+          "categories": {
+            "description": "at most 100, counting children",
+            "items": {
+              "$ref": "#/components/schemas/PresetCategory"
+            },
+            "type": "array"
+          },
+          "currencies": {
+            "items": {
+              "$ref": "#/components/schemas/InsertCurrencyParams"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          "tags": {
+            "items": {
+              "$ref": "#/components/schemas/PresetTag"
+            },
+            "maxItems": 100,
+            "type": "array"
+          }
+        },
+        "required": [
+          "currencies",
+          "tags",
+          "categories"
+        ],
+        "type": "object"
+      },
+      "PresetCategory": {
+        "additionalProperties": false,
+        "properties": {
+          "children": {
+            "description": "at most two levels below a top-level category",
+            "items": {
+              "$ref": "#/components/schemas/PresetCategory"
+            },
+            "type": "array"
+          },
+          "kind": {
+            "description": "required on a top-level category, left out on a child, which takes its parent's",
+            "enum": [
+              "income",
+              "expense"
+            ],
+            "type": "string"
+          },
+          "name": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "PresetTag": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "name": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
         ],
         "type": "object"
       },
@@ -5301,6 +5424,100 @@
         "summary": "Delete a position movement with the rest of its group",
         "tags": [
           "positions"
+        ]
+      }
+    },
+    "/api/presets/apply": {
+      "post": {
+        "description": "Each item is created, or found if it exists, one at a time and each category before its children. The whole preset is validated first, but the writes are not atomic: after a failure, applying the same preset again finds what was created and creates the rest.",
+        "operationId": "apply-preset",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Preset"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppliedPreset"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Create the currencies, tags, and categories of a preset",
+        "tags": [
+          "presets"
+        ]
+      }
+    },
+    "/api/presets/default": {
+      "get": {
+        "description": "The same for every user. Nothing is created until a preset is applied.",
+        "operationId": "get-default-preset",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Preset"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Get the default preset of currencies, tags, and categories",
+        "tags": [
+          "presets"
         ]
       }
     },

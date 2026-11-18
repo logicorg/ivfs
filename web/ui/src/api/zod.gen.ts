@@ -11,6 +11,17 @@ export const zAddedBalance = z.object({
     ledgerAccountName: z.string()
 });
 
+export const zAppliedCategory = z.object({
+    children: z.array(z.lazy((): any => zAppliedCategory)).optional(),
+    id: z.int()
+});
+
+export const zAppliedPreset = z.object({
+    categories: z.array(zAppliedCategory),
+    currencyIds: z.array(z.int()),
+    tagIds: z.array(z.int())
+});
+
 export const zAsset = z.object({
     description: z.string().optional(),
     exchange: z.string().optional(),
@@ -416,6 +427,23 @@ export const zEntryDetail = z.object({
 export const zEntryPage = z.object({
     entries: z.array(zEntry),
     next: z.string().optional()
+});
+
+export const zPresetCategory = z.object({
+    children: z.array(z.lazy((): any => zPresetCategory)).optional(),
+    kind: z.enum(['income', 'expense']).optional(),
+    name: z.string().min(1)
+});
+
+export const zPresetTag = z.object({
+    description: z.string().optional(),
+    name: z.string().min(1)
+});
+
+export const zPreset = z.object({
+    categories: z.array(zPresetCategory),
+    currencies: z.array(zInsertCurrencyParams).max(100),
+    tags: z.array(zPresetTag).max(100)
 });
 
 export const zProviderError = z.object({
@@ -1008,6 +1036,18 @@ export const zDeletePositionMovementPath = z.object({
  * OK
  */
 export const zDeletePositionMovementResponse = zDeletion;
+
+export const zApplyPresetBody = zPreset;
+
+/**
+ * OK
+ */
+export const zApplyPresetResponse = zAppliedPreset;
+
+/**
+ * OK
+ */
+export const zGetDefaultPresetResponse = zPreset;
 
 /**
  * OK
