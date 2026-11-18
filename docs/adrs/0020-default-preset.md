@@ -1,6 +1,6 @@
 # ADR 0020: A default preset of currencies, categories, and tags
 
-- Status: Proposed
+- Status: Implemented
 - Date: 2026-11-15
 - Depends on: [ADR 0005](0005-uniqueness-and-idempotent-creation.md)
   (retrieve-or-insert creation), [ADR 0013](0013-users-and-per-user-databases.md)
