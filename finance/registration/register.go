@@ -22,6 +22,7 @@ import (
 	"github.com/logicorg/ivfs/finance/workflows/currencies"
 	"github.com/logicorg/ivfs/finance/workflows/facade/accountsetup"
 	"github.com/logicorg/ivfs/finance/workflows/facade/investments"
+	"github.com/logicorg/ivfs/finance/workflows/facade/presets"
 	"github.com/logicorg/ivfs/finance/workflows/facade/transactions"
 	institutionwf "github.com/logicorg/ivfs/finance/workflows/institution"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
@@ -77,6 +78,8 @@ func Register(r worker.Registry, pools tenancy.Pools) {
 
 	r.RegisterWorkflow(accountsetup.AddBalance)
 	r.RegisterWorkflow(accountsetup.OpenAccount)
+
+	r.RegisterWorkflow(presets.ApplyPreset)
 
 	r.RegisterWorkflow(categories.CreateCategory)
 	r.RegisterWorkflow(categories.RetrieveCategory)

@@ -75,6 +75,17 @@ export type AddedBalance = {
     ledgerAccountName: string;
 };
 
+export type AppliedCategory = {
+    children?: Array<AppliedCategory>;
+    id: number;
+};
+
+export type AppliedPreset = {
+    categories: Array<AppliedCategory>;
+    currencyIds: Array<number>;
+    tagIds: Array<number>;
+};
+
 export type Asset = {
     description?: string;
     exchange?: string;
@@ -646,6 +657,32 @@ export type Posting = {
     ledgerAccountName: string;
     lineNumber: number;
     side: 'debit' | 'credit';
+};
+
+export type Preset = {
+    /**
+     * at most 100, counting children
+     */
+    categories: Array<PresetCategory>;
+    currencies: Array<InsertCurrencyParams>;
+    tags: Array<PresetTag>;
+};
+
+export type PresetCategory = {
+    /**
+     * at most two levels below a top-level category
+     */
+    children?: Array<PresetCategory>;
+    /**
+     * required on a top-level category, left out on a child, which takes its parent's
+     */
+    kind?: 'income' | 'expense';
+    name: string;
+};
+
+export type PresetTag = {
+    description?: string;
+    name: string;
 };
 
 export type ProviderError = {
@@ -2619,6 +2656,64 @@ export type DeletePositionMovementResponses = {
 };
 
 export type DeletePositionMovementResponse = DeletePositionMovementResponses[keyof DeletePositionMovementResponses];
+
+export type ApplyPresetData = {
+    body: Preset;
+    path?: never;
+    query?: never;
+    url: '/api/presets/apply';
+};
+
+export type ApplyPresetErrors = {
+    /**
+     * Conflict
+     */
+    409: ErrorModel;
+    /**
+     * Unprocessable Entity
+     */
+    422: ErrorModel;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorModel;
+};
+
+export type ApplyPresetError = ApplyPresetErrors[keyof ApplyPresetErrors];
+
+export type ApplyPresetResponses = {
+    /**
+     * OK
+     */
+    200: AppliedPreset;
+};
+
+export type ApplyPresetResponse = ApplyPresetResponses[keyof ApplyPresetResponses];
+
+export type GetDefaultPresetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/presets/default';
+};
+
+export type GetDefaultPresetErrors = {
+    /**
+     * Error
+     */
+    default: ErrorModel;
+};
+
+export type GetDefaultPresetError = GetDefaultPresetErrors[keyof GetDefaultPresetErrors];
+
+export type GetDefaultPresetResponses = {
+    /**
+     * OK
+     */
+    200: Preset;
+};
+
+export type GetDefaultPresetResponse = GetDefaultPresetResponses[keyof GetDefaultPresetResponses];
 
 export type RetrieveUserSettingsData = {
     body?: never;
