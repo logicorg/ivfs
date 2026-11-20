@@ -456,6 +456,10 @@ export type ExpenseForm = {
      * the instant the money was spent
      */
     occurredAt: string;
+    /**
+     * the tags of the entry; a repeated id counts once
+     */
+    tagIds?: Array<number>;
 };
 
 export type FinancialAccount = {
@@ -528,6 +532,10 @@ export type IncomeForm = {
      * the instant the money was earned
      */
     occurredAt: string;
+    /**
+     * the tags of the entry; a repeated id counts once
+     */
+    tagIds?: Array<number>;
 };
 
 export type InsertCurrencyParams = {
@@ -818,6 +826,10 @@ export type TransferForm = {
      * the instant the money moved
      */
     occurredAt: string;
+    /**
+     * the tags of the entry; a repeated id counts once
+     */
+    tagIds?: Array<number>;
     /**
      * the amount that arrives: required between currencies, else omitted or equal to amount
      */

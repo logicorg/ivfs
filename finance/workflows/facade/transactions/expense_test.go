@@ -32,8 +32,9 @@ func (s *WorkflowUnitTestSuite) TestRecordExpense() {
 		// account is the shared account the category's side is booked on.
 		account     *model.LedgerAccount
 		description string
+		tags        []int64
 	}{
-		{name: "paid by card, with a note", balance: cardBalance, category: groceries, account: expenses, description: "Esselunga"},
+		{name: "paid by card, with a note and a tag", balance: cardBalance, category: groceries, account: expenses, description: "Esselunga", tags: []int64{5}},
 		{name: "paid from cash, without a note", balance: cash, category: groceries, account: expenses},
 		{name: "paid in dollars", balance: cashUSD, category: groceries, account: expensesUSD},
 		{name: "for a closed category", balance: cash, category: oldHobby, account: expenses},
@@ -55,12 +56,14 @@ func (s *WorkflowUnitTestSuite) TestRecordExpense() {
 			if tc.description != "" {
 				want.Description = ptr.NewPtr(tc.description)
 			}
+			want.TagIDs = tc.tags
 			env.OnWorkflow(journalwf.PostJournalEntry, mock.Anything, entry(want)).
 				Return(&lt.PostJournalEntryResult{JournalEntryID: 41}, nil).Once()
 
 			env.ExecuteWorkflow(RecordExpense, tt.RecordExpenseInput{
 				IdempotencyKey: "3f2a", BalanceLedgerAccountID: tc.balance.ID, CategoryID: tc.category.ID,
 				Amount: amount, OccurredAt: occurredAt, Description: tc.description,
+				TagIDs: tc.tags,
 			})
 
 			require.NoError(s.T(), env.GetWorkflowError())

@@ -233,7 +233,8 @@ export const zExpenseForm = z.object({
     categoryId: z.int().gte(1),
     description: z.string().optional(),
     idempotencyKey: z.string().min(1),
-    occurredAt: z.iso.datetime()
+    occurredAt: z.iso.datetime(),
+    tagIds: z.array(z.int()).optional()
 });
 
 export const zFinancialAccount = z.object({
@@ -272,7 +273,8 @@ export const zIncomeForm = z.object({
     categoryId: z.int().gte(1),
     description: z.string().optional(),
     idempotencyKey: z.string().min(1),
-    occurredAt: z.iso.datetime()
+    occurredAt: z.iso.datetime(),
+    tagIds: z.array(z.int()).optional()
 });
 
 export const zInsertCurrencyParams = z.object({
@@ -542,6 +544,7 @@ export const zTransferForm = z.object({
     fromLedgerAccountId: z.int().gte(1),
     idempotencyKey: z.string().min(1),
     occurredAt: z.iso.datetime(),
+    tagIds: z.array(z.int()).optional(),
     toAmount: z.string().regex(/^-?[0-9]+(\.[0-9]+)?$/).optional(),
     toLedgerAccountId: z.int().gte(1)
 });

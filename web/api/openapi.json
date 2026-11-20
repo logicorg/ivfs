@@ -1129,6 +1129,13 @@
             "description": "the instant the money was spent",
             "format": "date-time",
             "type": "string"
+          },
+          "tagIds": {
+            "description": "the tags of the entry; a repeated id counts once",
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
           }
         },
         "required": [
@@ -1294,6 +1301,13 @@
             "description": "the instant the money was earned",
             "format": "date-time",
             "type": "string"
+          },
+          "tagIds": {
+            "description": "the tags of the entry; a repeated id counts once",
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
           }
         },
         "required": [
@@ -2065,6 +2079,13 @@
             "description": "the instant the money moved",
             "format": "date-time",
             "type": "string"
+          },
+          "tagIds": {
+            "description": "the tags of the entry; a repeated id counts once",
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
           },
           "toAmount": {
             "description": "the amount that arrives: required between currencies, else omitted or equal to amount",

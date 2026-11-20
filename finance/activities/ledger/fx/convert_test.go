@@ -43,8 +43,11 @@ func (s *UnitTestSuite) postingsOf(entryID int64) []string {
 }
 
 func (s *UnitTestSuite) Test_RegisterFXConversion() {
+	trip := &model.Tag{Name: "trip"}
+	temporaltesting.Insert(s.T(), s.DB, trip)
 	input := s.adrExample()
 	input.ProviderReference = ptr.NewPtr("revolut-tx-42")
+	input.TagIDs = []int64{trip.ID}
 
 	result, err := s.execute(input)
 	require.NoError(s.T(), err)
@@ -65,6 +68,7 @@ func (s *UnitTestSuite) Test_RegisterFXConversion() {
 		"effective_rate":     "90/99",
 		"provider_reference": "revolut-tx-42",
 	}, entry.Metadata)
+	require.Equal(s.T(), 1, s.CountWhere[model.JournalEntryTag]("journal_entry_id = ? AND tag_id = ?", result.JournalEntryID, trip.ID))
 }
 
 func (s *UnitTestSuite) Test_RegisterFXConversion_WithoutFee() {
@@ -137,6 +141,10 @@ func (s *UnitTestSuite) Test_RegisterFXConversion_Invalid() {
 		"zero fee": {
 			mutate: func(i *lt.RegisterFXConversionInput) { i.Fee.Amount = decimal.Zero },
 			expMsg: "fee amount must be positive",
+		},
+		"a tag id of zero": {
+			mutate: func(i *lt.RegisterFXConversionInput) { i.TagIDs = []int64{0} },
+			expMsg: "tag id 0",
 		},
 		"fee equal to the source amount": {
 			mutate: func(i *lt.RegisterFXConversionInput) { i.Fee.Amount = i.SourceAmount },

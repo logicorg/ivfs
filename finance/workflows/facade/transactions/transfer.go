@@ -76,6 +76,7 @@ func transferOf(ctx workflow.Context, input tt.RecordTransferInput) (*movement, 
 			amount:         input.Amount,
 			occurredAt:     input.OccurredAt,
 			description:    input.Description,
+			tagIDs:         input.TagIDs,
 		}, nil, nil
 	}
 
@@ -113,6 +114,7 @@ func conversionOf(ctx workflow.Context, input tt.RecordTransferInput, from, to *
 		DestinationLedgerAccountID:         to.ID,
 		DestinationClearingLedgerAccountID: toClearing,
 		DestinationAmount:                  input.ToAmount,
+		TagIDs:                             input.TagIDs,
 	}
 	if input.Description != "" {
 		conversion.Description = &input.Description
