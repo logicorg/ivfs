@@ -1,6 +1,6 @@
 # ADR 0021: Tagging journal entries
 
-- Status: Proposed
+- Status: Implemented
 - Date: 2026-11-20
 - Depends on: [ADR 0003](0003-categories-and-tags.md) (tags, assignment
   deferred) and [ADR 0017](0017-editing-journal-entries.md) (replacing an entry)
