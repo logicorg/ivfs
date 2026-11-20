@@ -916,13 +916,20 @@
               "posted"
             ],
             "type": "string"
+          },
+          "tags": {
+            "items": {
+              "$ref": "#/components/schemas/EntryTag"
+            },
+            "type": "array"
           }
         },
         "required": [
           "id",
           "occurredAt",
           "status",
-          "postings"
+          "postings",
+          "tags"
         ],
         "type": "object"
       },
@@ -968,6 +975,12 @@
               "posted"
             ],
             "type": "string"
+          },
+          "tags": {
+            "items": {
+              "$ref": "#/components/schemas/EntryTag"
+            },
+            "type": "array"
           }
         },
         "required": [
@@ -975,7 +988,8 @@
           "id",
           "occurredAt",
           "status",
-          "postings"
+          "postings",
+          "tags"
         ],
         "type": "object"
       },
@@ -994,6 +1008,22 @@
         },
         "required": [
           "entries"
+        ],
+        "type": "object"
+      },
+      "EntryTag": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
         ],
         "type": "object"
       },

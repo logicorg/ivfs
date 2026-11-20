@@ -17,6 +17,12 @@ type Tag struct {
 	UpdatedAt   time.Time `bun:"updated_at,nullzero,notnull,default:current_timestamp" json:"updatedAt" jsonschema:"timestamp when the tag was last updated"`
 }
 
+// OrderTagsByName orders the tags of a relation by name, which is unique
+// whatever the casing, so the order is stable.
+func OrderTagsByName(q *bun.SelectQuery) *bun.SelectQuery {
+	return q.OrderExpr("lower(tg.name)")
+}
+
 // JournalEntryTag assigns a tag to a journal entry. Deleting either
 // side deletes the assignment.
 type JournalEntryTag struct {

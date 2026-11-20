@@ -362,6 +362,7 @@ export type Entry = {
     occurredAt: string;
     postings: Array<Posting>;
     status: 'draft' | 'posted';
+    tags: Array<EntryTag>;
 };
 
 export type EntryDetail = {
@@ -375,11 +376,17 @@ export type EntryDetail = {
     postedAt?: string;
     postings: Array<Posting>;
     status: 'draft' | 'posted';
+    tags: Array<EntryTag>;
 };
 
 export type EntryPage = {
     entries: Array<Entry>;
     next?: string;
+};
+
+export type EntryTag = {
+    id: number;
+    name: string;
 };
 
 export type ErrorDetail = {

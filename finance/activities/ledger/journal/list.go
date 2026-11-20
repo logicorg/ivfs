@@ -10,7 +10,7 @@ import (
 )
 
 // ListJournalEntries returns one page of journal entries, each with its
-// postings in line order. Entries of the same instant are ordered by id, in the
+// postings in line order and its tags by name. Entries of the same instant are ordered by id, in the
 // same direction as the dates, so a page boundary can fall between them without
 // skipping or repeating any.
 func (a *Activities) ListJournalEntries(ctx context.Context, params lt.ListJournalEntriesParams) (*lt.ListJournalEntriesResult, error) {
@@ -24,7 +24,7 @@ func (a *Activities) ListJournalEntries(ctx context.Context, params lt.ListJourn
 	}
 
 	var entries []model.JournalEntry
-	query := db.NewSelect().Model(&entries)
+	query := db.NewSelect().Model(&entries).Relation("Tags", model.OrderTagsByName)
 	if params.LedgerAccountID > 0 {
 		query = query.Where("EXISTS (SELECT 1 FROM ledger.posting AS p WHERE p.journal_entry_id = je.id AND p.ledger_account_id = ?)", params.LedgerAccountID)
 	}

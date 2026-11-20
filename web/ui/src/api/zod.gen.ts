@@ -207,6 +207,11 @@ export const zDeletedCounterparty = z.object({
     cleared: z.int()
 });
 
+export const zEntryTag = z.object({
+    id: z.int(),
+    name: z.string()
+});
+
 export const zErrorDetail = z.object({
     location: z.string().optional(),
     message: z.string().optional(),
@@ -408,7 +413,8 @@ export const zEntry = z.object({
     id: z.int(),
     occurredAt: z.iso.datetime(),
     postings: z.array(zPosting),
-    status: z.enum(['draft', 'posted'])
+    status: z.enum(['draft', 'posted']),
+    tags: z.array(zEntryTag)
 });
 
 export const zEntryDetail = z.object({
@@ -421,7 +427,8 @@ export const zEntryDetail = z.object({
     occurredAt: z.iso.datetime(),
     postedAt: z.iso.datetime().optional(),
     postings: z.array(zPosting),
-    status: z.enum(['draft', 'posted'])
+    status: z.enum(['draft', 'posted']),
+    tags: z.array(zEntryTag)
 });
 
 export const zEntryPage = z.object({

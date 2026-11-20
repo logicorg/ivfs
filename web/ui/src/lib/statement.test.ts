@@ -16,12 +16,14 @@ describe("statementLines", () => {
     description: "Supermarket",
     status: "posted",
     postings: [posting(1, 200, "Groceries", "debit", "12.50"), posting(2, 100, "Cash", "credit", "12.50")],
+    tags: [],
   }
   const refund: Entry = {
     id: 8,
     occurredAt: "2026-01-31T11:00:00Z",
     status: "posted",
     postings: [posting(1, 200, "Groceries", "credit", "12.50"), posting(2, 100, "Cash", "debit", "12.50")],
+    tags: [],
   }
   const split: Entry = {
     id: 9,
@@ -33,6 +35,7 @@ describe("statementLines", () => {
       posting(2, 100, "Cash", "credit", "10"),
       posting(3, 100, "Cash", "credit", "20"),
     ],
+    tags: [],
   }
 
   const cases: { name: string; entries: Entry[]; id: number; kind: Balance["kind"]; want: StatementLine[] }[] = [

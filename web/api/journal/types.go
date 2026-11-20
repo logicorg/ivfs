@@ -26,14 +26,22 @@ type Posting struct {
 	CategoryName string `json:"categoryName,omitempty"`
 }
 
-// Entry is a journal entry with its postings, in line order.
+// EntryTag is a tag of a journal entry.
+type EntryTag struct {
+	ID   int64  `json:"id"`
+	Name string `json:"name"`
+}
+
+// Entry is a journal entry with its postings, in line order, and its tags, by
+// name.
 type Entry struct {
-	ID          int64     `json:"id"`
-	OccurredAt  time.Time `json:"occurredAt"`
-	Description string    `json:"description,omitempty"`
-	ExternalID  string    `json:"externalId,omitempty"`
-	Status      string    `json:"status" enum:"draft,posted"`
-	Postings    []Posting `json:"postings"`
+	ID          int64      `json:"id"`
+	OccurredAt  time.Time  `json:"occurredAt"`
+	Description string     `json:"description,omitempty"`
+	ExternalID  string     `json:"externalId,omitempty"`
+	Status      string     `json:"status" enum:"draft,posted"`
+	Postings    []Posting  `json:"postings"`
+	Tags        []EntryTag `json:"tags"`
 }
 
 // EntryPage is one page of journal entries.
@@ -98,7 +106,10 @@ type DeleteJournalEntryOutput struct {
 func newEntry(entry *model.JournalEntry) (Entry, error) {
 	out := Entry{
 		ID: entry.ID, OccurredAt: entry.OccurredAt, Status: string(entry.Status),
-		Postings: make([]Posting, 0, len(entry.Postings)),
+		Postings: make([]Posting, 0, len(entry.Postings)), Tags: make([]EntryTag, 0, len(entry.Tags)),
+	}
+	for _, tag := range entry.Tags {
+		out.Tags = append(out.Tags, EntryTag{ID: tag.ID, Name: tag.Name})
 	}
 	if entry.Description != nil {
 		out.Description = *entry.Description
