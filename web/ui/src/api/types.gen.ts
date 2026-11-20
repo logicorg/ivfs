@@ -393,6 +393,20 @@ export type EntryTag = {
     name: string;
 };
 
+export type EntryTagIds = {
+    /**
+     * the tags of the entry, each once, in ascending order
+     */
+    tagIds: Array<number>;
+};
+
+export type EntryTagsForm = {
+    /**
+     * the tags of the entry, replacing those it has; a repeated id counts once, and none clears them
+     */
+    tagIds: Array<number>;
+};
+
 export type ErrorDetail = {
     /**
      * Where the error occurred, e.g. 'body.items[3].tags' or 'path.thing-id'
@@ -2421,6 +2435,41 @@ export type GetJournalEntryResponses = {
 };
 
 export type GetJournalEntryResponse = GetJournalEntryResponses[keyof GetJournalEntryResponses];
+
+export type SetJournalEntryTagsData = {
+    body: EntryTagsForm;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/api/journal-entries/{id}/tags';
+};
+
+export type SetJournalEntryTagsErrors = {
+    /**
+     * Not Found
+     */
+    404: ErrorModel;
+    /**
+     * Unprocessable Entity
+     */
+    422: ErrorModel;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorModel;
+};
+
+export type SetJournalEntryTagsError = SetJournalEntryTagsErrors[keyof SetJournalEntryTagsErrors];
+
+export type SetJournalEntryTagsResponses = {
+    /**
+     * OK
+     */
+    200: EntryTagIds;
+};
+
+export type SetJournalEntryTagsResponse = SetJournalEntryTagsResponses[keyof SetJournalEntryTagsResponses];
 
 export type DeleteLedgerAccountData = {
     body?: never;

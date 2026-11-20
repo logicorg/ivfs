@@ -136,3 +136,26 @@ func newEntry(entry *model.JournalEntry) (Entry, error) {
 	}
 	return out, nil
 }
+
+// EntryTagsForm is the whole set of tags an entry is to have.
+type EntryTagsForm struct {
+	TagIDs []int64 `json:"tagIds" doc:"the tags of the entry, replacing those it has; a repeated id counts once, and none clears them"`
+}
+
+// EntryTagIDs is the set of tags an entry has after a change.
+type EntryTagIDs struct {
+	TagIDs []int64 `json:"tagIds" doc:"the tags of the entry, each once, in ascending order"`
+}
+
+// SetJournalEntryTagsInput is the request of PUT
+// /api/journal-entries/{id}/tags.
+type SetJournalEntryTagsInput struct {
+	ID   int64 `path:"id" minimum:"1"`
+	Body EntryTagsForm
+}
+
+// SetJournalEntryTagsOutput is the response of PUT
+// /api/journal-entries/{id}/tags.
+type SetJournalEntryTagsOutput struct {
+	Body EntryTagIDs
+}

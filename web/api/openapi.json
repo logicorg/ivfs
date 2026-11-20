@@ -1034,6 +1034,38 @@
         ],
         "type": "object"
       },
+      "EntryTagIDs": {
+        "additionalProperties": false,
+        "properties": {
+          "tagIds": {
+            "description": "the tags of the entry, each once, in ascending order",
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "tagIds"
+        ],
+        "type": "object"
+      },
+      "EntryTagsForm": {
+        "additionalProperties": false,
+        "properties": {
+          "tagIds": {
+            "description": "the tags of the entry, replacing those it has; a repeated id counts once, and none clears them",
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "tagIds"
+        ],
+        "type": "object"
+      },
       "ErrorDetail": {
         "additionalProperties": false,
         "properties": {
@@ -5011,6 +5043,79 @@
           }
         },
         "summary": "Get a journal entry with its postings and counterparty",
+        "tags": [
+          "journal"
+        ]
+      }
+    },
+    "/api/journal-entries/{id}/tags": {
+      "put": {
+        "description": "The entry gets exactly the tags given, and an empty list clears them. Its postings are left as they are. An unknown entry or tag changes nothing.",
+        "operationId": "set-journal-entry-tags",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EntryTagsForm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntryTagIDs"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Replace the tags of a journal entry",
         "tags": [
           "journal"
         ]

@@ -213,6 +213,14 @@ export const zEntryTag = z.object({
     name: z.string()
 });
 
+export const zEntryTagIds = z.object({
+    tagIds: z.array(z.int())
+});
+
+export const zEntryTagsForm = z.object({
+    tagIds: z.array(z.int())
+});
+
 export const zErrorDetail = z.object({
     location: z.string().optional(),
     message: z.string().optional(),
@@ -975,6 +983,17 @@ export const zGetJournalEntryPath = z.object({
  * OK
  */
 export const zGetJournalEntryResponse = zEntryDetail;
+
+export const zSetJournalEntryTagsBody = zEntryTagsForm;
+
+export const zSetJournalEntryTagsPath = z.object({
+    id: z.int().gte(1)
+});
+
+/**
+ * OK
+ */
+export const zSetJournalEntryTagsResponse = zEntryTagIds;
 
 export const zDeleteLedgerAccountPath = z.object({
     id: z.int().gte(1)
