@@ -200,6 +200,10 @@ export type BuyForm = {
      */
     occurredAt: string;
     /**
+     * the tags of the entry; a repeated id counts once
+     */
+    tagIds?: Array<number>;
+    /**
      * the units bought, greater than zero
      */
     units: string;
@@ -765,6 +769,10 @@ export type SellForm = {
      */
     occurredAt: string;
     /**
+     * the tags of the entry; a repeated id counts once
+     */
+    tagIds?: Array<number>;
+    /**
      * the units sold, greater than zero
      */
     units: string;
@@ -884,6 +892,10 @@ export type VestForm = {
      * the instant of the vest
      */
     occurredAt: string;
+    /**
+     * the tags of the entry; a repeated id counts once
+     */
+    tagIds?: Array<number>;
     /**
      * the expense category of the value of the units withheld; required when units are withheld
      */

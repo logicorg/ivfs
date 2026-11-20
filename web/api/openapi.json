@@ -479,6 +479,13 @@
             "format": "date-time",
             "type": "string"
           },
+          "tagIds": {
+            "description": "the tags of the entry; a repeated id counts once",
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
           "units": {
             "description": "the units bought, greater than zero",
             "examples": [
@@ -1935,6 +1942,13 @@
             "format": "date-time",
             "type": "string"
           },
+          "tagIds": {
+            "description": "the tags of the entry; a repeated id counts once",
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
           "units": {
             "description": "the units sold, greater than zero",
             "examples": [
@@ -2175,6 +2189,13 @@
             "description": "the instant of the vest",
             "format": "date-time",
             "type": "string"
+          },
+          "tagIds": {
+            "description": "the tags of the entry; a repeated id counts once",
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
           },
           "taxCategoryId": {
             "description": "the expense category of the value of the units withheld; required when units are withheld",

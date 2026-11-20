@@ -105,6 +105,7 @@ export const zBuyForm = z.object({
     financialAccountId: z.int().gte(1),
     idempotencyKey: z.string().min(1),
     occurredAt: z.iso.datetime(),
+    tagIds: z.array(z.int()).optional(),
     units: z.string().regex(/^-?[0-9]+(\.[0-9]+)?$/)
 });
 
@@ -499,6 +500,7 @@ export const zSellForm = z.object({
     financialAccountId: z.int().gte(1),
     idempotencyKey: z.string().min(1),
     occurredAt: z.iso.datetime(),
+    tagIds: z.array(z.int()).optional(),
     units: z.string().regex(/^-?[0-9]+(\.[0-9]+)?$/)
 });
 
@@ -563,6 +565,7 @@ export const zVestForm = z.object({
     idempotencyKey: z.string().min(1),
     incomeCategoryId: z.int().gte(1),
     occurredAt: z.iso.datetime(),
+    tagIds: z.array(z.int()).optional(),
     taxCategoryId: z.int().gte(1).optional(),
     unitsVested: z.string().regex(/^-?[0-9]+(\.[0-9]+)?$/),
     unitsWithheld: z.string().regex(/^-?[0-9]+(\.[0-9]+)?$/).optional()

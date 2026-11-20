@@ -20,5 +20,6 @@ func buildSell(in *it.SellAssetInput, b *brokerage) trade {
 		unitsDelta:         in.Units.Neg(),
 		occurredAt:         in.OccurredAt,
 		description:        in.Description,
+		tagIDs:             in.TagIDs,
 	}
 }
