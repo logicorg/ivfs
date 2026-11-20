@@ -12,6 +12,7 @@ import {
   recordTransferMutation,
 } from "@/api/@tanstack/react-query.gen"
 import { ProblemMessages, SelectField, TextField, type SelectOption } from "@/components/form-fields"
+import { TagsField } from "@/components/tag-picker"
 import { Button } from "@/components/ui/button"
 import { FieldGroup } from "@/components/ui/field"
 import {
@@ -58,7 +59,7 @@ export function RecordTransactionForm({ type, onRecorded, Footer }: RecordTransa
   const categories = useQuery(listCategoriesOptions())
   const form = useForm<RecordTransactionFormValues>({
     resolver: zodResolver(recordTransactionForm),
-    defaultValues: { type: type ?? "expense", fromId: "", toId: "", amount: "", toAmount: "", occurredOn: "", description: "" },
+    defaultValues: { type: type ?? "expense", fromId: "", toId: "", amount: "", toAmount: "", occurredOn: "", description: "", tagIds: [] },
   })
 
   const onSuccess = () => {
@@ -188,6 +189,11 @@ export function RecordTransactionForm({ type, onRecorded, Footer }: RecordTransa
           autoComplete="off"
           error={form.formState.errors.description}
           {...form.register("description")}
+        />
+        <Controller
+          control={form.control}
+          name="tagIds"
+          render={({ field }) => <TagsField value={field.value} onChange={field.onChange} />}
         />
         <ProblemMessages error={mutation.error} />
       </FieldGroup>

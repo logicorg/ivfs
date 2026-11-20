@@ -19,6 +19,7 @@ const vest: VestFormValues = {
   taxCategoryId: "",
   occurredOn: "",
   description: "",
+  tagIds: [],
   sellToCover: false,
   soldUnits: "",
   soldAmount: "",
@@ -98,6 +99,7 @@ describe("newVest", () => {
         description: "Q1 vest",
       },
     },
+    { name: "with tags", values: { ...vest, tagIds: [5, 3] }, assetId: 8, want: { ...base, tagIds: [5, 3] } },
   ]
 
   for (const { name, values, assetId, want } of cases) {
@@ -128,6 +130,7 @@ describe("newSellToCover", () => {
       assetId: 9,
       want: { ...base, assetId: 9, fee: "1.50", occurredAt: new Date("2026-01-31T00:00").toISOString() },
     },
+    { name: "with the vest's tags", values: { ...covered, tagIds: [5] }, assetId: 8, want: { ...base, tagIds: [5] } },
   ]
 
   for (const { name, values, assetId, want } of cases) {

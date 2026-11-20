@@ -44,6 +44,7 @@ const groceries: RecordTransactionFormValues = {
   toAmount: "",
   occurredOn: "",
   description: "",
+  tagIds: [],
 }
 
 describe("recordTransactionForm", () => {
@@ -280,6 +281,22 @@ describe("newTransaction", () => {
           amount: "2500",
           occurredAt: new Date(2026, 8, 30).toISOString(),
           description: "September salary",
+        },
+      },
+    },
+    {
+      name: "an expense with tags",
+      values: { ...groceries, tagIds: [5, 3] },
+      crossing: false,
+      want: {
+        type: "expense",
+        body: {
+          idempotencyKey: "3f2a",
+          balanceLedgerAccountId: 100,
+          categoryId: 200,
+          amount: "12.50",
+          occurredAt: "2026-10-04T08:30:00.000Z",
+          tagIds: [5, 3],
         },
       },
     },

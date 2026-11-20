@@ -14,6 +14,7 @@ import {
   vestAssetMutation,
 } from "@/api/@tanstack/react-query.gen"
 import { ProblemMessages, SelectField, TextField, type SelectOption } from "@/components/form-fields"
+import { TagsField } from "@/components/tag-picker"
 import { NegativeHoldingWarnings } from "@/components/negative-holding-warnings"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -85,6 +86,7 @@ function RecordVestForm({ onDone }: { onDone: () => void }) {
       taxCategoryId: "",
       occurredOn: "",
       description: "",
+      tagIds: [],
       sellToCover: false,
       soldUnits: "",
       soldAmount: "",
@@ -356,6 +358,11 @@ function RecordVestForm({ onDone }: { onDone: () => void }) {
             autoComplete="off"
             error={form.formState.errors.description}
             {...form.register("description")}
+          />
+          <Controller
+            control={form.control}
+            name="tagIds"
+            render={({ field }) => <TagsField value={field.value} onChange={field.onChange} />}
           />
         </fieldset>
         <Controller
