@@ -26,6 +26,9 @@ and conversion is one entry, so tagging an entry tags the transaction.
   CASCADE`). A tag is no longer archived once assigned: it is deleted, and the
   entries keep their other tags.
 - There is no limit on the tags of an entry.
+- A sale to cover a vest's tax is posted with the vest's tags. Nothing keeps
+  the two alike afterwards: they are separate entries, with no link between
+  them, and either can be retagged alone.
 
 ## Consequences
 
