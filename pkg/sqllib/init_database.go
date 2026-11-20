@@ -18,7 +18,10 @@ const (
 
 // InitDatabase initilise the DB
 func InitDatabase(ctx context.Context, db *bun.DB) error {
+	// bun resolves a many-to-many relation when it registers the model that has
+	// it, so the join table goes first.
 	db.RegisterModel(
+		(*model.JournalEntryTag)(nil),
 		(*model.FinancialAccount)(nil),
 		(*model.LedgerAccount)(nil),
 		(*model.Category)(nil),
@@ -131,6 +134,12 @@ func InitDatabase(ctx context.Context, db *bun.DB) error {
 		Exec(ctx)
 	if err != nil {
 		return fmt.Errorf(errCreateTableFmt, "tag", err)
+	}
+	_, err = db.NewCreateTable().Model((*model.JournalEntryTag)(nil)).
+		IfNotExists().
+		Exec(ctx)
+	if err != nil {
+		return fmt.Errorf(errCreateTableFmt, "journal_entry_tag", err)
 	}
 	if err := ensureLedgerConstraints(ctx, db); err != nil {
 		return err

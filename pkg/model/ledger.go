@@ -192,6 +192,7 @@ type JournalEntry struct {
 	Counterparty      *Counterparty      `bun:"rel:belongs-to,join:counterparty_id=id,on_delete:restrict" json:"counterparty,omitempty"`
 	Postings          []Posting          `bun:"rel:has-many,join:id=journal_entry_id" json:"postings,omitempty"`
 	PositionMovements []PositionMovement `bun:"rel:has-many,join:id=journal_entry_id" json:"positionMovements,omitempty"`
+	Tags              []Tag              `bun:"m2m:ledger.journal_entry_tag,join:JournalEntry=Tag" json:"tags,omitempty"`
 }
 
 // Posting is one accounting line. Its currency is determined by

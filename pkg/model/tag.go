@@ -17,6 +17,18 @@ type Tag struct {
 	UpdatedAt   time.Time `bun:"updated_at,nullzero,notnull,default:current_timestamp" json:"updatedAt" jsonschema:"timestamp when the tag was last updated"`
 }
 
+// JournalEntryTag assigns a tag to a journal entry (ADR 0021). Deleting either
+// side deletes the assignment.
+type JournalEntryTag struct {
+	bun.BaseModel `bun:"table:ledger.journal_entry_tag,alias:jet"`
+
+	JournalEntryID int64 `bun:"journal_entry_id,pk" json:"journalEntryId"`
+	TagID          int64 `bun:"tag_id,pk" json:"tagId"`
+
+	JournalEntry *JournalEntry `bun:"rel:belongs-to,join:journal_entry_id=id" json:"journalEntry,omitempty"`
+	Tag          *Tag          `bun:"rel:belongs-to,join:tag_id=id" json:"tag,omitempty"`
+}
+
 // ToString returns the tag as a string
 func (t Tag) ToString() string {
 	return t.Name
