@@ -128,6 +128,7 @@ func Register(r worker.Registry, pools tenancy.Pools) {
 	r.RegisterWorkflow(ledgerjournalwf.DeleteJournalEntry)
 	r.RegisterWorkflow(ledgerjournalwf.ReplaceJournalEntry)
 	r.RegisterWorkflow(ledgerjournalwf.ListJournalEntries)
+	r.RegisterWorkflow(ledgerjournalwf.SetJournalEntryTags)
 	r.RegisterWorkflow(ledgerreportingwf.LedgerAccountBalance)
 	r.RegisterWorkflow(ledgeraccountswf.CreateFinancialAccount)
 	r.RegisterWorkflow(ledgeraccountswf.RetrieveFinancialAccount)
