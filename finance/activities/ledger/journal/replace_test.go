@@ -261,6 +261,9 @@ func (s *UnitTestSuite) Test_ReplaceJournalEntry_Idempotent() {
 	purchase := s.seedEntry(h, h.asset, model.JournalEntryPosted, 10, deleteDay)
 	s.seedEntry(h, h.asset, model.JournalEntryPosted, -10, replaceDay.AddDate(0, 0, 1))
 	input := replaceInput(h, purchase.entry.ID, h.asset, 25, 4)
+	tag := &model.Tag{Name: "vacation"}
+	temporaltesting.Insert(s.T(), s.DB, tag)
+	input.TagIDs = []int64{tag.ID}
 
 	first, err := s.Env.ExecuteActivity(s.ja.ReplaceJournalEntry, input)
 	require.NoError(s.T(), err)
@@ -289,4 +292,6 @@ func (s *UnitTestSuite) Test_ReplaceJournalEntry_Idempotent() {
 	require.Equal(s.T(), 2, s.Count[model.JournalEntry]())
 	require.Equal(s.T(), 4, s.Count[model.Posting]())
 	require.Equal(s.T(), 2, s.Count[model.PositionMovement]())
+	require.Equal(s.T(), 1, s.CountWhere[model.JournalEntryTag]("journal_entry_id = ? AND tag_id = ?", purchase.entry.ID, tag.ID))
+	require.Equal(s.T(), 1, s.Count[model.JournalEntryTag]())
 }

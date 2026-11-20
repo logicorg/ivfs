@@ -79,7 +79,7 @@ func (s *UnitTestSuite) Test_DeleteTag() {
 }
 
 // Test_DeleteTag_Assigned checks that deleting a tag an entry has detaches it
-// from the entry and keeps the entry (ADR 0021).
+// from the entry and keeps the entry.
 func (s *UnitTestSuite) Test_DeleteTag_Assigned() {
 	entry := &model.JournalEntry{OccurredAt: time.Now().UTC(), Status: model.JournalEntryDraft}
 	tag := &model.Tag{Name: "vacation"}

@@ -11,8 +11,8 @@ import (
 )
 
 // RewriteEntryTx replaces what a correction changes in a stored entry: its
-// date, description, and metadata from the input, and its postings and
-// movements, which are deleted and written again. The row stays, so the entry
+// date, description, and metadata from the input, and its postings,
+// movements, and tags, which are deleted and written again. The row stays, so the entry
 // keeps its id, its keys, its counterparty, and its times, and the rest of the
 // input is ignored. The caller holds the lock on the entry's row, and entry is
 // the row as read under it; it is updated in place.
@@ -46,5 +46,8 @@ func RewriteEntryTx(ctx context.Context, tx bun.Tx, entry *model.JournalEntry, i
 		movements[i].CreatedAt = entry.CreatedAt
 		movements[i].ExternalID = entry.ExternalID
 	}
-	return insertLinesTx(ctx, tx, entry, input.Postings, movements)
+	if err := insertLinesTx(ctx, tx, entry, input.Postings, movements); err != nil {
+		return err
+	}
+	return SetTagsTx(ctx, tx, entry.ID, input.TagIDs)
 }

@@ -12,7 +12,7 @@ import (
 	"github.com/uptrace/bun"
 )
 
-// Test_JournalEntryTags checks the rules of the tags of an entry (ADR 0021):
+// Test_JournalEntryTags checks the rules of the tags of an entry:
 // a tag is assigned once and only if it exists, and deleting the entry or the
 // tag deletes the assignment and nothing else. Each case starts from a draft
 // entry, which needs no postings, and two tags.

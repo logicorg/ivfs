@@ -69,7 +69,7 @@ var foreignKeys = []foreignKey{
 }
 
 // cascadingForeignKeys are the references deleted with their parent: the links
-// of a tag to an entry, which record nothing of their own (ADR 0021).
+// of a tag to an entry, which record nothing of their own.
 var cascadingForeignKeys = []foreignKey{
 	{"ledger.journal_entry_tag", "journal_entry_id", "ledger.journal_entry", "JournalEntry"},
 	{"ledger.journal_entry_tag", "tag_id", "tag.tag", "Tag"},

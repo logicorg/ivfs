@@ -41,6 +41,9 @@ func PostEntryWithMovementsTx(ctx context.Context, tx bun.Tx, input lt.PostJourn
 	if err := insertLinesTx(ctx, tx, entry, input.Postings, movements); err != nil {
 		return 0, err
 	}
+	if err := SetTagsTx(ctx, tx, entry.ID, input.TagIDs); err != nil {
+		return 0, err
+	}
 	return entry.ID, nil
 }
 
