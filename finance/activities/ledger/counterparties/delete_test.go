@@ -1,7 +1,7 @@
 package counterparties
 
 import (
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	cpt "github.com/logicorg/ivfs/finance/common/types/counterpartytypes"
 	"github.com/logicorg/ivfs/internal/pkg/temporaltesting"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/stretchr/testify/require"
@@ -33,7 +33,7 @@ func (s *UnitTestSuite) Test_DeleteCounterparty() {
 		}
 
 		s.Run(name, func() {
-			_, err := s.Env.ExecuteActivity(s.aa.DeleteCounterparty, lt.DeleteCounterpartyInput{CounterpartyID: payee.ID})
+			_, err := s.Env.ExecuteActivity(s.aa.DeleteCounterparty, cpt.DeleteCounterpartyInput{CounterpartyID: payee.ID})
 
 			exists, existsErr := s.DB.NewSelect().Model((*model.Counterparty)(nil)).Where("id = ?", payee.ID).Exists(s.T().Context())
 			require.NoError(s.T(), existsErr)
@@ -62,7 +62,7 @@ func (s *UnitTestSuite) Test_DeleteCounterparty_Input() {
 
 	for name, tc := range tests {
 		s.Run(name, func() {
-			_, err := s.Env.ExecuteActivity(s.aa.DeleteCounterparty, lt.DeleteCounterpartyInput{CounterpartyID: tc.id})
+			_, err := s.Env.ExecuteActivity(s.aa.DeleteCounterparty, cpt.DeleteCounterpartyInput{CounterpartyID: tc.id})
 			if tc.errStr != "" {
 				require.ErrorContains(s.T(), err, tc.errStr)
 				return
@@ -78,7 +78,7 @@ func (s *UnitTestSuite) Test_DeleteCounterparty_FreesName() {
 	payee := &model.Counterparty{Name: "TESCO"}
 	temporaltesting.Insert(s.T(), s.DB, payee)
 
-	_, err := s.Env.ExecuteActivity(s.aa.DeleteCounterparty, lt.DeleteCounterpartyInput{CounterpartyID: payee.ID})
+	_, err := s.Env.ExecuteActivity(s.aa.DeleteCounterparty, cpt.DeleteCounterpartyInput{CounterpartyID: payee.ID})
 	require.NoError(s.T(), err)
 
 	again := &model.Counterparty{Name: "Tesco"}
@@ -89,7 +89,7 @@ func (s *UnitTestSuite) Test_DeleteCounterparty_FreesName() {
 func (s *UnitTestSuite) Test_DeleteCounterparty_Idempotency() {
 	payee := &model.Counterparty{Name: "Tesco"}
 	temporaltesting.Insert(s.T(), s.DB, payee)
-	input := lt.DeleteCounterpartyInput{CounterpartyID: payee.ID}
+	input := cpt.DeleteCounterpartyInput{CounterpartyID: payee.ID}
 
 	for range 2 {
 		_, err := s.Env.ExecuteActivity(s.aa.DeleteCounterparty, input)
