@@ -11,6 +11,7 @@ import (
 	"github.com/logicorg/ivfs/finance/activities/institution"
 	ledgeraccounts "github.com/logicorg/ivfs/finance/activities/ledger/accounts"
 	ledgercategories "github.com/logicorg/ivfs/finance/activities/ledger/categories"
+	ledgercounterparties "github.com/logicorg/ivfs/finance/activities/ledger/counterparties"
 	ledgerfx "github.com/logicorg/ivfs/finance/activities/ledger/fx"
 	ledgerjournal "github.com/logicorg/ivfs/finance/activities/ledger/journal"
 	ledgerportfolio "github.com/logicorg/ivfs/finance/activities/ledger/portfolio"
@@ -27,6 +28,7 @@ import (
 	institutionwf "github.com/logicorg/ivfs/finance/workflows/institution"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
 	"github.com/logicorg/ivfs/finance/workflows/ledger/categories"
+	ledgercounterpartieswf "github.com/logicorg/ivfs/finance/workflows/ledger/counterparties"
 	ledgerfxwf "github.com/logicorg/ivfs/finance/workflows/ledger/fx"
 	ledgerjournalwf "github.com/logicorg/ivfs/finance/workflows/ledger/journal"
 	ledgerportfoliowf "github.com/logicorg/ivfs/finance/workflows/ledger/portfolio"
@@ -47,6 +49,7 @@ func Register(r worker.Registry, pools tenancy.Pools) {
 	conversionActivity := conversion.Conversion{Pools: pools}
 	tagActivity := tag.Tag{Pools: pools}
 	ledgerAccountsActivity := ledgeraccounts.Activities{Pools: pools}
+	ledgerCounterpartiesActivity := ledgercounterparties.Activities{Pools: pools}
 	ledgerCategoriesActivity := ledgercategories.Activities{Pools: pools}
 	ledgerFXActivity := ledgerfx.Activities{Pools: pools}
 	ledgerJournalActivity := ledgerjournal.Activities{Pools: pools}
@@ -61,6 +64,7 @@ func Register(r worker.Registry, pools tenancy.Pools) {
 	r.RegisterActivity(&conversionActivity)
 	r.RegisterActivity(&tagActivity)
 	r.RegisterActivity(&ledgerAccountsActivity)
+	r.RegisterActivity(&ledgerCounterpartiesActivity)
 	r.RegisterActivity(&ledgerCategoriesActivity)
 	r.RegisterActivity(&ledgerFXActivity)
 	r.RegisterActivity(&ledgerJournalActivity)
@@ -136,11 +140,11 @@ func Register(r worker.Registry, pools tenancy.Pools) {
 	r.RegisterWorkflow(ledgeraccountswf.UpdateFinancialAccountMetadata)
 	r.RegisterWorkflow(ledgeraccountswf.CloseFinancialAccount)
 	r.RegisterWorkflow(ledgeraccountswf.CreateLedgerAccount)
-	r.RegisterWorkflow(ledgeraccountswf.CreateCounterparty)
-	r.RegisterWorkflow(ledgeraccountswf.RetrieveCounterparty)
-	r.RegisterWorkflow(ledgeraccountswf.ListCounterparties)
-	r.RegisterWorkflow(ledgeraccountswf.RenameCounterparty)
-	r.RegisterWorkflow(ledgeraccountswf.DeleteCounterparty)
+	r.RegisterWorkflow(ledgercounterpartieswf.CreateCounterparty)
+	r.RegisterWorkflow(ledgercounterpartieswf.RetrieveCounterparty)
+	r.RegisterWorkflow(ledgercounterpartieswf.ListCounterparties)
+	r.RegisterWorkflow(ledgercounterpartieswf.RenameCounterparty)
+	r.RegisterWorkflow(ledgercounterpartieswf.DeleteCounterparty)
 	r.RegisterWorkflow(ledgeraccountswf.RetrieveLedgerAccount)
 	r.RegisterWorkflow(ledgeraccountswf.ListLedgerAccounts)
 	r.RegisterWorkflow(ledgeraccountswf.ListAccounts)

@@ -50,49 +50,6 @@ func CreateLedgerAccount(ctx workflow.Context, input lt.CreateLedgerAccountInput
 	return &result, nil
 }
 
-func CreateCounterparty(ctx workflow.Context, input lt.CreateCounterpartyInput) (*lt.CreateCounterpartyResult, error) {
-	ctx = workflow.WithActivityOptions(ctx, workflows.GetDefaultActivityOptions())
-
-	var result lt.CreateCounterpartyResult
-	if err := workflow.ExecuteActivity(ctx, la.CreateCounterparty, input).Get(ctx, &result); err != nil {
-		return nil, fmt.Errorf("create counterparty: %w", err)
-	}
-	return &result, nil
-}
-
-// RetrieveCounterparty is a workflow that retrieves a counterparty.
-func RetrieveCounterparty(ctx workflow.Context, params lt.RetrieveCounterpartyParams) (*lt.RetrieveCounterpartyResult, error) {
-	ctx = workflow.WithActivityOptions(ctx, workflows.GetDefaultActivityOptions())
-
-	var result lt.RetrieveCounterpartyResult
-	if err := workflow.ExecuteActivity(ctx, la.RetrieveCounterparty, params).Get(ctx, &result); err != nil {
-		return nil, fmt.Errorf("retrieve counterparty: %w", err)
-	}
-	return &result, nil
-}
-
-// ListCounterparties is a workflow that lists/searches counterparties.
-func ListCounterparties(ctx workflow.Context, params lt.ListCounterpartiesParams) (*lt.ListCounterpartiesResult, error) {
-	ctx = workflow.WithActivityOptions(ctx, workflows.GetDefaultActivityOptions())
-
-	var result lt.ListCounterpartiesResult
-	if err := workflow.ExecuteActivity(ctx, la.ListCounterparties, params).Get(ctx, &result); err != nil {
-		return nil, fmt.Errorf("list counterparties: %w", err)
-	}
-	return &result, nil
-}
-
-// RenameCounterparty is a workflow that renames a counterparty.
-func RenameCounterparty(ctx workflow.Context, input lt.RenameCounterpartyInput) (*lt.CounterpartyMutationResult, error) {
-	ctx = workflow.WithActivityOptions(ctx, workflows.GetDefaultActivityOptions())
-
-	var result lt.CounterpartyMutationResult
-	if err := workflow.ExecuteActivity(ctx, la.RenameCounterparty, input).Get(ctx, &result); err != nil {
-		return nil, fmt.Errorf("rename counterparty: %w", err)
-	}
-	return &result, nil
-}
-
 func RetrieveLedgerAccount(ctx workflow.Context, params lt.RetrieveLedgerAccountParams) (*lt.RetrieveLedgerAccountResult, error) {
 	ctx = workflow.WithActivityOptions(ctx, workflows.GetDefaultActivityOptions())
 

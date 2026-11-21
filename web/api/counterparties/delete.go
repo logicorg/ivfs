@@ -6,7 +6,7 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
-	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
+	counterpartieswf "github.com/logicorg/ivfs/finance/workflows/ledger/counterparties"
 	"github.com/logicorg/ivfs/web/api/gateway"
 	"go.temporal.io/sdk/client"
 )
@@ -23,7 +23,7 @@ func registerDelete(api huma.API, c client.Client) {
 		Tags:   tags,
 		Errors: []int{http.StatusUnprocessableEntity, http.StatusConflict},
 	}, func(ctx context.Context, in *DeleteCounterpartyInput) (*DeleteCounterpartyOutput, error) {
-		result, err := gateway.RunWorkflow[lt.DeleteCounterpartyResult](ctx, c, ledgeraccountswf.DeleteCounterparty,
+		result, err := gateway.RunWorkflow[lt.DeleteCounterpartyResult](ctx, c, counterpartieswf.DeleteCounterparty,
 			lt.DeleteCounterpartyInput{CounterpartyID: in.ID})
 		if err != nil {
 			return nil, err
