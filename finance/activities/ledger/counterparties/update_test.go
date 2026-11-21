@@ -1,4 +1,4 @@
-package accounts
+package counterparties
 
 import (
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"

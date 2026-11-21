@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
-	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
+	counterpartieswf "github.com/logicorg/ivfs/finance/workflows/ledger/counterparties"
 	"github.com/logicorg/ivfs/web/api/apitest"
 	"go.temporal.io/sdk/temporal"
 )
@@ -18,7 +18,7 @@ func TestRename(t *testing.T) {
 		"rename a counterparty": {
 			Method: http.MethodPost, Path: "/api/counterparties/3/rename", Body: `{"name":"Tesco Express"}`,
 			Call: &apitest.WorkflowCall{
-				Workflow: ledgeraccountswf.RenameCounterparty,
+				Workflow: counterpartieswf.RenameCounterparty,
 				Params:   lt.RenameCounterpartyInput{CounterpartyID: 3, Name: "Tesco Express"},
 				Result:   lt.CounterpartyMutationResult{CounterpartyID: 3},
 			},
@@ -27,7 +27,7 @@ func TestRename(t *testing.T) {
 		"rename a counterparty to a name another has": {
 			Method: http.MethodPost, Path: "/api/counterparties/3/rename", Body: `{"name":"Acme"}`,
 			Call: &apitest.WorkflowCall{
-				Workflow: ledgeraccountswf.RenameCounterparty,
+				Workflow: counterpartieswf.RenameCounterparty,
 				Params:   lt.RenameCounterpartyInput{CounterpartyID: 3, Name: "Acme"},
 				Err:      temporal.NewApplicationError("a Counterparty with this name already exists", "ErrResourceConflict"),
 			},
@@ -37,7 +37,7 @@ func TestRename(t *testing.T) {
 		"rename a counterparty that does not exist": {
 			Method: http.MethodPost, Path: "/api/counterparties/9/rename", Body: `{"name":"Acme"}`,
 			Call: &apitest.WorkflowCall{
-				Workflow: ledgeraccountswf.RenameCounterparty,
+				Workflow: counterpartieswf.RenameCounterparty,
 				Params:   lt.RenameCounterpartyInput{CounterpartyID: 9, Name: "Acme"},
 				Err:      temporal.NewApplicationError("resource Counterparty not found with ID: 9", "ErrNotFound"),
 			},

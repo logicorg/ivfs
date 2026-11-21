@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
-	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
+	counterpartieswf "github.com/logicorg/ivfs/finance/workflows/ledger/counterparties"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/logicorg/ivfs/pkg/ptr"
 	"github.com/logicorg/ivfs/web/api/apitest"
@@ -18,7 +18,7 @@ func TestList(t *testing.T) {
 		"every counterparty": {
 			Method: http.MethodGet, Path: "/api/counterparties",
 			Call: &apitest.WorkflowCall{
-				Workflow: ledgeraccountswf.ListCounterparties,
+				Workflow: counterpartieswf.ListCounterparties,
 				Params:   lt.ListCounterpartiesParams{},
 				Result: lt.ListCounterpartiesResult{Counterparties: []model.Counterparty{
 					{ID: 1, Name: "Acme", ExternalID: ptr.NewPtr("payroll-7")},
@@ -31,7 +31,7 @@ func TestList(t *testing.T) {
 		"the counterparties matching a search": {
 			Method: http.MethodGet, Path: "/api/counterparties?nameContains=tes",
 			Call: &apitest.WorkflowCall{
-				Workflow: ledgeraccountswf.ListCounterparties,
+				Workflow: counterpartieswf.ListCounterparties,
 				Params:   lt.ListCounterpartiesParams{NameContains: "tes"},
 				Result:   lt.ListCounterpartiesResult{},
 			},

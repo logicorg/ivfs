@@ -120,7 +120,7 @@ stored, as it always does, and does not set it again.
 
 | Command | Files | Exposed as |
 | --- | --- | --- |
-| `DeleteCounterparty` | `finance/activities/ledger/accounts/counterparty_clear_references.go`, `finance/activities/ledger/accounts/counterparty_delete.go`, `finance/workflows/ledger/accounts/delete_counterparty.go` | `DELETE /api/counterparties/{id}` |
+| `DeleteCounterparty` | `finance/activities/ledger/counterparties/clear_references.go`, `finance/activities/ledger/counterparties/delete.go`, `finance/workflows/ledger/counterparties/delete.go` | `DELETE /api/counterparties/{id}` |
 
 The result carries the number of entries cleared.
 

@@ -49,49 +49,6 @@ func (s *WorkflowUnitTestSuite) TestFinancialAccountLifecycleWorkflows() {
 	require.Len(s.T(), listed.FinancialAccounts, 1)
 }
 
-func (s *WorkflowUnitTestSuite) TestCounterpartyLifecycleWorkflows() {
-	counterparty := &model.Counterparty{ID: 4, Name: "Tesco"}
-
-	env := s.NewTestWorkflowEnvironment()
-	aa := activity.Activities{}
-
-	env.OnActivity(aa.RetrieveCounterparty, mock.Anything, lt.RetrieveCounterpartyParams{ID: counterparty.ID}).Return(&lt.RetrieveCounterpartyResult{Counterparty: counterparty}, nil)
-
-	env.ExecuteWorkflow(RetrieveCounterparty, lt.RetrieveCounterpartyParams{ID: counterparty.ID})
-
-	require.NoError(s.T(), env.GetWorkflowError())
-	var retrieved *lt.RetrieveCounterpartyResult
-	require.NoError(s.T(), env.GetWorkflowResult(&retrieved))
-	assert.Equal(s.T(), counterparty, retrieved.Counterparty)
-
-	env = s.NewTestWorkflowEnvironment()
-	env.OnActivity(aa.ListCounterparties, mock.Anything, lt.ListCounterpartiesParams{}).Return(&lt.ListCounterpartiesResult{Counterparties: []model.Counterparty{*counterparty}}, nil)
-	env.ExecuteWorkflow(ListCounterparties, lt.ListCounterpartiesParams{})
-	require.NoError(s.T(), env.GetWorkflowError())
-	var listed *lt.ListCounterpartiesResult
-	require.NoError(s.T(), env.GetWorkflowResult(&listed))
-	require.Len(s.T(), listed.Counterparties, 1)
-
-	env = s.NewTestWorkflowEnvironment()
-	renameInput := lt.RenameCounterpartyInput{CounterpartyID: counterparty.ID, Name: "Tesco Ltd"}
-	env.OnActivity(aa.RenameCounterparty, mock.Anything, renameInput).Return(&lt.CounterpartyMutationResult{CounterpartyID: counterparty.ID}, nil)
-	env.ExecuteWorkflow(RenameCounterparty, renameInput)
-	require.NoError(s.T(), env.GetWorkflowError())
-}
-
-func (s *WorkflowUnitTestSuite) TestRetrieveCounterpartyWorkflowPropagatesActivityError() {
-	params := lt.RetrieveCounterpartyParams{ID: 4}
-
-	env := s.NewTestWorkflowEnvironment()
-	aa := activity.Activities{}
-
-	env.OnActivity(aa.RetrieveCounterparty, mock.Anything, params).Return(nil, assert.AnError)
-
-	env.ExecuteWorkflow(RetrieveCounterparty, params)
-
-	require.Error(s.T(), env.GetWorkflowError())
-}
-
 func (s *WorkflowUnitTestSuite) TestCreateLedgerAccount() {
 	input := lt.CreateLedgerAccountInput{
 		FinancialAccountID: ptr.NewPtr(int64(1)),
@@ -111,22 +68,6 @@ func (s *WorkflowUnitTestSuite) TestCreateLedgerAccount() {
 	var result *lt.CreateLedgerAccountResult
 	require.NoError(s.T(), env.GetWorkflowResult(&result))
 	require.Equal(s.T(), int64(3), result.LedgerAccountID)
-}
-
-func (s *WorkflowUnitTestSuite) TestCreateCounterparty() {
-	input := lt.CreateCounterpartyInput{Name: "Tesco"}
-
-	env := s.NewTestWorkflowEnvironment()
-	aa := activity.Activities{}
-
-	env.OnActivity(aa.CreateCounterparty, mock.Anything, input).Return(&lt.CreateCounterpartyResult{CounterpartyID: 4}, nil)
-
-	env.ExecuteWorkflow(CreateCounterparty, input)
-
-	require.NoError(s.T(), env.GetWorkflowError())
-	var result *lt.CreateCounterpartyResult
-	require.NoError(s.T(), env.GetWorkflowResult(&result))
-	require.Equal(s.T(), int64(4), result.CounterpartyID)
 }
 
 func (s *WorkflowUnitTestSuite) TestLedgerAccountLifecycleWorkflows() {

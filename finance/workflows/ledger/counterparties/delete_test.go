@@ -1,7 +1,7 @@
-package accounts
+package counterparties
 
 import (
-	activity "github.com/logicorg/ivfs/finance/activities/ledger/accounts"
+	activity "github.com/logicorg/ivfs/finance/activities/ledger/counterparties"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/stretchr/testify/assert"

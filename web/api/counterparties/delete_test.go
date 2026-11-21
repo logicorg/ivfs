@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
-	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
+	counterpartieswf "github.com/logicorg/ivfs/finance/workflows/ledger/counterparties"
 	"github.com/logicorg/ivfs/web/api/apitest"
 	"go.temporal.io/sdk/temporal"
 )
@@ -18,7 +18,7 @@ func TestDelete(t *testing.T) {
 		"delete a counterparty entries name": {
 			Method: http.MethodDelete, Path: "/api/counterparties/3",
 			Call: &apitest.WorkflowCall{
-				Workflow: ledgeraccountswf.DeleteCounterparty,
+				Workflow: counterpartieswf.DeleteCounterparty,
 				Params:   lt.DeleteCounterpartyInput{CounterpartyID: 3},
 				Result:   lt.DeleteCounterpartyResult{Cleared: 4},
 			},
@@ -28,7 +28,7 @@ func TestDelete(t *testing.T) {
 		"delete a counterparty that does not exist": {
 			Method: http.MethodDelete, Path: "/api/counterparties/9",
 			Call: &apitest.WorkflowCall{
-				Workflow: ledgeraccountswf.DeleteCounterparty,
+				Workflow: counterpartieswf.DeleteCounterparty,
 				Params:   lt.DeleteCounterpartyInput{CounterpartyID: 9},
 				Result:   lt.DeleteCounterpartyResult{},
 			},
@@ -38,7 +38,7 @@ func TestDelete(t *testing.T) {
 		"delete a counterparty entries keep being recorded with": {
 			Method: http.MethodDelete, Path: "/api/counterparties/3",
 			Call: &apitest.WorkflowCall{
-				Workflow: ledgeraccountswf.DeleteCounterparty,
+				Workflow: counterpartieswf.DeleteCounterparty,
 				Params:   lt.DeleteCounterpartyInput{CounterpartyID: 3},
 				Err:      temporal.NewApplicationError("resource Counterparty conflict: still referenced by ledger.journal_entry.counterparty_id", "ErrResourceConflict"),
 			},

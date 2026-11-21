@@ -1,4 +1,4 @@
-package accounts
+package counterparties
 
 import (
 	"fmt"
@@ -29,13 +29,13 @@ func DeleteCounterparty(ctx workflow.Context, input lt.DeleteCounterpartyInput) 
 	var err error
 	for range deleteCounterpartyRounds {
 		var cleared lt.ClearCounterpartyReferencesResult
-		if err = workflow.ExecuteActivity(ctx, la.ClearCounterpartyReferences,
+		if err = workflow.ExecuteActivity(ctx, ca.ClearCounterpartyReferences,
 			lt.ClearCounterpartyReferencesInput{CounterpartyID: input.CounterpartyID}).Get(ctx, &cleared); err != nil {
 			return nil, fmt.Errorf("clear counterparty references: %w", err)
 		}
 		result.Cleared += cleared.Cleared
 
-		err = workflow.ExecuteActivity(ctx, la.DeleteCounterparty, input).Get(ctx, nil)
+		err = workflow.ExecuteActivity(ctx, ca.DeleteCounterparty, input).Get(ctx, nil)
 		switch {
 		case err == nil:
 			return result, nil

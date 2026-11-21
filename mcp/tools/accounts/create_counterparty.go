@@ -2,7 +2,7 @@ package accounts
 
 import (
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
-	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
+	counterpartieswf "github.com/logicorg/ivfs/finance/workflows/ledger/counterparties"
 	"github.com/logicorg/ivfs/mcp/mcptypes"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"go.temporal.io/sdk/client"
@@ -17,5 +17,5 @@ func registerCreateCounterparty(server *mcp.Server, c client.Client) {
 	}, mcptypes.WorkflowWithResult[
 		func(workflow.Context, lt.CreateCounterpartyInput) (*lt.CreateCounterpartyResult, error),
 		lt.CreateCounterpartyInput, lt.CreateCounterpartyResult,
-	](c, ledgeraccountswf.CreateCounterparty))
+	](c, counterpartieswf.CreateCounterparty))
 }
