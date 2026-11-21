@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
 	"github.com/logicorg/ivfs/web/api/gateway"
 	"go.temporal.io/sdk/client"
@@ -22,6 +22,6 @@ func registerCloseLedgerAccount(api huma.API, c client.Client) {
 		Errors:      []int{http.StatusNotFound, http.StatusConflict},
 	}, func(ctx context.Context, in *CloseInput) (*struct{}, error) {
 		return nil, gateway.RunWorkflowWithoutResult(ctx, c, ledgeraccountswf.CloseLedgerAccount,
-			lt.CloseLedgerAccountInput{LedgerAccountID: in.ID})
+			act.CloseLedgerAccountInput{LedgerAccountID: in.ID})
 	})
 }

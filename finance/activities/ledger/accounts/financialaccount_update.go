@@ -3,18 +3,17 @@ package accounts
 import (
 	"context"
 	"fmt"
-	"strings"
-
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/logicorg/ivfs/pkg/sqllib"
 	"github.com/uptrace/bun"
+	"strings"
 )
 
 // UpdateFinancialAccountMetadata renames a FinancialAccount and/or updates
 // its ExternalID. It never changes InstitutionID, currency, or linked ledger
 // accounts, and it does not require the account to be open.
-func (a *Activities) UpdateFinancialAccountMetadata(ctx context.Context, input lt.UpdateFinancialAccountMetadataInput) (*lt.FinancialAccountMutationResult, error) {
+func (a *Activities) UpdateFinancialAccountMetadata(ctx context.Context, input act.UpdateFinancialAccountMetadataInput) (*act.FinancialAccountMutationResult, error) {
 	db, err := a.Pools.For(ctx)
 	if err != nil {
 		return nil, err
@@ -27,7 +26,7 @@ func (a *Activities) UpdateFinancialAccountMetadata(ctx context.Context, input l
 		return nil, internalerrors.ErrInvalidParameter{Description: "name must not be blank"}
 	}
 
-	result := &lt.FinancialAccountMutationResult{FinancialAccountID: input.FinancialAccountID}
+	result := &act.FinancialAccountMutationResult{FinancialAccountID: input.FinancialAccountID}
 	err = db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
 		account, err := loadFinancialAccount(ctx, tx, input.FinancialAccountID)
 		if err != nil {

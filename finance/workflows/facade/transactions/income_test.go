@@ -4,9 +4,9 @@ import (
 	"errors"
 	"time"
 
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	ct "github.com/logicorg/ivfs/finance/common/types/categorytypes"
 	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	tt "github.com/logicorg/ivfs/finance/common/types/transactiontypes"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
 	categorieswf "github.com/logicorg/ivfs/finance/workflows/ledger/categories"
@@ -106,7 +106,7 @@ func (s *WorkflowUnitTestSuite) TestRecordIncome_Errors() {
 		s.Run(tc.name, func() {
 			env := s.NewTestWorkflowEnvironment()
 			if tc.unknownAccount != 0 {
-				env.OnWorkflow(ledgeraccountswf.RetrieveLedgerAccount, mock.Anything, lt.RetrieveLedgerAccountParams{ID: tc.unknownAccount}).
+				env.OnWorkflow(ledgeraccountswf.RetrieveLedgerAccount, mock.Anything, act.RetrieveLedgerAccountParams{ID: tc.unknownAccount}).
 					Return(nil, errors.New("resource LedgerAccount not found"))
 			}
 			if tc.unknownCategory != 0 {

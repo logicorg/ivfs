@@ -3,7 +3,7 @@ package accounts
 import (
 	activity "github.com/logicorg/ivfs/finance/activities/ledger/accounts"
 	accountdeletion "github.com/logicorg/ivfs/finance/activities/ledger/accounts/deletion"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/logicorg/ivfs/pkg/ptr"
 	"github.com/stretchr/testify/assert"
@@ -17,9 +17,9 @@ func (s *WorkflowUnitTestSuite) TestDeleteLedgerAccount() {
 
 	tests := []struct {
 		name  string
-		input lt.DeleteLedgerAccountInput
+		input act.DeleteLedgerAccountInput
 		// closed is what CloseAccountForDeletion returns; nil skips it.
-		closed   *lt.CloseAccountForDeletionResult
+		closed   *act.CloseAccountForDeletionResult
 		closeErr error
 		// passes holds, for each pass, the entries each of its batches handles
 		// before the last one handles none.
@@ -34,95 +34,95 @@ func (s *WorkflowUnitTestSuite) TestDeleteLedgerAccount() {
 	}{
 		{
 			name:    "an id that is not positive",
-			input:   lt.DeleteLedgerAccountInput{},
+			input:   act.DeleteLedgerAccountInput{},
 			wantErr: "validation error",
 		},
 		{
 			name:    "a replacement",
-			input:   lt.DeleteLedgerAccountInput{LedgerAccountID: 7, ReplacementID: ptr.Int64(8)},
+			input:   act.DeleteLedgerAccountInput{LedgerAccountID: 7, ReplacementID: ptr.Int64(8)},
 			wantErr: "merging an account into a replacement is not supported yet",
 		},
 		{
 			name:   "an account that does not exist",
-			input:  lt.DeleteLedgerAccountInput{LedgerAccountID: 7},
-			closed: &lt.CloseAccountForDeletionResult{Gone: true},
+			input:  act.DeleteLedgerAccountInput{LedgerAccountID: 7},
+			closed: &act.CloseAccountForDeletionResult{Gone: true},
 		},
 		{
 			name:     "an account the close refuses",
-			input:    lt.DeleteLedgerAccountInput{LedgerAccountID: 7},
-			closed:   &lt.CloseAccountForDeletionResult{},
+			input:    act.DeleteLedgerAccountInput{LedgerAccountID: 7},
+			closed:   &act.CloseAccountForDeletionResult{},
 			closeErr: internalerrors.ErrResourceConflict{ResourceType: "LedgerAccount", Reason: "ledger account 7 has child accounts; delete or move them first"},
 			wantErr:  "resource LedgerAccount conflict: ledger account 7 has child accounts; delete or move them first",
 		},
 		{
 			name:       "an account without entries",
-			input:      lt.DeleteLedgerAccountInput{LedgerAccountID: 7},
-			closed:     &lt.CloseAccountForDeletionResult{},
+			input:      act.DeleteLedgerAccountInput{LedgerAccountID: 7},
+			closed:     &act.CloseAccountForDeletionResult{},
 			passes:     [][]int{{}},
 			deleteErrs: []error{nil},
 		},
 		{
 			name:       "an account with entries",
-			input:      lt.DeleteLedgerAccountInput{LedgerAccountID: 7},
-			closed:     &lt.CloseAccountForDeletionResult{},
+			input:      act.DeleteLedgerAccountInput{LedgerAccountID: 7},
+			closed:     &act.CloseAccountForDeletionResult{},
 			passes:     [][]int{{100, 100, 3}},
 			deleteErrs: []error{nil},
 		},
 		{
 			name:       "rows deleted meanwhile",
-			input:      lt.DeleteLedgerAccountInput{LedgerAccountID: 7},
-			closed:     &lt.CloseAccountForDeletionResult{},
+			input:      act.DeleteLedgerAccountInput{LedgerAccountID: 7},
+			closed:     &act.CloseAccountForDeletionResult{},
 			passes:     [][]int{{3}},
 			deleteErrs: []error{internalerrors.ErrNotFound{ResourceType: "LedgerAccount", ID: 7}},
 		},
 		{
 			name:       "an entry recorded meanwhile",
-			input:      lt.DeleteLedgerAccountInput{LedgerAccountID: 7},
-			closed:     &lt.CloseAccountForDeletionResult{},
+			input:      act.DeleteLedgerAccountInput{LedgerAccountID: 7},
+			closed:     &act.CloseAccountForDeletionResult{},
 			passes:     [][]int{{100}, {1}},
 			deleteErrs: []error{conflict, nil},
 		},
 		{
 			name:       "a conflict after a pass that handled nothing",
-			input:      lt.DeleteLedgerAccountInput{LedgerAccountID: 7},
-			closed:     &lt.CloseAccountForDeletionResult{},
+			input:      act.DeleteLedgerAccountInput{LedgerAccountID: 7},
+			closed:     &act.CloseAccountForDeletionResult{},
 			passes:     [][]int{{100}, {}},
 			deleteErrs: []error{conflict, conflict},
 			wantErr:    "resource LedgerAccount conflict: still referenced by ledger.posting.ledger_account_id",
 		},
 		{
 			name:       "a conflict on an account without entries",
-			input:      lt.DeleteLedgerAccountInput{LedgerAccountID: 7},
-			closed:     &lt.CloseAccountForDeletionResult{},
+			input:      act.DeleteLedgerAccountInput{LedgerAccountID: 7},
+			closed:     &act.CloseAccountForDeletionResult{},
 			passes:     [][]int{{}},
 			deleteErrs: []error{conflict},
 			wantErr:    "resource LedgerAccount conflict: still referenced by ledger.posting.ledger_account_id",
 		},
 		{
 			name:     "a batch that fails",
-			input:    lt.DeleteLedgerAccountInput{LedgerAccountID: 7},
-			closed:   &lt.CloseAccountForDeletionResult{},
+			input:    act.DeleteLedgerAccountInput{LedgerAccountID: 7},
+			closed:   &act.CloseAccountForDeletionResult{},
 			batchErr: assert.AnError,
 			wantErr:  "handle entries for deletion",
 		},
 		{
 			name:       "a delete that fails",
-			input:      lt.DeleteLedgerAccountInput{LedgerAccountID: 7},
-			closed:     &lt.CloseAccountForDeletionResult{},
+			input:      act.DeleteLedgerAccountInput{LedgerAccountID: 7},
+			closed:     &act.CloseAccountForDeletionResult{},
 			passes:     [][]int{{}},
 			deleteErrs: []error{assert.AnError},
 			wantErr:    "delete ledger account",
 		},
 		{
 			name:          "continuing as new before a batch",
-			input:         lt.DeleteLedgerAccountInput{LedgerAccountID: 7},
-			closed:        &lt.CloseAccountForDeletionResult{},
+			input:         act.DeleteLedgerAccountInput{LedgerAccountID: 7},
+			closed:        &act.CloseAccountForDeletionResult{},
 			continueAsNew: -1,
 		},
 		{
 			name:          "continuing as new between two batches",
-			input:         lt.DeleteLedgerAccountInput{LedgerAccountID: 7},
-			closed:        &lt.CloseAccountForDeletionResult{},
+			input:         act.DeleteLedgerAccountInput{LedgerAccountID: 7},
+			closed:        &act.CloseAccountForDeletionResult{},
 			passes:        [][]int{{100}},
 			continueAsNew: 1,
 		},
@@ -133,8 +133,8 @@ func (s *WorkflowUnitTestSuite) TestDeleteLedgerAccount() {
 			env := s.NewTestWorkflowEnvironment()
 			aa := activity.Activities{}
 			da := accountdeletion.Activities{}
-			target := lt.DeletionTarget{LedgerAccountID: &tc.input.LedgerAccountID}
-			batch := lt.DeletionBatchInput{Target: target, Limit: deletionBatchSize}
+			target := act.DeletionTarget{LedgerAccountID: &tc.input.LedgerAccountID}
+			batch := act.DeletionBatchInput{Target: target, Limit: deletionBatchSize}
 
 			if tc.closed != nil {
 				env.OnActivity(da.CloseAccountForDeletion, mock.Anything, target).Return(tc.closed, tc.closeErr).Once()
@@ -147,7 +147,7 @@ func (s *WorkflowUnitTestSuite) TestDeleteLedgerAccount() {
 			suggested := func() bool { return tc.continueAsNew > 0 && batches == tc.continueAsNew }
 			for n, pass := range tc.passes {
 				for _, handled := range pass {
-					call := env.OnActivity(da.HandleEntriesForDeletion, mock.Anything, batch).Return(&lt.DeletionBatchResult{Handled: handled}, nil).Once()
+					call := env.OnActivity(da.HandleEntriesForDeletion, mock.Anything, batch).Return(&act.DeletionBatchResult{Handled: handled}, nil).Once()
 					batches++
 					if suggested() {
 						call.Run(func(mock.Arguments) { env.SetContinueAsNewSuggested(true) })
@@ -157,7 +157,7 @@ func (s *WorkflowUnitTestSuite) TestDeleteLedgerAccount() {
 				if suggested() {
 					break
 				}
-				env.OnActivity(da.HandleEntriesForDeletion, mock.Anything, batch).Return(&lt.DeletionBatchResult{}, nil).Once()
+				env.OnActivity(da.HandleEntriesForDeletion, mock.Anything, batch).Return(&act.DeletionBatchResult{}, nil).Once()
 				deleted := env.OnActivity(aa.DeleteLedgerAccount, mock.Anything, tc.input).Return(tc.deleteErrs[n])
 				if tc.deleteErrs[n] != assert.AnError {
 					deleted.Once()
@@ -181,7 +181,7 @@ func (s *WorkflowUnitTestSuite) TestDeleteLedgerAccount() {
 				return
 			}
 			require.NoError(t, env.GetWorkflowError())
-			var result lt.DeleteAccountResult
+			var result act.DeleteAccountResult
 			require.NoError(t, env.GetWorkflowResult(&result))
 			require.Empty(t, result.Warnings)
 		})

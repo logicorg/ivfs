@@ -1,23 +1,22 @@
 package accounts
 
 import (
-	"time"
-
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	"github.com/logicorg/ivfs/internal/pkg/temporaltesting"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/logicorg/ivfs/pkg/model/testhelpers"
 	"github.com/logicorg/ivfs/pkg/ptr"
 	"github.com/stretchr/testify/require"
 	"go.temporal.io/sdk/temporal"
+	"time"
 )
 
-func (s *UnitTestSuite) createFinancialAccount(input lt.CreateFinancialAccountInput) lt.CreateFinancialAccountResult {
+func (s *UnitTestSuite) createFinancialAccount(input act.CreateFinancialAccountInput) act.CreateFinancialAccountResult {
 	s.T().Helper()
 
 	activityResult, err := s.Env.ExecuteActivity(s.aa.CreateFinancialAccount, input)
 	require.NoError(s.T(), err)
-	var result lt.CreateFinancialAccountResult
+	var result act.CreateFinancialAccountResult
 	require.NoError(s.T(), activityResult.Get(&result))
 	return result
 }
@@ -56,7 +55,7 @@ func (s *UnitTestSuite) Test_CreateFinancialAccount() {
 		var created int64
 
 		s.Run(name, func() {
-			result := s.createFinancialAccount(lt.CreateFinancialAccountInput{InstitutionID: institution.ID, Name: tc.name, CashCurrencyID: tc.cash})
+			result := s.createFinancialAccount(act.CreateFinancialAccountInput{InstitutionID: institution.ID, Name: tc.name, CashCurrencyID: tc.cash})
 			created = result.FinancialAccountID
 
 			var account model.FinancialAccount
@@ -89,19 +88,19 @@ func (s *UnitTestSuite) Test_CreateFinancialAccount_Invalid() {
 	temporaltesting.Insert(s.T(), s.DB, institution)
 
 	tests := map[string]struct {
-		input  lt.CreateFinancialAccountInput
+		input  act.CreateFinancialAccountInput
 		errStr string
 	}{
 		"no institution": {
-			input:  lt.CreateFinancialAccountInput{Name: "Revolut Personal"},
+			input:  act.CreateFinancialAccountInput{Name: "Revolut Personal"},
 			errStr: "validation error: institutionId and name are required",
 		},
 		"a blank name": {
-			input:  lt.CreateFinancialAccountInput{InstitutionID: institution.ID, Name: "   "},
+			input:  act.CreateFinancialAccountInput{InstitutionID: institution.ID, Name: "   "},
 			errStr: "validation error: institutionId and name are required",
 		},
 		"a cash currency that is not positive": {
-			input:  lt.CreateFinancialAccountInput{InstitutionID: institution.ID, Name: "Revolut Personal", CashCurrencyID: ptr.Int64(0)},
+			input:  act.CreateFinancialAccountInput{InstitutionID: institution.ID, Name: "Revolut Personal", CashCurrencyID: ptr.Int64(0)},
 			errStr: "validation error: cashCurrencyId must be positive",
 		},
 	}
@@ -132,7 +131,7 @@ func (s *UnitTestSuite) Test_CreateFinancialAccount_Idempotent() {
 	temporaltesting.Insert(s.T(), s.DB, dollar)
 	institution := &model.Institution{Name: "Revolut", Kind: "bank"}
 	temporaltesting.Insert(s.T(), s.DB, institution)
-	input := lt.CreateFinancialAccountInput{InstitutionID: institution.ID, Name: "Revolut Personal", CashCurrencyID: ptr.Int64(euro.ID)}
+	input := act.CreateFinancialAccountInput{InstitutionID: institution.ID, Name: "Revolut Personal", CashCurrencyID: ptr.Int64(euro.ID)}
 
 	created := s.createFinancialAccount(input)
 	retried := s.createFinancialAccount(input)
@@ -141,7 +140,7 @@ func (s *UnitTestSuite) Test_CreateFinancialAccount_Idempotent() {
 	require.Equal(s.T(), 1, s.Count[model.FinancialAccount]())
 	require.Equal(s.T(), 1, s.Count[model.LedgerAccount]())
 
-	different := s.createFinancialAccount(lt.CreateFinancialAccountInput{
+	different := s.createFinancialAccount(act.CreateFinancialAccountInput{
 		InstitutionID: institution.ID, Name: " revolut personal ", ExternalID: ptr.NewPtr("IBAN-1"), CashCurrencyID: ptr.Int64(euro.ID),
 	})
 
@@ -151,7 +150,7 @@ func (s *UnitTestSuite) Test_CreateFinancialAccount_Idempotent() {
 	require.Equal(s.T(), "Revolut Personal", stored.Name)
 	require.Nil(s.T(), stored.ExternalID)
 
-	otherCurrency := s.createFinancialAccount(lt.CreateFinancialAccountInput{
+	otherCurrency := s.createFinancialAccount(act.CreateFinancialAccountInput{
 		InstitutionID: institution.ID, Name: "Revolut Personal", CashCurrencyID: ptr.Int64(dollar.ID),
 	})
 
@@ -172,17 +171,17 @@ func (s *UnitTestSuite) Test_CreateFinancialAccount_Scope() {
 	temporaltesting.Insert(s.T(), s.DB, n26)
 
 	tests := map[string]struct {
-		input  lt.CreateFinancialAccountInput
+		input  act.CreateFinancialAccountInput
 		errStr string
 	}{
 		"the same name at another institution": {
-			input: lt.CreateFinancialAccountInput{InstitutionID: n26.ID, Name: "Personal"},
+			input: act.CreateFinancialAccountInput{InstitutionID: n26.ID, Name: "Personal"},
 		},
 		"the same external id at another institution": {
-			input: lt.CreateFinancialAccountInput{InstitutionID: n26.ID, Name: "Main", ExternalID: ptr.NewPtr("IBAN-1")},
+			input: act.CreateFinancialAccountInput{InstitutionID: n26.ID, Name: "Main", ExternalID: ptr.NewPtr("IBAN-1")},
 		},
 		"the same external id at the same institution": {
-			input:  lt.CreateFinancialAccountInput{InstitutionID: revolut.ID, Name: "Joint", ExternalID: ptr.NewPtr("IBAN-1")},
+			input:  act.CreateFinancialAccountInput{InstitutionID: revolut.ID, Name: "Joint", ExternalID: ptr.NewPtr("IBAN-1")},
 			errStr: "resource FinancialAccount conflict",
 		},
 	}
@@ -201,7 +200,7 @@ func (s *UnitTestSuite) Test_CreateFinancialAccount_Scope() {
 				return
 			}
 			require.NoError(s.T(), err)
-			var result lt.CreateFinancialAccountResult
+			var result act.CreateFinancialAccountResult
 			require.NoError(s.T(), activityResult.Get(&result))
 			created = result.FinancialAccountID
 			require.NotEqual(s.T(), existing.ID, result.FinancialAccountID)
@@ -222,14 +221,14 @@ func (s *UnitTestSuite) Test_CreateFinancialAccount_ReturnsClosedAccount() {
 	closed := &model.FinancialAccount{InstitutionID: institution.ID, Name: "Revolut Joint", ClosedAt: &closedAt}
 	temporaltesting.Insert(s.T(), s.DB, closed)
 
-	result := s.createFinancialAccount(lt.CreateFinancialAccountInput{InstitutionID: institution.ID, Name: "revolut joint"})
+	result := s.createFinancialAccount(act.CreateFinancialAccountInput{InstitutionID: institution.ID, Name: "revolut joint"})
 
 	require.Equal(s.T(), closed.ID, result.FinancialAccountID)
 	require.Equal(s.T(), 1, s.Count[model.FinancialAccount]())
 }
 
 type financialAccountOutcome struct {
-	result *lt.CreateFinancialAccountResult
+	result *act.CreateFinancialAccountResult
 	err    error
 }
 
@@ -251,7 +250,7 @@ func (s *UnitTestSuite) Test_CreateFinancialAccount_RetryWaitsForConcurrentWrite
 
 	done := make(chan financialAccountOutcome, 1)
 	go func() {
-		result, err := s.aa.CreateFinancialAccount(s.T().Context(), lt.CreateFinancialAccountInput{InstitutionID: institution.ID, Name: "revolut personal"})
+		result, err := s.aa.CreateFinancialAccount(s.T().Context(), act.CreateFinancialAccountInput{InstitutionID: institution.ID, Name: "revolut personal"})
 		done <- financialAccountOutcome{result, err}
 	}()
 	select {
@@ -277,15 +276,15 @@ func (s *UnitTestSuite) TestCreateFinancialAccount_MissingParents() {
 	temporaltesting.Insert(s.T(), s.DB, institution)
 
 	tests := map[string]struct {
-		input        lt.CreateFinancialAccountInput
+		input        act.CreateFinancialAccountInput
 		expectedType string
 	}{
 		"unknown institution": {
-			input:        lt.CreateFinancialAccountInput{InstitutionID: 999999, Name: "Revolut EUR"},
+			input:        act.CreateFinancialAccountInput{InstitutionID: 999999, Name: "Revolut EUR"},
 			expectedType: "Institution",
 		},
 		"unknown cash currency": {
-			input:        lt.CreateFinancialAccountInput{InstitutionID: institution.ID, Name: "Revolut EUR", CashCurrencyID: ptr.Int64(999999)},
+			input:        act.CreateFinancialAccountInput{InstitutionID: institution.ID, Name: "Revolut EUR", CashCurrencyID: ptr.Int64(999999)},
 			expectedType: "Currency",
 		},
 	}

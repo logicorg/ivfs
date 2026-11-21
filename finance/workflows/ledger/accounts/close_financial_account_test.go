@@ -5,8 +5,8 @@ import (
 
 	institutionactivity "github.com/logicorg/ivfs/finance/activities/institution"
 	activity "github.com/logicorg/ivfs/finance/activities/ledger/accounts"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	it "github.com/logicorg/ivfs/finance/common/types/institutiontypes"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -56,10 +56,10 @@ func (s *WorkflowUnitTestSuite) TestCloseFinancialAccount() {
 			env := s.NewTestWorkflowEnvironment()
 			aa := activity.Activities{}
 			ia := institutionactivity.Institution{}
-			input := lt.CloseFinancialAccountInput{FinancialAccountID: tc.account.ID, ClosedAt: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)}
+			input := act.CloseFinancialAccountInput{FinancialAccountID: tc.account.ID, ClosedAt: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)}
 
-			env.OnActivity(aa.RetrieveFinancialAccount, mock.Anything, lt.RetrieveFinancialAccountParams{ID: tc.account.ID}).
-				Return(&lt.RetrieveFinancialAccountResult{FinancialAccount: &tc.account}, nil)
+			env.OnActivity(aa.RetrieveFinancialAccount, mock.Anything, act.RetrieveFinancialAccountParams{ID: tc.account.ID}).
+				Return(&act.RetrieveFinancialAccountResult{FinancialAccount: &tc.account}, nil)
 			if tc.institution != nil {
 				env.OnActivity(ia.Retrieve, mock.Anything, it.RetrieveInstitutionParams{ID: tc.account.InstitutionID}).
 					Return(&it.RetrieveInstitutionResult{Institution: tc.institution}, nil).Once()

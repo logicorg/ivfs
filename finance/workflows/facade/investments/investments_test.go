@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	catt "github.com/logicorg/ivfs/finance/common/types/categorytypes"
 	ct "github.com/logicorg/ivfs/finance/common/types/currencytypes"
 	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	pft "github.com/logicorg/ivfs/finance/common/types/portfoliotypes"
 	currencieswf "github.com/logicorg/ivfs/finance/workflows/currencies"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
@@ -69,9 +69,9 @@ func mockCategories(env *testsuite.TestWorkflowEnvironment) {
 	env.OnWorkflow(categorieswf.RetrieveCategory, mock.Anything, catt.RetrieveCategoryParams{ID: unknownCategory}).
 		Return(nil, errors.New("resource Category not found with ID: 999")).Maybe()
 	for _, account := range []model.LedgerAccount{income, expenses} {
-		env.OnWorkflow(ledgeraccountswf.CreateLedgerAccount, mock.Anything, lt.CreateLedgerAccountInput{
+		env.OnWorkflow(ledgeraccountswf.CreateLedgerAccount, mock.Anything, act.CreateLedgerAccountInput{
 			CurrencyID: account.CurrencyID, Name: account.Name, Kind: account.Kind,
-		}).Return(&lt.CreateLedgerAccountResult{LedgerAccountID: account.ID}, nil).Maybe()
+		}).Return(&act.CreateLedgerAccountResult{LedgerAccountID: account.ID}, nil).Maybe()
 	}
 }
 
@@ -87,12 +87,12 @@ func mockBrokerage(env *testsuite.TestWorkflowEnvironment) {
 		Return(nil, errors.New("resource Currency not found with code: XYZ")).Maybe()
 
 	for currencyID, balances := range map[int64][]model.LedgerAccount{euro.ID: {cash, investments}, dollar.ID: {cashUSD}} {
-		env.OnWorkflow(ledgeraccountswf.ListLedgerAccounts, mock.Anything, lt.ListLedgerAccountsParams{
+		env.OnWorkflow(ledgeraccountswf.ListLedgerAccounts, mock.Anything, act.ListLedgerAccountsParams{
 			FinancialAccountID: ptr.Int64(ibkr),
 			CurrencyID:         ptr.Int64(currencyID),
 			Kinds:              []model.LedgerAccountKind{model.LedgerAccountAsset},
 			IncludeClosed:      true,
-		}).Return(&lt.ListLedgerAccountsResult{LedgerAccounts: balances}, nil).Maybe()
+		}).Return(&act.ListLedgerAccountsResult{LedgerAccounts: balances}, nil).Maybe()
 	}
 }
 

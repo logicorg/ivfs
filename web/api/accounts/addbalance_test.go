@@ -6,7 +6,7 @@ import (
 	"time"
 
 	ast "github.com/logicorg/ivfs/finance/common/types/accountsetuptypes"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	"github.com/logicorg/ivfs/finance/workflows/facade/accountsetup"
 	"github.com/logicorg/ivfs/web/api/apitest"
 	"github.com/shopspring/decimal"
@@ -24,7 +24,7 @@ func TestAddBalance(t *testing.T) {
 	}
 	added := ast.AddBalanceResult{
 		Outcome: ast.OutcomeOpened, LedgerAccountID: 12,
-		Balances: ast.Balances{Balances: []lt.AccountSummary{
+		Balances: ast.Balances{Balances: []act.AccountSummary{
 			{LedgerAccountID: 12, LedgerAccountName: "Savings vault"},
 			{LedgerAccountID: 3, LedgerAccountName: "Opening balances"},
 		}},
