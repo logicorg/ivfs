@@ -44,7 +44,7 @@ func registerList(api huma.API, c client.Client) {
 		for n := range result.Entries {
 			entry, err := newEntry(&result.Entries[n])
 			if err != nil {
-				return nil, gateway.WorkflowError(err)
+				return nil, gateway.WorkflowError(ctx, err)
 			}
 			out.Body.Entries = append(out.Body.Entries, entry)
 		}

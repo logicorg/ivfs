@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
+	"github.com/google/uuid"
 	"github.com/logicorg/ivfs/internal/pkg/tenancy"
 	"github.com/logicorg/ivfs/internal/pkg/workflowrun"
 	"github.com/logicorg/ivfs/web/api/apitest"
@@ -23,6 +24,7 @@ import (
 // with the activity's own message, found anywhere in the error's chain, and
 // that any other error becomes a 500 that does not repeat it.
 func TestWorkflowError(t *testing.T) {
+	someoneElse := tenancy.UnknownUser(uuid.Must(uuid.NewV7())).Error()
 	tests := map[string]struct {
 		err        error
 		wantStatus int
@@ -43,6 +45,16 @@ func TestWorkflowError(t *testing.T) {
 		"a resource that does not exist": {
 			err:        apitest.ChildWorkflowError("ErrNotFound", "resource Institution not found"),
 			wantStatus: http.StatusNotFound, wantDetail: "resource Institution not found",
+		},
+		// The registry no longer has the session's user, as after it is
+		// recreated: the session is no good, not the request.
+		"the session's user unknown to the registry": {
+			err:        apitest.ChildWorkflowError("ErrNotFound", tenancy.UnknownUser(apitest.User).Error()),
+			wantStatus: http.StatusUnauthorized, wantDetail: "this session's user no longer exists; sign in again",
+		},
+		"another user unknown to the registry": {
+			err:        apitest.ChildWorkflowError("ErrNotFound", someoneElse),
+			wantStatus: http.StatusNotFound, wantDetail: someoneElse,
 		},
 		"a conflict": {
 			err:        apitest.ChildWorkflowError("ErrResourceConflict", "name already used"),
@@ -73,7 +85,7 @@ func TestWorkflowError(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			var problem *huma.ErrorModel
-			require.ErrorAs(t, gateway.WorkflowError(tc.err), &problem)
+			require.ErrorAs(t, gateway.WorkflowError(tenancy.WithUser(t.Context(), apitest.User), tc.err), &problem)
 			require.Equal(t, tc.wantStatus, problem.Status)
 			require.Equal(t, tc.wantDetail, problem.Detail)
 		})

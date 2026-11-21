@@ -25,7 +25,7 @@ func RunDeletion[O any](ctx context.Context, c client.Client, workflowID string,
 func runDeletion[O any](ctx context.Context, c client.Client, wait time.Duration, workflowID string, wf, in any) (*O, bool, error) {
 	run, err := workflowrun.Start(ctx, c, wf, in, workflowrun.Joining(workflowID))
 	if err != nil {
-		return nil, false, WorkflowError(err)
+		return nil, false, WorkflowError(ctx, err)
 	}
 
 	waitCtx, cancel := context.WithTimeout(ctx, wait)
@@ -37,7 +37,7 @@ func runDeletion[O any](ctx context.Context, c client.Client, wait time.Duration
 		if ctx.Err() == nil && errors.Is(waitCtx.Err(), context.DeadlineExceeded) {
 			return nil, true, nil
 		}
-		return nil, false, WorkflowError(err)
+		return nil, false, WorkflowError(ctx, err)
 	}
 	return result, false, nil
 }

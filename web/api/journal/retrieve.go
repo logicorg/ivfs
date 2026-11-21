@@ -27,11 +27,11 @@ func registerRetrieve(api huma.API, c client.Client) {
 			return nil, err
 		}
 		if result.JournalEntry == nil {
-			return nil, gateway.WorkflowError(fmt.Errorf("journal entry %d was retrieved empty", in.ID))
+			return nil, gateway.WorkflowError(ctx, fmt.Errorf("journal entry %d was retrieved empty", in.ID))
 		}
 		entry, err := newEntry(result.JournalEntry)
 		if err != nil {
-			return nil, gateway.WorkflowError(err)
+			return nil, gateway.WorkflowError(ctx, err)
 		}
 
 		detail := EntryDetail{
