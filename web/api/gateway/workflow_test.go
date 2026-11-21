@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
+	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/logicorg/ivfs/internal/pkg/tenancy"
 	"github.com/logicorg/ivfs/internal/pkg/workflowrun"
 	"github.com/logicorg/ivfs/web/api/apitest"
@@ -43,6 +44,10 @@ func TestWorkflowError(t *testing.T) {
 		"a resource that does not exist": {
 			err:        apitest.ChildWorkflowError("ErrNotFound", "resource Institution not found"),
 			wantStatus: http.StatusNotFound, wantDetail: "resource Institution not found",
+		},
+		"a session whose user is gone": {
+			err:        apitest.ChildWorkflowError("ErrUnauthenticated", internalerrors.ErrUnauthenticated{}.Error()),
+			wantStatus: http.StatusUnauthorized, wantDetail: internalerrors.ErrUnauthenticated{}.Error(),
 		},
 		"a conflict": {
 			err:        apitest.ChildWorkflowError("ErrResourceConflict", "name already used"),

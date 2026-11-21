@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/logicorg/ivfs/internal/pkg/temporaltesting"
 	"github.com/logicorg/ivfs/internal/pkg/tenancy"
 	"github.com/logicorg/ivfs/pkg/model"
@@ -67,7 +68,7 @@ func (s *RegistryPoolsTestSuite) Test_RegistryPools_For() {
 		},
 		"an unregistered user": {
 			ctx:     s.as,
-			wantErr: "resource User not found",
+			wantErr: internalerrors.ErrUnauthenticated{}.Error(),
 		},
 		"an unprovisioned user": {
 			ctx:        s.as,
