@@ -1,9 +1,10 @@
-package ledgertypes
+package portfoliotypes
 
 import (
 	"time"
 
 	"cuelang.org/go/cuego"
+	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	"github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/shopspring/decimal"
 )
@@ -11,10 +12,10 @@ import (
 // RegisterInvestmentTradeInput records one buy or sell and its cash-side
 // journal entry in one atomic operation.
 type RegisterInvestmentTradeInput struct {
-	Entry              PostJournalEntryInput `json:"entry" cue:"{idempotencyKey: !=\"\"}"`
-	FinancialAccountID int64                 `json:"financialAccountID" cue:">0"`
-	AssetID            int64                 `json:"assetID" cue:">0"`
-	UnitsDelta         decimal.Decimal       `json:"unitsDelta" cue:"!=\"0\""`
+	Entry              lt.PostJournalEntryInput `json:"entry" cue:"{idempotencyKey: !=\"\"}"`
+	FinancialAccountID int64                    `json:"financialAccountID" cue:">0"`
+	AssetID            int64                    `json:"assetID" cue:">0"`
+	UnitsDelta         decimal.Decimal          `json:"unitsDelta" cue:"!=\"0\""`
 	// CostBasisAmount is what the units cost, or minus what was removed from the
 	// cost basis by a sale, in CostBasisCurrencyID. The two are given together or
 	// not at all. A sale without one removes the average cost, worked out when
@@ -48,7 +49,7 @@ type RegisterInvestmentTradeResult struct {
 	PositionMovementID int64 `json:"positionMovementId"`
 	// Warnings lists the holdings that are negative after the trade, which was
 	// written regardless.
-	Warnings []NegativeHolding `json:"warnings,omitempty"`
+	Warnings []lt.NegativeHolding `json:"warnings,omitempty"`
 }
 
 type PositionAtParams struct {

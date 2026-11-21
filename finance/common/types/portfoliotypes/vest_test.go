@@ -1,9 +1,10 @@
-package ledgertypes
+package portfoliotypes
 
 import (
 	"testing"
 	"time"
 
+	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/shopspring/decimal"
@@ -21,10 +22,10 @@ func TestRegisterVestInput_Validate(t *testing.T) {
 			Units:               decimal.NewFromInt(60),
 			CostBasisAmount:     decimal.NewFromInt(600),
 			CostBasisCurrencyID: 1,
-			Entry: PostJournalEntryInput{
+			Entry: lt.PostJournalEntryInput{
 				IdempotencyKey: "acme-rsu-2026-03-01",
 				OccurredAt:     time.Now(),
-				Postings: []PostingInput{
+				Postings: []lt.PostingInput{
 					{LedgerAccountID: 10, Amount: decimal.NewFromInt(1000), Side: model.PostingCredit},
 					{LedgerAccountID: 20, Amount: decimal.NewFromInt(600), Side: model.PostingDebit},
 					{LedgerAccountID: 30, Amount: decimal.NewFromInt(400), Side: model.PostingDebit},

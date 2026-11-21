@@ -5,6 +5,7 @@ import (
 	"time"
 
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	pft "github.com/logicorg/ivfs/finance/common/types/portfoliotypes"
 	"github.com/logicorg/ivfs/internal/pkg/temporaltesting"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/shopspring/decimal"
@@ -15,13 +16,13 @@ var holdingsBaseDay = time.Date(2026, 3, 1, 12, 0, 0, 0, time.UTC)
 
 // trade builds a buy for positive units and a sale for negative ones. The
 // entry only has to balance, so both move 100 between the same two accounts.
-func (s *UnitTestSuite) trade(key string, asset *model.Asset, units int64, day int) lt.RegisterInvestmentTradeInput {
+func (s *UnitTestSuite) trade(key string, asset *model.Asset, units int64, day int) pft.RegisterInvestmentTradeInput {
 	debit, credit := s.offset, s.cash
 	if units < 0 {
 		debit, credit = s.cash, s.offset
 	}
 
-	return lt.RegisterInvestmentTradeInput{
+	return pft.RegisterInvestmentTradeInput{
 		FinancialAccountID: s.financialAccount.ID,
 		AssetID:            asset.ID,
 		UnitsDelta:         decimal.NewFromInt(units),
@@ -108,7 +109,7 @@ func (s *UnitTestSuite) Test_RegisterInvestmentTrade_Holdings() {
 			for i, st := range tc.steps {
 				activityResult, err := s.Env.ExecuteActivity(s.pa.RegisterInvestmentTrade, s.trade(fmt.Sprintf("%s-%d", name, i), asset, st.units, st.day))
 				require.NoError(s.T(), err, "step %d", i)
-				var result lt.RegisterInvestmentTradeResult
+				var result pft.RegisterInvestmentTradeResult
 				require.NoError(s.T(), activityResult.Get(&result))
 
 				if st.warning == nil {
@@ -132,13 +133,13 @@ func (s *UnitTestSuite) Test_RegisterInvestmentTrade_Idempotent() {
 
 	first, err := s.Env.ExecuteActivity(s.pa.RegisterInvestmentTrade, sale)
 	require.NoError(s.T(), err)
-	var created lt.RegisterInvestmentTradeResult
+	var created pft.RegisterInvestmentTradeResult
 	require.NoError(s.T(), first.Get(&created))
 	s.requireWarnings(created.Warnings, s.asset, expectedWarning{s.financialAccount, negativeAt{-10, 2}})
 
 	again, err := s.Env.ExecuteActivity(s.pa.RegisterInvestmentTrade, sale)
 	require.NoError(s.T(), err)
-	var retried lt.RegisterInvestmentTradeResult
+	var retried pft.RegisterInvestmentTradeResult
 	require.NoError(s.T(), again.Get(&retried))
 	require.Equal(s.T(), created.JournalEntryID, retried.JournalEntryID)
 	require.Equal(s.T(), created.PositionMovementID, retried.PositionMovementID)
@@ -149,7 +150,7 @@ func (s *UnitTestSuite) Test_RegisterInvestmentTrade_Idempotent() {
 
 	later, err := s.Env.ExecuteActivity(s.pa.RegisterInvestmentTrade, sale)
 	require.NoError(s.T(), err)
-	var afterBackfill lt.RegisterInvestmentTradeResult
+	var afterBackfill pft.RegisterInvestmentTradeResult
 	require.NoError(s.T(), later.Get(&afterBackfill))
 	require.Equal(s.T(), created.JournalEntryID, afterBackfill.JournalEntryID)
 	require.Empty(s.T(), afterBackfill.Warnings)
@@ -198,7 +199,7 @@ func (s *UnitTestSuite) Test_RegisterInvestmentTrade_WaitsForConcurrentWriter() 
 	})).Exec(s.T().Context())
 	require.NoError(s.T(), err)
 
-	sold := make(chan *lt.RegisterInvestmentTradeResult, 1)
+	sold := make(chan *pft.RegisterInvestmentTradeResult, 1)
 	go func() {
 		result, err := s.pa.RegisterInvestmentTrade(s.T().Context(), s.trade("racing-sale", s.asset, -4, 3))
 		require.NoError(s.T(), err)

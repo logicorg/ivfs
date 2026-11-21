@@ -6,6 +6,7 @@ import (
 
 	it "github.com/logicorg/ivfs/finance/common/types/investmenttypes"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	pft "github.com/logicorg/ivfs/finance/common/types/portfoliotypes"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/logicorg/ivfs/pkg/ptr"
 	"github.com/shopspring/decimal"
@@ -77,7 +78,7 @@ func TestBuildVest(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			want := lt.RegisterVestInput{
+			want := pft.RegisterVestInput{
 				Entry: lt.PostJournalEntryInput{
 					IdempotencyKey: "vest:a71f",
 					OccurredAt:     occurredAt,

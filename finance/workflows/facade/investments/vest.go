@@ -3,6 +3,7 @@ package investments
 import (
 	it "github.com/logicorg/ivfs/finance/common/types/investmenttypes"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	pft "github.com/logicorg/ivfs/finance/common/types/portfoliotypes"
 	categorieswf "github.com/logicorg/ivfs/finance/workflows/ledger/categories"
 	"github.com/logicorg/ivfs/pkg/model"
 	"go.temporal.io/sdk/workflow"
@@ -50,7 +51,7 @@ func retrieveVestCategories(ctx workflow.Context, in *it.VestInput, currency *mo
 // rounded to the currency's precision and the income is their sum, so the
 // entry balances; a withholding worth less than the smallest unit is not
 // posted, as a posting must be positive.
-func buildVest(in *it.VestInput, b *brokerage, c *vestCategories) lt.RegisterVestInput {
+func buildVest(in *it.VestInput, b *brokerage, c *vestCategories) pft.RegisterVestInput {
 	precision := int32(b.currency.Precision)
 	delivered := in.UnitsVested.Sub(in.UnitsWithheld)
 	deliveredValue := delivered.Mul(in.FairMarketValue).Round(precision)
@@ -62,7 +63,7 @@ func buildVest(in *it.VestInput, b *brokerage, c *vestCategories) lt.RegisterVes
 	}
 	postings = append(postings, lt.PostingInput{LedgerAccountID: c.incomeAccount, Amount: deliveredValue.Add(withheldValue), Side: model.PostingCredit, CategoryID: &c.income})
 
-	result := lt.RegisterVestInput{
+	result := pft.RegisterVestInput{
 		Entry: lt.PostJournalEntryInput{
 			IdempotencyKey: string(it.KindVest) + ":" + in.IdempotencyKey,
 			OccurredAt:     in.OccurredAt,

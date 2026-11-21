@@ -3,7 +3,7 @@ package portfolio
 import (
 	"time"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	pft "github.com/logicorg/ivfs/finance/common/types/portfoliotypes"
 	"github.com/logicorg/ivfs/internal/pkg/temporaltesting"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/logicorg/ivfs/pkg/ptr"
@@ -62,9 +62,9 @@ func (s *UnitTestSuite) seedTransfer(key string, asset *model.Asset) []*model.Po
 func (s *UnitTestSuite) unitsHeld(account *model.FinancialAccount, asset *model.Asset) decimal.Decimal {
 	s.T().Helper()
 
-	position, err := s.Env.ExecuteActivity(s.pa.PositionAt, lt.PositionAtParams{FinancialAccountID: account.ID, AssetID: asset.ID})
+	position, err := s.Env.ExecuteActivity(s.pa.PositionAt, pft.PositionAtParams{FinancialAccountID: account.ID, AssetID: asset.ID})
 	require.NoError(s.T(), err)
-	var result lt.PositionAtResult
+	var result pft.PositionAtResult
 	require.NoError(s.T(), position.Get(&result))
 	return result.Units
 }
@@ -78,30 +78,30 @@ func (s *UnitTestSuite) movementsWithKey(key string) []model.PositionMovement {
 	return movements
 }
 
-func movementLeg(account *model.FinancialAccount, units int64) lt.PositionMovementLeg {
-	return lt.PositionMovementLeg{FinancialAccountID: account.ID, UnitsDelta: decimal.NewFromInt(units)}
+func movementLeg(account *model.FinancialAccount, units int64) pft.PositionMovementLeg {
+	return pft.PositionMovementLeg{FinancialAccountID: account.ID, UnitsDelta: decimal.NewFromInt(units)}
 }
 
 // adjustment is a movement of one leg, which has the fewest rules.
-func (s *UnitTestSuite) adjustment(key string, asset *model.Asset, units int64) lt.RegisterPositionMovementInput {
-	return lt.RegisterPositionMovementInput{
+func (s *UnitTestSuite) adjustment(key string, asset *model.Asset, units int64) pft.RegisterPositionMovementInput {
+	return pft.RegisterPositionMovementInput{
 		IdempotencyKey: key,
 		Kind:           model.PositionMovementAdjustment,
 		AssetID:        asset.ID,
 		OccurredAt:     movementDay.AddDate(0, 0, 5),
 		Description:    ptr.NewPtr("broker correction"),
-		Legs:           []lt.PositionMovementLeg{movementLeg(s.financialAccount, units)},
+		Legs:           []pft.PositionMovementLeg{movementLeg(s.financialAccount, units)},
 	}
 }
 
 // transfer moves units of asset from the first account to the second.
-func (s *UnitTestSuite) transfer(key string, asset *model.Asset, units int64) lt.RegisterPositionMovementInput {
-	return lt.RegisterPositionMovementInput{
+func (s *UnitTestSuite) transfer(key string, asset *model.Asset, units int64) pft.RegisterPositionMovementInput {
+	return pft.RegisterPositionMovementInput{
 		IdempotencyKey: key,
 		Kind:           model.PositionMovementTransfer,
 		AssetID:        asset.ID,
 		OccurredAt:     movementDay.AddDate(0, 0, 5),
-		Legs:           []lt.PositionMovementLeg{movementLeg(s.financialAccount, -units), movementLeg(s.otherAccount, units)},
+		Legs:           []pft.PositionMovementLeg{movementLeg(s.financialAccount, -units), movementLeg(s.otherAccount, units)},
 	}
 }
 
@@ -133,29 +133,29 @@ func (s *UnitTestSuite) Test_RegisterPositionMovement() {
 	tests := map[string]struct {
 		// held is what the first account holds before the movement.
 		held  int64
-		input func(asset *model.Asset) lt.RegisterPositionMovementInput
+		input func(asset *model.Asset) pft.RegisterPositionMovementInput
 		// wantFirst and wantSecond are what the first and the second account hold
 		// afterwards.
 		wantFirst, wantSecond int64
 	}{
 		"a split": {
 			held: 10,
-			input: func(asset *model.Asset) lt.RegisterPositionMovementInput {
+			input: func(asset *model.Asset) pft.RegisterPositionMovementInput {
 				input := s.adjustment("split-1", asset, 10)
 				input.Kind, input.Description = model.PositionMovementSplit, nil
-				input.Metadata = map[string]string{lt.SplitRatioMetadataKey: "2:1"}
+				input.Metadata = map[string]string{pft.SplitRatioMetadataKey: "2:1"}
 				return input
 			},
 			wantFirst: 20,
 		},
 		"a transfer between accounts": {
 			held:      10,
-			input:     func(asset *model.Asset) lt.RegisterPositionMovementInput { return s.transfer("transfer-1", asset, 4) },
+			input:     func(asset *model.Asset) pft.RegisterPositionMovementInput { return s.transfer("transfer-1", asset, 4) },
 			wantFirst: 6, wantSecond: 4,
 		},
 		"a transfer with its cost basis": {
 			held: 10,
-			input: func(asset *model.Asset) lt.RegisterPositionMovementInput {
+			input: func(asset *model.Asset) pft.RegisterPositionMovementInput {
 				input := s.transfer("transfer-2", asset, 4)
 				input.Legs[0].CostBasisAmount, input.Legs[0].CostBasisCurrencyID = ptr.NewPtr(decimal.NewFromInt(-40)), ptr.Int64(s.eur.ID)
 				input.Legs[1].CostBasisAmount, input.Legs[1].CostBasisCurrencyID = ptr.NewPtr(decimal.NewFromInt(40)), ptr.Int64(s.eur.ID)
@@ -165,18 +165,18 @@ func (s *UnitTestSuite) Test_RegisterPositionMovement() {
 		},
 		"a split of several accounts": {
 			held: 10,
-			input: func(asset *model.Asset) lt.RegisterPositionMovementInput {
+			input: func(asset *model.Asset) pft.RegisterPositionMovementInput {
 				input := s.transfer("split-2", asset, 0)
 				input.Kind = model.PositionMovementSplit
-				input.Legs = []lt.PositionMovementLeg{movementLeg(s.financialAccount, 10), movementLeg(s.otherAccount, 3)}
-				input.Metadata = map[string]string{lt.SplitRatioMetadataKey: "2:1"}
+				input.Legs = []pft.PositionMovementLeg{movementLeg(s.financialAccount, 10), movementLeg(s.otherAccount, 3)}
+				input.Metadata = map[string]string{pft.SplitRatioMetadataKey: "2:1"}
 				return input
 			},
 			wantFirst: 20, wantSecond: 3,
 		},
 		"an adjustment": {
 			held:      10,
-			input:     func(asset *model.Asset) lt.RegisterPositionMovementInput { return s.adjustment("adjust-1", asset, -3) },
+			input:     func(asset *model.Asset) pft.RegisterPositionMovementInput { return s.adjustment("adjust-1", asset, -3) },
 			wantFirst: 7,
 		},
 	}
@@ -191,7 +191,7 @@ func (s *UnitTestSuite) Test_RegisterPositionMovement() {
 			activityResult, err := s.Env.ExecuteActivity(s.pa.RegisterPositionMovement, input)
 
 			require.NoError(s.T(), err)
-			var result lt.RegisterPositionMovementResult
+			var result pft.RegisterPositionMovementResult
 			require.NoError(s.T(), activityResult.Get(&result))
 			require.Len(s.T(), result.PositionMovementIDs, len(input.Legs))
 
@@ -227,13 +227,13 @@ func (s *UnitTestSuite) Test_RegisterPositionMovement_Idempotent() {
 
 	first, err := s.Env.ExecuteActivity(s.pa.RegisterPositionMovement, input)
 	require.NoError(s.T(), err)
-	var created lt.RegisterPositionMovementResult
+	var created pft.RegisterPositionMovementResult
 	require.NoError(s.T(), first.Get(&created))
 	rows := s.Count[model.PositionMovement]()
 
 	second, err := s.Env.ExecuteActivity(s.pa.RegisterPositionMovement, input)
 	require.NoError(s.T(), err)
-	var retried lt.RegisterPositionMovementResult
+	var retried pft.RegisterPositionMovementResult
 	require.NoError(s.T(), second.Get(&retried))
 
 	require.Equal(s.T(), created.PositionMovementIDs, retried.PositionMovementIDs)
@@ -246,7 +246,7 @@ func (s *UnitTestSuite) Test_RegisterPositionMovement_Idempotent() {
 	different := s.transfer("transfer-retry", s.asset, 9)
 	third, err := s.Env.ExecuteActivity(s.pa.RegisterPositionMovement, different)
 	require.NoError(s.T(), err)
-	var unchanged lt.RegisterPositionMovementResult
+	var unchanged pft.RegisterPositionMovementResult
 	require.NoError(s.T(), third.Get(&unchanged))
 
 	require.Equal(s.T(), created.PositionMovementIDs, unchanged.PositionMovementIDs)
@@ -259,7 +259,7 @@ func (s *UnitTestSuite) Test_RegisterPositionMovement_Idempotent() {
 // in time is returned as a warning, ordered by financial account.
 func (s *UnitTestSuite) Test_RegisterPositionMovement_Negative() {
 	tests := map[string]struct {
-		input func(asset *model.Asset) lt.RegisterPositionMovementInput
+		input func(asset *model.Asset) pft.RegisterPositionMovementInput
 		// warnings are the expected warnings, in the order of the accounts.
 		warnings []expectedWarning
 		// wantFirst and wantSecond are what the first and the second account hold
@@ -267,41 +267,41 @@ func (s *UnitTestSuite) Test_RegisterPositionMovement_Negative() {
 		wantFirst, wantSecond int64
 	}{
 		"an adjustment below zero": {
-			input: func(asset *model.Asset) lt.RegisterPositionMovementInput {
+			input: func(asset *model.Asset) pft.RegisterPositionMovementInput {
 				return s.adjustment("below-zero", asset, -11)
 			},
 			warnings:  []expectedWarning{{s.financialAccount, negativeAt{-1, 5}}},
 			wantFirst: -1,
 		},
 		"a transfer of more than the source holds": {
-			input:     func(asset *model.Asset) lt.RegisterPositionMovementInput { return s.transfer("overdraw", asset, 11) },
+			input:     func(asset *model.Asset) pft.RegisterPositionMovementInput { return s.transfer("overdraw", asset, 11) },
 			warnings:  []expectedWarning{{s.financialAccount, negativeAt{-1, 5}}},
 			wantFirst: -1, wantSecond: 11,
 		},
 		"a split whose second leg goes below zero": {
-			input: func(asset *model.Asset) lt.RegisterPositionMovementInput {
+			input: func(asset *model.Asset) pft.RegisterPositionMovementInput {
 				input := s.adjustment("half-written", asset, 10)
 				input.Kind, input.Description = model.PositionMovementSplit, nil
-				input.Metadata = map[string]string{lt.SplitRatioMetadataKey: "2:1"}
-				input.Legs = []lt.PositionMovementLeg{movementLeg(s.financialAccount, 10), movementLeg(s.otherAccount, -1)}
+				input.Metadata = map[string]string{pft.SplitRatioMetadataKey: "2:1"}
+				input.Legs = []pft.PositionMovementLeg{movementLeg(s.financialAccount, 10), movementLeg(s.otherAccount, -1)}
 				return input
 			},
 			warnings:  []expectedWarning{{s.otherAccount, negativeAt{-1, 5}}},
 			wantFirst: 20, wantSecond: -1,
 		},
 		"a split that takes two accounts below zero": {
-			input: func(asset *model.Asset) lt.RegisterPositionMovementInput {
+			input: func(asset *model.Asset) pft.RegisterPositionMovementInput {
 				input := s.adjustment("both-negative", asset, 0)
 				input.Kind, input.Description = model.PositionMovementSplit, nil
-				input.Metadata = map[string]string{lt.SplitRatioMetadataKey: "1:2"}
-				input.Legs = []lt.PositionMovementLeg{movementLeg(s.otherAccount, -2), movementLeg(s.financialAccount, -12)}
+				input.Metadata = map[string]string{pft.SplitRatioMetadataKey: "1:2"}
+				input.Legs = []pft.PositionMovementLeg{movementLeg(s.otherAccount, -2), movementLeg(s.financialAccount, -12)}
 				return input
 			},
 			warnings:  []expectedWarning{{s.financialAccount, negativeAt{-2, 5}}, {s.otherAccount, negativeAt{-2, 5}}},
 			wantFirst: -2, wantSecond: -2,
 		},
 		"a movement dated before the holdings it needs": {
-			input: func(asset *model.Asset) lt.RegisterPositionMovementInput {
+			input: func(asset *model.Asset) pft.RegisterPositionMovementInput {
 				input := s.adjustment("backdated", asset, -3)
 				input.OccurredAt = movementDay
 				return input
@@ -322,7 +322,7 @@ func (s *UnitTestSuite) Test_RegisterPositionMovement_Negative() {
 			activityResult, err := s.Env.ExecuteActivity(s.pa.RegisterPositionMovement, input)
 
 			require.NoError(s.T(), err)
-			var result lt.RegisterPositionMovementResult
+			var result pft.RegisterPositionMovementResult
 			require.NoError(s.T(), activityResult.Get(&result))
 			s.requireWarnings(result.Warnings, asset, tc.warnings...)
 			require.Equal(s.T(), rows+len(input.Legs), s.Count[model.PositionMovement]())
@@ -340,13 +340,13 @@ func (s *UnitTestSuite) Test_RegisterPositionMovement_IdempotentWarnings() {
 	input := s.adjustment("warning-retry", s.asset, -4)
 	first, err := s.Env.ExecuteActivity(s.pa.RegisterPositionMovement, input)
 	require.NoError(s.T(), err)
-	var created lt.RegisterPositionMovementResult
+	var created pft.RegisterPositionMovementResult
 	require.NoError(s.T(), first.Get(&created))
 	s.requireWarnings(created.Warnings, s.asset, expectedWarning{s.financialAccount, negativeAt{-4, 5}})
 
 	second, err := s.Env.ExecuteActivity(s.pa.RegisterPositionMovement, input)
 	require.NoError(s.T(), err)
-	var retried lt.RegisterPositionMovementResult
+	var retried pft.RegisterPositionMovementResult
 	require.NoError(s.T(), second.Get(&retried))
 	require.Equal(s.T(), created, retried)
 
@@ -354,7 +354,7 @@ func (s *UnitTestSuite) Test_RegisterPositionMovement_IdempotentWarnings() {
 
 	third, err := s.Env.ExecuteActivity(s.pa.RegisterPositionMovement, input)
 	require.NoError(s.T(), err)
-	var afterBackfill lt.RegisterPositionMovementResult
+	var afterBackfill pft.RegisterPositionMovementResult
 	require.NoError(s.T(), third.Get(&afterBackfill))
 	require.Equal(s.T(), created.PositionMovementIDs, afterBackfill.PositionMovementIDs)
 	require.Empty(s.T(), afterBackfill.Warnings)
@@ -365,13 +365,13 @@ func (s *UnitTestSuite) Test_RegisterPositionMovement_IdempotentWarnings() {
 // written leaves no row behind, not even for a leg that is fine on its own.
 func (s *UnitTestSuite) Test_RegisterPositionMovement_Rejected() {
 	tests := map[string]struct {
-		input func(asset *model.Asset) lt.RegisterPositionMovementInput
+		input func(asset *model.Asset) pft.RegisterPositionMovementInput
 		// failure is what the error has to contain.
 		failure string
 	}{
 		"a transfer to a closed account": {
 			failure: "is closed",
-			input: func(asset *model.Asset) lt.RegisterPositionMovementInput {
+			input: func(asset *model.Asset) pft.RegisterPositionMovementInput {
 				input := s.transfer("to-closed", asset, 4)
 				input.Legs[1] = movementLeg(s.closedAccount("Closed transfer destination"), 4)
 				return input
@@ -379,29 +379,29 @@ func (s *UnitTestSuite) Test_RegisterPositionMovement_Rejected() {
 		},
 		"an adjustment of a closed account": {
 			failure: "is closed",
-			input: func(asset *model.Asset) lt.RegisterPositionMovementInput {
+			input: func(asset *model.Asset) pft.RegisterPositionMovementInput {
 				input := s.adjustment("in-closed", asset, 1)
-				input.Legs = []lt.PositionMovementLeg{movementLeg(s.closedAccount("Closed adjusted account"), 1)}
+				input.Legs = []pft.PositionMovementLeg{movementLeg(s.closedAccount("Closed adjusted account"), 1)}
 				return input
 			},
 		},
 		"an asset that does not exist": {
 			failure: "Asset",
-			input: func(*model.Asset) lt.RegisterPositionMovementInput {
+			input: func(*model.Asset) pft.RegisterPositionMovementInput {
 				return s.adjustment("no-asset", &model.Asset{ID: 999999}, 1)
 			},
 		},
 		"a financial account that does not exist": {
 			failure: "FinancialAccount",
-			input: func(asset *model.Asset) lt.RegisterPositionMovementInput {
+			input: func(asset *model.Asset) pft.RegisterPositionMovementInput {
 				input := s.adjustment("no-account", asset, 1)
-				input.Legs = []lt.PositionMovementLeg{movementLeg(&model.FinancialAccount{ID: 999999}, 1)}
+				input.Legs = []pft.PositionMovementLeg{movementLeg(&model.FinancialAccount{ID: 999999}, 1)}
 				return input
 			},
 		},
 		"a cost basis currency that does not exist": {
 			failure: "Currency",
-			input: func(asset *model.Asset) lt.RegisterPositionMovementInput {
+			input: func(asset *model.Asset) pft.RegisterPositionMovementInput {
 				input := s.adjustment("no-currency", asset, 1)
 				input.Legs[0].CostBasisAmount, input.Legs[0].CostBasisCurrencyID = ptr.NewPtr(decimal.NewFromInt(10)), ptr.Int64(999999)
 				return input
@@ -409,7 +409,7 @@ func (s *UnitTestSuite) Test_RegisterPositionMovement_Rejected() {
 		},
 		"a trade": {
 			failure: "trade",
-			input: func(asset *model.Asset) lt.RegisterPositionMovementInput {
+			input: func(asset *model.Asset) pft.RegisterPositionMovementInput {
 				input := s.adjustment("as-trade", asset, 1)
 				input.Kind = model.PositionMovementTrade
 				return input
@@ -440,14 +440,14 @@ func (s *UnitTestSuite) Test_RegisterPositionMovement_ClosedAccountRetry() {
 	input := s.adjustment("before-close", s.asset, 10)
 	first, err := s.Env.ExecuteActivity(s.pa.RegisterPositionMovement, input)
 	require.NoError(s.T(), err)
-	var created lt.RegisterPositionMovementResult
+	var created pft.RegisterPositionMovementResult
 	require.NoError(s.T(), first.Get(&created))
 
 	s.closeAccount(s.financialAccount)
 
 	retry, err := s.Env.ExecuteActivity(s.pa.RegisterPositionMovement, input)
 	require.NoError(s.T(), err)
-	var retried lt.RegisterPositionMovementResult
+	var retried pft.RegisterPositionMovementResult
 	require.NoError(s.T(), retry.Get(&retried))
 	require.Equal(s.T(), created.PositionMovementIDs, retried.PositionMovementIDs)
 	require.Equal(s.T(), 1, s.Count[model.PositionMovement]())
@@ -473,13 +473,13 @@ func (s *UnitTestSuite) holdAccount(account *model.FinancialAccount, movements .
 }
 
 type movementOutcome struct {
-	result *lt.RegisterPositionMovementResult
+	result *pft.RegisterPositionMovementResult
 	err    error
 }
 
 // registerInBackground runs the activity directly, outside the test environment,
 // so that the test can look at it while it is blocked.
-func (s *UnitTestSuite) registerInBackground(input lt.RegisterPositionMovementInput) <-chan movementOutcome {
+func (s *UnitTestSuite) registerInBackground(input pft.RegisterPositionMovementInput) <-chan movementOutcome {
 	done := make(chan movementOutcome, 1)
 	go func() {
 		result, err := s.pa.RegisterPositionMovement(s.T().Context(), input)
