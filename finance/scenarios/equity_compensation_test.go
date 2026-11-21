@@ -10,7 +10,7 @@ import (
 	ledgerjournal "github.com/logicorg/ivfs/finance/activities/ledger/journal"
 	ledgerportfolio "github.com/logicorg/ivfs/finance/activities/ledger/portfolio"
 	ledgerreporting "github.com/logicorg/ivfs/finance/activities/ledger/reporting"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	pft "github.com/logicorg/ivfs/finance/common/types/portfoliotypes"
 	journalwf "github.com/logicorg/ivfs/finance/workflows/ledger/journal"
 	portfoliowf "github.com/logicorg/ivfs/finance/workflows/ledger/portfolio"
@@ -114,12 +114,12 @@ func (s *UnitTestSuite) runWorkflow(wf, input, result any) {
 	require.NoError(s.T(), s.execute(wf, input, result))
 }
 
-func debit(account *model.LedgerAccount, amount int64) lt.PostingInput {
-	return lt.PostingInput{LedgerAccountID: account.ID, Amount: decimal.NewFromInt(amount), Side: model.PostingDebit}
+func debit(account *model.LedgerAccount, amount int64) jt.PostingInput {
+	return jt.PostingInput{LedgerAccountID: account.ID, Amount: decimal.NewFromInt(amount), Side: model.PostingDebit}
 }
 
-func credit(account *model.LedgerAccount, amount int64) lt.PostingInput {
-	return lt.PostingInput{LedgerAccountID: account.ID, Amount: decimal.NewFromInt(amount), Side: model.PostingCredit}
+func credit(account *model.LedgerAccount, amount int64) jt.PostingInput {
+	return jt.PostingInput{LedgerAccountID: account.ID, Amount: decimal.NewFromInt(amount), Side: model.PostingCredit}
 }
 
 // vest is a vest of 100 units worth 10 each, all delivered to the account, that
@@ -131,10 +131,10 @@ func (s *UnitTestSuite) vest(key string) pft.RegisterVestInput {
 		Units:               decimal.NewFromInt(100),
 		CostBasisAmount:     decimal.NewFromInt(1000),
 		CostBasisCurrencyID: s.eur.ID,
-		Entry: lt.PostJournalEntryInput{
+		Entry: jt.PostJournalEntryInput{
 			IdempotencyKey: key,
 			OccurredAt:     vestDay,
-			Postings:       []lt.PostingInput{credit(s.rsuIncome, 1000), debit(s.holding, 1000)},
+			Postings:       []jt.PostingInput{credit(s.rsuIncome, 1000), debit(s.holding, 1000)},
 		},
 	}
 }
@@ -149,10 +149,10 @@ func (s *UnitTestSuite) sellToCover(key string) pft.RegisterInvestmentTradeInput
 		UnitsDelta:          decimal.NewFromInt(-50),
 		CostBasisAmount:     ptr.NewPtr(decimal.NewFromInt(-500)),
 		CostBasisCurrencyID: ptr.Int64(s.eur.ID),
-		Entry: lt.PostJournalEntryInput{
+		Entry: jt.PostJournalEntryInput{
 			IdempotencyKey: key,
 			OccurredAt:     vestDay.Add(time.Hour),
-			Postings:       []lt.PostingInput{debit(s.tax, 400), debit(s.brokerCash, 100), credit(s.holding, 500)},
+			Postings:       []jt.PostingInput{debit(s.tax, 400), debit(s.brokerCash, 100), credit(s.holding, 500)},
 		},
 	}
 }
@@ -160,8 +160,8 @@ func (s *UnitTestSuite) sellToCover(key string) pft.RegisterInvestmentTradeInput
 func (s *UnitTestSuite) balance(account *model.LedgerAccount) decimal.Decimal {
 	s.T().Helper()
 
-	var result lt.LedgerAccountBalanceResult
-	s.runWorkflow(reportingwf.LedgerAccountBalance, lt.LedgerAccountBalanceParams{LedgerAccountID: account.ID}, &result)
+	var result jt.LedgerAccountBalanceResult
+	s.runWorkflow(reportingwf.LedgerAccountBalance, jt.LedgerAccountBalanceParams{LedgerAccountID: account.ID}, &result)
 	return result.Balance
 }
 
@@ -234,10 +234,10 @@ func (s *UnitTestSuite) Test_EsppPurchase() {
 		UnitsDelta:          decimal.NewFromInt(10),
 		CostBasisAmount:     ptr.NewPtr(decimal.NewFromInt(200)),
 		CostBasisCurrencyID: ptr.Int64(s.eur.ID),
-		Entry: lt.PostJournalEntryInput{
+		Entry: jt.PostJournalEntryInput{
 			IdempotencyKey: "acme-espp-2026-03-01",
 			OccurredAt:     vestDay,
-			Postings:       []lt.PostingInput{debit(s.holding, 200), credit(s.bankCash, 170), credit(s.esppIncome, 30)},
+			Postings:       []jt.PostingInput{debit(s.holding, 200), credit(s.bankCash, 170), credit(s.esppIncome, 30)},
 		},
 	}
 
@@ -256,8 +256,8 @@ func (s *UnitTestSuite) Test_CorrectAVest() {
 	var sale pft.RegisterInvestmentTradeResult
 	s.runWorkflow(portfoliowf.RegisterInvestmentTrade, s.sellToCover("acme-rsu-2026-03-01-cover"), &sale)
 
-	res := new(lt.DeleteJournalEntryResult)
-	err := s.execute(journalwf.DeleteJournalEntry, lt.DeleteJournalEntryInput{JournalEntryID: vest.JournalEntryID}, res)
+	res := new(jt.DeleteJournalEntryResult)
+	err := s.execute(journalwf.DeleteJournalEntry, jt.DeleteJournalEntryInput{JournalEntryID: vest.JournalEntryID}, res)
 
 	require.NoError(s.T(), err)
 	// Deleting the vest still leaves the sale, so the units held are negative and the compensation income is gone.
@@ -265,7 +265,7 @@ func (s *UnitTestSuite) Test_CorrectAVest() {
 	requireAmount(s.T(), 0, s.balance(s.rsuIncome), "compensation income after deleting the vest")
 	require.Len(s.T(), res.Warnings, 1, "expecting a warning about negative holdings")
 
-	s.runWorkflow(journalwf.DeleteJournalEntry, lt.DeleteJournalEntryInput{JournalEntryID: sale.JournalEntryID}, nil)
+	s.runWorkflow(journalwf.DeleteJournalEntry, jt.DeleteJournalEntryInput{JournalEntryID: sale.JournalEntryID}, nil)
 
 	requireAmount(s.T(), 0, s.unitsHeld(), "units held")
 	requireAmount(s.T(), 0, s.balance(s.rsuIncome), "compensation income")

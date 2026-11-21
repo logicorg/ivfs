@@ -3,7 +3,7 @@ package portfolio
 import (
 	"github.com/google/uuid"
 	activity "github.com/logicorg/ivfs/finance/activities/ledger/portfolio"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	pft "github.com/logicorg/ivfs/finance/common/types/portfoliotypes"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
@@ -38,7 +38,7 @@ func (s *WorkflowUnitTestSuite) TestRegisterInvestmentTrade() {
 	}
 
 	input := pft.RegisterInvestmentTradeInput{
-		Entry:              lt.PostJournalEntryInput{IdempotencyKey: "buy-aapl-1"},
+		Entry:              jt.PostJournalEntryInput{IdempotencyKey: "buy-aapl-1"},
 		FinancialAccountID: 1,
 		AssetID:            2,
 		UnitsDelta:         decimal.NewFromInt(1),

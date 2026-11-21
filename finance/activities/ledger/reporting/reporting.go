@@ -7,7 +7,7 @@ import (
 	"slices"
 
 	"github.com/logicorg/ivfs/finance/activities/ledger/internal/positions"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	rpt "github.com/logicorg/ivfs/finance/common/types/reportingtypes"
 	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/logicorg/ivfs/pkg/model"
@@ -33,9 +33,9 @@ func (a *Activities) FinancialAccountBalances(ctx context.Context, params rpt.Fi
 	if err := db.NewSelect().Model(&accounts).Where("financial_account_id = ?", params.FinancialAccountID).Order("id ASC").Scan(ctx); err != nil {
 		return nil, fmt.Errorf("load ledger accounts: %w", err)
 	}
-	result := &rpt.FinancialAccountBalancesResult{FinancialAccountID: params.FinancialAccountID, Balances: make([]lt.LedgerAccountBalanceResult, 0, len(accounts))}
+	result := &rpt.FinancialAccountBalancesResult{FinancialAccountID: params.FinancialAccountID, Balances: make([]jt.LedgerAccountBalanceResult, 0, len(accounts))}
 	for _, account := range accounts {
-		balance, err := a.LedgerAccountBalance(ctx, lt.LedgerAccountBalanceParams{LedgerAccountID: account.ID, At: params.At})
+		balance, err := a.LedgerAccountBalance(ctx, jt.LedgerAccountBalanceParams{LedgerAccountID: account.ID, At: params.At})
 		if err != nil {
 			return nil, err
 		}

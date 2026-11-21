@@ -8,6 +8,7 @@ import (
 
 	catt "github.com/logicorg/ivfs/finance/common/types/categorytypes"
 	ct "github.com/logicorg/ivfs/finance/common/types/currencytypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	pft "github.com/logicorg/ivfs/finance/common/types/portfoliotypes"
 	currencieswf "github.com/logicorg/ivfs/finance/workflows/currencies"
@@ -115,7 +116,7 @@ func requireTrade(t *testing.T, want, got trade) {
 func normalizeVest(v pft.RegisterVestInput) pft.RegisterVestInput {
 	normalize := func(d decimal.Decimal) decimal.Decimal { return decimal.RequireFromString(d.String()) }
 	v.Units, v.CostBasisAmount = normalize(v.Units), normalize(v.CostBasisAmount)
-	postings := make([]lt.PostingInput, len(v.Entry.Postings))
+	postings := make([]jt.PostingInput, len(v.Entry.Postings))
 	for i, posting := range v.Entry.Postings {
 		posting.Amount = normalize(posting.Amount)
 		postings[i] = posting

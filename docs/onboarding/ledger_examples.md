@@ -75,7 +75,7 @@ idempotency key of its own.
 There is a temptation to think "expense", "income", "transfer", and "FX
 conversion" are different kinds of operations. Mechanically, **all four are
 the same command**: `PostJournalEntryInput` (`finance/common/types/
-ledgertypes/types.go`), executed by the `PostJournalEntry` activity/workflow
+journaltypes/types.go`), executed by the `PostJournalEntry` activity/workflow
 (`finance/activities/ledger/journal`, `finance/workflows/ledger/journal`).
 It takes an `OccurredAt`, an optional `Description`/`CounterpartyID`, and a
 list of `PostingInput{LedgerAccountID, Amount, Side, CategoryID}` — at least
@@ -263,7 +263,7 @@ RegisterInvestmentTrade (an hour later)
     Kind = trade, UnitsDelta = -50, CostBasisAmount = -500.00, CostBasisCurrencyID = EUR
 ```
 
-- `RegisterVest` (`RegisterVestInput` in `finance/common/types/ledgertypes/
+- `RegisterVest` (`RegisterVestInput` in `finance/common/types/portfoliotypes/
   vest.go`) takes the same `PostJournalEntryInput` as a trade, so you supply the
   postings, plus the units, and the cost basis with its currency. The command
   does not know how the compensation is taxed: the income and any tax withheld

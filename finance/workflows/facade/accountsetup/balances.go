@@ -7,6 +7,7 @@ import (
 
 	ast "github.com/logicorg/ivfs/finance/common/types/accountsetuptypes"
 	ct "github.com/logicorg/ivfs/finance/common/types/currencytypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	currencieswf "github.com/logicorg/ivfs/finance/workflows/currencies"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
@@ -83,8 +84,8 @@ func openBalances(
 	if postings == nil {
 		return result, nil
 	}
-	var posted lt.PostJournalEntryResult
-	err := workflow.ExecuteChildWorkflow(ctx, journalwf.PostJournalEntry, lt.PostJournalEntryInput{
+	var posted jt.PostJournalEntryResult
+	err := workflow.ExecuteChildWorkflow(ctx, journalwf.PostJournalEntry, jt.PostJournalEntryInput{
 		IdempotencyKey: openingBalanceKey(balances[0].ID),
 		OccurredAt:     at,
 		Description:    ptr.NewPtr(openingBalanceDescription),

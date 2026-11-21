@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"cuelang.org/go/cuego"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	"github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/shopspring/decimal"
@@ -12,7 +13,7 @@ import (
 // RegisterInvestmentTradeInput records one buy or sell and its cash-side
 // journal entry in one atomic operation.
 type RegisterInvestmentTradeInput struct {
-	Entry              lt.PostJournalEntryInput `json:"entry" cue:"{idempotencyKey: !=\"\"}"`
+	Entry              jt.PostJournalEntryInput `json:"entry" cue:"{idempotencyKey: !=\"\"}"`
 	FinancialAccountID int64                    `json:"financialAccountID" cue:">0"`
 	AssetID            int64                    `json:"assetID" cue:">0"`
 	UnitsDelta         decimal.Decimal          `json:"unitsDelta" cue:"!=\"0\""`

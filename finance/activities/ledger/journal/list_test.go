@@ -3,7 +3,7 @@ package journal
 import (
 	"time"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	"github.com/logicorg/ivfs/internal/pkg/temporaltesting"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/logicorg/ivfs/pkg/model/testhelpers"
@@ -112,12 +112,12 @@ func (s *UnitTestSuite) insertDraft(entry *model.JournalEntry, postings ...model
 	require.NoError(s.T(), err)
 }
 
-func (s *UnitTestSuite) listEntries(params lt.ListJournalEntriesParams) lt.ListJournalEntriesResult {
+func (s *UnitTestSuite) listEntries(params jt.ListJournalEntriesParams) jt.ListJournalEntriesResult {
 	s.T().Helper()
 
 	activityResult, err := s.Env.ExecuteActivity(s.ja.ListJournalEntries, params)
 	require.NoError(s.T(), err)
-	var result lt.ListJournalEntriesResult
+	var result jt.ListJournalEntriesResult
 	require.NoError(s.T(), activityResult.Get(&result))
 	return result
 }
@@ -145,104 +145,104 @@ func (s *UnitTestSuite) Test_ListJournalEntries() {
 	f := s.seedJournal()
 
 	tests := map[string]struct {
-		params lt.ListJournalEntriesParams
+		params jt.ListJournalEntriesParams
 		// want are the positions in the fixture of the entries listed, in order.
 		want []int
 	}{
 		"everything, oldest first": {
-			params: lt.ListJournalEntriesParams{},
+			params: jt.ListJournalEntriesParams{},
 			want:   []int{0, 1, 2, 3, 4, 5},
 		},
 		"everything, newest first": {
-			params: lt.ListJournalEntriesParams{Descending: true},
+			params: jt.ListJournalEntriesParams{Descending: true},
 			want:   []int{5, 4, 3, 2, 1, 0},
 		},
 		"a ledger account with several entries": {
-			params: lt.ListJournalEntriesParams{LedgerAccountID: f.groceries.ID},
+			params: jt.ListJournalEntriesParams{LedgerAccountID: f.groceries.ID},
 			want:   []int{1, 2, 4},
 		},
 		"a ledger account that every entry but one has": {
-			params: lt.ListJournalEntriesParams{LedgerAccountID: f.cash.ID},
+			params: jt.ListJournalEntriesParams{LedgerAccountID: f.cash.ID},
 			want:   []int{0, 1, 2, 3, 4, 5},
 		},
 		"a ledger account of one posting in one entry": {
-			params: lt.ListJournalEntriesParams{LedgerAccountID: f.tax.ID},
+			params: jt.ListJournalEntriesParams{LedgerAccountID: f.tax.ID},
 			want:   []int{0},
 		},
 		"a category": {
-			params: lt.ListJournalEntriesParams{CategoryIDs: []int64{f.food.ID}},
+			params: jt.ListJournalEntriesParams{CategoryIDs: []int64{f.food.ID}},
 			want:   []int{1},
 		},
 		"a category, by the one it is under": {
-			params: lt.ListJournalEntriesParams{CategoryIDs: []int64{f.duties.ID}},
+			params: jt.ListJournalEntriesParams{CategoryIDs: []int64{f.duties.ID}},
 			want:   []int{0},
 		},
 		"several categories": {
-			params: lt.ListJournalEntriesParams{CategoryIDs: []int64{f.food.ID, f.taxes.ID, f.leisure.ID}},
+			params: jt.ListJournalEntriesParams{CategoryIDs: []int64{f.food.ID, f.taxes.ID, f.leisure.ID}},
 			want:   []int{0, 1},
 		},
 		"a category without postings": {
-			params: lt.ListJournalEntriesParams{CategoryIDs: []int64{f.leisure.ID}},
+			params: jt.ListJournalEntriesParams{CategoryIDs: []int64{f.leisure.ID}},
 			want:   []int{},
 		},
 		"a category and a counterparty together": {
-			params: lt.ListJournalEntriesParams{CategoryIDs: []int64{f.duties.ID, f.food.ID}, CounterpartyID: f.tesco.ID},
+			params: jt.ListJournalEntriesParams{CategoryIDs: []int64{f.duties.ID, f.food.ID}, CounterpartyID: f.tesco.ID},
 			want:   []int{1},
 		},
 		"a counterparty": {
-			params: lt.ListJournalEntriesParams{CounterpartyID: f.tesco.ID},
+			params: jt.ListJournalEntriesParams{CounterpartyID: f.tesco.ID},
 			want:   []int{1, 2},
 		},
 		"an external id": {
-			params: lt.ListJournalEntriesParams{ExternalID: "tesco-2"},
+			params: jt.ListJournalEntriesParams{ExternalID: "tesco-2"},
 			want:   []int{2},
 		},
 		"an external id that only starts the same": {
-			params: lt.ListJournalEntriesParams{ExternalID: "tesco"},
+			params: jt.ListJournalEntriesParams{ExternalID: "tesco"},
 			want:   []int{},
 		},
 		"posted entries": {
-			params: lt.ListJournalEntriesParams{Statuses: []model.JournalEntryStatus{model.JournalEntryPosted}},
+			params: jt.ListJournalEntriesParams{Statuses: []model.JournalEntryStatus{model.JournalEntryPosted}},
 			want:   []int{0, 1, 2, 3},
 		},
 		"draft entries": {
-			params: lt.ListJournalEntriesParams{Statuses: []model.JournalEntryStatus{model.JournalEntryDraft}},
+			params: jt.ListJournalEntriesParams{Statuses: []model.JournalEntryStatus{model.JournalEntryDraft}},
 			want:   []int{4, 5},
 		},
 		"several statuses": {
-			params: lt.ListJournalEntriesParams{Statuses: []model.JournalEntryStatus{model.JournalEntryDraft, model.JournalEntryPosted}},
+			params: jt.ListJournalEntriesParams{Statuses: []model.JournalEntryStatus{model.JournalEntryDraft, model.JournalEntryPosted}},
 			want:   []int{0, 1, 2, 3, 4, 5},
 		},
 		"a range includes its start": {
-			params: lt.ListJournalEntriesParams{From: listAt(3)},
+			params: jt.ListJournalEntriesParams{From: listAt(3)},
 			want:   []int{2, 3, 4, 5},
 		},
 		"a range excludes its end": {
-			params: lt.ListJournalEntriesParams{To: listAt(3)},
+			params: jt.ListJournalEntriesParams{To: listAt(3)},
 			want:   []int{0, 1},
 		},
 		"a range between two dates": {
-			params: lt.ListJournalEntriesParams{From: listAt(2), To: listAt(4)},
+			params: jt.ListJournalEntriesParams{From: listAt(2), To: listAt(4)},
 			want:   []int{1, 2, 3},
 		},
 		"a range after the entries": {
-			params: lt.ListJournalEntriesParams{From: listAt(10)},
+			params: jt.ListJournalEntriesParams{From: listAt(10)},
 			want:   []int{},
 		},
 		"an account and a status together": {
-			params: lt.ListJournalEntriesParams{LedgerAccountID: f.groceries.ID, Statuses: []model.JournalEntryStatus{model.JournalEntryPosted}},
+			params: jt.ListJournalEntriesParams{LedgerAccountID: f.groceries.ID, Statuses: []model.JournalEntryStatus{model.JournalEntryPosted}},
 			want:   []int{1, 2},
 		},
 		"an account, a counterparty and a range together": {
-			params: lt.ListJournalEntriesParams{LedgerAccountID: f.cash.ID, CounterpartyID: f.tesco.ID, From: listAt(2), To: listAt(3)},
+			params: jt.ListJournalEntriesParams{LedgerAccountID: f.cash.ID, CounterpartyID: f.tesco.ID, From: listAt(2), To: listAt(3)},
 			want:   []int{1},
 		},
 		"filters that no entry satisfies together": {
-			params: lt.ListJournalEntriesParams{LedgerAccountID: f.salary.ID, CounterpartyID: f.tesco.ID},
+			params: jt.ListJournalEntriesParams{LedgerAccountID: f.salary.ID, CounterpartyID: f.tesco.ID},
 			want:   []int{},
 		},
 		"a filtered list, newest first": {
-			params: lt.ListJournalEntriesParams{LedgerAccountID: f.rent.ID, Descending: true},
+			params: jt.ListJournalEntriesParams{LedgerAccountID: f.rent.ID, Descending: true},
 			want:   []int{5, 3},
 		},
 	}
@@ -263,7 +263,7 @@ func (s *UnitTestSuite) Test_ListJournalEntries() {
 func (s *UnitTestSuite) Test_ListJournalEntries_Postings() {
 	f := s.seedJournal()
 
-	result := s.listEntries(lt.ListJournalEntriesParams{From: listAt(1), To: listAt(3)})
+	result := s.listEntries(jt.ListJournalEntriesParams{From: listAt(1), To: listAt(3)})
 
 	require.Len(s.T(), result.Entries, 2)
 	payroll, groceries := result.Entries[0], result.Entries[1]
@@ -312,36 +312,36 @@ func (s *UnitTestSuite) Test_ListJournalEntries_Pages() {
 	f := s.seedJournal()
 
 	tests := map[string]struct {
-		params lt.ListJournalEntriesParams
+		params jt.ListJournalEntriesParams
 		// pages are the positions in the fixture of the entries of each page.
 		pages [][]int
 	}{
 		"an entry a page": {
-			params: lt.ListJournalEntriesParams{Limit: 1},
+			params: jt.ListJournalEntriesParams{Limit: 1},
 			pages:  [][]int{{0}, {1}, {2}, {3}, {4}, {5}},
 		},
 		"a page ending inside an instant": {
-			params: lt.ListJournalEntriesParams{Limit: 3},
+			params: jt.ListJournalEntriesParams{Limit: 3},
 			pages:  [][]int{{0, 1, 2}, {3, 4, 5}},
 		},
 		"a page that is exactly the rest": {
-			params: lt.ListJournalEntriesParams{Limit: 4},
+			params: jt.ListJournalEntriesParams{Limit: 4},
 			pages:  [][]int{{0, 1, 2, 3}, {4, 5}},
 		},
 		"a page holding everything": {
-			params: lt.ListJournalEntriesParams{Limit: 6},
+			params: jt.ListJournalEntriesParams{Limit: 6},
 			pages:  [][]int{{0, 1, 2, 3, 4, 5}},
 		},
 		"an entry a page, newest first": {
-			params: lt.ListJournalEntriesParams{Limit: 1, Descending: true},
+			params: jt.ListJournalEntriesParams{Limit: 1, Descending: true},
 			pages:  [][]int{{5}, {4}, {3}, {2}, {1}, {0}},
 		},
 		"a page ending inside an instant, newest first": {
-			params: lt.ListJournalEntriesParams{Limit: 3, Descending: true},
+			params: jt.ListJournalEntriesParams{Limit: 3, Descending: true},
 			pages:  [][]int{{5, 4, 3}, {2, 1, 0}},
 		},
 		"a filtered list": {
-			params: lt.ListJournalEntriesParams{Limit: 2, LedgerAccountID: f.cash.ID, Statuses: []model.JournalEntryStatus{model.JournalEntryPosted}},
+			params: jt.ListJournalEntriesParams{Limit: 2, LedgerAccountID: f.cash.ID, Statuses: []model.JournalEntryStatus{model.JournalEntryPosted}},
 			pages:  [][]int{{0, 1}, {2, 3}},
 		},
 	}
@@ -371,7 +371,7 @@ func (s *UnitTestSuite) Test_ListJournalEntries_Pages() {
 // Test_ListJournalEntries_Validation checks that parameters that cannot select a
 // page are rejected.
 func (s *UnitTestSuite) Test_ListJournalEntries_Validation() {
-	_, err := s.Env.ExecuteActivity(s.ja.ListJournalEntries, lt.ListJournalEntriesParams{Limit: lt.MaxJournalEntriesLimit + 1})
+	_, err := s.Env.ExecuteActivity(s.ja.ListJournalEntries, jt.ListJournalEntriesParams{Limit: jt.MaxJournalEntriesLimit + 1})
 
 	require.ErrorContains(s.T(), err, "limit")
 }
@@ -404,11 +404,11 @@ func (s *UnitTestSuite) Test_ListJournalEntries_TiesAreOrderedById() {
 	oldestFirst := []int64{5001, 5002, 6001, 6002}
 	newestFirst := []int64{6002, 6001, 5002, 5001}
 
-	require.Equal(s.T(), oldestFirst, entryIDs(s.listEntries(lt.ListJournalEntriesParams{}).Entries))
-	require.Equal(s.T(), newestFirst, entryIDs(s.listEntries(lt.ListJournalEntriesParams{Descending: true}).Entries))
+	require.Equal(s.T(), oldestFirst, entryIDs(s.listEntries(jt.ListJournalEntriesParams{}).Entries))
+	require.Equal(s.T(), newestFirst, entryIDs(s.listEntries(jt.ListJournalEntriesParams{Descending: true}).Entries))
 
 	for _, descending := range []bool{false, true} {
-		params := lt.ListJournalEntriesParams{Limit: 1, Descending: descending}
+		params := jt.ListJournalEntriesParams{Limit: 1, Descending: descending}
 		var walked []int64
 		for {
 			page := s.listEntries(params)
@@ -443,7 +443,7 @@ func (s *UnitTestSuite) Test_ListJournalEntries_Tags() {
 	_, err := s.DB.NewInsert().Model(&links).Exec(s.T().Context())
 	require.NoError(s.T(), err)
 
-	result := s.listEntries(lt.ListJournalEntriesParams{From: listAt(1), To: listAt(3)})
+	result := s.listEntries(jt.ListJournalEntriesParams{From: listAt(1), To: listAt(3)})
 
 	require.Len(s.T(), result.Entries, 2)
 	names := func(entry model.JournalEntry) []string {

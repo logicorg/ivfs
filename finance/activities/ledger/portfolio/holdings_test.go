@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	pft "github.com/logicorg/ivfs/finance/common/types/portfoliotypes"
 	"github.com/logicorg/ivfs/internal/pkg/temporaltesting"
@@ -26,10 +27,10 @@ func (s *UnitTestSuite) trade(key string, asset *model.Asset, units int64, day i
 		FinancialAccountID: s.financialAccount.ID,
 		AssetID:            asset.ID,
 		UnitsDelta:         decimal.NewFromInt(units),
-		Entry: lt.PostJournalEntryInput{
+		Entry: jt.PostJournalEntryInput{
 			IdempotencyKey: key,
 			OccurredAt:     holdingsBaseDay.AddDate(0, 0, day),
-			Postings: []lt.PostingInput{
+			Postings: []jt.PostingInput{
 				{LedgerAccountID: debit.ID, Amount: decimal.NewFromInt(100), Side: model.PostingDebit},
 				{LedgerAccountID: credit.ID, Amount: decimal.NewFromInt(100), Side: model.PostingCredit},
 			},

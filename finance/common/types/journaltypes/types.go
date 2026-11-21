@@ -1,4 +1,6 @@
-package ledgertypes
+// Package journaltypes holds the inputs, results and queries of the journal
+// entry activities and workflows.
+package journaltypes
 
 import (
 	"fmt"

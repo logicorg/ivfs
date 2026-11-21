@@ -6,7 +6,7 @@ package reportingtypes
 import (
 	"time"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	"github.com/shopspring/decimal"
 )
 
@@ -19,7 +19,7 @@ type FinancialAccountBalancesParams struct {
 // FinancialAccountBalancesResult holds the result of an operation to get the FinancialAccount balance.
 type FinancialAccountBalancesResult struct {
 	FinancialAccountID int64                           `json:"financialAccountId"`
-	Balances           []lt.LedgerAccountBalanceResult `json:"balances"`
+	Balances           []jt.LedgerAccountBalanceResult `json:"balances"`
 }
 
 type PositionsAtParams struct {

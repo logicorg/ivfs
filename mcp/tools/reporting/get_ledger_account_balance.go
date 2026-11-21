@@ -1,7 +1,7 @@
 package reporting
 
 import (
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	reportingwf "github.com/logicorg/ivfs/finance/workflows/ledger/reporting"
 	"github.com/logicorg/ivfs/mcp/mcptypes"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -17,7 +17,7 @@ func registerGetLedgerAccountBalance(server *mcp.Server, c client.Client) {
 			"A balance is in the account's natural direction: debits minus credits for assets and expenses, credits minus " +
 			"debits for liabilities, equity, and income, so each is positive in normal use. Get the id with list_accounts.",
 	}, mcptypes.WorkflowWithResult[
-		func(workflow.Context, lt.LedgerAccountBalanceParams) (*lt.LedgerAccountBalanceResult, error),
-		lt.LedgerAccountBalanceParams, lt.LedgerAccountBalanceResult,
+		func(workflow.Context, jt.LedgerAccountBalanceParams) (*jt.LedgerAccountBalanceResult, error),
+		jt.LedgerAccountBalanceParams, jt.LedgerAccountBalanceResult,
 	](c, reportingwf.LedgerAccountBalance))
 }

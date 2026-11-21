@@ -5,6 +5,7 @@ import (
 	"time"
 
 	ct "github.com/logicorg/ivfs/finance/common/types/categorytypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	tt "github.com/logicorg/ivfs/finance/common/types/transactiontypes"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
@@ -44,10 +45,10 @@ func (s *WorkflowUnitTestSuite) TestRecordIncome() {
 			env := s.NewTestWorkflowEnvironment()
 			mockLedgerAccounts(env)
 			mockCategories(env)
-			want := lt.PostJournalEntryInput{
+			want := jt.PostJournalEntryInput{
 				IdempotencyKey: "income:77ab",
 				OccurredAt:     occurredAt,
-				Postings: []lt.PostingInput{
+				Postings: []jt.PostingInput{
 					{LedgerAccountID: tc.balance.ID, Amount: amount, Side: model.PostingDebit},
 					{LedgerAccountID: tc.account.ID, Amount: amount, Side: model.PostingCredit, CategoryID: ptr.Int64(tc.category.ID)},
 				},
@@ -57,7 +58,7 @@ func (s *WorkflowUnitTestSuite) TestRecordIncome() {
 			}
 			want.TagIDs = tc.tags
 			env.OnWorkflow(journalwf.PostJournalEntry, mock.Anything, entry(want)).
-				Return(&lt.PostJournalEntryResult{JournalEntryID: 43}, nil).Once()
+				Return(&jt.PostJournalEntryResult{JournalEntryID: 43}, nil).Once()
 
 			env.ExecuteWorkflow(RecordIncome, tt.RecordIncomeInput{
 				IdempotencyKey: "77ab", BalanceLedgerAccountID: tc.balance.ID, CategoryID: tc.category.ID,
