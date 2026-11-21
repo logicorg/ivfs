@@ -27,7 +27,7 @@ func DeleteLedgerAccount(ctx workflow.Context, input lt.DeleteLedgerAccountInput
 
 	target := lt.DeletionTarget{LedgerAccountID: &input.LedgerAccountID}
 	var closed lt.CloseAccountForDeletionResult
-	if err := workflow.ExecuteActivity(ctx, la.CloseAccountForDeletion, target).Get(ctx, &closed); err != nil {
+	if err := workflow.ExecuteActivity(ctx, da.CloseAccountForDeletion, target).Get(ctx, &closed); err != nil {
 		return nil, fmt.Errorf("close ledger account for deletion: %w", err)
 	}
 	if closed.Gone {

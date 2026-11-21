@@ -2,6 +2,7 @@ package accounts
 
 import (
 	activity "github.com/logicorg/ivfs/finance/activities/ledger/accounts"
+	accountdeletion "github.com/logicorg/ivfs/finance/activities/ledger/accounts/deletion"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/logicorg/ivfs/pkg/ptr"
@@ -151,18 +152,19 @@ func (s *WorkflowUnitTestSuite) TestDeleteFinancialAccount() {
 			t := s.T()
 			env := s.NewTestWorkflowEnvironment()
 			aa := activity.Activities{}
+			da := accountdeletion.Activities{}
 			target := lt.DeletionTarget{FinancialAccountID: &tc.input.FinancialAccountID}
 			batch := lt.DeletionBatchInput{Target: target, Limit: deletionBatchSize}
 
 			if tc.closed != nil {
-				env.OnActivity(aa.CloseAccountForDeletion, mock.Anything, target).Return(tc.closed, tc.closeErr).Once()
+				env.OnActivity(da.CloseAccountForDeletion, mock.Anything, target).Return(tc.closed, tc.closeErr).Once()
 			}
 			// Not Once: a retryable error is retried.
 			if tc.entryErr != nil {
-				env.OnActivity(aa.HandleEntriesForDeletion, mock.Anything, batch).Return(nil, tc.entryErr)
+				env.OnActivity(da.HandleEntriesForDeletion, mock.Anything, batch).Return(nil, tc.entryErr)
 			}
 			if tc.groupErr != nil {
-				env.OnActivity(aa.HandleMovementGroupsForDeletion, mock.Anything, batch).Return(nil, tc.groupErr)
+				env.OnActivity(da.HandleMovementGroupsForDeletion, mock.Anything, batch).Return(nil, tc.groupErr)
 			}
 
 			batches := 0
@@ -182,10 +184,10 @@ func (s *WorkflowUnitTestSuite) TestDeleteFinancialAccount() {
 				return false
 			}
 			for n, pass := range tc.passes {
-				if expect(aa.HandleEntriesForDeletion, pass.entries) || tc.groupErr != nil {
+				if expect(da.HandleEntriesForDeletion, pass.entries) || tc.groupErr != nil {
 					break
 				}
-				if expect(aa.HandleMovementGroupsForDeletion, pass.groups) {
+				if expect(da.HandleMovementGroupsForDeletion, pass.groups) {
 					break
 				}
 				deleted := env.OnActivity(aa.DeleteFinancialAccount, mock.Anything, tc.input).Return(tc.deleteErrs[n])

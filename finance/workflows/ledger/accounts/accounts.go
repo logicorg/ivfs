@@ -5,6 +5,7 @@ import (
 
 	institutionactivity "github.com/logicorg/ivfs/finance/activities/institution"
 	ledgeractivity "github.com/logicorg/ivfs/finance/activities/ledger/accounts"
+	accountdeletion "github.com/logicorg/ivfs/finance/activities/ledger/accounts/deletion"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	"github.com/logicorg/ivfs/finance/workflows"
 	"go.temporal.io/sdk/workflow"
@@ -13,6 +14,9 @@ import (
 var (
 	// la is a (nil) pointer to the ledger accounts activities struct. It is used to call the activities in the workflow.
 	la = (*ledgeractivity.Activities)(nil)
+	// da is a (nil) pointer to the account deletion activities struct, for the
+	// activities that close, empty and preview an account being deleted.
+	da = (*accountdeletion.Activities)(nil)
 	// ia is a (nil) pointer to the institution activities struct, for the
 	// checks that need a financial account's institution.
 	ia = (*institutionactivity.Institution)(nil)

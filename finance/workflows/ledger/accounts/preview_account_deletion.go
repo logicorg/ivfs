@@ -19,7 +19,7 @@ func PreviewAccountDeletion(ctx workflow.Context, input lt.PreviewAccountDeletio
 	ctx = workflow.WithActivityOptions(ctx, workflows.GetDefaultActivityOptions())
 
 	var preview lt.AccountDeletionPreview
-	if err := workflow.ExecuteActivity(ctx, la.PreviewAccountDeletion, input).Get(ctx, &preview); err != nil {
+	if err := workflow.ExecuteActivity(ctx, da.PreviewAccountDeletion, input).Get(ctx, &preview); err != nil {
 		return nil, fmt.Errorf("preview account deletion: %w", err)
 	}
 	return &preview, nil

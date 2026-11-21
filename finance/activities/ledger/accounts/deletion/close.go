@@ -1,4 +1,4 @@
-package accounts
+package deletion
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	ledgerdeletion "github.com/logicorg/ivfs/finance/activities/ledger/internal/deletion"
 	"github.com/logicorg/ivfs/finance/activities/ledger/internal/positions"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
@@ -63,7 +64,7 @@ func closeLedgerAccountForDeletionTx(ctx context.Context, tx bun.Tx, id int64, n
 	}
 
 	if lt.IsReservedLedgerAccount(&account) {
-		hasPostings, err := ledgerAccountHasPostings(ctx, tx, id)
+		hasPostings, err := ledgerdeletion.LedgerAccountHasPostingsTx(ctx, tx, id)
 		if err != nil {
 			return false, err
 		}

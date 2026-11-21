@@ -1,10 +1,10 @@
-package accounts
+package deletion
 
 import (
 	"context"
 	"fmt"
 
-	"github.com/logicorg/ivfs/finance/activities/ledger/internal/deletion"
+	ledgerdeletion "github.com/logicorg/ivfs/finance/activities/ledger/internal/deletion"
 	"github.com/logicorg/ivfs/finance/activities/ledger/internal/positions"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	"github.com/logicorg/ivfs/pkg/model"
@@ -55,7 +55,7 @@ func (a *Activities) HandleMovementGroupsForDeletion(ctx context.Context, input 
 				return err
 			}
 			groups = append(groups, group)
-			accountIDs = append(accountIDs, deletion.AccountIDsOf(group)...)
+			accountIDs = append(accountIDs, ledgerdeletion.AccountIDsOf(group)...)
 		}
 		locked, err := positions.LockFinancialAccountsTx(ctx, tx, accountIDs)
 		if err != nil {
@@ -72,7 +72,7 @@ func (a *Activities) HandleMovementGroupsForDeletion(ctx context.Context, input 
 				kept = append(kept, group)
 				continue
 			}
-			if err := deletion.DeleteGroupTx(ctx, tx, *group[0].IdempotencyKey); err != nil {
+			if err := ledgerdeletion.DeleteGroupTx(ctx, tx, *group[0].IdempotencyKey); err != nil {
 				return err
 			}
 		}
@@ -152,7 +152,7 @@ func (t *deletionTarget) moveLegsTx(ctx context.Context, tx bun.Tx, kept [][]mod
 	if len(moving) == 0 {
 		return nil
 	}
-	strayID, err := deletion.StrayFinancialAccountTx(ctx, tx)
+	strayID, err := ledgerdeletion.StrayFinancialAccountTx(ctx, tx)
 	if err != nil {
 		return err
 	}

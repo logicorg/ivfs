@@ -69,14 +69,6 @@ func loadLedgerAccount(ctx context.Context, db bun.Tx, accountID int64) (*model.
 	return account, nil
 }
 
-func ledgerAccountHasPostings(ctx context.Context, db bun.Tx, accountID int64) (bool, error) {
-	exists, err := db.NewSelect().Model((*model.Posting)(nil)).Where("ledger_account_id = ?", accountID).Exists(ctx)
-	if err != nil {
-		return false, fmt.Errorf("check ledger account postings: %w", err)
-	}
-	return exists, nil
-}
-
 // refuseStrandedBalance refuses to close an asset or liability ledger account
 // that still has a balance, which closing would strand: it must be moved out
 // first. The balances of income, expense and equity accounts are history, so

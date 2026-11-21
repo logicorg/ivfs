@@ -1,4 +1,4 @@
-package accounts
+package deletion
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/logicorg/ivfs/finance/activities/ledger/internal/deletion"
+	ledgerdeletion "github.com/logicorg/ivfs/finance/activities/ledger/internal/deletion"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/uptrace/bun"
@@ -47,14 +47,14 @@ func (a *Activities) HandleEntriesForDeletion(ctx context.Context, input lt.Dele
 			return target.refusal
 		}
 
-		financialIDs, ledgerIDs, err := deletion.AccountsOfTx(ctx, tx, entryIDs)
+		financialIDs, ledgerIDs, err := ledgerdeletion.AccountsOfTx(ctx, tx, entryIDs)
 		if err != nil {
 			return err
 		}
 		if target.financialAccount != nil {
 			financialIDs = append(financialIDs, target.financialAccount.ID)
 		}
-		if err := deletion.LockAccountsTx(ctx, tx, financialIDs, append(ledgerIDs, target.ledgerIDs()...)); err != nil {
+		if err := ledgerdeletion.LockAccountsTx(ctx, tx, financialIDs, append(ledgerIDs, target.ledgerIDs()...)); err != nil {
 			return err
 		}
 
@@ -76,7 +76,7 @@ func (a *Activities) HandleEntriesForDeletion(ctx context.Context, input lt.Dele
 				kept = append(kept, entry)
 				continue
 			}
-			if err := deletion.DeleteEntryTx(ctx, tx, id); err != nil {
+			if err := ledgerdeletion.DeleteEntryTx(ctx, tx, id); err != nil {
 				return err
 			}
 		}
@@ -198,7 +198,7 @@ func (t *deletionTarget) moveLinesTx(ctx context.Context, tx bun.Tx, kept []*mod
 	var strayFinancialID int64
 	if movesUnits {
 		var err error
-		if strayFinancialID, err = deletion.StrayFinancialAccountTx(ctx, tx); err != nil {
+		if strayFinancialID, err = ledgerdeletion.StrayFinancialAccountTx(ctx, tx); err != nil {
 			return err
 		}
 	}
@@ -208,7 +208,7 @@ func (t *deletionTarget) moveLinesTx(ctx context.Context, tx bun.Tx, kept []*mod
 			accounts = append(accounts, t.ledgerAccounts[id])
 		}
 	}
-	strays, err := deletion.StrayLedgerAccountsTx(ctx, tx, accounts)
+	strays, err := ledgerdeletion.StrayLedgerAccountsTx(ctx, tx, accounts)
 	if err != nil {
 		return err
 	}
