@@ -1,7 +1,7 @@
 package accounts
 
 import (
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	"github.com/logicorg/ivfs/internal/pkg/temporaltesting"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/stretchr/testify/require"
@@ -64,7 +64,7 @@ func (s *UnitTestSuite) Test_RenameLedgerAccount_Taken() {
 		target := tc.target(r)
 
 		s.Run(name, func() {
-			_, err := s.Env.ExecuteActivity(s.aa.RenameLedgerAccount, lt.RenameLedgerAccountInput{LedgerAccountID: target.ID, Name: tc.newName})
+			_, err := s.Env.ExecuteActivity(s.aa.RenameLedgerAccount, act.RenameLedgerAccountInput{LedgerAccountID: target.ID, Name: tc.newName})
 
 			if tc.errStr != "" {
 				require.ErrorContains(s.T(), err, tc.errStr)

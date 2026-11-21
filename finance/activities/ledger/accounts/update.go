@@ -3,14 +3,13 @@ package accounts
 import (
 	"context"
 	"fmt"
-	"strings"
-
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	"github.com/logicorg/ivfs/pkg/sqllib"
 	"github.com/uptrace/bun"
+	"strings"
 )
 
-func (a *Activities) RenameLedgerAccount(ctx context.Context, input lt.RenameLedgerAccountInput) (*lt.LedgerAccountMutationResult, error) {
+func (a *Activities) RenameLedgerAccount(ctx context.Context, input act.RenameLedgerAccountInput) (*act.LedgerAccountMutationResult, error) {
 	db, err := a.Pools.For(ctx)
 	if err != nil {
 		return nil, err
@@ -22,7 +21,7 @@ func (a *Activities) RenameLedgerAccount(ctx context.Context, input lt.RenameLed
 
 	input.Name = strings.TrimSpace(input.Name)
 
-	result := &lt.LedgerAccountMutationResult{LedgerAccountID: input.LedgerAccountID}
+	result := &act.LedgerAccountMutationResult{LedgerAccountID: input.LedgerAccountID}
 	err = db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
 		account, err := loadLedgerAccount(ctx, tx, input.LedgerAccountID)
 		if err != nil {

@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"time"
 
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	tt "github.com/logicorg/ivfs/finance/common/types/transactiontypes"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
 	categorieswf "github.com/logicorg/ivfs/finance/workflows/ledger/categories"
@@ -40,12 +40,12 @@ type movement struct {
 func retrieveLedgerAccounts(ctx workflow.Context, ids ...int64) ([]*model.LedgerAccount, error) {
 	futures := make([]workflow.ChildWorkflowFuture, len(ids))
 	for i, id := range ids {
-		futures[i] = workflow.ExecuteChildWorkflow(ctx, ledgeraccountswf.RetrieveLedgerAccount, lt.RetrieveLedgerAccountParams{ID: id})
+		futures[i] = workflow.ExecuteChildWorkflow(ctx, ledgeraccountswf.RetrieveLedgerAccount, act.RetrieveLedgerAccountParams{ID: id})
 	}
 
 	accounts := make([]*model.LedgerAccount, len(ids))
 	for i, future := range futures {
-		var result lt.RetrieveLedgerAccountResult
+		var result act.RetrieveLedgerAccountResult
 		if err := future.Get(ctx, &result); err != nil {
 			return nil, fmt.Errorf("retrieve ledger account %d: %w", ids[i], err)
 		}

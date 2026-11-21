@@ -3,6 +3,7 @@ package categories
 import (
 	"fmt"
 
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	ct "github.com/logicorg/ivfs/finance/common/types/categorytypes"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
@@ -30,8 +31,8 @@ func CategoryAccount(ctx workflow.Context, categoryID int64, kind model.LedgerAc
 	}
 
 	name := lt.CategoryAccountName(kind)
-	var created lt.CreateLedgerAccountResult
-	err := workflow.ExecuteChildWorkflow(ctx, ledgeraccountswf.CreateLedgerAccount, lt.CreateLedgerAccountInput{
+	var created act.CreateLedgerAccountResult
+	err := workflow.ExecuteChildWorkflow(ctx, ledgeraccountswf.CreateLedgerAccount, act.CreateLedgerAccountInput{
 		CurrencyID: currencyID, Name: name, Kind: kind,
 	}).Get(ctx, &created)
 	if err != nil {

@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	ledgerfx "github.com/logicorg/ivfs/finance/activities/ledger/fx"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	fxt "github.com/logicorg/ivfs/finance/common/types/fxtypes"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	"github.com/logicorg/ivfs/finance/workflows"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
 	categorieswf "github.com/logicorg/ivfs/finance/workflows/ledger/categories"
@@ -48,8 +48,8 @@ func feeOnExpenses(ctx workflow.Context, input fxt.RegisterFXConversionInput) (*
 		return nil, internalerrors.ErrMissingRequiredParameter{Parameters: []string{"Fee.CategoryID"}}
 	}
 
-	var source lt.RetrieveLedgerAccountResult
-	err := workflow.ExecuteChildWorkflow(ctx, ledgeraccountswf.RetrieveLedgerAccount, lt.RetrieveLedgerAccountParams{ID: input.SourceLedgerAccountID}).Get(ctx, &source)
+	var source act.RetrieveLedgerAccountResult
+	err := workflow.ExecuteChildWorkflow(ctx, ledgeraccountswf.RetrieveLedgerAccount, act.RetrieveLedgerAccountParams{ID: input.SourceLedgerAccountID}).Get(ctx, &source)
 	if err != nil {
 		return nil, fmt.Errorf("retrieve ledger account %d: %w", input.SourceLedgerAccountID, err)
 	}

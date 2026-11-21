@@ -4,6 +4,7 @@ import (
 	"github.com/google/uuid"
 	institutionactivity "github.com/logicorg/ivfs/finance/activities/institution"
 	ledgeractivity "github.com/logicorg/ivfs/finance/activities/ledger/accounts"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	it "github.com/logicorg/ivfs/finance/common/types/institutiontypes"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	"github.com/logicorg/ivfs/finance/workflows"
@@ -142,16 +143,16 @@ func (s *WorkflowUnitTestSuite) TestDeleteInstitution() {
 				for i, id := range ids {
 					accounts[i] = model.FinancialAccount{ID: id, InstitutionID: tc.institution.ID}
 				}
-				env.OnActivity(la.ListFinancialAccounts, mock.Anything, lt.ListFinancialAccountsParams{InstitutionID: &tc.institution.ID, IncludeClosed: true}).
-					Return(&lt.ListFinancialAccountsResult{FinancialAccounts: accounts}, nil).Once()
+				env.OnActivity(la.ListFinancialAccounts, mock.Anything, act.ListFinancialAccountsParams{InstitutionID: &tc.institution.ID, IncludeClosed: true}).
+					Return(&act.ListFinancialAccountsResult{FinancialAccounts: accounts}, nil).Once()
 				if len(ids) > 0 && lt.IsUntrackedInstitution(tc.institution.Name) {
 					break
 				}
 				failed := false
 				for _, id := range ids {
 					want = append(want, tenancy.WorkflowIDPrefix(user)+workflows.DeleteFinancialAccountWorkflowID(id))
-					env.OnWorkflow(ledgeraccountswf.DeleteFinancialAccount, mock.Anything, lt.DeleteFinancialAccountInput{FinancialAccountID: id}).
-						Return(&lt.DeleteAccountResult{}, tc.childErr).Once()
+					env.OnWorkflow(ledgeraccountswf.DeleteFinancialAccount, mock.Anything, act.DeleteFinancialAccountInput{FinancialAccountID: id}).
+						Return(&act.DeleteAccountResult{}, tc.childErr).Once()
 					if tc.childErr != nil {
 						failed = true
 						break

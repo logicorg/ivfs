@@ -5,8 +5,8 @@ import (
 	"time"
 
 	ast "github.com/logicorg/ivfs/finance/common/types/accountsetuptypes"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	"github.com/logicorg/ivfs/finance/workflows/facade/accountsetup"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
 	reportingwf "github.com/logicorg/ivfs/finance/workflows/ledger/reporting"
@@ -106,8 +106,8 @@ func (s *UnitTestSuite) Test_OpenAccount() {
 
 	// Everything opened is listed once, and the opening balances add up.
 
-	var listed lt.ListAccountsResult
-	s.runWorkflow(ledgeraccountswf.ListAccounts, lt.ListAccountsParams{}, &listed)
+	var listed act.ListAccountsResult
+	s.runWorkflow(ledgeraccountswf.ListAccounts, act.ListAccountsParams{}, &listed)
 	require.ElementsMatch(s.T(), []string{
 		"Revolut / Revolut Personal / Cash EUR",
 		"Revolut / Revolut Personal / Cash USD",
@@ -128,7 +128,7 @@ func (s *UnitTestSuite) Test_OpenAccount() {
 // describe names each row the way a person would read it: the institution,
 // the financial account, and the balance in its currency, or only the
 // balance for a shared account.
-func describe(rows []lt.AccountSummary) []string {
+func describe(rows []act.AccountSummary) []string {
 	described := make([]string, 0, len(rows))
 	for _, row := range rows {
 		name := fmt.Sprintf("%s %s", row.LedgerAccountName, row.CurrencyCode)

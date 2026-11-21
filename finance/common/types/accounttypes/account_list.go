@@ -1,6 +1,6 @@
-// Package ledgertypes holds the inputs and results of the ledger activities
+// Package accounttypes holds the inputs and results of the account activities
 // and workflows.
-package ledgertypes
+package accounttypes
 
 import (
 	"fmt"

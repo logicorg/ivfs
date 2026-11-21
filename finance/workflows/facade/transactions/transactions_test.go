@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	ct "github.com/logicorg/ivfs/finance/common/types/categorytypes"
 	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
@@ -57,13 +58,13 @@ var (
 func mockLedgerAccounts(env *testsuite.TestWorkflowEnvironment) {
 	shared := []*model.LedgerAccount{expenses, expensesUSD, income, incomeUSD}
 	for _, account := range append([]*model.LedgerAccount{cash, cardBalance, savingsVault, cashUSD, openingBalance, fxClearing, fxClearingUSD}, shared...) {
-		env.OnWorkflow(ledgeraccountswf.RetrieveLedgerAccount, mock.Anything, lt.RetrieveLedgerAccountParams{ID: account.ID}).
-			Return(&lt.RetrieveLedgerAccountResult{LedgerAccount: account}, nil).Maybe()
+		env.OnWorkflow(ledgeraccountswf.RetrieveLedgerAccount, mock.Anything, act.RetrieveLedgerAccountParams{ID: account.ID}).
+			Return(&act.RetrieveLedgerAccountResult{LedgerAccount: account}, nil).Maybe()
 	}
 	for _, account := range shared {
-		env.OnWorkflow(ledgeraccountswf.CreateLedgerAccount, mock.Anything, lt.CreateLedgerAccountInput{
+		env.OnWorkflow(ledgeraccountswf.CreateLedgerAccount, mock.Anything, act.CreateLedgerAccountInput{
 			CurrencyID: account.CurrencyID, Name: account.Name, Kind: account.Kind,
-		}).Return(&lt.CreateLedgerAccountResult{LedgerAccountID: account.ID}, nil).Maybe()
+		}).Return(&act.CreateLedgerAccountResult{LedgerAccountID: account.ID}, nil).Maybe()
 	}
 }
 

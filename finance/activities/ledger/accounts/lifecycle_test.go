@@ -1,6 +1,7 @@
 package accounts
 
 import (
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	"time"
 
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
@@ -28,28 +29,28 @@ func (s *UnitTestSuite) TestRetrieveAndListLedgerAccounts() {
 	closed := &model.LedgerAccount{Name: "Old", CurrencyID: currency.ID, Kind: model.LedgerAccountExpense, ClosedAt: &closedAt}
 	temporaltesting.Insert(s.T(), s.DB, closed)
 
-	activityResult, err := s.Env.ExecuteActivity(s.aa.RetrieveLedgerAccount, lt.RetrieveLedgerAccountParams{ID: active.ID})
+	activityResult, err := s.Env.ExecuteActivity(s.aa.RetrieveLedgerAccount, act.RetrieveLedgerAccountParams{ID: active.ID})
 	require.NoError(s.T(), err)
-	var retrieved lt.RetrieveLedgerAccountResult
+	var retrieved act.RetrieveLedgerAccountResult
 	require.NoError(s.T(), activityResult.Get(&retrieved))
 	require.NotNil(s.T(), retrieved.LedgerAccount)
 	assert.Equal(s.T(), active.ID, retrieved.LedgerAccount.ID)
 	assert.Equal(s.T(), currency.Code, retrieved.LedgerAccount.Currency.Code)
 
-	activityResult, err = s.Env.ExecuteActivity(s.aa.ListLedgerAccounts, lt.ListLedgerAccountsParams{FinancialAccountID: &financialAccount.ID})
+	activityResult, err = s.Env.ExecuteActivity(s.aa.ListLedgerAccounts, act.ListLedgerAccountsParams{FinancialAccountID: &financialAccount.ID})
 	require.NoError(s.T(), err)
-	var listed lt.ListLedgerAccountsResult
+	var listed act.ListLedgerAccountsResult
 	require.NoError(s.T(), activityResult.Get(&listed))
 	require.Len(s.T(), listed.LedgerAccounts, 1)
 	assert.Equal(s.T(), active.ID, listed.LedgerAccounts[0].ID)
 
-	activityResult, err = s.Env.ExecuteActivity(s.aa.ListLedgerAccounts, lt.ListLedgerAccountsParams{IncludeClosed: true})
+	activityResult, err = s.Env.ExecuteActivity(s.aa.ListLedgerAccounts, act.ListLedgerAccountsParams{IncludeClosed: true})
 	require.NoError(s.T(), err)
-	listed = lt.ListLedgerAccountsResult{}
+	listed = act.ListLedgerAccountsResult{}
 	require.NoError(s.T(), activityResult.Get(&listed))
 	assert.Len(s.T(), listed.LedgerAccounts, 3)
 
-	_, err = s.Env.ExecuteActivity(s.aa.RetrieveLedgerAccount, lt.RetrieveLedgerAccountParams{ID: 9999})
+	_, err = s.Env.ExecuteActivity(s.aa.RetrieveLedgerAccount, act.RetrieveLedgerAccountParams{ID: 9999})
 	assert.Contains(s.T(), err.Error(), "resource LedgerAccount not found")
 }
 
@@ -84,10 +85,10 @@ func (s *UnitTestSuite) TestListLedgerAccountsNameFilter() {
 	}
 	for name, tc := range tests {
 		s.Run(name, func() {
-			activityResult, err := s.Env.ExecuteActivity(s.aa.ListLedgerAccounts, lt.ListLedgerAccountsParams{NameContains: tc.nameContains})
+			activityResult, err := s.Env.ExecuteActivity(s.aa.ListLedgerAccounts, act.ListLedgerAccountsParams{NameContains: tc.nameContains})
 			require.NoError(s.T(), err)
 
-			var listed lt.ListLedgerAccountsResult
+			var listed act.ListLedgerAccountsResult
 			require.NoError(s.T(), activityResult.Get(&listed))
 			gotIDs := make([]int64, 0, len(listed.LedgerAccounts))
 			for _, a := range listed.LedgerAccounts {
@@ -139,14 +140,14 @@ func (s *UnitTestSuite) TestListLedgerAccountsKindFilter() {
 	}
 	for name, tc := range tests {
 		s.Run(name, func() {
-			activityResult, err := s.Env.ExecuteActivity(s.aa.ListLedgerAccounts, lt.ListLedgerAccountsParams{Kinds: tc.kinds})
+			activityResult, err := s.Env.ExecuteActivity(s.aa.ListLedgerAccounts, act.ListLedgerAccountsParams{Kinds: tc.kinds})
 			if tc.wantError != "" {
 				require.ErrorContains(s.T(), err, tc.wantError)
 				return
 			}
 			require.NoError(s.T(), err)
 
-			var listed lt.ListLedgerAccountsResult
+			var listed act.ListLedgerAccountsResult
 			require.NoError(s.T(), activityResult.Get(&listed))
 			gotIDs := make([]int64, 0, len(listed.LedgerAccounts))
 			for _, a := range listed.LedgerAccounts {
@@ -163,9 +164,9 @@ func (s *UnitTestSuite) TestRenameLedgerAccount() {
 	account := &model.LedgerAccount{Name: "Wallet", CurrencyID: currency.ID, Kind: model.LedgerAccountAsset}
 	temporaltesting.Insert(s.T(), s.DB, account)
 
-	activityResult, err := s.Env.ExecuteActivity(s.aa.RenameLedgerAccount, lt.RenameLedgerAccountInput{LedgerAccountID: account.ID, Name: " Purse "})
+	activityResult, err := s.Env.ExecuteActivity(s.aa.RenameLedgerAccount, act.RenameLedgerAccountInput{LedgerAccountID: account.ID, Name: " Purse "})
 	require.NoError(s.T(), err)
-	var mutation lt.LedgerAccountMutationResult
+	var mutation act.LedgerAccountMutationResult
 	require.NoError(s.T(), activityResult.Get(&mutation))
 	assert.Equal(s.T(), account.ID, mutation.LedgerAccountID)
 
@@ -181,7 +182,7 @@ func (s *UnitTestSuite) TestCloseLedgerAccountIsIdempotent() {
 	temporaltesting.Insert(s.T(), s.DB, account)
 
 	for range 2 {
-		_, err := s.Env.ExecuteActivity(s.aa.CloseLedgerAccount, lt.CloseLedgerAccountInput{LedgerAccountID: account.ID, ClosedAt: time.Date(2026, 2, 1, 0, 0, 0, 0, time.UTC)})
+		_, err := s.Env.ExecuteActivity(s.aa.CloseLedgerAccount, act.CloseLedgerAccountInput{LedgerAccountID: account.ID, ClosedAt: time.Date(2026, 2, 1, 0, 0, 0, 0, time.UTC)})
 		require.NoError(s.T(), err)
 	}
 
@@ -202,11 +203,11 @@ func (s *UnitTestSuite) TestDeleteLedgerAccountOnlyAllowsUnused() {
 	temporaltesting.Insert(s.T(), s.DB, entry)
 	temporaltesting.Insert(s.T(), s.DB, &model.Posting{JournalEntryID: entry.ID, LineNumber: 1, LedgerAccountID: used.ID, Amount: decimal.NewFromInt(10), Side: model.PostingDebit})
 
-	_, err := s.Env.ExecuteActivity(s.aa.DeleteLedgerAccount, lt.DeleteLedgerAccountInput{LedgerAccountID: used.ID})
+	_, err := s.Env.ExecuteActivity(s.aa.DeleteLedgerAccount, act.DeleteLedgerAccountInput{LedgerAccountID: used.ID})
 	require.Error(s.T(), err)
 	assert.Contains(s.T(), err.Error(), "has postings; close it instead")
 
-	_, err = s.Env.ExecuteActivity(s.aa.DeleteLedgerAccount, lt.DeleteLedgerAccountInput{LedgerAccountID: unused.ID})
+	_, err = s.Env.ExecuteActivity(s.aa.DeleteLedgerAccount, act.DeleteLedgerAccountInput{LedgerAccountID: unused.ID})
 	require.NoError(s.T(), err)
 
 	assert.Zero(s.T(), s.CountWhere[model.LedgerAccount]("id = ?", unused.ID))

@@ -7,9 +7,9 @@ import (
 
 	"github.com/google/uuid"
 	ledgerfx "github.com/logicorg/ivfs/finance/activities/ledger/fx"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	ct "github.com/logicorg/ivfs/finance/common/types/categorytypes"
 	fxt "github.com/logicorg/ivfs/finance/common/types/fxtypes"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
 	categorieswf "github.com/logicorg/ivfs/finance/workflows/ledger/categories"
 	"github.com/logicorg/ivfs/pkg/model"
@@ -148,13 +148,13 @@ func (s *WorkflowUnitTestSuite) TestRegisterFXConversion_Fee() {
 			}
 			env.OnWorkflow(categorieswf.RetrieveCategory, mock.Anything, ct.RetrieveCategoryParams{ID: unknownID}).
 				Return(nil, errors.New("resource Category not found with ID: 999")).Maybe()
-			env.OnWorkflow(ledgeraccountswf.RetrieveLedgerAccount, mock.Anything, lt.RetrieveLedgerAccountParams{ID: revolutUSD}).
-				Return(&lt.RetrieveLedgerAccountResult{LedgerAccount: &model.LedgerAccount{ID: revolutUSD, CurrencyID: usd, Name: "Revolut USD", Kind: model.LedgerAccountAsset}}, nil).Maybe()
-			env.OnWorkflow(ledgeraccountswf.RetrieveLedgerAccount, mock.Anything, lt.RetrieveLedgerAccountParams{ID: unknownID}).
+			env.OnWorkflow(ledgeraccountswf.RetrieveLedgerAccount, mock.Anything, act.RetrieveLedgerAccountParams{ID: revolutUSD}).
+				Return(&act.RetrieveLedgerAccountResult{LedgerAccount: &model.LedgerAccount{ID: revolutUSD, CurrencyID: usd, Name: "Revolut USD", Kind: model.LedgerAccountAsset}}, nil).Maybe()
+			env.OnWorkflow(ledgeraccountswf.RetrieveLedgerAccount, mock.Anything, act.RetrieveLedgerAccountParams{ID: unknownID}).
 				Return(nil, errors.New("resource LedgerAccount not found with ID: 999")).Maybe()
-			env.OnWorkflow(ledgeraccountswf.CreateLedgerAccount, mock.Anything, lt.CreateLedgerAccountInput{
+			env.OnWorkflow(ledgeraccountswf.CreateLedgerAccount, mock.Anything, act.CreateLedgerAccountInput{
 				CurrencyID: usd, Name: "Expenses", Kind: model.LedgerAccountExpense,
-			}).Return(&lt.CreateLedgerAccountResult{LedgerAccountID: usdExpenses}, nil).Maybe()
+			}).Return(&act.CreateLedgerAccountResult{LedgerAccountID: usdExpenses}, nil).Maybe()
 			if tc.want != nil {
 				aa := ledgerfx.Activities{}
 				env.OnActivity(aa.RegisterFXConversion, mock.Anything, mock.MatchedBy(func(got fxt.RegisterFXConversionInput) bool {
