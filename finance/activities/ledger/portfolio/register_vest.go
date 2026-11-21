@@ -8,7 +8,7 @@ import (
 
 	"github.com/logicorg/ivfs/finance/activities/ledger/internal/positions"
 	"github.com/logicorg/ivfs/finance/activities/ledger/internal/posting"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	pft "github.com/logicorg/ivfs/finance/common/types/portfoliotypes"
 	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/uptrace/bun"
@@ -18,7 +18,7 @@ import (
 // and records the units received. Retrying with the same idempotency key
 // returns the entry and the movement of the first call without comparing the
 // rest of the request.
-func (a *Activities) RegisterVest(ctx context.Context, input lt.RegisterVestInput) (*lt.RegisterVestResult, error) {
+func (a *Activities) RegisterVest(ctx context.Context, input pft.RegisterVestInput) (*pft.RegisterVestResult, error) {
 	db, err := a.Pools.For(ctx)
 	if err != nil {
 		return nil, err
@@ -28,7 +28,7 @@ func (a *Activities) RegisterVest(ctx context.Context, input lt.RegisterVestInpu
 		return nil, err
 	}
 
-	result := &lt.RegisterVestResult{}
+	result := &pft.RegisterVestResult{}
 	err = db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
 		// The lock comes first so that a concurrent identical request waits and
 		// then finds the entry, instead of racing to insert it.

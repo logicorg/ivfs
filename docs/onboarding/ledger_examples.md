@@ -215,7 +215,7 @@ PositionMovement (same DB transaction, references the JournalEntry above)
 
 - This is the one case that is **not** a plain `PostJournalEntry` call. Use
   `RegisterInvestmentTrade` (`RegisterInvestmentTradeInput` in
-  `finance/common/types/ledgertypes/trade.go`), which takes the same
+  `finance/common/types/portfoliotypes/trade.go`), which takes the same
   `PostJournalEntryInput` for the cash side plus `FinancialAccountID`,
   `AssetID`, `UnitsDelta`, and an optional cost basis, an amount together with
   its currency, and writes the posted entry, its postings, and the

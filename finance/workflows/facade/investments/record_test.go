@@ -6,6 +6,7 @@ import (
 
 	it "github.com/logicorg/ivfs/finance/common/types/investmenttypes"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	pft "github.com/logicorg/ivfs/finance/common/types/portfoliotypes"
 	portfoliowf "github.com/logicorg/ivfs/finance/workflows/ledger/portfolio"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/logicorg/ivfs/pkg/ptr"
@@ -24,7 +25,7 @@ func (s *WorkflowUnitTestSuite) TestRecordInvestment() {
 
 	tests := map[string]struct {
 		input    it.RecordInvestmentInput
-		want     lt.RegisterInvestmentTradeInput
+		want     pft.RegisterInvestmentTradeInput
 		warnings []lt.NegativeHolding
 	}{
 		"a buy with a tag, in a currency code typed in lower case": {
@@ -33,7 +34,7 @@ func (s *WorkflowUnitTestSuite) TestRecordInvestment() {
 				Amount: decimal.RequireFromString("1050.00"), Fee: decimal.RequireFromString("3.00"), CurrencyCode: " eur",
 				OccurredAt: occurredAt, Description: "monthly plan", TagIDs: []int64{5},
 			}},
-			want: lt.RegisterInvestmentTradeInput{
+			want: pft.RegisterInvestmentTradeInput{
 				Entry: lt.PostJournalEntryInput{
 					IdempotencyKey: "buy:5d0c",
 					OccurredAt:     occurredAt,
@@ -56,7 +57,7 @@ func (s *WorkflowUnitTestSuite) TestRecordInvestment() {
 				IdempotencyKey: "8e41", FinancialAccountID: ibkr, AssetID: 7, Units: decimal.NewFromInt(100),
 				Amount: decimal.NewFromInt(12000), CurrencyCode: "EUR", OccurredAt: occurredAt, TagIDs: []int64{5, 6},
 			}},
-			want: lt.RegisterInvestmentTradeInput{
+			want: pft.RegisterInvestmentTradeInput{
 				Entry: lt.PostJournalEntryInput{
 					IdempotencyKey: "sell:8e41",
 					OccurredAt:     occurredAt,
@@ -79,7 +80,7 @@ func (s *WorkflowUnitTestSuite) TestRecordInvestment() {
 			env := s.NewTestWorkflowEnvironment()
 			mockBrokerage(env)
 			env.OnWorkflow(portfoliowf.RegisterInvestmentTrade, mock.Anything, tradeInput(tc.want)).
-				Return(&lt.RegisterInvestmentTradeResult{JournalEntryID: 41, PositionMovementID: 42, Warnings: tc.warnings}, nil).Once()
+				Return(&pft.RegisterInvestmentTradeResult{JournalEntryID: 41, PositionMovementID: 42, Warnings: tc.warnings}, nil).Once()
 
 			env.ExecuteWorkflow(RecordInvestment, tc.input)
 
@@ -154,7 +155,7 @@ func (s *WorkflowUnitTestSuite) TestRecordInvestment_Vest() {
 
 	for name, tc := range tests {
 		s.Run(name, func() {
-			want := normalizeVest(lt.RegisterVestInput{
+			want := normalizeVest(pft.RegisterVestInput{
 				Entry:               lt.PostJournalEntryInput{IdempotencyKey: "vest:a71f", OccurredAt: occurredAt, Postings: tc.postings, TagIDs: tc.input.TagIDs},
 				FinancialAccountID:  ibkr,
 				AssetID:             7,
@@ -165,9 +166,9 @@ func (s *WorkflowUnitTestSuite) TestRecordInvestment_Vest() {
 			env := s.NewTestWorkflowEnvironment()
 			mockBrokerage(env)
 			mockCategories(env)
-			env.OnWorkflow(portfoliowf.RegisterVest, mock.Anything, mock.MatchedBy(func(got lt.RegisterVestInput) bool {
+			env.OnWorkflow(portfoliowf.RegisterVest, mock.Anything, mock.MatchedBy(func(got pft.RegisterVestInput) bool {
 				return assert.ObjectsAreEqual(want, normalizeVest(got))
-			})).Return(&lt.RegisterVestResult{JournalEntryID: 61, PositionMovementID: 62}, nil).Once()
+			})).Return(&pft.RegisterVestResult{JournalEntryID: 61, PositionMovementID: 62}, nil).Once()
 
 			env.ExecuteWorkflow(RecordInvestment, it.RecordInvestmentInput{Kind: it.KindVest, Vest: &tc.input})
 

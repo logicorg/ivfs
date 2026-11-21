@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 	activity "github.com/logicorg/ivfs/finance/activities/ledger/portfolio"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	pft "github.com/logicorg/ivfs/finance/common/types/portfoliotypes"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
@@ -21,7 +22,7 @@ func (s *WorkflowUnitTestSuite) TestRegisterVest() {
 	}{
 		{
 			name:   "success",
-			result: []any{&lt.RegisterVestResult{JournalEntryID: 10, PositionMovementID: 20}, nil},
+			result: []any{&pft.RegisterVestResult{JournalEntryID: 10, PositionMovementID: 20}, nil},
 		},
 		{
 			name:    "activity failure",
@@ -30,7 +31,7 @@ func (s *WorkflowUnitTestSuite) TestRegisterVest() {
 		},
 	}
 
-	input := lt.RegisterVestInput{
+	input := pft.RegisterVestInput{
 		FinancialAccountID:  1,
 		AssetID:             2,
 		Units:               decimal.NewFromInt(60),
@@ -60,7 +61,7 @@ func (s *WorkflowUnitTestSuite) TestRegisterVest() {
 				return
 			}
 			require.NoError(s.T(), env.GetWorkflowError())
-			var result *lt.RegisterVestResult
+			var result *pft.RegisterVestResult
 			require.NoError(s.T(), env.GetWorkflowResult(&result))
 			assert.Equal(s.T(), tc.result[0], result)
 		})
@@ -72,7 +73,7 @@ func (s *WorkflowUnitTestSuite) TestRegisterVest() {
 // activity is called, and that two independent executions produce two
 // different generated keys.
 func (s *WorkflowUnitTestSuite) TestRegisterVestDefaultsIdempotencyKey() {
-	input := lt.RegisterVestInput{
+	input := pft.RegisterVestInput{
 		FinancialAccountID:  1,
 		AssetID:             2,
 		Units:               decimal.NewFromInt(60),
@@ -85,10 +86,10 @@ func (s *WorkflowUnitTestSuite) TestRegisterVestDefaultsIdempotencyKey() {
 		env := s.NewTestWorkflowEnvironment()
 		pa := activity.Activities{}
 
-		env.OnActivity(pa.RegisterVest, mock.Anything, mock.MatchedBy(func(got lt.RegisterVestInput) bool {
+		env.OnActivity(pa.RegisterVest, mock.Anything, mock.MatchedBy(func(got pft.RegisterVestInput) bool {
 			generated[i] = got.Entry.IdempotencyKey
 			return true
-		})).Return(&lt.RegisterVestResult{JournalEntryID: 1, PositionMovementID: 1}, nil)
+		})).Return(&pft.RegisterVestResult{JournalEntryID: 1, PositionMovementID: 1}, nil)
 
 		env.ExecuteWorkflow(RegisterVest, input)
 		require.NoError(s.T(), env.GetWorkflowError())

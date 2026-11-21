@@ -5,14 +5,14 @@ import (
 	"fmt"
 
 	"github.com/logicorg/ivfs/finance/activities/ledger/internal/positions"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	pft "github.com/logicorg/ivfs/finance/common/types/portfoliotypes"
 	"github.com/shopspring/decimal"
 )
 
 // PositionAt returns the units of one asset held in one financial account at a
 // point in time, or now when At is zero. Movements without a journal entry
 // count, and movements of draft entries do not.
-func (a *Activities) PositionAt(ctx context.Context, params lt.PositionAtParams) (*lt.PositionAtResult, error) {
+func (a *Activities) PositionAt(ctx context.Context, params pft.PositionAtParams) (*pft.PositionAtResult, error) {
 	db, err := a.Pools.For(ctx)
 	if err != nil {
 		return nil, err
@@ -32,5 +32,5 @@ func (a *Activities) PositionAt(ctx context.Context, params lt.PositionAtParams)
 	if len(rows) > 0 {
 		units = rows[0].Units
 	}
-	return &lt.PositionAtResult{FinancialAccountID: params.FinancialAccountID, AssetID: params.AssetID, Units: units}, nil
+	return &pft.PositionAtResult{FinancialAccountID: params.FinancialAccountID, AssetID: params.AssetID, Units: units}, nil
 }

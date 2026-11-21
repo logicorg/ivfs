@@ -11,6 +11,7 @@ import (
 	ledgerportfolio "github.com/logicorg/ivfs/finance/activities/ledger/portfolio"
 	ledgerreporting "github.com/logicorg/ivfs/finance/activities/ledger/reporting"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	pft "github.com/logicorg/ivfs/finance/common/types/portfoliotypes"
 	journalwf "github.com/logicorg/ivfs/finance/workflows/ledger/journal"
 	portfoliowf "github.com/logicorg/ivfs/finance/workflows/ledger/portfolio"
 	reportingwf "github.com/logicorg/ivfs/finance/workflows/ledger/reporting"
@@ -123,8 +124,8 @@ func credit(account *model.LedgerAccount, amount int64) lt.PostingInput {
 
 // vest is a vest of 100 units worth 10 each, all delivered to the account, that
 // books their 1000 as income.
-func (s *UnitTestSuite) vest(key string) lt.RegisterVestInput {
-	return lt.RegisterVestInput{
+func (s *UnitTestSuite) vest(key string) pft.RegisterVestInput {
+	return pft.RegisterVestInput{
 		FinancialAccountID:  s.financialAccount.ID,
 		AssetID:             s.asset.ID,
 		Units:               decimal.NewFromInt(100),
@@ -141,8 +142,8 @@ func (s *UnitTestSuite) vest(key string) lt.RegisterVestInput {
 // sellToCover sells 50 of the units at 10 each, an hour after the vest. 400 of
 // the 500 proceeds pay the tax and 100 reach the broker cash account, and the
 // 500 of cost basis removed is credited to the holding.
-func (s *UnitTestSuite) sellToCover(key string) lt.RegisterInvestmentTradeInput {
-	return lt.RegisterInvestmentTradeInput{
+func (s *UnitTestSuite) sellToCover(key string) pft.RegisterInvestmentTradeInput {
+	return pft.RegisterInvestmentTradeInput{
 		FinancialAccountID:  s.financialAccount.ID,
 		AssetID:             s.asset.ID,
 		UnitsDelta:          decimal.NewFromInt(-50),
@@ -167,16 +168,16 @@ func (s *UnitTestSuite) balance(account *model.LedgerAccount) decimal.Decimal {
 func (s *UnitTestSuite) unitsHeld() decimal.Decimal {
 	s.T().Helper()
 
-	var result lt.PositionAtResult
-	s.runWorkflow(portfoliowf.PositionAt, lt.PositionAtParams{FinancialAccountID: s.financialAccount.ID, AssetID: s.asset.ID}, &result)
+	var result pft.PositionAtResult
+	s.runWorkflow(portfoliowf.PositionAt, pft.PositionAtParams{FinancialAccountID: s.financialAccount.ID, AssetID: s.asset.ID}, &result)
 	return result.Units
 }
 
 func (s *UnitTestSuite) history() []model.PositionMovement {
 	s.T().Helper()
 
-	var result lt.ListPositionMovementsResult
-	s.runWorkflow(portfoliowf.ListPositionMovements, lt.ListPositionMovementsParams{FinancialAccountID: s.financialAccount.ID, AssetID: s.asset.ID}, &result)
+	var result pft.ListPositionMovementsResult
+	s.runWorkflow(portfoliowf.ListPositionMovements, pft.ListPositionMovementsParams{FinancialAccountID: s.financialAccount.ID, AssetID: s.asset.ID}, &result)
 	return result.Movements
 }
 
@@ -227,7 +228,7 @@ func (s *UnitTestSuite) Test_VestWithSellToCover() {
 // checks that the units, the cost basis, the discount, and the cash paid can all
 // be read back.
 func (s *UnitTestSuite) Test_EsppPurchase() {
-	purchase := lt.RegisterInvestmentTradeInput{
+	purchase := pft.RegisterInvestmentTradeInput{
 		FinancialAccountID:  s.financialAccount.ID,
 		AssetID:             s.asset.ID,
 		UnitsDelta:          decimal.NewFromInt(10),
@@ -250,9 +251,9 @@ func (s *UnitTestSuite) Test_EsppPurchase() {
 
 // Test_CorrectAVest checks that a vest is corrected by deleting its entry.
 func (s *UnitTestSuite) Test_CorrectAVest() {
-	var vest lt.RegisterVestResult
+	var vest pft.RegisterVestResult
 	s.runWorkflow(portfoliowf.RegisterVest, s.vest("acme-rsu-2026-03-01"), &vest)
-	var sale lt.RegisterInvestmentTradeResult
+	var sale pft.RegisterInvestmentTradeResult
 	s.runWorkflow(portfoliowf.RegisterInvestmentTrade, s.sellToCover("acme-rsu-2026-03-01-cover"), &sale)
 
 	res := new(lt.DeleteJournalEntryResult)
