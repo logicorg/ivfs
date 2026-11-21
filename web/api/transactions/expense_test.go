@@ -25,6 +25,8 @@ func TestRecordExpense(t *testing.T) {
 	}
 	withNote := groceries
 	withNote.Description = "weekly shop"
+	withTags := groceries
+	withTags.TagIDs = []int64{3, 4}
 	record := func(params tt.RecordExpenseInput, err error) *apitest.WorkflowCall {
 		call := &apitest.WorkflowCall{Workflow: transactionswf.RecordExpense, Params: params, Err: err}
 		if err == nil {
@@ -42,6 +44,11 @@ func TestRecordExpense(t *testing.T) {
 		"with a note": {
 			Method: http.MethodPost, Path: "/api/transactions/expenses", Body: form + `,"description":"weekly shop"}`,
 			Call:       record(withNote, nil),
+			WantStatus: http.StatusOK, WantBody: `{"journalEntryId":42}`,
+		},
+		"with tags": {
+			Method: http.MethodPost, Path: "/api/transactions/expenses", Body: form + `,"tagIds":[3,4]}`,
+			Call:       record(withTags, nil),
 			WantStatus: http.StatusOK, WantBody: `{"journalEntryId":42}`,
 		},
 		"a category of the wrong kind": {

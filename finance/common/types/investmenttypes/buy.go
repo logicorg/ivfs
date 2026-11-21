@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"cuelang.org/go/cuego"
+	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	errs "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/shopspring/decimal"
 )
@@ -22,6 +23,7 @@ type BuyAssetInput struct {
 	CurrencyCode string          `json:"currencyCode" cue:"!~\"^[[:space:]]*$\"" jsonschema:"the currency paid in, an ISO 4217 code such as EUR"`
 	OccurredAt   time.Time       `json:"occurredAt" jsonschema:"the instant of the buy, such as 2026-10-03T10:00:00Z"`
 	Description  string          `json:"description,omitempty" jsonschema:"a note"`
+	TagIDs       []int64         `json:"tagIds,omitempty" jsonschema:"the tags of the entry, each taken once"`
 }
 
 // Validate checks the input against its CUE constraints and its date.
@@ -34,5 +36,8 @@ func (i *BuyAssetInput) Validate() error {
 
 // rules checks what CUE cannot, for a buy recorded or updated to.
 func (i *BuyAssetInput) rules() error {
-	return validateOccurredAt(i.OccurredAt)
+	if err := validateOccurredAt(i.OccurredAt); err != nil {
+		return err
+	}
+	return lt.ValidateTagIDs(i.TagIDs)
 }

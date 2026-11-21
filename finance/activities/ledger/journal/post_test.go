@@ -159,7 +159,10 @@ func (s *UnitTestSuite) TestPostJournalEntry_Idempotency() {
 	temporaltesting.Insert(s.T(), s.DB, euro)
 	debitAccount := testLedgerAccount(s.T(), s.DB, euro.ID, "cash", model.LedgerAccountAsset)
 	creditAccount := testLedgerAccount(s.T(), s.DB, euro.ID, "offset", model.LedgerAccountExpense)
-	input := lt.PostJournalEntryInput{IdempotencyKey: "same-entry", OccurredAt: time.Now().UTC(), Postings: []lt.PostingInput{
+	tagged, other := &model.Tag{Name: "vacation"}, &model.Tag{Name: "reimbursable"}
+	temporaltesting.Insert(s.T(), s.DB, tagged)
+	temporaltesting.Insert(s.T(), s.DB, other)
+	input := lt.PostJournalEntryInput{IdempotencyKey: "same-entry", OccurredAt: time.Now().UTC(), TagIDs: []int64{tagged.ID}, Postings: []lt.PostingInput{
 		{LedgerAccountID: debitAccount.ID, Amount: decimal.NewFromInt(10), Side: model.PostingDebit},
 		{LedgerAccountID: creditAccount.ID, Amount: decimal.NewFromInt(10), Side: model.PostingCredit},
 	}}
@@ -167,6 +170,8 @@ func (s *UnitTestSuite) TestPostJournalEntry_Idempotency() {
 	require.NoError(s.T(), err)
 	var firstResult lt.PostJournalEntryResult
 	require.NoError(s.T(), first.Get(&firstResult))
+	// A retry returns the entry as it was posted, so other tags are ignored.
+	input.TagIDs = []int64{other.ID}
 	second, err := s.Env.ExecuteActivity(s.ja.PostJournalEntry, input)
 	require.NoError(s.T(), err)
 	var secondResult lt.PostJournalEntryResult
@@ -174,6 +179,8 @@ func (s *UnitTestSuite) TestPostJournalEntry_Idempotency() {
 	require.Equal(s.T(), firstResult.JournalEntryID, secondResult.JournalEntryID)
 
 	require.Equal(s.T(), 1, s.CountWhere[model.JournalEntry]("idempotency_key = ?", input.IdempotencyKey))
+	require.Equal(s.T(), 1, s.CountWhere[model.JournalEntryTag]("journal_entry_id = ? AND tag_id = ?", firstResult.JournalEntryID, tagged.ID))
+	require.Equal(s.T(), 1, s.Count[model.JournalEntryTag]())
 }
 
 func (s *UnitTestSuite) TestPostJournalEntry_CurrencyBalancing() {

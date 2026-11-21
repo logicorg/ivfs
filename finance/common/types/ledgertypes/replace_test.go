@@ -37,6 +37,8 @@ func TestReplaceJournalEntryInput_Validate(t *testing.T) {
 		"a cost basis with its currency": {mutate: func(i *ReplaceJournalEntryInput) {
 			i.Movements[0].CostBasisAmount, i.Movements[0].CostBasisCurrencyID = ptr.NewPtr(decimal.NewFromInt(30)), ptr.Int64(1)
 		}},
+		"tags":              {mutate: func(i *ReplaceJournalEntryInput) { i.TagIDs = []int64{1, 2, 1} }},
+		"a tag id of zero":  {wantErr: true, mutate: func(i *ReplaceJournalEntryInput) { i.TagIDs = []int64{1, 0} }},
 		"no entry":          {wantErr: true, mutate: func(i *ReplaceJournalEntryInput) { i.JournalEntryID = 0 }},
 		"negative entry":    {wantErr: true, mutate: func(i *ReplaceJournalEntryInput) { i.JournalEntryID = -1 }},
 		"no date":           {wantErr: true, mutate: func(i *ReplaceJournalEntryInput) { i.OccurredAt = time.Time{} }},

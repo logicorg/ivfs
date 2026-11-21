@@ -2,6 +2,7 @@ package investments
 
 import (
 	"errors"
+	"slices"
 	"time"
 
 	it "github.com/logicorg/ivfs/finance/common/types/investmenttypes"
@@ -25,7 +26,8 @@ func replacement(want lt.ReplaceJournalEntryInput) any {
 	return mock.MatchedBy(func(got lt.ReplaceJournalEntryInput) bool {
 		if got.JournalEntryID != want.JournalEntryID || !got.OccurredAt.Equal(want.OccurredAt) ||
 			!sameString(got.Description, want.Description) || len(got.Metadata) != 0 ||
-			len(got.Postings) != len(want.Postings) || len(got.Movements) != len(want.Movements) {
+			len(got.Postings) != len(want.Postings) || len(got.Movements) != len(want.Movements) ||
+			!slices.Equal(got.TagIDs, want.TagIDs) {
 			return false
 		}
 		for i, posting := range want.Postings {
@@ -59,14 +61,14 @@ func (s *WorkflowUnitTestSuite) TestUpdateInvestment() {
 		warnings []lt.NegativeHolding
 	}{
 		{
-			name: "a buy, in a currency code typed in lower case",
+			name: "a buy with a tag, in a currency code typed in lower case",
 			input: it.UpdateInvestmentInput{JournalEntryID: 41, Kind: it.KindBuy, Buy: &it.UpdateBuyInput{
 				FinancialAccountID: ibkr, AssetID: 7, Units: decimal.NewFromInt(10),
 				Amount: decimal.RequireFromString("1050.00"), Fee: decimal.RequireFromString("3.00"), CurrencyCode: " eur",
-				OccurredAt: occurredAt, Description: "monthly plan",
+				OccurredAt: occurredAt, Description: "monthly plan", TagIDs: []int64{5},
 			}},
 			want: lt.ReplaceJournalEntryInput{
-				JournalEntryID: 41, OccurredAt: occurredAt, Description: ptr.NewPtr("monthly plan"),
+				JournalEntryID: 41, OccurredAt: occurredAt, Description: ptr.NewPtr("monthly plan"), TagIDs: []int64{5},
 				Postings: []lt.PostingInput{
 					{LedgerAccountID: investments.ID, Amount: decimal.NewFromInt(1053), Side: model.PostingDebit},
 					{LedgerAccountID: cash.ID, Amount: decimal.NewFromInt(1053), Side: model.PostingCredit},
@@ -96,15 +98,15 @@ func (s *WorkflowUnitTestSuite) TestUpdateInvestment() {
 			warnings: []lt.NegativeHolding{{FinancialAccountID: ibkr, AssetID: 7, At: occurredAt, Units: decimal.NewFromInt(-90)}},
 		},
 		{
-			name: "a vest with units withheld, lowered below what was sold since",
+			name: "a vest with a tag and units withheld, lowered below what was sold since",
 			input: it.UpdateInvestmentInput{JournalEntryID: 41, Kind: it.KindVest, Vest: &it.UpdateVestInput{
 				FinancialAccountID: ibkr, AssetID: 7,
 				UnitsVested: decimal.NewFromInt(100), UnitsWithheld: decimal.NewFromInt(40), FairMarketValue: decimal.RequireFromString("10.00"),
 				CurrencyCode: "eur", IncomeCategoryID: compensation.ID, TaxCategoryID: taxWithheld.ID,
-				OccurredAt: occurredAt,
+				OccurredAt: occurredAt, TagIDs: []int64{5},
 			}},
 			want: lt.ReplaceJournalEntryInput{
-				JournalEntryID: 41, OccurredAt: occurredAt,
+				JournalEntryID: 41, OccurredAt: occurredAt, TagIDs: []int64{5},
 				Postings: []lt.PostingInput{
 					{LedgerAccountID: investments.ID, Amount: decimal.NewFromInt(600), Side: model.PostingDebit},
 					{LedgerAccountID: expenses.ID, Amount: decimal.NewFromInt(400), Side: model.PostingDebit, CategoryID: ptr.NewPtr(taxWithheld.ID)},

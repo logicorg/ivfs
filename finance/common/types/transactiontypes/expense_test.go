@@ -22,6 +22,8 @@ func TestRecordExpenseInput_Validate(t *testing.T) {
 	}{
 		"an expense":              {mutate: func(*RecordExpenseInput) {}},
 		"an expense with a note":  {mutate: func(i *RecordExpenseInput) { i.Description = "Esselunga" }},
+		"with tags":               {mutate: func(i *RecordExpenseInput) { i.TagIDs = []int64{3, 4} }},
+		"a tag id of zero":        {mutate: func(i *RecordExpenseInput) { i.TagIDs = []int64{3, 0} }, wantError: "tag id 0"},
 		"a blank idempotency key": {mutate: func(i *RecordExpenseInput) { i.IdempotencyKey = " " }, wantError: "validation error"},
 		"no balance":              {mutate: func(i *RecordExpenseInput) { i.BalanceLedgerAccountID = 0 }, wantError: "validation error"},
 		"no category":             {mutate: func(i *RecordExpenseInput) { i.CategoryID = 0 }, wantError: "validation error"},

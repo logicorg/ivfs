@@ -1,5 +1,5 @@
 // Package journal is the web API's journal entry endpoints: an account's
-// statement, an entry's detail, and its deletion.
+// statement, an entry's detail, its deletion, and its tags.
 package journal
 
 import (
@@ -14,4 +14,5 @@ func Register(api huma.API, c client.Client) {
 	registerList(api, c)
 	registerRetrieve(api, c)
 	registerDelete(api, c)
+	registerSetTags(api, c)
 }

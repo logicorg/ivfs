@@ -1,6 +1,7 @@
 package ledgertypes
 
 import (
+	"fmt"
 	"slices"
 	"time"
 
@@ -28,6 +29,8 @@ type PostJournalEntryInput struct {
 	ExternalID     *string           `json:"externalId,omitempty"`
 	Metadata       map[string]string `json:"metadata,omitempty"`
 	Postings       []PostingInput    `json:"postings"`
+	// TagIDs are the tags of the entry, each taken once.
+	TagIDs []int64 `json:"tagIds,omitempty"`
 }
 
 // Validate performs some basic validation checks on a PostJournalEntryInput
@@ -45,6 +48,17 @@ func (pi *PostJournalEntryInput) Validate() error {
 		}
 	}
 
+	return ValidateTagIDs(pi.TagIDs)
+}
+
+// ValidateTagIDs refuses a tag id that cannot be one. Whether the tag exists
+// is for the database to say.
+func ValidateTagIDs(ids []int64) error {
+	for _, id := range ids {
+		if id <= 0 {
+			return internalerrors.ErrInvalidParameter{Description: fmt.Sprintf("tag id %d is not a tag's: an id is greater than 0", id)}
+		}
+	}
 	return nil
 }
 

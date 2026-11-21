@@ -34,6 +34,7 @@ type UpdateBuyInput struct {
 	CurrencyCode string          `json:"currencyCode" cue:"!~\"^[[:space:]]*$\"" jsonschema:"the currency paid in, an ISO 4217 code such as EUR"`
 	OccurredAt   time.Time       `json:"occurredAt" jsonschema:"the instant of the buy, such as 2026-10-03T10:00:00Z"`
 	Description  string          `json:"description,omitempty" jsonschema:"a note"`
+	TagIDs       []int64         `json:"tagIds,omitempty" jsonschema:"the tags of the entry, each taken once"`
 }
 
 // UpdateSellInput is the facts of a sale, as SellAssetInput has them.
@@ -48,6 +49,7 @@ type UpdateSellInput struct {
 	CurrencyCode string          `json:"currencyCode" cue:"!~\"^[[:space:]]*$\"" jsonschema:"the currency received, an ISO 4217 code such as EUR"`
 	OccurredAt   time.Time       `json:"occurredAt" jsonschema:"the instant of the sale, such as 2026-10-03T10:00:00Z"`
 	Description  string          `json:"description,omitempty" jsonschema:"a note"`
+	TagIDs       []int64         `json:"tagIds,omitempty" jsonschema:"the tags of the entry, each taken once"`
 }
 
 // UpdateVestInput is the facts of a vest, as VestInput has them.
@@ -67,6 +69,7 @@ type UpdateVestInput struct {
 	TaxCategoryID    int64     `json:"taxCategoryId,omitzero" cue:">=0" jsonschema:"the expense category the withheld units are booked to, such as Tax withheld; required when units are withheld"`
 	OccurredAt       time.Time `json:"occurredAt" jsonschema:"the instant of the vest, such as 2026-10-03T10:00:00Z"`
 	Description      string    `json:"description,omitempty" jsonschema:"a note"`
+	TagIDs           []int64   `json:"tagIds,omitempty" jsonschema:"the tags of the entry, each taken once"`
 }
 
 // Validate checks the entry's id, that the kind is known, that its facts and
@@ -125,6 +128,7 @@ func (i *UpdateBuyInput) Buy() *BuyAssetInput {
 		CurrencyCode:       i.CurrencyCode,
 		OccurredAt:         i.OccurredAt,
 		Description:        i.Description,
+		TagIDs:             i.TagIDs,
 	}
 }
 
@@ -140,6 +144,7 @@ func (i *UpdateSellInput) Sell() *SellAssetInput {
 		CurrencyCode:       i.CurrencyCode,
 		OccurredAt:         i.OccurredAt,
 		Description:        i.Description,
+		TagIDs:             i.TagIDs,
 	}
 }
 
@@ -157,5 +162,6 @@ func (i *UpdateVestInput) Vest() *VestInput {
 		TaxCategoryID:      i.TaxCategoryID,
 		OccurredAt:         i.OccurredAt,
 		Description:        i.Description,
+		TagIDs:             i.TagIDs,
 	}
 }

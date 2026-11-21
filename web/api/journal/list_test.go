@@ -43,10 +43,10 @@ func TestList(t *testing.T) {
 	}
 	shoppingBody := `{"id":7,"occurredAt":"2026-01-31T10:00:00Z","description":"Supermarket","externalId":"bank-42","status":"posted","postings":[` +
 		`{"lineNumber":1,"ledgerAccountId":200,"ledgerAccountName":"Groceries","kind":"expense","currencyId":1,"amount":"12345678901234.56","side":"debit","categoryId":40,"categoryName":"Food"},` +
-		`{"lineNumber":2,"ledgerAccountId":100,"ledgerAccountName":"Cash","kind":"asset","currencyId":1,"amount":"12345678901234.56","side":"credit"}]}`
+		`{"lineNumber":2,"ledgerAccountId":100,"ledgerAccountName":"Cash","kind":"asset","currencyId":1,"amount":"12345678901234.56","side":"credit"}],"tags":[]}`
 	refundBody := `{"id":8,"occurredAt":"2026-01-31T11:00:00Z","status":"posted","postings":[` +
 		`{"lineNumber":1,"ledgerAccountId":200,"ledgerAccountName":"Groceries","kind":"expense","currencyId":1,"amount":"1.5","side":"credit"},` +
-		`{"lineNumber":2,"ledgerAccountId":100,"ledgerAccountName":"Cash","kind":"asset","currencyId":1,"amount":"1.5","side":"debit"}]}`
+		`{"lineNumber":2,"ledgerAccountId":100,"ledgerAccountName":"Cash","kind":"asset","currencyId":1,"amount":"1.5","side":"debit"}],"tags":[]}`
 
 	apitest.RunCases(t, Register, map[string]apitest.Case{
 		"an account's posted entries, newest first": {

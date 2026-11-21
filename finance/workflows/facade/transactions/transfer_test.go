@@ -2,6 +2,7 @@ package transactions
 
 import (
 	"errors"
+	"slices"
 	"time"
 
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
@@ -40,7 +41,8 @@ func conversion(want lt.RegisterFXConversionInput) any {
 			got.SourceAmount.Equal(want.SourceAmount) &&
 			got.DestinationLedgerAccountID == want.DestinationLedgerAccountID &&
 			got.DestinationClearingLedgerAccountID == want.DestinationClearingLedgerAccountID &&
-			got.DestinationAmount.Equal(want.DestinationAmount)
+			got.DestinationAmount.Equal(want.DestinationAmount) &&
+			slices.Equal(got.TagIDs, want.TagIDs)
 	})
 }
 
@@ -57,16 +59,18 @@ func (s *WorkflowUnitTestSuite) TestRecordTransfer() {
 		// mock mocks the child workflow that posts, returning entry 42.
 		mock func(env *testsuite.TestWorkflowEnvironment)
 	}{
-		"paying the card off from cash, with a note": {
+		"paying the card off from cash, with a note and a tag": {
 			input: tt.RecordTransferInput{
 				IdempotencyKey: "9c1e", FromLedgerAccountID: cash.ID, ToLedgerAccountID: cardBalance.ID,
 				Amount: decimal.RequireFromString("300.50"), OccurredAt: occurredAt, Description: "pay the card off",
+				TagIDs: []int64{5},
 			},
 			mock: func(env *testsuite.TestWorkflowEnvironment) {
 				env.OnWorkflow(journalwf.PostJournalEntry, mock.Anything, entry(lt.PostJournalEntryInput{
 					IdempotencyKey: "transfer:9c1e",
 					OccurredAt:     occurredAt,
 					Description:    ptr.NewPtr("pay the card off"),
+					TagIDs:         []int64{5},
 					Postings: []lt.PostingInput{
 						{LedgerAccountID: cardBalance.ID, Amount: decimal.RequireFromString("300.50"), Side: model.PostingDebit},
 						{LedgerAccountID: cash.ID, Amount: decimal.RequireFromString("300.50"), Side: model.PostingCredit},
@@ -90,17 +94,18 @@ func (s *WorkflowUnitTestSuite) TestRecordTransfer() {
 				})).Return(&lt.PostJournalEntryResult{JournalEntryID: 42}, nil).Once()
 			},
 		},
-		"from euros to dollars, with a note": {
+		"from euros to dollars, with a note and a tag": {
 			input: tt.RecordTransferInput{
 				IdempotencyKey: "9c1e", FromLedgerAccountID: cash.ID, ToLedgerAccountID: cashUSD.ID,
 				Amount: decimal.RequireFromString("300.50"), ToAmount: decimal.RequireFromString("324.15"), OccurredAt: occurredAt,
-				Description: "dollars for the trip",
+				Description: "dollars for the trip", TagIDs: []int64{5},
 			},
 			mock: func(env *testsuite.TestWorkflowEnvironment) {
 				env.OnWorkflow(ledgerfxwf.RegisterFXConversion, mock.Anything, conversion(lt.RegisterFXConversionInput{
 					IdempotencyKey:                     "transfer:9c1e",
 					OccurredAt:                         occurredAt,
 					Description:                        ptr.NewPtr("dollars for the trip"),
+					TagIDs:                             []int64{5},
 					SourceLedgerAccountID:              cash.ID,
 					SourceClearingLedgerAccountID:      fxClearing.ID,
 					SourceAmount:                       decimal.RequireFromString("300.50"),

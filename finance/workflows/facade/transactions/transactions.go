@@ -32,6 +32,7 @@ type movement struct {
 	amount                   decimal.Decimal
 	occurredAt               time.Time
 	description              string
+	tagIDs                   []int64
 }
 
 // retrieveLedgerAccounts retrieves the given ledger accounts concurrently.
@@ -92,6 +93,7 @@ func (m movement) entry() lt.PostJournalEntryInput {
 	input := lt.PostJournalEntryInput{
 		IdempotencyKey: m.kind + ":" + m.idempotencyKey,
 		OccurredAt:     m.occurredAt,
+		TagIDs:         m.tagIDs,
 		Postings: []lt.PostingInput{
 			{LedgerAccountID: m.to, Amount: m.amount, Side: model.PostingDebit, CategoryID: categoryOf(m.toCategory)},
 			{LedgerAccountID: m.from, Amount: m.amount, Side: model.PostingCredit, CategoryID: categoryOf(m.fromCategory)},
@@ -122,7 +124,7 @@ func post(ctx workflow.Context, m movement) (*tt.RecordResult, error) {
 }
 
 // replace makes the journal entry what entry states: its date, description,
-// metadata, and postings, with no position movements. The entry keeps its own
+// metadata, postings, and tags, with no position movements. The entry keeps its own
 // key, so the one in entry is not used. An unknown entry, or an account it may
 // not move onto, fails here, inside the transaction that replaces.
 func replace(ctx workflow.Context, journalEntryID int64, kind string, entry lt.PostJournalEntryInput) (*tt.UpdateResult, error) {
@@ -132,6 +134,7 @@ func replace(ctx workflow.Context, journalEntryID int64, kind string, entry lt.P
 		Description:    entry.Description,
 		Metadata:       entry.Metadata,
 		Postings:       entry.Postings,
+		TagIDs:         entry.TagIDs,
 	}
 
 	var result lt.ReplaceJournalEntryResult

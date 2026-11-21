@@ -39,6 +39,7 @@ func registerVest(api huma.API, c client.Client) {
 				TaxCategoryID:      in.Body.TaxCategoryID,
 				OccurredAt:         in.Body.OccurredAt,
 				Description:        in.Body.Description,
+				TagIDs:             in.Body.TagIDs,
 			},
 		})
 		if err != nil {

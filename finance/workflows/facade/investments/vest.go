@@ -67,6 +67,7 @@ func buildVest(in *it.VestInput, b *brokerage, c *vestCategories) lt.RegisterVes
 			IdempotencyKey: string(it.KindVest) + ":" + in.IdempotencyKey,
 			OccurredAt:     in.OccurredAt,
 			Postings:       postings,
+			TagIDs:         in.TagIDs,
 		},
 		FinancialAccountID:  in.FinancialAccountID,
 		AssetID:             in.AssetID,

@@ -21,6 +21,8 @@ type ReplaceJournalEntryInput struct {
 	// Movements are the units the entry moves, and none for an entry that is
 	// not a trade or a vest.
 	Movements []ReplaceMovementInput `json:"movements,omitempty"`
+	// TagIDs replace the tags of the entry, and none clears them.
+	TagIDs []int64 `json:"tagIds,omitempty"`
 }
 
 // ReplaceMovementInput is one position movement of a replaced entry. It takes
@@ -48,7 +50,7 @@ type ReplaceJournalEntryResult struct {
 // Entry returns the replaced fields as the input of a posting. The fields a
 // replace keeps are left empty.
 func (i *ReplaceJournalEntryInput) Entry() PostJournalEntryInput {
-	return PostJournalEntryInput{OccurredAt: i.OccurredAt, Description: i.Description, Metadata: i.Metadata, Postings: i.Postings}
+	return PostJournalEntryInput{OccurredAt: i.OccurredAt, Description: i.Description, Metadata: i.Metadata, Postings: i.Postings, TagIDs: i.TagIDs}
 }
 
 // Validate checks the command without the database: the entry as a posting

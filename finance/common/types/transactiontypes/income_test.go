@@ -22,6 +22,8 @@ func TestRecordIncomeInput_Validate(t *testing.T) {
 	}{
 		"an income":               {mutate: func(*RecordIncomeInput) {}},
 		"an income with a note":   {mutate: func(i *RecordIncomeInput) { i.Description = "October salary" }},
+		"with tags":               {mutate: func(i *RecordIncomeInput) { i.TagIDs = []int64{3, 4} }},
+		"a tag id of zero":        {mutate: func(i *RecordIncomeInput) { i.TagIDs = []int64{3, 0} }, wantError: "tag id 0"},
 		"a blank idempotency key": {mutate: func(i *RecordIncomeInput) { i.IdempotencyKey = "" }, wantError: "validation error"},
 		"no balance":              {mutate: func(i *RecordIncomeInput) { i.BalanceLedgerAccountID = 0 }, wantError: "validation error"},
 		"no category":             {mutate: func(i *RecordIncomeInput) { i.CategoryID = -1 }, wantError: "validation error"},

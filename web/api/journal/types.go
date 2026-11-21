@@ -26,14 +26,22 @@ type Posting struct {
 	CategoryName string `json:"categoryName,omitempty"`
 }
 
-// Entry is a journal entry with its postings, in line order.
+// EntryTag is a tag of a journal entry.
+type EntryTag struct {
+	ID   int64  `json:"id"`
+	Name string `json:"name"`
+}
+
+// Entry is a journal entry with its postings, in line order, and its tags, by
+// name.
 type Entry struct {
-	ID          int64     `json:"id"`
-	OccurredAt  time.Time `json:"occurredAt"`
-	Description string    `json:"description,omitempty"`
-	ExternalID  string    `json:"externalId,omitempty"`
-	Status      string    `json:"status" enum:"draft,posted"`
-	Postings    []Posting `json:"postings"`
+	ID          int64      `json:"id"`
+	OccurredAt  time.Time  `json:"occurredAt"`
+	Description string     `json:"description,omitempty"`
+	ExternalID  string     `json:"externalId,omitempty"`
+	Status      string     `json:"status" enum:"draft,posted"`
+	Postings    []Posting  `json:"postings"`
+	Tags        []EntryTag `json:"tags"`
 }
 
 // EntryPage is one page of journal entries.
@@ -98,7 +106,10 @@ type DeleteJournalEntryOutput struct {
 func newEntry(entry *model.JournalEntry) (Entry, error) {
 	out := Entry{
 		ID: entry.ID, OccurredAt: entry.OccurredAt, Status: string(entry.Status),
-		Postings: make([]Posting, 0, len(entry.Postings)),
+		Postings: make([]Posting, 0, len(entry.Postings)), Tags: make([]EntryTag, 0, len(entry.Tags)),
+	}
+	for _, tag := range entry.Tags {
+		out.Tags = append(out.Tags, EntryTag{ID: tag.ID, Name: tag.Name})
 	}
 	if entry.Description != nil {
 		out.Description = *entry.Description
@@ -124,4 +135,27 @@ func newEntry(entry *model.JournalEntry) (Entry, error) {
 		out.Postings = append(out.Postings, line)
 	}
 	return out, nil
+}
+
+// EntryTagsForm is the whole set of tags an entry is to have.
+type EntryTagsForm struct {
+	TagIDs []int64 `json:"tagIds" doc:"the tags of the entry, replacing those it has; a repeated id counts once, and none clears them"`
+}
+
+// EntryTagIDs is the set of tags an entry has after a change.
+type EntryTagIDs struct {
+	TagIDs []int64 `json:"tagIds" doc:"the tags of the entry, each once, in ascending order"`
+}
+
+// SetJournalEntryTagsInput is the request of PUT
+// /api/journal-entries/{id}/tags.
+type SetJournalEntryTagsInput struct {
+	ID   int64 `path:"id" minimum:"1"`
+	Body EntryTagsForm
+}
+
+// SetJournalEntryTagsOutput is the response of PUT
+// /api/journal-entries/{id}/tags.
+type SetJournalEntryTagsOutput struct {
+	Body EntryTagIDs
 }

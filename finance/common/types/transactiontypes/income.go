@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"cuelang.org/go/cuego"
+	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	errs "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/shopspring/decimal"
 )
@@ -18,12 +19,17 @@ type RecordIncomeInput struct {
 	Amount      decimal.Decimal `json:"amount" cue:"!=\"0\" & !~\"^-\"" jsonschema:"the amount received, positive"`
 	OccurredAt  time.Time       `json:"occurredAt" jsonschema:"the instant it arrived, such as 2026-10-03T10:00:00Z"`
 	Description string          `json:"description,omitempty" jsonschema:"a note, such as the payer's name"`
+	TagIDs      []int64         `json:"tagIds,omitempty" jsonschema:"the tags of the entry, each taken once"`
 }
 
-// Validate checks the input against its CUE constraints and its date.
+// Validate checks the input against its CUE constraints, its date, and its
+// tag ids.
 func (i *RecordIncomeInput) Validate() error {
 	if err := cuego.Validate(i); err != nil {
 		return errs.ValidationError{Err: err}
 	}
-	return validateOccurredAt(i.OccurredAt)
+	if err := validateOccurredAt(i.OccurredAt); err != nil {
+		return err
+	}
+	return lt.ValidateTagIDs(i.TagIDs)
 }

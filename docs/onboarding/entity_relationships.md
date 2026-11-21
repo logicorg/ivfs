@@ -244,7 +244,8 @@ erDiagram
 rate) are reference data for valuation. No posting or movement refers to them.
 
 `Tag` is left out of every diagram: it is flat reference data with a unique
-`name` and no reference to or from any other entity yet.
+`name`. `JournalEntryTag` links a tag to a journal entry, and is deleted with
+either of them (ADR 0021).
 
 ## Uniqueness today
 
@@ -260,6 +261,7 @@ These are all the uniqueness rules the database enforces:
 | `JournalEntry` | `idempotency_key`, when present |
 | `Posting` | `(journal_entry_id, line_number)` |
 | `PositionMovement` | `(idempotency_key, line_number)` |
+| `JournalEntryTag` | `(journal_entry_id, tag_id)` |
 
 `FinancialAccount`, `LedgerAccount`, `AssetValue`, and `Conversion` have no
 uniqueness rule beyond their ID.

@@ -28,6 +28,7 @@ func registerExpense(api huma.API, c client.Client) {
 			Amount:                 in.Body.Amount.Decimal,
 			OccurredAt:             in.Body.OccurredAt,
 			Description:            in.Body.Description,
+			TagIDs:                 in.Body.TagIDs,
 		})
 		if err != nil {
 			return nil, err

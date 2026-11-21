@@ -27,9 +27,10 @@ func (s *WorkflowUnitTestSuite) TestUpdateIncome() {
 		name        string
 		balance     *model.LedgerAccount
 		description string
+		tags        []int64
 		warnings    []lt.NegativeHolding
 	}{
-		{name: "a cashback onto the card, with a note", balance: cardBalance, description: "October salary"},
+		{name: "a cashback onto the card, with a note and a tag", balance: cardBalance, description: "October salary", tags: []int64{5}},
 		{name: "a salary into cash, without a note", balance: cash},
 		{name: "an entry that was a trade", balance: cash, warnings: soldSince},
 	}
@@ -50,12 +51,14 @@ func (s *WorkflowUnitTestSuite) TestUpdateIncome() {
 			if tc.description != "" {
 				want.Description = ptr.NewPtr(tc.description)
 			}
+			want.TagIDs = tc.tags
 			env.OnWorkflow(journalwf.ReplaceJournalEntry, mock.Anything, replacement(want)).
 				Return(&lt.ReplaceJournalEntryResult{JournalEntryID: 41, Warnings: tc.warnings}, nil).Once()
 
 			env.ExecuteWorkflow(UpdateIncome, tt.UpdateIncomeInput{
 				JournalEntryID: 41, BalanceLedgerAccountID: tc.balance.ID, CategoryID: salary.ID,
 				Amount: decimal.RequireFromString("12.50"), OccurredAt: occurredAt, Description: tc.description,
+				TagIDs: tc.tags,
 			})
 
 			require.NoError(s.T(), env.GetWorkflowError())

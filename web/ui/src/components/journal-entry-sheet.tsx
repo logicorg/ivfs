@@ -7,8 +7,10 @@ import {
   deleteJournalEntryMutation,
   getJournalEntryOptions,
   listCurrenciesOptions,
+  setJournalEntryTagsMutation,
 } from "@/api/@tanstack/react-query.gen"
 import { ProblemMessages } from "@/components/form-fields"
+import { TagPicker } from "@/components/tag-picker"
 import { NegativeHoldingWarnings } from "@/components/negative-holding-warnings"
 import {
   AlertDialog,
@@ -34,7 +36,8 @@ type JournalEntrySheetProps = {
   onSelect: (entryId: number | undefined) => void
 }
 
-// JournalEntrySheet shows a journal entry with its postings, and deletes it.
+// JournalEntrySheet shows a journal entry with its postings, changes its tags,
+// and deletes it.
 export function JournalEntrySheet({ entryId, onSelect }: JournalEntrySheetProps) {
   // deleted is the entry just deleted along with the holdings that deletion left
   // negative, shown in place of the entry while the sheet still shows its id.
@@ -117,6 +120,10 @@ function EntryFacts({ entry }: { entry: EntryDetail }) {
           </dd>
         </>
       )}
+      <dt className="text-muted-foreground pt-2">Tags</dt>
+      <dd>
+        <EntryTags entry={entry} />
+      </dd>
       {entry.externalId && (
         <>
           <dt className="text-muted-foreground">External id</dt>
@@ -130,6 +137,35 @@ function EntryFacts({ entry }: { entry: EntryDetail }) {
         </>
       )}
     </dl>
+  )
+}
+
+// EntryTags replaces an entry's tags on each choice. The choice shows at
+// once, and the next waits for it to be saved, so the saves cannot arrive out
+// of order.
+function EntryTags({ entry }: { entry: EntryDetail }) {
+  const queryClient = useQueryClient()
+  const save = useMutation({
+    ...setJournalEntryTagsMutation(),
+    // Waiting for the refetch keeps the save pending until the entry shows
+    // it, so the old tags do not flash back in between.
+    onSuccess: () =>
+      Promise.all(
+        ["getJournalEntry", "listJournalEntries"].map((_id) => queryClient.invalidateQueries({ queryKey: [{ _id }] })),
+      ),
+  })
+  const saved = entry.tags.map((tag) => tag.id)
+
+  return (
+    <div className="flex flex-col gap-1">
+      <TagPicker
+        id="entry-tags"
+        value={save.isPending ? save.variables.body.tagIds : saved}
+        onChange={(tagIds) => save.mutate({ path: { id: entry.id }, body: { tagIds } })}
+        disabled={save.isPending}
+      />
+      <ProblemMessages error={save.error} />
+    </div>
   )
 }
 

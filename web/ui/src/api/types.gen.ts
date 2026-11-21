@@ -75,6 +75,17 @@ export type AddedBalance = {
     ledgerAccountName: string;
 };
 
+export type AppliedCategory = {
+    children?: Array<AppliedCategory>;
+    id: number;
+};
+
+export type AppliedPreset = {
+    categories: Array<AppliedCategory>;
+    currencyIds: Array<number>;
+    tagIds: Array<number>;
+};
+
 export type Asset = {
     description?: string;
     exchange?: string;
@@ -188,6 +199,10 @@ export type BuyForm = {
      * the instant of the buy
      */
     occurredAt: string;
+    /**
+     * the tags of the entry; a repeated id counts once
+     */
+    tagIds?: Array<number>;
     /**
      * the units bought, greater than zero
      */
@@ -351,6 +366,7 @@ export type Entry = {
     occurredAt: string;
     postings: Array<Posting>;
     status: 'draft' | 'posted';
+    tags: Array<EntryTag>;
 };
 
 export type EntryDetail = {
@@ -364,11 +380,31 @@ export type EntryDetail = {
     postedAt?: string;
     postings: Array<Posting>;
     status: 'draft' | 'posted';
+    tags: Array<EntryTag>;
 };
 
 export type EntryPage = {
     entries: Array<Entry>;
     next?: string;
+};
+
+export type EntryTag = {
+    id: number;
+    name: string;
+};
+
+export type EntryTagIds = {
+    /**
+     * the tags of the entry, each once, in ascending order
+     */
+    tagIds: Array<number>;
+};
+
+export type EntryTagsForm = {
+    /**
+     * the tags of the entry, replacing those it has; a repeated id counts once, and none clears them
+     */
+    tagIds: Array<number>;
 };
 
 export type ErrorDetail = {
@@ -438,6 +474,10 @@ export type ExpenseForm = {
      * the instant the money was spent
      */
     occurredAt: string;
+    /**
+     * the tags of the entry; a repeated id counts once
+     */
+    tagIds?: Array<number>;
 };
 
 export type FinancialAccount = {
@@ -510,6 +550,10 @@ export type IncomeForm = {
      * the instant the money was earned
      */
     occurredAt: string;
+    /**
+     * the tags of the entry; a repeated id counts once
+     */
+    tagIds?: Array<number>;
 };
 
 export type InsertCurrencyParams = {
@@ -648,6 +692,32 @@ export type Posting = {
     side: 'debit' | 'credit';
 };
 
+export type Preset = {
+    /**
+     * at most 100, counting children
+     */
+    categories: Array<PresetCategory>;
+    currencies: Array<InsertCurrencyParams>;
+    tags: Array<PresetTag>;
+};
+
+export type PresetCategory = {
+    /**
+     * at most two levels below a top-level category
+     */
+    children?: Array<PresetCategory>;
+    /**
+     * required on a top-level category, left out on a child, which takes its parent's
+     */
+    kind?: 'income' | 'expense';
+    name: string;
+};
+
+export type PresetTag = {
+    description?: string;
+    name: string;
+};
+
 export type ProviderError = {
     /**
      * why, such as no answer within 5s
@@ -713,6 +783,10 @@ export type SellForm = {
      */
     occurredAt: string;
     /**
+     * the tags of the entry; a repeated id counts once
+     */
+    tagIds?: Array<number>;
+    /**
      * the units sold, greater than zero
      */
     units: string;
@@ -775,6 +849,10 @@ export type TransferForm = {
      */
     occurredAt: string;
     /**
+     * the tags of the entry; a repeated id counts once
+     */
+    tagIds?: Array<number>;
+    /**
      * the amount that arrives: required between currencies, else omitted or equal to amount
      */
     toAmount?: string;
@@ -828,6 +906,10 @@ export type VestForm = {
      * the instant of the vest
      */
     occurredAt: string;
+    /**
+     * the tags of the entry; a repeated id counts once
+     */
+    tagIds?: Array<number>;
     /**
      * the expense category of the value of the units withheld; required when units are withheld
      */
@@ -2354,6 +2436,41 @@ export type GetJournalEntryResponses = {
 
 export type GetJournalEntryResponse = GetJournalEntryResponses[keyof GetJournalEntryResponses];
 
+export type SetJournalEntryTagsData = {
+    body: EntryTagsForm;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/api/journal-entries/{id}/tags';
+};
+
+export type SetJournalEntryTagsErrors = {
+    /**
+     * Not Found
+     */
+    404: ErrorModel;
+    /**
+     * Unprocessable Entity
+     */
+    422: ErrorModel;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorModel;
+};
+
+export type SetJournalEntryTagsError = SetJournalEntryTagsErrors[keyof SetJournalEntryTagsErrors];
+
+export type SetJournalEntryTagsResponses = {
+    /**
+     * OK
+     */
+    200: EntryTagIds;
+};
+
+export type SetJournalEntryTagsResponse = SetJournalEntryTagsResponses[keyof SetJournalEntryTagsResponses];
+
 export type DeleteLedgerAccountData = {
     body?: never;
     path: {
@@ -2619,6 +2736,64 @@ export type DeletePositionMovementResponses = {
 };
 
 export type DeletePositionMovementResponse = DeletePositionMovementResponses[keyof DeletePositionMovementResponses];
+
+export type ApplyPresetData = {
+    body: Preset;
+    path?: never;
+    query?: never;
+    url: '/api/presets/apply';
+};
+
+export type ApplyPresetErrors = {
+    /**
+     * Conflict
+     */
+    409: ErrorModel;
+    /**
+     * Unprocessable Entity
+     */
+    422: ErrorModel;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorModel;
+};
+
+export type ApplyPresetError = ApplyPresetErrors[keyof ApplyPresetErrors];
+
+export type ApplyPresetResponses = {
+    /**
+     * OK
+     */
+    200: AppliedPreset;
+};
+
+export type ApplyPresetResponse = ApplyPresetResponses[keyof ApplyPresetResponses];
+
+export type GetDefaultPresetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/presets/default';
+};
+
+export type GetDefaultPresetErrors = {
+    /**
+     * Error
+     */
+    default: ErrorModel;
+};
+
+export type GetDefaultPresetError = GetDefaultPresetErrors[keyof GetDefaultPresetErrors];
+
+export type GetDefaultPresetResponses = {
+    /**
+     * OK
+     */
+    200: Preset;
+};
+
+export type GetDefaultPresetResponse = GetDefaultPresetResponses[keyof GetDefaultPresetResponses];
 
 export type RetrieveUserSettingsData = {
     body?: never;

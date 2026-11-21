@@ -43,11 +43,12 @@ func TestRetrieve(t *testing.T) {
 					ID: 7, OccurredAt: day, Description: ptr.NewPtr("January salary"), Status: model.JournalEntryPosted,
 					CounterpartyID: ptr.Int64(5), Counterparty: &model.Counterparty{ID: 5, Name: "Acme"},
 					PostedAt: ptr.NewPtr(day.Add(time.Hour)), CreatedAt: day.Add(time.Hour), Postings: postings,
+					Tags: []model.Tag{{ID: 3, Name: "Reimbursable"}, {ID: 2, Name: "vacation"}},
 				}},
 			},
 			WantStatus: http.StatusOK,
 			WantBody: `{"id":7,"occurredAt":"2026-01-31T10:00:00Z","description":"January salary","status":"posted",` + postingsBody +
-				`,"counterpartyId":5,"counterpartyName":"Acme","postedAt":"2026-01-31T11:00:00Z","createdAt":"2026-01-31T11:00:00Z"}`,
+				`,"tags":[{"id":3,"name":"Reimbursable"},{"id":2,"name":"vacation"}],"counterpartyId":5,"counterpartyName":"Acme","postedAt":"2026-01-31T11:00:00Z","createdAt":"2026-01-31T11:00:00Z"}`,
 		},
 		"a draft without a counterparty": {
 			Method: http.MethodGet, Path: "/api/journal-entries/8",
@@ -59,7 +60,7 @@ func TestRetrieve(t *testing.T) {
 				}},
 			},
 			WantStatus: http.StatusOK,
-			WantBody:   `{"id":8,"occurredAt":"2026-01-31T10:00:00Z","status":"draft",` + postingsBody + `,"createdAt":"2026-01-31T10:00:00Z"}`,
+			WantBody:   `{"id":8,"occurredAt":"2026-01-31T10:00:00Z","status":"draft",` + postingsBody + `,"tags":[],"createdAt":"2026-01-31T10:00:00Z"}`,
 		},
 		"an entry that does not exist": {
 			Method: http.MethodGet, Path: "/api/journal-entries/99",

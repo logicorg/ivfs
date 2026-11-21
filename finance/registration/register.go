@@ -22,6 +22,7 @@ import (
 	"github.com/logicorg/ivfs/finance/workflows/currencies"
 	"github.com/logicorg/ivfs/finance/workflows/facade/accountsetup"
 	"github.com/logicorg/ivfs/finance/workflows/facade/investments"
+	"github.com/logicorg/ivfs/finance/workflows/facade/presets"
 	"github.com/logicorg/ivfs/finance/workflows/facade/transactions"
 	institutionwf "github.com/logicorg/ivfs/finance/workflows/institution"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
@@ -78,6 +79,8 @@ func Register(r worker.Registry, pools tenancy.Pools) {
 	r.RegisterWorkflow(accountsetup.AddBalance)
 	r.RegisterWorkflow(accountsetup.OpenAccount)
 
+	r.RegisterWorkflow(presets.ApplyPreset)
+
 	r.RegisterWorkflow(categories.CreateCategory)
 	r.RegisterWorkflow(categories.RetrieveCategory)
 	r.RegisterWorkflow(categories.ListCategories)
@@ -125,6 +128,7 @@ func Register(r worker.Registry, pools tenancy.Pools) {
 	r.RegisterWorkflow(ledgerjournalwf.DeleteJournalEntry)
 	r.RegisterWorkflow(ledgerjournalwf.ReplaceJournalEntry)
 	r.RegisterWorkflow(ledgerjournalwf.ListJournalEntries)
+	r.RegisterWorkflow(ledgerjournalwf.SetJournalEntryTags)
 	r.RegisterWorkflow(ledgerreportingwf.LedgerAccountBalance)
 	r.RegisterWorkflow(ledgeraccountswf.CreateFinancialAccount)
 	r.RegisterWorkflow(ledgeraccountswf.RetrieveFinancialAccount)

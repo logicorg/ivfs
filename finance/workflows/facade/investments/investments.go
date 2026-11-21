@@ -54,6 +54,7 @@ type trade struct {
 	currencyID  int64
 	occurredAt  time.Time
 	description string
+	tagIDs      []int64
 }
 
 // retrieveBrokerage finds the "Cash" and "Investments" balances of the
@@ -106,6 +107,7 @@ func (t trade) input() lt.RegisterInvestmentTradeInput {
 		Entry: lt.PostJournalEntryInput{
 			IdempotencyKey: t.kind + ":" + t.idempotencyKey,
 			OccurredAt:     t.occurredAt,
+			TagIDs:         t.tagIDs,
 			Postings: []lt.PostingInput{
 				{LedgerAccountID: t.to, Amount: t.amount, Side: model.PostingDebit},
 				{LedgerAccountID: t.from, Amount: t.amount, Side: model.PostingCredit},
@@ -149,7 +151,7 @@ func registerVest(ctx workflow.Context, input lt.RegisterVestInput) (*it.TradeRe
 }
 
 // replace makes the journal entry what entry and movement state: its date,
-// description, and postings, and the one movement of its units. The entry
+// description, postings, and tags, and the one movement of its units. The entry
 // keeps its own key, so the one in entry is not used. An unknown entry or
 // asset, or an account the entry may not move onto, fails here, inside the
 // transaction that replaces.
@@ -160,6 +162,7 @@ func replace(ctx workflow.Context, journalEntryID int64, kind it.Kind, entry lt.
 		Description:    entry.Description,
 		Metadata:       entry.Metadata,
 		Postings:       entry.Postings,
+		TagIDs:         entry.TagIDs,
 		Movements:      []lt.ReplaceMovementInput{movement},
 	}
 
