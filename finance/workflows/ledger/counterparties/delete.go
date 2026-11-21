@@ -14,9 +14,8 @@ import (
 // fetched.
 const deleteCounterpartyRounds = 2
 
-// DeleteCounterparty deletes a counterparty, as ADR 0016 describes: the journal
-// entries that name it lose it, keeping their postings, and then it is
-// deleted. The two steps share no transaction, so an entry recorded between
+// DeleteCounterparty deletes a counterparty: the journal entries that name it
+// lose it, keeping their postings, and then it is deleted. The two steps share no transaction, so an entry recorded between
 // them makes the delete conflict, and the workflow runs both again. Deleting a
 // counterparty that does not exist succeeds.
 func DeleteCounterparty(ctx workflow.Context, input lt.DeleteCounterpartyInput) (*lt.DeleteCounterpartyResult, error) {
