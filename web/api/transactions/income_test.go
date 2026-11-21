@@ -25,6 +25,8 @@ func TestRecordIncome(t *testing.T) {
 	}
 	withNote := salary
 	withNote.Description = "September salary"
+	withTags := salary
+	withTags.TagIDs = []int64{3, 4}
 	record := func(params tt.RecordIncomeInput, err error) *apitest.WorkflowCall {
 		call := &apitest.WorkflowCall{Workflow: transactionswf.RecordIncome, Params: params, Err: err}
 		if err == nil {
@@ -42,6 +44,11 @@ func TestRecordIncome(t *testing.T) {
 		"with a note": {
 			Method: http.MethodPost, Path: "/api/transactions/incomes", Body: form + `,"description":"September salary"}`,
 			Call:       record(withNote, nil),
+			WantStatus: http.StatusOK, WantBody: `{"journalEntryId":43}`,
+		},
+		"with tags": {
+			Method: http.MethodPost, Path: "/api/transactions/incomes", Body: form + `,"tagIds":[3,4]}`,
+			Call:       record(withTags, nil),
 			WantStatus: http.StatusOK, WantBody: `{"journalEntryId":43}`,
 		},
 		"a negative amount": {

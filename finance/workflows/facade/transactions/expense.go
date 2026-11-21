@@ -42,5 +42,6 @@ func expenseMovement(ctx workflow.Context, input tt.RecordExpenseInput) (movemen
 		amount:         input.Amount,
 		occurredAt:     input.OccurredAt,
 		description:    input.Description,
+		tagIDs:         input.TagIDs,
 	}, nil
 }

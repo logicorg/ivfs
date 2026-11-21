@@ -23,7 +23,8 @@ func (s *UnitTestSuite) AfterTest(_, _ string)  { s.DropAllTables() }
 func Test_UnitTestSuite(t *testing.T) { suite.Run(t, new(UnitTestSuite)) }
 
 // Test_ForeignKeysAreDeclared checks that every reference between the tables is
-// a foreign key that restricts deletion, and that there are no others.
+// a foreign key, that only the links of a tag to an entry cascade and the rest
+// restrict deletion, and that there are no others.
 func (s *UnitTestSuite) Test_ForeignKeysAreDeclared() {
 	expected := []string{
 		"asset.asset_value.asset_id -> asset.asset",
@@ -45,6 +46,12 @@ func (s *UnitTestSuite) Test_ForeignKeysAreDeclared() {
 		"asset.position_movement.asset_id -> asset.asset",
 		"asset.position_movement.cost_basis_currency_id -> currency.currency",
 		"settings.user_settings.default_currency_id -> currency.currency",
+		"ledger.journal_entry_tag.journal_entry_id -> ledger.journal_entry",
+		"ledger.journal_entry_tag.tag_id -> tag.tag",
+	}
+	cascading := map[string]bool{
+		"ledger.journal_entry_tag.journal_entry_id -> ledger.journal_entry": true,
+		"ledger.journal_entry_tag.tag_id -> tag.tag":                        true,
 	}
 
 	var declared []struct {
@@ -61,8 +68,13 @@ func (s *UnitTestSuite) Test_ForeignKeysAreDeclared() {
 
 	got := make([]string, 0, len(declared))
 	for _, fk := range declared {
-		got = append(got, fmt.Sprintf("%s.%s -> %s", fk.Child, fk.Column, fk.Parent))
-		require.Equal(s.T(), "r", fk.DeleteType, "%s.%s must restrict deletion", fk.Child, fk.Column)
+		key := fmt.Sprintf("%s.%s -> %s", fk.Child, fk.Column, fk.Parent)
+		got = append(got, key)
+		if cascading[key] {
+			require.Equal(s.T(), "c", fk.DeleteType, "%s must cascade", key)
+		} else {
+			require.Equal(s.T(), "r", fk.DeleteType, "%s must restrict deletion", key)
+		}
 	}
 	require.ElementsMatch(s.T(), expected, got)
 }

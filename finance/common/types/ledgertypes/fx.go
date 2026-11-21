@@ -55,6 +55,9 @@ type RegisterFXConversionInput struct {
 
 	// Fee is the FX fee charged at source.
 	Fee *FXFee `json:"fee,omitempty"`
+
+	// TagIDs are the tags of the entry, each taken once.
+	TagIDs []int64 `json:"tagIds,omitempty"`
 }
 
 type RegisterFXConversionResult struct {
@@ -123,7 +126,7 @@ func (i *RegisterFXConversionInput) Validate() error {
 			return internalerrors.ErrInvalidParameter{Description: "fee must be smaller than the source amount"}
 		}
 	}
-	return nil
+	return ValidateTagIDs(i.TagIDs)
 }
 
 // ToJournalEntry builds the generic balanced entry for the conversion:
@@ -161,5 +164,6 @@ func (i *RegisterFXConversionInput) ToJournalEntry() PostJournalEntryInput {
 		ExternalID:     i.ExternalID,
 		Metadata:       metadata,
 		Postings:       postings,
+		TagIDs:         i.TagIDs,
 	}
 }

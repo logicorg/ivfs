@@ -32,8 +32,9 @@ func (s *WorkflowUnitTestSuite) TestRecordIncome() {
 		// account is the shared account the category's side is booked on.
 		account     *model.LedgerAccount
 		description string
+		tags        []int64
 	}{
-		{name: "a salary into cash, with a note", balance: cash, category: salary, account: income, description: "October salary"},
+		{name: "a salary into cash, with a note and a tag", balance: cash, category: salary, account: income, description: "October salary", tags: []int64{5}},
 		{name: "a cashback onto the card, without a note", balance: cardBalance, category: salary, account: income},
 		{name: "paid in dollars", balance: cashUSD, category: salary, account: incomeUSD},
 	}
@@ -54,12 +55,14 @@ func (s *WorkflowUnitTestSuite) TestRecordIncome() {
 			if tc.description != "" {
 				want.Description = ptr.NewPtr(tc.description)
 			}
+			want.TagIDs = tc.tags
 			env.OnWorkflow(journalwf.PostJournalEntry, mock.Anything, entry(want)).
 				Return(&lt.PostJournalEntryResult{JournalEntryID: 43}, nil).Once()
 
 			env.ExecuteWorkflow(RecordIncome, tt.RecordIncomeInput{
 				IdempotencyKey: "77ab", BalanceLedgerAccountID: tc.balance.ID, CategoryID: tc.category.ID,
 				Amount: amount, OccurredAt: occurredAt, Description: tc.description,
+				TagIDs: tc.tags,
 			})
 
 			require.NoError(s.T(), env.GetWorkflowError())

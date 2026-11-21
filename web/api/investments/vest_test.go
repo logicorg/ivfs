@@ -25,6 +25,8 @@ func TestVestAsset(t *testing.T) {
 		FairMarketValue: decimal.NewFromInt(10), CurrencyCode: "EUR", IncomeCategoryID: 600,
 		OccurredAt: time.Date(2026, 10, 3, 10, 0, 0, 0, time.UTC),
 	}
+	withTags := rsu
+	withTags.TagIDs = []int64{3, 4}
 	withheld := rsu
 	withheld.UnitsWithheld, withheld.TaxCategoryID = decimal.NewFromInt(40), 601
 	withheld.Description = "Q3 vest"
@@ -39,6 +41,11 @@ func TestVestAsset(t *testing.T) {
 		"record a vest": {
 			Method: http.MethodPost, Path: "/api/investments/vests", Body: form + `}`,
 			Call:       vest(rsu, recorded, nil),
+			WantStatus: http.StatusOK, WantBody: `{"journalEntryId":61,"positionMovementId":62}`,
+		},
+		"with tags": {
+			Method: http.MethodPost, Path: "/api/investments/vests", Body: form + `,"tagIds":[3,4]}`,
+			Call:       vest(withTags, recorded, nil),
 			WantStatus: http.StatusOK, WantBody: `{"journalEntryId":61,"positionMovementId":62}`,
 		},
 		"with units withheld for tax and a note": {

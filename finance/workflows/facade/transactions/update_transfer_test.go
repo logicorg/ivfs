@@ -30,13 +30,13 @@ func (s *WorkflowUnitTestSuite) TestUpdateTransfer() {
 		warnings []lt.NegativeHolding
 	}{
 		{
-			name: "paying the card off from cash, with a note",
+			name: "paying the card off from cash, with a note and a tag",
 			input: tt.UpdateTransferInput{
 				JournalEntryID: 42, FromLedgerAccountID: cash.ID, ToLedgerAccountID: cardBalance.ID,
-				Amount: amount, OccurredAt: occurredAt, Description: "pay the card off",
+				Amount: amount, OccurredAt: occurredAt, Description: "pay the card off", TagIDs: []int64{5},
 			},
 			want: lt.ReplaceJournalEntryInput{
-				JournalEntryID: 42, OccurredAt: occurredAt, Description: ptr.NewPtr("pay the card off"),
+				JournalEntryID: 42, OccurredAt: occurredAt, Description: ptr.NewPtr("pay the card off"), TagIDs: []int64{5},
 				Postings: []lt.PostingInput{
 					{LedgerAccountID: cardBalance.ID, Amount: amount, Side: model.PostingDebit},
 					{LedgerAccountID: cash.ID, Amount: amount, Side: model.PostingCredit},
@@ -59,13 +59,14 @@ func (s *WorkflowUnitTestSuite) TestUpdateTransfer() {
 			warnings: soldSince,
 		},
 		{
-			name: "from euros to dollars, with a note",
+			name: "from euros to dollars, with a note and a tag",
 			input: tt.UpdateTransferInput{
 				JournalEntryID: 42, FromLedgerAccountID: cash.ID, ToLedgerAccountID: cashUSD.ID,
 				Amount: amount, ToAmount: arrives, OccurredAt: occurredAt, Description: "dollars for the trip",
+				TagIDs: []int64{5},
 			},
 			want: lt.ReplaceJournalEntryInput{
-				JournalEntryID: 42, OccurredAt: occurredAt, Description: ptr.NewPtr("dollars for the trip"),
+				JournalEntryID: 42, OccurredAt: occurredAt, Description: ptr.NewPtr("dollars for the trip"), TagIDs: []int64{5},
 				Metadata: map[string]string{"type": lt.FXConversionEntryType, "effective_rate": "324.15/300.5"},
 				Postings: []lt.PostingInput{
 					{LedgerAccountID: fxClearing.ID, Amount: amount, Side: model.PostingDebit},

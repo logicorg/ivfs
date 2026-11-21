@@ -18,6 +18,7 @@ type BuyForm struct {
 	CurrencyCode       string         `json:"currencyCode" minLength:"1" doc:"the currency paid in, such as EUR, in which the account has its Cash and Investments balances"`
 	OccurredAt         time.Time      `json:"occurredAt" doc:"the instant of the buy"`
 	Description        string         `json:"description" required:"false" doc:"a note on the entry"`
+	TagIDs             []int64        `json:"tagIds" required:"false" doc:"the tags of the entry; a repeated id counts once"`
 }
 
 // SellForm is the answers to the form that records units of an asset sold for
@@ -32,6 +33,7 @@ type SellForm struct {
 	CurrencyCode       string         `json:"currencyCode" minLength:"1" doc:"the currency received, such as EUR, in which the account has its Cash and Investments balances"`
 	OccurredAt         time.Time      `json:"occurredAt" doc:"the instant of the sale"`
 	Description        string         `json:"description" required:"false" doc:"a note on the entry"`
+	TagIDs             []int64        `json:"tagIds" required:"false" doc:"the tags of the entry; a repeated id counts once"`
 }
 
 // VestForm is the answers to the form that records units of an asset received
@@ -48,6 +50,7 @@ type VestForm struct {
 	TaxCategoryID      int64          `json:"taxCategoryId" required:"false" minimum:"1" doc:"the expense category of the value of the units withheld; required when units are withheld"`
 	OccurredAt         time.Time      `json:"occurredAt" doc:"the instant of the vest"`
 	Description        string         `json:"description" required:"false" doc:"a note on the entry"`
+	TagIDs             []int64        `json:"tagIds" required:"false" doc:"the tags of the entry; a repeated id counts once"`
 }
 
 // RecordedTrade is the journal entry and the position movement a buy, a sale or

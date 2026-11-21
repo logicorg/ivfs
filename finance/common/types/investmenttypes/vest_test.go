@@ -32,6 +32,8 @@ func TestVestInput_Validate(t *testing.T) {
 		"a vest of a fraction":              {mutate: func(i *VestInput) { i.UnitsVested = decimal.RequireFromString("12.5") }},
 		"a vest with a tax category unused": {mutate: func(i *VestInput) { i.TaxCategoryID = 4 }},
 		"a vest with a note":                {mutate: func(i *VestInput) { i.Description = "Q3 vest" }},
+		"with tags":                         {mutate: func(i *VestInput) { i.TagIDs = []int64{3, 4} }},
+		"a tag id of zero":                  {mutate: func(i *VestInput) { i.TagIDs = []int64{3, 0} }, wantError: "tag id 0"},
 		"a blank idempotency key":           {mutate: func(i *VestInput) { i.IdempotencyKey = " " }, wantError: "validation error"},
 		"no financial account":              {mutate: func(i *VestInput) { i.FinancialAccountID = 0 }, wantError: "validation error"},
 		"no asset":                          {mutate: func(i *VestInput) { i.AssetID = 0 }, wantError: "validation error"},

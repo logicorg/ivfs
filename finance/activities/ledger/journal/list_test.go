@@ -426,3 +426,33 @@ func (s *UnitTestSuite) Test_ListJournalEntries_TiesAreOrderedById() {
 		require.Equal(s.T(), want, walked, "walking the pages, newest first is %t", descending)
 	}
 }
+
+// Test_ListJournalEntries_Tags checks that each entry comes with its own tags,
+// by name, and an entry without any with none. The third entry, tagged too,
+// is off the page.
+func (s *UnitTestSuite) Test_ListJournalEntries_Tags() {
+	f := s.seedJournal()
+	vacation, reimbursable := &model.Tag{Name: "vacation"}, &model.Tag{Name: "Reimbursable"}
+	temporaltesting.Insert(s.T(), s.DB, vacation)
+	temporaltesting.Insert(s.T(), s.DB, reimbursable)
+	links := []model.JournalEntryTag{
+		{JournalEntryID: f.entries[0].ID, TagID: vacation.ID},
+		{JournalEntryID: f.entries[0].ID, TagID: reimbursable.ID},
+		{JournalEntryID: f.entries[2].ID, TagID: vacation.ID},
+	}
+	_, err := s.DB.NewInsert().Model(&links).Exec(s.T().Context())
+	require.NoError(s.T(), err)
+
+	result := s.listEntries(lt.ListJournalEntriesParams{From: listAt(1), To: listAt(3)})
+
+	require.Len(s.T(), result.Entries, 2)
+	names := func(entry model.JournalEntry) []string {
+		out := []string{}
+		for _, tag := range entry.Tags {
+			out = append(out, tag.Name)
+		}
+		return out
+	}
+	require.Equal(s.T(), []string{"Reimbursable", "vacation"}, names(result.Entries[0]))
+	require.Equal(s.T(), []string{}, names(result.Entries[1]), "the tags of an entry off the page are not mixed in")
+}

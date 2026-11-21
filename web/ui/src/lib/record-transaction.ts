@@ -4,6 +4,7 @@ import type { AccountBalances, Category, ExpenseForm, FinancialAccount, IncomeFo
 
 import { categoryRows } from "./category-tree"
 import { amountText, startOfDay } from "./open-account"
+import { sentTagIds, tagIdsField } from "./tags"
 
 export const transactionTypes = ["expense", "income", "transfer"] as const
 
@@ -21,6 +22,7 @@ export const recordTransactionForm = z.object({
   toAmount: amountText,
   occurredOn: z.string(),
   description: z.string().trim(),
+  tagIds: tagIdsField,
 })
 
 export type RecordTransactionFormValues = z.infer<typeof recordTransactionForm>
@@ -131,6 +133,7 @@ export function newTransaction(
     amount: values.amount,
     occurredAt: startOfDay(values.occurredOn) ?? now.toISOString(),
     description: values.description || undefined,
+    tagIds: sentTagIds(values.tagIds),
   }
   const from = Number(values.fromId)
   const to = Number(values.toId)

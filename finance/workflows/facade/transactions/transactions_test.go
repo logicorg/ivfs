@@ -2,6 +2,7 @@ package transactions
 
 import (
 	"maps"
+	"slices"
 	"testing"
 	"time"
 
@@ -98,7 +99,7 @@ func entry(want lt.PostJournalEntryInput) any {
 		sameDescription := (got.Description == nil) == (want.Description == nil) &&
 			(got.Description == nil || *got.Description == *want.Description)
 		if got.IdempotencyKey != want.IdempotencyKey || !got.OccurredAt.Equal(want.OccurredAt) || !sameDescription ||
-			got.CounterpartyID != nil || len(got.Metadata) != 0 {
+			got.CounterpartyID != nil || len(got.Metadata) != 0 || !slices.Equal(got.TagIDs, want.TagIDs) {
 			return false
 		}
 		return samePostings(got.Postings, want.Postings)
@@ -112,7 +113,7 @@ func replacement(want lt.ReplaceJournalEntryInput) any {
 		sameDescription := (got.Description == nil) == (want.Description == nil) &&
 			(got.Description == nil || *got.Description == *want.Description)
 		if got.JournalEntryID != want.JournalEntryID || !got.OccurredAt.Equal(want.OccurredAt) || !sameDescription ||
-			!maps.Equal(got.Metadata, want.Metadata) || len(got.Movements) != 0 {
+			!maps.Equal(got.Metadata, want.Metadata) || len(got.Movements) != 0 || !slices.Equal(got.TagIDs, want.TagIDs) {
 			return false
 		}
 		return samePostings(got.Postings, want.Postings)

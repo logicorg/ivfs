@@ -22,6 +22,8 @@ func TestUpdateIncomeInput_Validate(t *testing.T) {
 	}{
 		"an income":          {mutate: func(*UpdateIncomeInput) {}},
 		"with a note":        {mutate: func(i *UpdateIncomeInput) { i.Description = "a note" }},
+		"with tags":          {mutate: func(i *UpdateIncomeInput) { i.TagIDs = []int64{3, 4} }},
+		"a tag id of zero":   {mutate: func(i *UpdateIncomeInput) { i.TagIDs = []int64{3, 0} }, wantError: "tag id 0"},
 		"no journal entry":   {mutate: func(i *UpdateIncomeInput) { i.JournalEntryID = 0 }, wantError: "validation error"},
 		"a negative entry":   {mutate: func(i *UpdateIncomeInput) { i.JournalEntryID = -1 }, wantError: "validation error"},
 		"no balance":         {mutate: func(i *UpdateIncomeInput) { i.BalanceLedgerAccountID = 0 }, wantError: "validation error"},

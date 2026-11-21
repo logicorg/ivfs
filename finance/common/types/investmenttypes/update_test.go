@@ -19,6 +19,8 @@ func TestUpdateInvestmentInput_Validate(t *testing.T) {
 	sellFeeAll.Fee = sell.Amount
 	vestAllWithheld.UnitsWithheld = vest.UnitsVested
 	vestNoTaxCategory.UnitsWithheld = decimal.NewFromInt(40)
+	sellZeroTag := sell
+	sellZeroTag.TagIDs = []int64{0}
 
 	tests := []struct {
 		name      string
@@ -41,6 +43,7 @@ func TestUpdateInvestmentInput_Validate(t *testing.T) {
 		{name: "a buy without a date", input: UpdateInvestmentInput{JournalEntryID: 41, Kind: KindBuy, Buy: &buyNoDate}, wantError: "missing required parameters: OccurredAt"},
 		{name: "a sale whose fee takes all the proceeds", input: UpdateInvestmentInput{JournalEntryID: 41, Kind: KindSell, Sell: &sellFeeAll}, wantError: "invalid parameter: the fee of a sale must be less than its amount"},
 		{name: "a vest that delivers nothing", input: UpdateInvestmentInput{JournalEntryID: 41, Kind: KindVest, Vest: &vestAllWithheld}, wantError: "invalid parameter: the units withheld for tax must be fewer than the units vested"},
+		{name: "a sale with a tag id of zero", input: UpdateInvestmentInput{JournalEntryID: 41, Kind: KindSell, Sell: &sellZeroTag}, wantError: "tag id 0"},
 		{name: "a vest with withholding and no tax category", input: UpdateInvestmentInput{JournalEntryID: 41, Kind: KindVest, Vest: &vestNoTaxCategory}, wantError: "missing required parameters: TaxCategoryID"},
 	}
 
@@ -61,12 +64,12 @@ func TestUpdateInvestmentInput_Validate(t *testing.T) {
 func TestUpdateInvestmentInput_Facts(t *testing.T) {
 	occurredAt := time.Date(2026, 10, 3, 10, 0, 0, 0, time.UTC)
 
-	buy := UpdateBuyInput{FinancialAccountID: 1, AssetID: 2, Units: decimal.NewFromInt(10), Amount: decimal.NewFromInt(1050), Fee: decimal.NewFromInt(3), CurrencyCode: "EUR", OccurredAt: occurredAt, Description: "a note"}
-	require.Equal(t, &BuyAssetInput{FinancialAccountID: 1, AssetID: 2, Units: decimal.NewFromInt(10), Amount: decimal.NewFromInt(1050), Fee: decimal.NewFromInt(3), CurrencyCode: "EUR", OccurredAt: occurredAt, Description: "a note"}, buy.Buy())
+	buy := UpdateBuyInput{FinancialAccountID: 1, AssetID: 2, Units: decimal.NewFromInt(10), Amount: decimal.NewFromInt(1050), Fee: decimal.NewFromInt(3), CurrencyCode: "EUR", OccurredAt: occurredAt, Description: "a note", TagIDs: []int64{5}}
+	require.Equal(t, &BuyAssetInput{FinancialAccountID: 1, AssetID: 2, Units: decimal.NewFromInt(10), Amount: decimal.NewFromInt(1050), Fee: decimal.NewFromInt(3), CurrencyCode: "EUR", OccurredAt: occurredAt, Description: "a note", TagIDs: []int64{5}}, buy.Buy())
 
-	sell := UpdateSellInput{FinancialAccountID: 1, AssetID: 2, Units: decimal.NewFromInt(4), Amount: decimal.NewFromInt(480), Fee: decimal.NewFromInt(3), CurrencyCode: "EUR", OccurredAt: occurredAt, Description: "a note"}
-	require.Equal(t, &SellAssetInput{FinancialAccountID: 1, AssetID: 2, Units: decimal.NewFromInt(4), Amount: decimal.NewFromInt(480), Fee: decimal.NewFromInt(3), CurrencyCode: "EUR", OccurredAt: occurredAt, Description: "a note"}, sell.Sell())
+	sell := UpdateSellInput{FinancialAccountID: 1, AssetID: 2, Units: decimal.NewFromInt(4), Amount: decimal.NewFromInt(480), Fee: decimal.NewFromInt(3), CurrencyCode: "EUR", OccurredAt: occurredAt, Description: "a note", TagIDs: []int64{5}}
+	require.Equal(t, &SellAssetInput{FinancialAccountID: 1, AssetID: 2, Units: decimal.NewFromInt(4), Amount: decimal.NewFromInt(480), Fee: decimal.NewFromInt(3), CurrencyCode: "EUR", OccurredAt: occurredAt, Description: "a note", TagIDs: []int64{5}}, sell.Sell())
 
-	vest := UpdateVestInput{FinancialAccountID: 1, AssetID: 2, UnitsVested: decimal.NewFromInt(100), UnitsWithheld: decimal.NewFromInt(40), FairMarketValue: decimal.NewFromInt(10), CurrencyCode: "USD", IncomeCategoryID: 3, TaxCategoryID: 4, OccurredAt: occurredAt, Description: "a note"}
-	require.Equal(t, &VestInput{FinancialAccountID: 1, AssetID: 2, UnitsVested: decimal.NewFromInt(100), UnitsWithheld: decimal.NewFromInt(40), FairMarketValue: decimal.NewFromInt(10), CurrencyCode: "USD", IncomeCategoryID: 3, TaxCategoryID: 4, OccurredAt: occurredAt, Description: "a note"}, vest.Vest())
+	vest := UpdateVestInput{FinancialAccountID: 1, AssetID: 2, UnitsVested: decimal.NewFromInt(100), UnitsWithheld: decimal.NewFromInt(40), FairMarketValue: decimal.NewFromInt(10), CurrencyCode: "USD", IncomeCategoryID: 3, TaxCategoryID: 4, OccurredAt: occurredAt, Description: "a note", TagIDs: []int64{5}}
+	require.Equal(t, &VestInput{FinancialAccountID: 1, AssetID: 2, UnitsVested: decimal.NewFromInt(100), UnitsWithheld: decimal.NewFromInt(40), FairMarketValue: decimal.NewFromInt(10), CurrencyCode: "USD", IncomeCategoryID: 3, TaxCategoryID: 4, OccurredAt: occurredAt, Description: "a note", TagIDs: []int64{5}}, vest.Vest())
 }

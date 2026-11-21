@@ -20,9 +20,12 @@ func (s *UnitTestSuite) TestRetrieveJournalEntryWithRelationships() {
 
 	refunds := &model.Category{Kind: model.LedgerAccountExpense, Name: "Refunds"}
 	temporaltesting.Insert(s.T(), s.DB, refunds)
+	vacation, reimbursable := &model.Tag{Name: "vacation"}, &model.Tag{Name: "Reimbursable"}
+	temporaltesting.Insert(s.T(), s.DB, vacation)
+	temporaltesting.Insert(s.T(), s.DB, reimbursable)
 
 	posted, err := s.Env.ExecuteActivity(s.ja.PostJournalEntry, lt.PostJournalEntryInput{
-		IdempotencyKey: "retrieve-entry", OccurredAt: time.Now().UTC(),
+		IdempotencyKey: "retrieve-entry", OccurredAt: time.Now().UTC(), TagIDs: []int64{vacation.ID, reimbursable.ID},
 		Postings: []lt.PostingInput{
 			{LedgerAccountID: debit.ID, Amount: decimal.NewFromInt(12), Side: model.PostingDebit},
 			{LedgerAccountID: credit.ID, Amount: decimal.NewFromInt(12), Side: model.PostingCredit, CategoryID: &refunds.ID},
@@ -46,4 +49,8 @@ func (s *UnitTestSuite) TestRetrieveJournalEntryWithRelationships() {
 	require.Equal(s.T(), refunds.ID, *categorized.CategoryID)
 	require.NotNil(s.T(), categorized.Category)
 	require.Equal(s.T(), "Refunds", categorized.Category.Name)
+
+	require.Len(s.T(), result.JournalEntry.Tags, 2)
+	require.Equal(s.T(), "Reimbursable", result.JournalEntry.Tags[0].Name, "tags are ordered by name whatever the casing")
+	require.Equal(s.T(), vacation.ID, result.JournalEntry.Tags[1].ID)
 }

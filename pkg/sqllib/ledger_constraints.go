@@ -29,6 +29,9 @@ func ensureLedgerConstraints(ctx context.Context, db *bun.DB) error {
 		// Totals, the journal list, and deleting a category all find the
 		// postings of a category.
 		`CREATE INDEX IF NOT EXISTS posting_category_idx ON ledger.posting (category_id)`,
+		// The primary key leads with the entry, so deleting a tag and filtering
+		// entries by tag need their own index.
+		`CREATE INDEX IF NOT EXISTS journal_entry_tag_tag_idx ON ledger.journal_entry_tag (tag_id)`,
 	}
 	for _, statement := range statements {
 		if _, err := db.ExecContext(ctx, statement); err != nil && !isDuplicateConstraintError(err) {

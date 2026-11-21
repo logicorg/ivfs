@@ -15,6 +15,7 @@ type ExpenseForm struct {
 	Amount                 gateway.Amount `json:"amount" doc:"the amount spent, greater than zero"`
 	OccurredAt             time.Time      `json:"occurredAt" doc:"the instant the money was spent"`
 	Description            string         `json:"description" required:"false" doc:"a note on the entry"`
+	TagIDs                 []int64        `json:"tagIds" required:"false" doc:"the tags of the entry; a repeated id counts once"`
 }
 
 // IncomeForm is the answers to the form that records money earned on a
@@ -26,6 +27,7 @@ type IncomeForm struct {
 	Amount                 gateway.Amount `json:"amount" doc:"the amount earned, greater than zero"`
 	OccurredAt             time.Time      `json:"occurredAt" doc:"the instant the money was earned"`
 	Description            string         `json:"description" required:"false" doc:"a note on the entry"`
+	TagIDs                 []int64        `json:"tagIds" required:"false" doc:"the tags of the entry; a repeated id counts once"`
 }
 
 // TransferForm is the answers to the form that records money moved from one
@@ -39,6 +41,7 @@ type TransferForm struct {
 	ToAmount            gateway.Amount `json:"toAmount" required:"false" doc:"the amount that arrives: required between currencies, else omitted or equal to amount"`
 	OccurredAt          time.Time      `json:"occurredAt" doc:"the instant the money moved"`
 	Description         string         `json:"description" required:"false" doc:"a note on the entry"`
+	TagIDs              []int64        `json:"tagIds" required:"false" doc:"the tags of the entry; a repeated id counts once"`
 }
 
 // RecordedTransaction is the journal entry a transaction is recorded as,

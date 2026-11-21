@@ -200,6 +200,10 @@ export type BuyForm = {
      */
     occurredAt: string;
     /**
+     * the tags of the entry; a repeated id counts once
+     */
+    tagIds?: Array<number>;
+    /**
      * the units bought, greater than zero
      */
     units: string;
@@ -362,6 +366,7 @@ export type Entry = {
     occurredAt: string;
     postings: Array<Posting>;
     status: 'draft' | 'posted';
+    tags: Array<EntryTag>;
 };
 
 export type EntryDetail = {
@@ -375,11 +380,31 @@ export type EntryDetail = {
     postedAt?: string;
     postings: Array<Posting>;
     status: 'draft' | 'posted';
+    tags: Array<EntryTag>;
 };
 
 export type EntryPage = {
     entries: Array<Entry>;
     next?: string;
+};
+
+export type EntryTag = {
+    id: number;
+    name: string;
+};
+
+export type EntryTagIds = {
+    /**
+     * the tags of the entry, each once, in ascending order
+     */
+    tagIds: Array<number>;
+};
+
+export type EntryTagsForm = {
+    /**
+     * the tags of the entry, replacing those it has; a repeated id counts once, and none clears them
+     */
+    tagIds: Array<number>;
 };
 
 export type ErrorDetail = {
@@ -449,6 +474,10 @@ export type ExpenseForm = {
      * the instant the money was spent
      */
     occurredAt: string;
+    /**
+     * the tags of the entry; a repeated id counts once
+     */
+    tagIds?: Array<number>;
 };
 
 export type FinancialAccount = {
@@ -521,6 +550,10 @@ export type IncomeForm = {
      * the instant the money was earned
      */
     occurredAt: string;
+    /**
+     * the tags of the entry; a repeated id counts once
+     */
+    tagIds?: Array<number>;
 };
 
 export type InsertCurrencyParams = {
@@ -750,6 +783,10 @@ export type SellForm = {
      */
     occurredAt: string;
     /**
+     * the tags of the entry; a repeated id counts once
+     */
+    tagIds?: Array<number>;
+    /**
      * the units sold, greater than zero
      */
     units: string;
@@ -812,6 +849,10 @@ export type TransferForm = {
      */
     occurredAt: string;
     /**
+     * the tags of the entry; a repeated id counts once
+     */
+    tagIds?: Array<number>;
+    /**
      * the amount that arrives: required between currencies, else omitted or equal to amount
      */
     toAmount?: string;
@@ -865,6 +906,10 @@ export type VestForm = {
      * the instant of the vest
      */
     occurredAt: string;
+    /**
+     * the tags of the entry; a repeated id counts once
+     */
+    tagIds?: Array<number>;
     /**
      * the expense category of the value of the units withheld; required when units are withheld
      */
@@ -2390,6 +2435,41 @@ export type GetJournalEntryResponses = {
 };
 
 export type GetJournalEntryResponse = GetJournalEntryResponses[keyof GetJournalEntryResponses];
+
+export type SetJournalEntryTagsData = {
+    body: EntryTagsForm;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/api/journal-entries/{id}/tags';
+};
+
+export type SetJournalEntryTagsErrors = {
+    /**
+     * Not Found
+     */
+    404: ErrorModel;
+    /**
+     * Unprocessable Entity
+     */
+    422: ErrorModel;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorModel;
+};
+
+export type SetJournalEntryTagsError = SetJournalEntryTagsErrors[keyof SetJournalEntryTagsErrors];
+
+export type SetJournalEntryTagsResponses = {
+    /**
+     * OK
+     */
+    200: EntryTagIds;
+};
+
+export type SetJournalEntryTagsResponse = SetJournalEntryTagsResponses[keyof SetJournalEntryTagsResponses];
 
 export type DeleteLedgerAccountData = {
     body?: never;

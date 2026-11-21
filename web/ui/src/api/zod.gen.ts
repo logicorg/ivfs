@@ -105,6 +105,7 @@ export const zBuyForm = z.object({
     financialAccountId: z.int().gte(1),
     idempotencyKey: z.string().min(1),
     occurredAt: z.iso.datetime(),
+    tagIds: z.array(z.int()).optional(),
     units: z.string().regex(/^-?[0-9]+(\.[0-9]+)?$/)
 });
 
@@ -207,6 +208,19 @@ export const zDeletedCounterparty = z.object({
     cleared: z.int()
 });
 
+export const zEntryTag = z.object({
+    id: z.int(),
+    name: z.string()
+});
+
+export const zEntryTagIds = z.object({
+    tagIds: z.array(z.int())
+});
+
+export const zEntryTagsForm = z.object({
+    tagIds: z.array(z.int())
+});
+
 export const zErrorDetail = z.object({
     location: z.string().optional(),
     message: z.string().optional(),
@@ -228,7 +242,8 @@ export const zExpenseForm = z.object({
     categoryId: z.int().gte(1),
     description: z.string().optional(),
     idempotencyKey: z.string().min(1),
-    occurredAt: z.iso.datetime()
+    occurredAt: z.iso.datetime(),
+    tagIds: z.array(z.int()).optional()
 });
 
 export const zFinancialAccount = z.object({
@@ -267,7 +282,8 @@ export const zIncomeForm = z.object({
     categoryId: z.int().gte(1),
     description: z.string().optional(),
     idempotencyKey: z.string().min(1),
-    occurredAt: z.iso.datetime()
+    occurredAt: z.iso.datetime(),
+    tagIds: z.array(z.int()).optional()
 });
 
 export const zInsertCurrencyParams = z.object({
@@ -408,7 +424,8 @@ export const zEntry = z.object({
     id: z.int(),
     occurredAt: z.iso.datetime(),
     postings: z.array(zPosting),
-    status: z.enum(['draft', 'posted'])
+    status: z.enum(['draft', 'posted']),
+    tags: z.array(zEntryTag)
 });
 
 export const zEntryDetail = z.object({
@@ -421,7 +438,8 @@ export const zEntryDetail = z.object({
     occurredAt: z.iso.datetime(),
     postedAt: z.iso.datetime().optional(),
     postings: z.array(zPosting),
-    status: z.enum(['draft', 'posted'])
+    status: z.enum(['draft', 'posted']),
+    tags: z.array(zEntryTag)
 });
 
 export const zEntryPage = z.object({
@@ -490,6 +508,7 @@ export const zSellForm = z.object({
     financialAccountId: z.int().gte(1),
     idempotencyKey: z.string().min(1),
     occurredAt: z.iso.datetime(),
+    tagIds: z.array(z.int()).optional(),
     units: z.string().regex(/^-?[0-9]+(\.[0-9]+)?$/)
 });
 
@@ -535,6 +554,7 @@ export const zTransferForm = z.object({
     fromLedgerAccountId: z.int().gte(1),
     idempotencyKey: z.string().min(1),
     occurredAt: z.iso.datetime(),
+    tagIds: z.array(z.int()).optional(),
     toAmount: z.string().regex(/^-?[0-9]+(\.[0-9]+)?$/).optional(),
     toLedgerAccountId: z.int().gte(1)
 });
@@ -553,6 +573,7 @@ export const zVestForm = z.object({
     idempotencyKey: z.string().min(1),
     incomeCategoryId: z.int().gte(1),
     occurredAt: z.iso.datetime(),
+    tagIds: z.array(z.int()).optional(),
     taxCategoryId: z.int().gte(1).optional(),
     unitsVested: z.string().regex(/^-?[0-9]+(\.[0-9]+)?$/),
     unitsWithheld: z.string().regex(/^-?[0-9]+(\.[0-9]+)?$/).optional()
@@ -962,6 +983,17 @@ export const zGetJournalEntryPath = z.object({
  * OK
  */
 export const zGetJournalEntryResponse = zEntryDetail;
+
+export const zSetJournalEntryTagsBody = zEntryTagsForm;
+
+export const zSetJournalEntryTagsPath = z.object({
+    id: z.int().gte(1)
+});
+
+/**
+ * OK
+ */
+export const zSetJournalEntryTagsResponse = zEntryTagIds;
 
 export const zDeleteLedgerAccountPath = z.object({
     id: z.int().gte(1)

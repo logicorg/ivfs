@@ -22,6 +22,8 @@ func TestUpdateExpenseInput_Validate(t *testing.T) {
 	}{
 		"an expense":         {mutate: func(*UpdateExpenseInput) {}},
 		"with a note":        {mutate: func(i *UpdateExpenseInput) { i.Description = "a note" }},
+		"with tags":          {mutate: func(i *UpdateExpenseInput) { i.TagIDs = []int64{3, 4} }},
+		"a tag id of zero":   {mutate: func(i *UpdateExpenseInput) { i.TagIDs = []int64{3, 0} }, wantError: "tag id 0"},
 		"no journal entry":   {mutate: func(i *UpdateExpenseInput) { i.JournalEntryID = 0 }, wantError: "validation error"},
 		"a negative entry":   {mutate: func(i *UpdateExpenseInput) { i.JournalEntryID = -1 }, wantError: "validation error"},
 		"no balance":         {mutate: func(i *UpdateExpenseInput) { i.BalanceLedgerAccountID = 0 }, wantError: "validation error"},

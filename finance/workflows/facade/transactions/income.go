@@ -43,5 +43,6 @@ func incomeMovement(ctx workflow.Context, input tt.RecordIncomeInput) (movement,
 		amount:         input.Amount,
 		occurredAt:     input.OccurredAt,
 		description:    input.Description,
+		tagIDs:         input.TagIDs,
 	}, nil
 }

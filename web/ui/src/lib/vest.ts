@@ -4,6 +4,7 @@ import type { SellForm, VestForm } from "@/api"
 
 import { compareDecimals } from "./decimal"
 import { startOfDay } from "./open-account"
+import { sentTagIds, tagIdsField } from "./tags"
 import { checkNewAsset, decimal, optionalText, positiveText } from "./trade"
 
 // vestForm is a vest as the person fills it in, with the sale that covers its
@@ -25,6 +26,7 @@ export const vestForm = z
     taxCategoryId: z.string(),
     occurredOn: z.string(),
     description: z.string().trim(),
+    tagIds: tagIdsField,
     sellToCover: z.boolean(),
     soldUnits: z.string().trim(),
     soldAmount: z.string().trim(),
@@ -75,12 +77,14 @@ export function newVest(values: VestFormValues, assetId: number, idempotencyKey:
     taxCategoryId: withheld ? Number(values.taxCategoryId) : undefined,
     occurredAt: vestedAt(values, now),
     description: values.description || undefined,
+    tagIds: sentTagIds(values.tagIds),
   }
 }
 
 // newSellToCover is the sale of some of the units delivered, recorded after
 // the vest with a key of its own (ADR 0009), at the same instant: on a day
 // chosen, both start it, so the sale cannot come before the units it sells.
+// It carries the vest's tags, being part of the same event.
 export function newSellToCover(values: VestFormValues, assetId: number, idempotencyKey: string, now: Date): SellForm {
   return {
     idempotencyKey,
@@ -92,6 +96,7 @@ export function newSellToCover(values: VestFormValues, assetId: number, idempote
     fee: values.soldFee || undefined,
     occurredAt: vestedAt(values, now),
     description: "Sold to cover the vest's tax",
+    tagIds: sentTagIds(values.tagIds),
   }
 }
 
