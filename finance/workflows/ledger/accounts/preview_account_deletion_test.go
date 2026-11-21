@@ -1,7 +1,7 @@
 package accounts
 
 import (
-	activity "github.com/logicorg/ivfs/finance/activities/ledger/accounts"
+	accountdeletion "github.com/logicorg/ivfs/finance/activities/ledger/accounts/deletion"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/logicorg/ivfs/pkg/ptr"
@@ -44,9 +44,9 @@ func (s *WorkflowUnitTestSuite) TestPreviewAccountDeletion() {
 		s.Run(tc.name, func() {
 			t := s.T()
 			env := s.NewTestWorkflowEnvironment()
-			aa := activity.Activities{}
+			da := accountdeletion.Activities{}
 			if tc.previews {
-				env.OnActivity(aa.PreviewAccountDeletion, mock.Anything, tc.input).Return(preview, tc.previewErr).Once()
+				env.OnActivity(da.PreviewAccountDeletion, mock.Anything, tc.input).Return(preview, tc.previewErr).Once()
 			}
 
 			env.ExecuteWorkflow(PreviewAccountDeletion, tc.input)

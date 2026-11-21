@@ -333,7 +333,7 @@ endpoints only, until a confirmation step exists for MCP.
 | `PreviewAccountDeletion` | New, read-only. | `GET` on `/deletion-preview` under each of the four |
 
 A replacement is passed as `replacementId`. The deletion workflows share three
-new activities, in `finance/activities/ledger/accounts`: closing without the
+new activities, in `finance/activities/ledger/accounts/deletion`: closing without the
 checks, handling a batch of entries, and handling a batch of movement groups.
 Deleting an account that does not exist succeeds. `DeleteOrCloseLedgerAccount`
 and `DeleteOrCloseCategory` no longer have a purpose and are removed.

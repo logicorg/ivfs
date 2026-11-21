@@ -1,4 +1,4 @@
-package accounts
+package deletion
 
 import (
 	"cmp"
@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/logicorg/ivfs/finance/activities/ledger/internal/deletion"
+	ledgerdeletion "github.com/logicorg/ivfs/finance/activities/ledger/internal/deletion"
 	"github.com/logicorg/ivfs/finance/activities/ledger/internal/positions"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
@@ -223,7 +223,7 @@ func (d *deletionTally) movementGroupsTx(ctx context.Context, tx bun.Tx) error {
 }
 
 func (d *deletionTally) groupTx(ctx context.Context, tx bun.Tx, group []model.PositionMovement) error {
-	accounts, err := financialAccountsTx(ctx, tx, deletion.AccountIDsOf(group))
+	accounts, err := financialAccountsTx(ctx, tx, ledgerdeletion.AccountIDsOf(group))
 	if err != nil {
 		return err
 	}

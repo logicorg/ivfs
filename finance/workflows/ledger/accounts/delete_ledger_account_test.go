@@ -2,6 +2,7 @@ package accounts
 
 import (
 	activity "github.com/logicorg/ivfs/finance/activities/ledger/accounts"
+	accountdeletion "github.com/logicorg/ivfs/finance/activities/ledger/accounts/deletion"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/logicorg/ivfs/pkg/ptr"
@@ -131,21 +132,22 @@ func (s *WorkflowUnitTestSuite) TestDeleteLedgerAccount() {
 			t := s.T()
 			env := s.NewTestWorkflowEnvironment()
 			aa := activity.Activities{}
+			da := accountdeletion.Activities{}
 			target := lt.DeletionTarget{LedgerAccountID: &tc.input.LedgerAccountID}
 			batch := lt.DeletionBatchInput{Target: target, Limit: deletionBatchSize}
 
 			if tc.closed != nil {
-				env.OnActivity(aa.CloseAccountForDeletion, mock.Anything, target).Return(tc.closed, tc.closeErr).Once()
+				env.OnActivity(da.CloseAccountForDeletion, mock.Anything, target).Return(tc.closed, tc.closeErr).Once()
 			}
 			if tc.batchErr != nil {
 				// Not Once: a retryable error is retried.
-				env.OnActivity(aa.HandleEntriesForDeletion, mock.Anything, batch).Return(nil, tc.batchErr)
+				env.OnActivity(da.HandleEntriesForDeletion, mock.Anything, batch).Return(nil, tc.batchErr)
 			}
 			batches := 0
 			suggested := func() bool { return tc.continueAsNew > 0 && batches == tc.continueAsNew }
 			for n, pass := range tc.passes {
 				for _, handled := range pass {
-					call := env.OnActivity(aa.HandleEntriesForDeletion, mock.Anything, batch).Return(&lt.DeletionBatchResult{Handled: handled}, nil).Once()
+					call := env.OnActivity(da.HandleEntriesForDeletion, mock.Anything, batch).Return(&lt.DeletionBatchResult{Handled: handled}, nil).Once()
 					batches++
 					if suggested() {
 						call.Run(func(mock.Arguments) { env.SetContinueAsNewSuggested(true) })
@@ -155,7 +157,7 @@ func (s *WorkflowUnitTestSuite) TestDeleteLedgerAccount() {
 				if suggested() {
 					break
 				}
-				env.OnActivity(aa.HandleEntriesForDeletion, mock.Anything, batch).Return(&lt.DeletionBatchResult{}, nil).Once()
+				env.OnActivity(da.HandleEntriesForDeletion, mock.Anything, batch).Return(&lt.DeletionBatchResult{}, nil).Once()
 				deleted := env.OnActivity(aa.DeleteLedgerAccount, mock.Anything, tc.input).Return(tc.deleteErrs[n])
 				if tc.deleteErrs[n] != assert.AnError {
 					deleted.Once()

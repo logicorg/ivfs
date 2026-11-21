@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	ledgerdeletion "github.com/logicorg/ivfs/finance/activities/ledger/internal/deletion"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/logicorg/ivfs/pkg/model"
@@ -28,7 +29,7 @@ func (a *Activities) DeleteLedgerAccount(ctx context.Context, input lt.DeleteLed
 			return err
 		}
 
-		if hasPostings, err := ledgerAccountHasPostings(ctx, tx, input.LedgerAccountID); err != nil {
+		if hasPostings, err := ledgerdeletion.LedgerAccountHasPostingsTx(ctx, tx, input.LedgerAccountID); err != nil {
 			return err
 		} else if hasPostings {
 			return internalerrors.ErrResourceConflict{ResourceType: "LedgerAccount", Reason: "ledger account has postings; close it instead"}

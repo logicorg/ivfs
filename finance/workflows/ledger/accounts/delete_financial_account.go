@@ -28,7 +28,7 @@ func DeleteFinancialAccount(ctx workflow.Context, input lt.DeleteFinancialAccoun
 
 	target := lt.DeletionTarget{FinancialAccountID: &input.FinancialAccountID}
 	var closed lt.CloseAccountForDeletionResult
-	if err := workflow.ExecuteActivity(ctx, la.CloseAccountForDeletion, target).Get(ctx, &closed); err != nil {
+	if err := workflow.ExecuteActivity(ctx, da.CloseAccountForDeletion, target).Get(ctx, &closed); err != nil {
 		return nil, fmt.Errorf("close financial account for deletion: %w", err)
 	}
 	if closed.Gone {

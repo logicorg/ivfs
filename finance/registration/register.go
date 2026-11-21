@@ -10,6 +10,7 @@ import (
 	"github.com/logicorg/ivfs/finance/activities/currency/currency"
 	"github.com/logicorg/ivfs/finance/activities/institution"
 	ledgeraccounts "github.com/logicorg/ivfs/finance/activities/ledger/accounts"
+	ledgeraccountdeletion "github.com/logicorg/ivfs/finance/activities/ledger/accounts/deletion"
 	ledgercategories "github.com/logicorg/ivfs/finance/activities/ledger/categories"
 	ledgercounterparties "github.com/logicorg/ivfs/finance/activities/ledger/counterparties"
 	ledgerfx "github.com/logicorg/ivfs/finance/activities/ledger/fx"
@@ -49,6 +50,7 @@ func Register(r worker.Registry, pools tenancy.Pools) {
 	conversionActivity := conversion.Conversion{Pools: pools}
 	tagActivity := tag.Tag{Pools: pools}
 	ledgerAccountsActivity := ledgeraccounts.Activities{Pools: pools}
+	ledgerAccountDeletionActivity := ledgeraccountdeletion.Activities{Pools: pools}
 	ledgerCounterpartiesActivity := ledgercounterparties.Activities{Pools: pools}
 	ledgerCategoriesActivity := ledgercategories.Activities{Pools: pools}
 	ledgerFXActivity := ledgerfx.Activities{Pools: pools}
@@ -64,6 +66,7 @@ func Register(r worker.Registry, pools tenancy.Pools) {
 	r.RegisterActivity(&conversionActivity)
 	r.RegisterActivity(&tagActivity)
 	r.RegisterActivity(&ledgerAccountsActivity)
+	r.RegisterActivity(&ledgerAccountDeletionActivity)
 	r.RegisterActivity(&ledgerCounterpartiesActivity)
 	r.RegisterActivity(&ledgerCategoriesActivity)
 	r.RegisterActivity(&ledgerFXActivity)

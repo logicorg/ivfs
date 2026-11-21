@@ -23,7 +23,7 @@ var errMergeNotSupported = internalerrors.ErrInvalidParameter{
 // balanced, so the workflow can stop between two of them and pick up where it
 // stopped.
 func drainEntries(ctx workflow.Context, target lt.DeletionTarget) (int, error) {
-	batches, err := drain(ctx, la.HandleEntriesForDeletion, target)
+	batches, err := drain(ctx, da.HandleEntriesForDeletion, target)
 	if err != nil {
 		return batches, fmt.Errorf("handle entries for deletion: %w", err)
 	}
@@ -33,7 +33,7 @@ func drainEntries(ctx workflow.Context, target lt.DeletionTarget) (int, error) {
 // drainMovementGroups is drainEntries for the movement groups left on target
 // once its entries are gone.
 func drainMovementGroups(ctx workflow.Context, target lt.DeletionTarget) (int, error) {
-	batches, err := drain(ctx, la.HandleMovementGroupsForDeletion, target)
+	batches, err := drain(ctx, da.HandleMovementGroupsForDeletion, target)
 	if err != nil {
 		return batches, fmt.Errorf("handle movement groups for deletion: %w", err)
 	}

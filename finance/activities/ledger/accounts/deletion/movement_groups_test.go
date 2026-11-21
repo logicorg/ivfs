@@ -1,4 +1,4 @@
-package accounts
+package deletion
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/logicorg/ivfs/finance/activities/ledger/internal/deletion"
+	ledgerdeletion "github.com/logicorg/ivfs/finance/activities/ledger/internal/deletion"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	"github.com/logicorg/ivfs/internal/pkg/temporaltesting"
 	"github.com/logicorg/ivfs/pkg/model"
@@ -54,7 +54,7 @@ func (f *movementGroupsForDeletionFixture) financialAccount(t *testing.T, name s
 func (f *movementGroupsForDeletionFixture) strayFinancialAccount(t *testing.T) *model.FinancialAccount {
 	var id int64
 	require.NoError(t, f.s.DB.RunInTx(t.Context(), nil, func(ctx context.Context, tx bun.Tx) (err error) {
-		id, err = deletion.StrayFinancialAccountTx(ctx, tx)
+		id, err = ledgerdeletion.StrayFinancialAccountTx(ctx, tx)
 		return err
 	}))
 	account := &model.FinancialAccount{}
