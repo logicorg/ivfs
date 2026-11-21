@@ -4437,7 +4437,7 @@
         },
         "summary": "Delete an institution with its financial accounts",
         "tags": [
-          "accounts"
+          "institutions"
         ]
       }
     },
@@ -4503,7 +4503,7 @@
         },
         "summary": "Close an institution",
         "tags": [
-          "accounts"
+          "institutions"
         ]
       }
     },
@@ -4566,7 +4566,7 @@
         },
         "summary": "Preview deleting an institution",
         "tags": [
-          "accounts"
+          "institutions"
         ]
       }
     },

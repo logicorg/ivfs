@@ -1,4 +1,4 @@
-package accounts
+package institutions
 
 import (
 	"context"
@@ -13,7 +13,7 @@ import (
 	"go.temporal.io/sdk/client"
 )
 
-func registerDeleteInstitution(api huma.API, c client.Client) {
+func registerDelete(api huma.API, c client.Client) {
 	huma.Register(api, huma.Operation{
 		OperationID: "delete-institution",
 		Method:      http.MethodDelete,

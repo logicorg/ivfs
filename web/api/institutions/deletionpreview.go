@@ -1,4 +1,4 @@
-package accounts
+package institutions
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 	"go.temporal.io/sdk/client"
 )
 
-func registerPreviewInstitutionDeletion(api huma.API, c client.Client) {
+func registerPreviewDeletion(api huma.API, c client.Client) {
 	huma.Register(api, huma.Operation{
 		OperationID: "preview-institution-deletion",
 		Method:      http.MethodGet,
