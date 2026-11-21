@@ -1,4 +1,4 @@
-package ledgertypes
+package reportingtypes
 
 import (
 	"testing"

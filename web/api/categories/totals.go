@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	rpt "github.com/logicorg/ivfs/finance/common/types/reportingtypes"
 	reportingwf "github.com/logicorg/ivfs/finance/workflows/ledger/reporting"
 	"github.com/logicorg/ivfs/web/api/gateway"
 	"go.temporal.io/sdk/client"
@@ -21,8 +21,8 @@ func registerTotals(api huma.API, c client.Client) {
 		Tags:        tags,
 		Errors:      []int{http.StatusUnprocessableEntity},
 	}, func(ctx context.Context, in *CategoryTotalsInput) (*CategoryTotalsOutput, error) {
-		result, err := gateway.RunWorkflow[lt.CategoryTotalsResult](ctx, c, reportingwf.CategoryTotals,
-			lt.CategoryTotalsParams{From: in.From, To: in.To})
+		result, err := gateway.RunWorkflow[rpt.CategoryTotalsResult](ctx, c, reportingwf.CategoryTotals,
+			rpt.CategoryTotalsParams{From: in.From, To: in.To})
 		if err != nil {
 			return nil, err
 		}

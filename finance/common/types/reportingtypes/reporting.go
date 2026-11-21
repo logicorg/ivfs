@@ -1,8 +1,12 @@
-package ledgertypes
+// Package reportingtypes holds the inputs and results of the read-only
+// reporting activities and workflows: balances, positions, category totals
+// and net worth series.
+package reportingtypes
 
 import (
 	"time"
 
+	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	"github.com/shopspring/decimal"
 )
 
@@ -14,8 +18,8 @@ type FinancialAccountBalancesParams struct {
 
 // FinancialAccountBalancesResult holds the result of an operation to get the FinancialAccount balance.
 type FinancialAccountBalancesResult struct {
-	FinancialAccountID int64                        `json:"financialAccountId"`
-	Balances           []LedgerAccountBalanceResult `json:"balances"`
+	FinancialAccountID int64                           `json:"financialAccountId"`
+	Balances           []lt.LedgerAccountBalanceResult `json:"balances"`
 }
 
 type PositionsAtParams struct {

@@ -5,6 +5,7 @@ import (
 
 	ledgeractivity "github.com/logicorg/ivfs/finance/activities/ledger/reporting"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	rpt "github.com/logicorg/ivfs/finance/common/types/reportingtypes"
 	"github.com/logicorg/ivfs/finance/workflows"
 	"go.temporal.io/sdk/workflow"
 )
@@ -20,22 +21,22 @@ func LedgerAccountBalance(ctx workflow.Context, params lt.LedgerAccountBalancePa
 	return &result, nil
 }
 
-func FinancialAccountBalances(ctx workflow.Context, params lt.FinancialAccountBalancesParams) (*lt.FinancialAccountBalancesResult, error) {
+func FinancialAccountBalances(ctx workflow.Context, params rpt.FinancialAccountBalancesParams) (*rpt.FinancialAccountBalancesResult, error) {
 	ctx = workflow.WithActivityOptions(ctx, workflows.GetDefaultActivityOptions())
 	la := (*ledgeractivity.Activities)(nil)
 
-	var result lt.FinancialAccountBalancesResult
+	var result rpt.FinancialAccountBalancesResult
 	if err := workflow.ExecuteActivity(ctx, la.FinancialAccountBalances, params).Get(ctx, &result); err != nil {
 		return nil, fmt.Errorf("retrieve financial account balances: %w", err)
 	}
 	return &result, nil
 }
 
-func ListPositionsAt(ctx workflow.Context, params lt.PositionsAtParams) (*lt.PositionsAtResult, error) {
+func ListPositionsAt(ctx workflow.Context, params rpt.PositionsAtParams) (*rpt.PositionsAtResult, error) {
 	ctx = workflow.WithActivityOptions(ctx, workflows.GetDefaultActivityOptions())
 	la := (*ledgeractivity.Activities)(nil)
 
-	var result lt.PositionsAtResult
+	var result rpt.PositionsAtResult
 	if err := workflow.ExecuteActivity(ctx, la.PositionsAt, params).Get(ctx, &result); err != nil {
 		return nil, fmt.Errorf("retrieve positions: %w", err)
 	}

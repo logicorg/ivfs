@@ -8,11 +8,12 @@ import (
 
 	"github.com/logicorg/ivfs/finance/activities/ledger/internal/positions"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	rpt "github.com/logicorg/ivfs/finance/common/types/reportingtypes"
 	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/logicorg/ivfs/pkg/model"
 )
 
-func (a *Activities) FinancialAccountBalances(ctx context.Context, params lt.FinancialAccountBalancesParams) (*lt.FinancialAccountBalancesResult, error) {
+func (a *Activities) FinancialAccountBalances(ctx context.Context, params rpt.FinancialAccountBalancesParams) (*rpt.FinancialAccountBalancesResult, error) {
 	db, err := a.Pools.For(ctx)
 	if err != nil {
 		return nil, err
@@ -32,7 +33,7 @@ func (a *Activities) FinancialAccountBalances(ctx context.Context, params lt.Fin
 	if err := db.NewSelect().Model(&accounts).Where("financial_account_id = ?", params.FinancialAccountID).Order("id ASC").Scan(ctx); err != nil {
 		return nil, fmt.Errorf("load ledger accounts: %w", err)
 	}
-	result := &lt.FinancialAccountBalancesResult{FinancialAccountID: params.FinancialAccountID, Balances: make([]lt.LedgerAccountBalanceResult, 0, len(accounts))}
+	result := &rpt.FinancialAccountBalancesResult{FinancialAccountID: params.FinancialAccountID, Balances: make([]lt.LedgerAccountBalanceResult, 0, len(accounts))}
 	for _, account := range accounts {
 		balance, err := a.LedgerAccountBalance(ctx, lt.LedgerAccountBalanceParams{LedgerAccountID: account.ID, At: params.At})
 		if err != nil {
@@ -46,7 +47,7 @@ func (a *Activities) FinancialAccountBalances(ctx context.Context, params lt.Fin
 // PositionsAt returns the units held of each asset in each financial account,
 // with their cost basis, counting the effective movements at or before At, or
 // every one when At is zero.
-func (a *Activities) PositionsAt(ctx context.Context, params lt.PositionsAtParams) (*lt.PositionsAtResult, error) {
+func (a *Activities) PositionsAt(ctx context.Context, params rpt.PositionsAtParams) (*rpt.PositionsAtResult, error) {
 	db, err := a.Pools.For(ctx)
 	if err != nil {
 		return nil, err
@@ -64,7 +65,7 @@ func (a *Activities) PositionsAt(ctx context.Context, params lt.PositionsAtParam
 	}
 	bases := positions.ReplayCostBasis(movements)
 
-	result := &lt.PositionsAtResult{Positions: make([]lt.PositionResult, 0, len(rows))}
+	result := &rpt.PositionsAtResult{Positions: make([]rpt.PositionResult, 0, len(rows))}
 	for _, item := range rows {
 		position := unitsToPositionResult(item)
 		// A position with nothing replayed has a known zero basis.
@@ -76,22 +77,22 @@ func (a *Activities) PositionsAt(ctx context.Context, params lt.PositionsAtParam
 	return result, nil
 }
 
-func addCostBasis(position *lt.PositionResult, basis *positions.CostBasis) {
+func addCostBasis(position *rpt.PositionResult, basis *positions.CostBasis) {
 	currencyIDs := make([]int64, 0, len(basis.Amounts))
 	for currencyID := range basis.Amounts {
 		currencyIDs = append(currencyIDs, currencyID)
 	}
 	slices.Sort(currencyIDs)
 	for _, currencyID := range currencyIDs {
-		position.CostBasis = append(position.CostBasis, lt.CostBasisAmount{CurrencyID: currencyID, Amount: basis.Amounts[currencyID]})
+		position.CostBasis = append(position.CostBasis, rpt.CostBasisAmount{CurrencyID: currencyID, Amount: basis.Amounts[currencyID]})
 	}
 	position.UnknownCostBasis = basis.Unknown
 	if currencyID, amount, ok := basis.Average(); ok {
-		position.AverageCost = &lt.CostBasisAmount{CurrencyID: currencyID, Amount: amount}
+		position.AverageCost = &rpt.CostBasisAmount{CurrencyID: currencyID, Amount: amount}
 	}
 }
 
-func positionsAtParamsToFilter(i lt.PositionsAtParams) positions.Filter {
+func positionsAtParamsToFilter(i rpt.PositionsAtParams) positions.Filter {
 	return positions.Filter{
 		FinancialAccountID: i.FinancialAccountID,
 		AssetID:            i.AssetID,
@@ -99,11 +100,11 @@ func positionsAtParamsToFilter(i lt.PositionsAtParams) positions.Filter {
 	}
 }
 
-func unitsToPositionResult(i positions.Units) lt.PositionResult {
-	return lt.PositionResult{
+func unitsToPositionResult(i positions.Units) rpt.PositionResult {
+	return rpt.PositionResult{
 		FinancialAccountID: i.FinancialAccountID,
 		AssetID:            i.AssetID,
 		Units:              i.Units,
-		CostBasis:          []lt.CostBasisAmount{},
+		CostBasis:          []rpt.CostBasisAmount{},
 	}
 }

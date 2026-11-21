@@ -5,6 +5,7 @@ import (
 	"time"
 
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	rpt "github.com/logicorg/ivfs/finance/common/types/reportingtypes"
 	"github.com/logicorg/ivfs/internal/pkg/temporaltesting"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/logicorg/ivfs/pkg/model/testhelpers"
@@ -35,9 +36,9 @@ func (s *UnitTestSuite) TestLedgerAccountBalanceAndFinancialAccountBalances() {
 	require.NoError(s.T(), balanceResult.Get(&balance))
 	require.True(s.T(), balance.Balance.Equal(decimal.NewFromInt(30)))
 
-	accountsResult, err := s.Env.ExecuteActivity(s.ra.FinancialAccountBalances, lt.FinancialAccountBalancesParams{FinancialAccountID: fixture.BankFinancialAccount.ID})
+	accountsResult, err := s.Env.ExecuteActivity(s.ra.FinancialAccountBalances, rpt.FinancialAccountBalancesParams{FinancialAccountID: fixture.BankFinancialAccount.ID})
 	require.NoError(s.T(), err)
-	var accounts lt.FinancialAccountBalancesResult
+	var accounts rpt.FinancialAccountBalancesResult
 	require.NoError(s.T(), accountsResult.Get(&accounts))
 	require.Len(s.T(), accounts.Balances, 1)
 	require.True(s.T(), accounts.Balances[0].Balance.Equal(decimal.NewFromInt(30)))
@@ -70,9 +71,9 @@ func (s *UnitTestSuite) TestPositionsAtExcludesDraftEntries() {
 	draftMovement.JournalEntryID, draftMovement.OccurredAt = &draft.ID, draft.OccurredAt
 	temporaltesting.InsertPositionMovement(s.T(), s.DB, draftMovement)
 
-	activityResult, err := s.Env.ExecuteActivity(s.ra.PositionsAt, lt.PositionsAtParams{FinancialAccountID: fixture.BrokerFinancialAccount.ID, AssetID: asset.ID})
+	activityResult, err := s.Env.ExecuteActivity(s.ra.PositionsAt, rpt.PositionsAtParams{FinancialAccountID: fixture.BrokerFinancialAccount.ID, AssetID: asset.ID})
 	require.NoError(s.T(), err)
-	var result lt.PositionsAtResult
+	var result rpt.PositionsAtResult
 	require.NoError(s.T(), activityResult.Get(&result))
 	require.Len(s.T(), result.Positions, 1)
 	require.True(s.T(), result.Positions[0].Units.Equal(decimal.NewFromInt(2)))
@@ -102,10 +103,10 @@ func (s *UnitTestSuite) TestPositionsAt_CountsMovementsWithoutEntry() {
 
 	for name, tc := range tests {
 		s.Run(name, func() {
-			activityResult, err := s.Env.ExecuteActivity(s.ra.PositionsAt, lt.PositionsAtParams{AssetID: asset.ID, At: tc.at})
+			activityResult, err := s.Env.ExecuteActivity(s.ra.PositionsAt, rpt.PositionsAtParams{AssetID: asset.ID, At: tc.at})
 			require.NoError(s.T(), err)
 
-			var result lt.PositionsAtResult
+			var result rpt.PositionsAtResult
 			require.NoError(s.T(), activityResult.Get(&result))
 
 			units := make(map[int64]int64, len(result.Positions))
@@ -386,9 +387,9 @@ func (s *UnitTestSuite) TestPositionsAt_CostBasis() {
 		tc.movements(asset)
 
 		s.Run(name, func() {
-			activityResult, err := s.Env.ExecuteActivity(s.ra.PositionsAt, lt.PositionsAtParams{AssetID: asset.ID, At: tc.at})
+			activityResult, err := s.Env.ExecuteActivity(s.ra.PositionsAt, rpt.PositionsAtParams{AssetID: asset.ID, At: tc.at})
 			require.NoError(s.T(), err)
-			var result lt.PositionsAtResult
+			var result rpt.PositionsAtResult
 			require.NoError(s.T(), activityResult.Get(&result))
 			require.Len(s.T(), result.Positions, 1)
 
