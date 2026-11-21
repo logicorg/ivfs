@@ -5,6 +5,7 @@ import (
 	"slices"
 	"time"
 
+	fxt "github.com/logicorg/ivfs/finance/common/types/fxtypes"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	tt "github.com/logicorg/ivfs/finance/common/types/transactiontypes"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
@@ -30,8 +31,8 @@ func mockFXClearing(env *testsuite.TestWorkflowEnvironment) {
 
 // conversion matches the FX conversion want by what it books rather than by
 // its representation, as entry does for a journal entry.
-func conversion(want lt.RegisterFXConversionInput) any {
-	return mock.MatchedBy(func(got lt.RegisterFXConversionInput) bool {
+func conversion(want fxt.RegisterFXConversionInput) any {
+	return mock.MatchedBy(func(got fxt.RegisterFXConversionInput) bool {
 		sameDescription := (got.Description == nil) == (want.Description == nil) &&
 			(got.Description == nil || *got.Description == *want.Description)
 		return got.IdempotencyKey == want.IdempotencyKey && got.OccurredAt.Equal(want.OccurredAt) && sameDescription &&
@@ -101,7 +102,7 @@ func (s *WorkflowUnitTestSuite) TestRecordTransfer() {
 				Description: "dollars for the trip", TagIDs: []int64{5},
 			},
 			mock: func(env *testsuite.TestWorkflowEnvironment) {
-				env.OnWorkflow(ledgerfxwf.RegisterFXConversion, mock.Anything, conversion(lt.RegisterFXConversionInput{
+				env.OnWorkflow(ledgerfxwf.RegisterFXConversion, mock.Anything, conversion(fxt.RegisterFXConversionInput{
 					IdempotencyKey:                     "transfer:9c1e",
 					OccurredAt:                         occurredAt,
 					Description:                        ptr.NewPtr("dollars for the trip"),
@@ -112,7 +113,7 @@ func (s *WorkflowUnitTestSuite) TestRecordTransfer() {
 					DestinationLedgerAccountID:         cashUSD.ID,
 					DestinationClearingLedgerAccountID: fxClearingUSD.ID,
 					DestinationAmount:                  decimal.RequireFromString("324.15"),
-				})).Return(&lt.RegisterFXConversionResult{JournalEntryID: 42}, nil).Once()
+				})).Return(&fxt.RegisterFXConversionResult{JournalEntryID: 42}, nil).Once()
 			},
 		},
 		"from dollars to euros, without a note": {
@@ -121,7 +122,7 @@ func (s *WorkflowUnitTestSuite) TestRecordTransfer() {
 				Amount: decimal.RequireFromString("324.15"), ToAmount: decimal.RequireFromString("300.50"), OccurredAt: occurredAt,
 			},
 			mock: func(env *testsuite.TestWorkflowEnvironment) {
-				env.OnWorkflow(ledgerfxwf.RegisterFXConversion, mock.Anything, conversion(lt.RegisterFXConversionInput{
+				env.OnWorkflow(ledgerfxwf.RegisterFXConversion, mock.Anything, conversion(fxt.RegisterFXConversionInput{
 					IdempotencyKey:                     "transfer:9c1e",
 					OccurredAt:                         occurredAt,
 					SourceLedgerAccountID:              cashUSD.ID,
@@ -130,7 +131,7 @@ func (s *WorkflowUnitTestSuite) TestRecordTransfer() {
 					DestinationLedgerAccountID:         cash.ID,
 					DestinationClearingLedgerAccountID: fxClearing.ID,
 					DestinationAmount:                  decimal.RequireFromString("300.50"),
-				})).Return(&lt.RegisterFXConversionResult{JournalEntryID: 42}, nil).Once()
+				})).Return(&fxt.RegisterFXConversionResult{JournalEntryID: 42}, nil).Once()
 			},
 		},
 	}

@@ -20,6 +20,10 @@ const (
 	IncomeAccountName   = "Income"
 )
 
+// FXClearingAccountName is the name of the shared asset account, one per
+// currency and of no financial account, that a conversion balances through.
+const FXClearingAccountName = "FX clearing"
+
 // UntrackedAccountsName is the name of the stray equity account, one per
 // currency, that receives the postings of a deleted ledger account, and of
 // the stray financial account that receives a deleted financial

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	fxt "github.com/logicorg/ivfs/finance/common/types/fxtypes"
 	"github.com/logicorg/ivfs/internal/pkg/temporaltesting"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/logicorg/ivfs/pkg/ptr"
@@ -12,15 +12,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func (s *UnitTestSuite) execute(input lt.RegisterFXConversionInput) (lt.RegisterFXConversionResult, error) {
+func (s *UnitTestSuite) execute(input fxt.RegisterFXConversionInput) (fxt.RegisterFXConversionResult, error) {
 	s.T().Helper()
 
 	encoded, err := s.Env.ExecuteActivity(s.fx.RegisterFXConversion, input)
 	if err != nil {
-		return lt.RegisterFXConversionResult{}, err
+		return fxt.RegisterFXConversionResult{}, err
 	}
 
-	var result lt.RegisterFXConversionResult
+	var result fxt.RegisterFXConversionResult
 	require.NoError(s.T(), encoded.Get(&result))
 	return result, nil
 }
@@ -64,7 +64,7 @@ func (s *UnitTestSuite) Test_RegisterFXConversion() {
 	require.NoError(s.T(), s.DB.NewSelect().Model(&entry).Where("id = ?", result.JournalEntryID).Scan(s.T().Context()))
 	require.Equal(s.T(), model.JournalEntryPosted, entry.Status)
 	require.Equal(s.T(), map[string]string{
-		"type":               lt.FXConversionEntryType,
+		"type":               fxt.FXConversionEntryType,
 		"effective_rate":     "90/99",
 		"provider_reference": "revolut-tx-42",
 	}, entry.Metadata)
@@ -119,87 +119,87 @@ func (s *UnitTestSuite) Test_RegisterFXConversion_KeyOfAnotherKindOfEntry() {
 
 func (s *UnitTestSuite) Test_RegisterFXConversion_Invalid() {
 	tests := map[string]struct {
-		mutate func(*lt.RegisterFXConversionInput)
+		mutate func(*fxt.RegisterFXConversionInput)
 		expMsg string
 	}{
 		"missing idempotency key": {
-			mutate: func(i *lt.RegisterFXConversionInput) { i.IdempotencyKey = "" },
+			mutate: func(i *fxt.RegisterFXConversionInput) { i.IdempotencyKey = "" },
 			expMsg: "IdempotencyKey",
 		},
 		"missing occurrence date": {
-			mutate: func(i *lt.RegisterFXConversionInput) { i.OccurredAt = time.Time{} },
+			mutate: func(i *fxt.RegisterFXConversionInput) { i.OccurredAt = time.Time{} },
 			expMsg: "OccurredAt",
 		},
 		"zero source amount": {
-			mutate: func(i *lt.RegisterFXConversionInput) { i.SourceAmount = decimal.Zero },
+			mutate: func(i *fxt.RegisterFXConversionInput) { i.SourceAmount = decimal.Zero },
 			expMsg: "must be positive",
 		},
 		"negative destination amount": {
-			mutate: func(i *lt.RegisterFXConversionInput) { i.DestinationAmount = decimal.NewFromInt(-90) },
+			mutate: func(i *fxt.RegisterFXConversionInput) { i.DestinationAmount = decimal.NewFromInt(-90) },
 			expMsg: "must be positive",
 		},
 		"zero fee": {
-			mutate: func(i *lt.RegisterFXConversionInput) { i.Fee.Amount = decimal.Zero },
+			mutate: func(i *fxt.RegisterFXConversionInput) { i.Fee.Amount = decimal.Zero },
 			expMsg: "fee amount must be positive",
 		},
 		"a tag id of zero": {
-			mutate: func(i *lt.RegisterFXConversionInput) { i.TagIDs = []int64{0} },
+			mutate: func(i *fxt.RegisterFXConversionInput) { i.TagIDs = []int64{0} },
 			expMsg: "tag id 0",
 		},
 		"fee equal to the source amount": {
-			mutate: func(i *lt.RegisterFXConversionInput) { i.Fee.Amount = i.SourceAmount },
+			mutate: func(i *fxt.RegisterFXConversionInput) { i.Fee.Amount = i.SourceAmount },
 			expMsg: "fee must be smaller",
 		},
 		"clearing account reused as source": {
-			mutate: func(i *lt.RegisterFXConversionInput) { i.SourceClearingLedgerAccountID = i.SourceLedgerAccountID },
+			mutate: func(i *fxt.RegisterFXConversionInput) { i.SourceClearingLedgerAccountID = i.SourceLedgerAccountID },
 			expMsg: "must all be different",
 		},
 		"non positive account id": {
-			mutate: func(i *lt.RegisterFXConversionInput) { i.SourceLedgerAccountID = 0 },
+			mutate: func(i *fxt.RegisterFXConversionInput) { i.SourceLedgerAccountID = 0 },
 			expMsg: "must be positive",
 		},
 		"source and destination share a currency": {
-			mutate: func(i *lt.RegisterFXConversionInput) { i.DestinationLedgerAccountID = s.savingsUSD.ID },
+			mutate: func(i *fxt.RegisterFXConversionInput) { i.DestinationLedgerAccountID = s.savingsUSD.ID },
 			expMsg: "different currencies",
 		},
 		"unknown account": {
-			mutate: func(i *lt.RegisterFXConversionInput) { i.SourceLedgerAccountID = 999999 },
+			mutate: func(i *fxt.RegisterFXConversionInput) { i.SourceLedgerAccountID = 999999 },
 			expMsg: "not found",
 		},
 		"closed source account": {
-			mutate: func(i *lt.RegisterFXConversionInput) { i.SourceLedgerAccountID = s.closedUSD.ID },
+			mutate: func(i *fxt.RegisterFXConversionInput) { i.SourceLedgerAccountID = s.closedUSD.ID },
 			expMsg: "is closed",
 		},
 		"source is not an asset account": {
-			mutate: func(i *lt.RegisterFXConversionInput) { i.SourceLedgerAccountID = s.usdIncome.ID },
+			mutate: func(i *fxt.RegisterFXConversionInput) { i.SourceLedgerAccountID = s.usdIncome.ID },
 			expMsg: "source ledger account must be of kind asset",
 		},
 		"source clearing in the wrong currency": {
-			mutate: func(i *lt.RegisterFXConversionInput) { i.SourceClearingLedgerAccountID = s.savingsEUR.ID },
+			mutate: func(i *fxt.RegisterFXConversionInput) { i.SourceClearingLedgerAccountID = s.savingsEUR.ID },
 			expMsg: "source clearing ledger account must be denominated",
 		},
 		"fee account is not an expense": {
-			mutate: func(i *lt.RegisterFXConversionInput) { i.Fee.LedgerAccountID = s.savingsUSD.ID },
+			mutate: func(i *fxt.RegisterFXConversionInput) { i.Fee.LedgerAccountID = s.savingsUSD.ID },
 			expMsg: "fee ledger account must be of kind expense",
 		},
 		"fee account in the destination currency": {
-			mutate: func(i *lt.RegisterFXConversionInput) { i.Fee.LedgerAccountID = s.eurExpenses.ID },
+			mutate: func(i *fxt.RegisterFXConversionInput) { i.Fee.LedgerAccountID = s.eurExpenses.ID },
 			expMsg: "fee ledger account must be denominated",
 		},
 		"fee without a category": {
-			mutate: func(i *lt.RegisterFXConversionInput) { i.Fee.CategoryID = 0 },
+			mutate: func(i *fxt.RegisterFXConversionInput) { i.Fee.CategoryID = 0 },
 			expMsg: "Fee.CategoryID",
 		},
 		"fee under an income category": {
-			mutate: func(i *lt.RegisterFXConversionInput) { i.Fee.CategoryID = s.interest.ID },
+			mutate: func(i *fxt.RegisterFXConversionInput) { i.Fee.CategoryID = s.interest.ID },
 			expMsg: "is of kind income",
 		},
 		"fee under an unknown category": {
-			mutate: func(i *lt.RegisterFXConversionInput) { i.Fee.CategoryID = 999999 },
+			mutate: func(i *fxt.RegisterFXConversionInput) { i.Fee.CategoryID = 999999 },
 			expMsg: "not found",
 		},
 		"amount beyond the currency precision": {
-			mutate: func(i *lt.RegisterFXConversionInput) { i.DestinationAmount = decimal.RequireFromString("90.001") },
+			mutate: func(i *fxt.RegisterFXConversionInput) { i.DestinationAmount = decimal.RequireFromString("90.001") },
 			expMsg: "exceeds the 2 decimal places",
 		},
 	}
