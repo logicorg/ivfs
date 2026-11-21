@@ -1,4 +1,4 @@
-package accounts
+package institutions
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 	"go.temporal.io/sdk/client"
 )
 
-func registerCloseInstitution(api huma.API, c client.Client) {
+func registerClose(api huma.API, c client.Client) {
 	huma.Register(api, huma.Operation{
 		OperationID: "close-institution",
 		Method:      http.MethodPost,
@@ -20,7 +20,7 @@ func registerCloseInstitution(api huma.API, c client.Client) {
 		Description: "An institution can be closed only once each of its financial accounts is. Closing a closed institution changes nothing.",
 		Tags:        tags,
 		Errors:      []int{http.StatusNotFound, http.StatusConflict},
-	}, func(ctx context.Context, in *CloseInput) (*struct{}, error) {
+	}, func(ctx context.Context, in *CloseInstitutionInput) (*struct{}, error) {
 		return nil, gateway.RunWorkflowWithoutResult(ctx, c, institutionwf.CloseInstitution, it.CloseParams{FindBy: it.RetrieveInstitutionParams{ID: in.ID}})
 	})
 }

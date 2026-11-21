@@ -30,6 +30,7 @@ import (
 	"github.com/logicorg/ivfs/web/api/gateway"
 	"github.com/logicorg/ivfs/web/api/health"
 	"github.com/logicorg/ivfs/web/api/holdings"
+	"github.com/logicorg/ivfs/web/api/institutions"
 	"github.com/logicorg/ivfs/web/api/investments"
 	"github.com/logicorg/ivfs/web/api/journal"
 	"github.com/logicorg/ivfs/web/api/networth"
@@ -94,6 +95,7 @@ func newAPI(router chi.Router, c client.Client, sources assetvalue.Sources) huma
 	categories.Register(api, c)
 	counterparties.Register(api, c)
 	accounts.Register(api, c)
+	institutions.Register(api, c)
 	journal.Register(api, c)
 	positions.Register(api, c)
 	transactions.Register(api, c)

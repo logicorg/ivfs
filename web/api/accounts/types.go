@@ -90,8 +90,8 @@ func newBalance(balance lt.LedgerAccountBalanceResult) Balance {
 	}
 }
 
-// CloseInput is the request of closing an institution, a financial account,
-// or a ledger account.
+// CloseInput is the request of closing a financial account or a ledger
+// account.
 type CloseInput struct {
 	ID int64 `path:"id" minimum:"1"`
 }
@@ -183,10 +183,5 @@ type DeleteAccountInput struct {
 
 // DeletionPreviewInput is the request of GET .../{id}/deletion-preview.
 type DeletionPreviewInput struct {
-	ID int64 `path:"id" minimum:"1"`
-}
-
-// DeleteInstitutionInput is the request of DELETE /api/institutions/{id}.
-type DeleteInstitutionInput struct {
 	ID int64 `path:"id" minimum:"1"`
 }
