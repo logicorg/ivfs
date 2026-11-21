@@ -74,7 +74,9 @@ func (p *RegistryPools) open(ctx context.Context, uid uuid.UUID) (*bun.DB, error
 	err := p.registry.NewSelect().Model(user).WherePK().Scan(ctx)
 	switch {
 	case sqllib.IsNotFound(err):
-		return nil, UnknownUser(uid)
+		// Not ErrNotFound: workflows read that as their target being gone,
+		// and a deletion would then succeed for a user who does not exist.
+		return nil, internalerrors.ErrUnauthenticated{}
 	case err != nil:
 		return nil, fmt.Errorf("retrieve user %s: %w", uid, err)
 	case user.ProvisionedAt == nil:
@@ -90,13 +92,6 @@ func (p *RegistryPools) open(ctx context.Context, uid uuid.UUID) (*bun.DB, error
 		return nil, errors.Join(fmt.Errorf("initialise database %s: %w", name, err), db.Close())
 	}
 	return db, nil
-}
-
-// UnknownUser is the error For fails with when uid is not in the registry,
-// as when a session outlives a recreated registry. The gateway matches it to
-// sign that session out, so it has to stay the same message.
-func UnknownUser(uid uuid.UUID) error {
-	return internalerrors.ErrNotFound{ResourceType: "User", ID: uid}
 }
 
 // Close closes every database For opened.

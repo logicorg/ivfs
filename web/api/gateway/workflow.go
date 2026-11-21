@@ -8,7 +8,6 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/logicorg/ivfs/finance/workflows"
-	"github.com/logicorg/ivfs/internal/pkg/tenancy"
 	"github.com/logicorg/ivfs/internal/pkg/workflowrun"
 	"go.temporal.io/sdk/client"
 )
@@ -30,6 +29,9 @@ var errorStatuses = []struct {
 	{"ErrNotFound", http.StatusNotFound},
 	{"ErrResourceConflict", http.StatusConflict},
 	{"ErrResourceClosed", http.StatusConflict},
+	// A 401 also signs the browser out (auth.Require), as it should for a
+	// session whose user is gone.
+	{"ErrUnauthenticated", http.StatusUnauthorized},
 }
 
 // RunWorkflow runs the workflow wf with in, waits at most WorkflowTimeout, or
@@ -38,7 +40,7 @@ var errorStatuses = []struct {
 func RunWorkflow[O any](ctx context.Context, c client.Client, wf any, in any, opts ...workflowrun.Option) (*O, error) {
 	result, err := workflowrun.Run[O](ctx, c, wf, in, withTimeout(opts)...)
 	if err != nil {
-		return nil, WorkflowError(ctx, err)
+		return nil, WorkflowError(err)
 	}
 	return result, nil
 }
@@ -47,7 +49,7 @@ func RunWorkflow[O any](ctx context.Context, c client.Client, wf any, in any, op
 // an error.
 func RunWorkflowWithoutResult(ctx context.Context, c client.Client, wf any, in any, opts ...workflowrun.Option) error {
 	if err := workflowrun.RunWithoutResult(ctx, c, wf, in, withTimeout(opts)...); err != nil {
-		return WorkflowError(ctx, err)
+		return WorkflowError(err)
 	}
 	return nil
 }
@@ -64,16 +66,7 @@ func withTimeout(opts []workflowrun.Option) []workflowrun.Option {
 // anywhere in its chain, such as one a facade's child workflow wrapped,
 // becomes its status with the error's own message, and anything else is
 // logged and answered with a 500 that does not repeat it.
-//
-// The one exception is the user ctx acts as missing from the registry: that
-// is the session's fault, not the request's, so it is a 401, which signs the
-// browser out rather than showing a 404 on every page.
-func WorkflowError(ctx context.Context, err error) error {
-	if uid, ok := tenancy.UserFrom(ctx); ok {
-		if found, ok := workflows.FindErrorType(err, "ErrNotFound"); ok && found.Message() == tenancy.UnknownUser(uid).Error() {
-			return huma.Error401Unauthorized("this session's user no longer exists; sign in again")
-		}
-	}
+func WorkflowError(err error) error {
 	for _, s := range errorStatuses {
 		if found, ok := workflows.FindErrorType(err, s.errType); ok {
 			return huma.NewError(s.status, found.Message())
