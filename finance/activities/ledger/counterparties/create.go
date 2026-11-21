@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	cpt "github.com/logicorg/ivfs/finance/common/types/counterpartytypes"
 	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/logicorg/ivfs/pkg/sqllib"
@@ -16,7 +16,7 @@ import (
 // that already exists is returned unchanged, whatever the rest of the input
 // says, so a retry or a second create of the same merchant is harmless. The
 // name is stored trimmed, in the casing it was first given.
-func (a *Activities) CreateCounterparty(ctx context.Context, input lt.CreateCounterpartyInput) (*lt.CreateCounterpartyResult, error) {
+func (a *Activities) CreateCounterparty(ctx context.Context, input cpt.CreateCounterpartyInput) (*cpt.CreateCounterpartyResult, error) {
 	db, err := a.Pools.For(ctx)
 	if err != nil {
 		return nil, err
@@ -32,7 +32,7 @@ func (a *Activities) CreateCounterparty(ctx context.Context, input lt.CreateCoun
 		return nil, err
 	}
 	if existing != nil {
-		return &lt.CreateCounterpartyResult{CounterpartyID: existing.ID}, nil
+		return &cpt.CreateCounterpartyResult{CounterpartyID: existing.ID}, nil
 	}
 
 	counterparty := &model.Counterparty{Name: name, ExternalID: input.ExternalID}
@@ -47,10 +47,10 @@ func (a *Activities) CreateCounterparty(ctx context.Context, input lt.CreateCoun
 		if existing == nil {
 			return nil, conflict
 		}
-		return &lt.CreateCounterpartyResult{CounterpartyID: existing.ID}, nil
+		return &cpt.CreateCounterpartyResult{CounterpartyID: existing.ID}, nil
 	}
 	if err != nil {
 		return nil, fmt.Errorf("insert counterparty: %w", err)
 	}
-	return &lt.CreateCounterpartyResult{CounterpartyID: counterparty.ID}, nil
+	return &cpt.CreateCounterpartyResult{CounterpartyID: counterparty.ID}, nil
 }
