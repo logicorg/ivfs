@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	rpt "github.com/logicorg/ivfs/finance/common/types/reportingtypes"
 	reportingwf "github.com/logicorg/ivfs/finance/workflows/ledger/reporting"
 	"github.com/logicorg/ivfs/pkg/model"
@@ -18,7 +18,7 @@ import (
 // that the instant reaches FinancialAccountBalances, now when omitted, and
 // that an account that does not exist is a 404.
 func TestBalances(t *testing.T) {
-	balances := rpt.FinancialAccountBalancesResult{FinancialAccountID: 10, Balances: []lt.LedgerAccountBalanceResult{
+	balances := rpt.FinancialAccountBalancesResult{FinancialAccountID: 10, Balances: []jt.LedgerAccountBalanceResult{
 		{
 			LedgerAccountID: 100, LedgerAccountName: "Cash", Kind: model.LedgerAccountAsset,
 			CurrencyID: 1, CurrencyCode: "EUR", Balance: decimal.RequireFromString("1200.50"),

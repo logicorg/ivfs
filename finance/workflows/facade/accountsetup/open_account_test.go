@@ -8,6 +8,7 @@ import (
 	ast "github.com/logicorg/ivfs/finance/common/types/accountsetuptypes"
 	ct "github.com/logicorg/ivfs/finance/common/types/currencytypes"
 	it "github.com/logicorg/ivfs/finance/common/types/institutiontypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	currencieswf "github.com/logicorg/ivfs/finance/workflows/currencies"
 	institutionwf "github.com/logicorg/ivfs/finance/workflows/institution"
@@ -41,7 +42,7 @@ type openAccountCase struct {
 	// expects.
 	ledgerAccounts []expectedLedgerAccount
 	// opening is the opening entry the workflow posts, if any.
-	opening *lt.PostJournalEntryInput
+	opening *jt.PostJournalEntryInput
 	want    *ast.OpenAccountResult
 }
 
@@ -83,7 +84,7 @@ func (tc openAccountCase) mock(env *testsuite.TestWorkflowEnvironment) {
 
 	if tc.opening != nil {
 		env.OnWorkflow(journalwf.PostJournalEntry, mock.Anything, openingEntry(*tc.opening)).
-			Return(&lt.PostJournalEntryResult{JournalEntryID: 500}, nil).Once()
+			Return(&jt.PostJournalEntryResult{JournalEntryID: 500}, nil).Once()
 	}
 }
 
@@ -169,9 +170,9 @@ func (s *WorkflowUnitTestSuite) TestOpenAccount() {
 				Currencies: []ast.CurrencyBalance{{Code: "EUR", OpeningBalance: decimal.NewFromInt(1200)}},
 			},
 			institution: revolut, existing: true, account: personal, ledgerAccounts: revolutLedger,
-			opening: &lt.PostJournalEntryInput{
+			opening: &jt.PostJournalEntryInput{
 				IdempotencyKey: "opening-balance:100", OccurredAt: start, Description: ptr.NewPtr("Opening balance"),
-				Postings: []lt.PostingInput{
+				Postings: []jt.PostingInput{
 					{LedgerAccountID: 100, Amount: decimal.NewFromInt(1200), Side: model.PostingDebit},
 					{LedgerAccountID: 200, Amount: decimal.NewFromInt(1200), Side: model.PostingCredit},
 				},
@@ -210,9 +211,9 @@ func (s *WorkflowUnitTestSuite) TestOpenAccount() {
 				OpeningBalancesAt: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC),
 			},
 			institution: amex, account: amexGold, ledgerAccounts: amexLedger,
-			opening: &lt.PostJournalEntryInput{
+			opening: &jt.PostJournalEntryInput{
 				IdempotencyKey: "opening-balance:120", OccurredAt: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC), Description: ptr.NewPtr("Opening balance"),
-				Postings: []lt.PostingInput{
+				Postings: []jt.PostingInput{
 					{LedgerAccountID: 120, Amount: decimal.NewFromInt(300), Side: model.PostingCredit},
 					{LedgerAccountID: 200, Amount: decimal.NewFromInt(300), Side: model.PostingDebit},
 				},

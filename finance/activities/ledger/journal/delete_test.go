@@ -3,7 +3,7 @@ package journal
 import (
 	"time"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	"github.com/logicorg/ivfs/internal/pkg/temporaltesting"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/logicorg/ivfs/pkg/ptr"
@@ -130,10 +130,10 @@ func (s *UnitTestSuite) Test_DeleteJournalEntry() {
 			asset := s.newAsset(name)
 			target, gone, kept := tc.seed(asset)
 
-			activityResult, err := s.Env.ExecuteActivity(s.ja.DeleteJournalEntry, lt.DeleteJournalEntryInput{JournalEntryID: target.entry.ID})
+			activityResult, err := s.Env.ExecuteActivity(s.ja.DeleteJournalEntry, jt.DeleteJournalEntryInput{JournalEntryID: target.entry.ID})
 
 			require.NoError(s.T(), err)
-			var result lt.DeleteJournalEntryResult
+			var result jt.DeleteJournalEntryResult
 			require.NoError(s.T(), activityResult.Get(&result))
 			for _, entry := range gone {
 				s.requireEntryGone(entry)
@@ -156,7 +156,7 @@ func (s *UnitTestSuite) Test_DeleteJournalEntry() {
 }
 
 func (s *UnitTestSuite) Test_DeleteJournalEntry_Rejected() {
-	tests := map[string]lt.DeleteJournalEntryInput{
+	tests := map[string]jt.DeleteJournalEntryInput{
 		"no entry":       {},
 		"negative entry": {JournalEntryID: -1},
 	}
@@ -184,7 +184,7 @@ func (s *UnitTestSuite) Test_DeleteJournalEntry_ClosedAccounts() {
 	_, err = s.DB.NewUpdate().Model(h.debit).Column("closed_at").WherePK().Exec(s.T().Context())
 	require.NoError(s.T(), err)
 
-	_, err = s.Env.ExecuteActivity(s.ja.DeleteJournalEntry, lt.DeleteJournalEntryInput{JournalEntryID: purchase.entry.ID})
+	_, err = s.Env.ExecuteActivity(s.ja.DeleteJournalEntry, jt.DeleteJournalEntryInput{JournalEntryID: purchase.entry.ID})
 
 	require.NoError(s.T(), err)
 	s.requireEntryGone(purchase)
@@ -196,17 +196,17 @@ func (s *UnitTestSuite) Test_DeleteJournalEntry_Idempotent() {
 	h := s.newHeld()
 	purchase := s.seedEntry(h, h.asset, model.JournalEntryPosted, 10, deleteDay)
 	sale := s.seedEntry(h, h.asset, model.JournalEntryPosted, -10, deleteDay.AddDate(0, 0, 1))
-	input := lt.DeleteJournalEntryInput{JournalEntryID: purchase.entry.ID}
+	input := jt.DeleteJournalEntryInput{JournalEntryID: purchase.entry.ID}
 
 	first, err := s.Env.ExecuteActivity(s.ja.DeleteJournalEntry, input)
 	require.NoError(s.T(), err)
-	var created lt.DeleteJournalEntryResult
+	var created jt.DeleteJournalEntryResult
 	require.NoError(s.T(), first.Get(&created))
 	require.Len(s.T(), created.Warnings, 1)
 
 	second, err := s.Env.ExecuteActivity(s.ja.DeleteJournalEntry, input)
 	require.NoError(s.T(), err)
-	var retried lt.DeleteJournalEntryResult
+	var retried jt.DeleteJournalEntryResult
 	require.NoError(s.T(), second.Get(&retried))
 
 	require.Empty(s.T(), retried.Warnings, "a delete that finds nothing touches no position")
@@ -226,18 +226,18 @@ func (s *UnitTestSuite) Test_DeleteJournalEntry_FreesIdempotencyKey() {
 		model.Posting{LedgerAccountID: h.credit.ID, Amount: decimal.NewFromInt(10), Side: model.PostingCredit},
 	)
 
-	_, err := s.Env.ExecuteActivity(s.ja.DeleteJournalEntry, lt.DeleteJournalEntryInput{JournalEntryID: posted.ID})
+	_, err := s.Env.ExecuteActivity(s.ja.DeleteJournalEntry, jt.DeleteJournalEntryInput{JournalEntryID: posted.ID})
 	require.NoError(s.T(), err)
 
-	recorded, err := s.Env.ExecuteActivity(s.ja.PostJournalEntry, lt.PostJournalEntryInput{
+	recorded, err := s.Env.ExecuteActivity(s.ja.PostJournalEntry, jt.PostJournalEntryInput{
 		IdempotencyKey: key, OccurredAt: deleteDay,
-		Postings: []lt.PostingInput{
+		Postings: []jt.PostingInput{
 			{LedgerAccountID: h.debit.ID, Amount: decimal.NewFromInt(20), Side: model.PostingDebit},
 			{LedgerAccountID: h.credit.ID, Amount: decimal.NewFromInt(20), Side: model.PostingCredit},
 		},
 	})
 	require.NoError(s.T(), err)
-	var result lt.PostJournalEntryResult
+	var result jt.PostJournalEntryResult
 	require.NoError(s.T(), recorded.Get(&result))
 	require.NotEqual(s.T(), posted.ID, result.JournalEntryID)
 	var postings []model.Posting

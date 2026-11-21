@@ -6,7 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	activity "github.com/logicorg/ivfs/finance/activities/ledger/journal"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -22,13 +22,13 @@ type WorkflowUnitTestSuite struct {
 func TestWorkflowUnitTestSuite(t *testing.T) { suite.Run(t, new(WorkflowUnitTestSuite)) }
 
 func (s *WorkflowUnitTestSuite) TestPostJournalEntry() {
-	input := lt.PostJournalEntryInput{IdempotencyKey: "entry-1", OccurredAt: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)}
+	input := jt.PostJournalEntryInput{IdempotencyKey: "entry-1", OccurredAt: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)}
 	tests := []struct {
 		name    string
-		result  *lt.PostJournalEntryResult
+		result  *jt.PostJournalEntryResult
 		wantErr bool
 	}{
-		{name: "success", result: &lt.PostJournalEntryResult{JournalEntryID: 10}},
+		{name: "success", result: &jt.PostJournalEntryResult{JournalEntryID: 10}},
 		{name: "activity failure", wantErr: true},
 	}
 	for _, tc := range tests {
@@ -46,7 +46,7 @@ func (s *WorkflowUnitTestSuite) TestPostJournalEntry() {
 				return
 			}
 			require.NoError(s.T(), env.GetWorkflowError())
-			var result *lt.PostJournalEntryResult
+			var result *jt.PostJournalEntryResult
 			require.NoError(s.T(), env.GetWorkflowResult(&result))
 			assert.Equal(s.T(), tc.result, result)
 		})
@@ -58,17 +58,17 @@ func (s *WorkflowUnitTestSuite) TestPostJournalEntry() {
 // called, and that two independent executions produce two different
 // generated keys.
 func (s *WorkflowUnitTestSuite) TestPostJournalEntryDefaultsIdempotencyKey() {
-	input := lt.PostJournalEntryInput{OccurredAt: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)}
+	input := jt.PostJournalEntryInput{OccurredAt: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)}
 
 	var generated [2]string
 	for i := range generated {
 		env := s.NewTestWorkflowEnvironment()
 		ja := activity.Activities{}
 
-		env.OnActivity(ja.PostJournalEntry, mock.Anything, mock.MatchedBy(func(got lt.PostJournalEntryInput) bool {
+		env.OnActivity(ja.PostJournalEntry, mock.Anything, mock.MatchedBy(func(got jt.PostJournalEntryInput) bool {
 			generated[i] = got.IdempotencyKey
 			return true
-		})).Return(&lt.PostJournalEntryResult{JournalEntryID: 1}, nil)
+		})).Return(&jt.PostJournalEntryResult{JournalEntryID: 1}, nil)
 
 		env.ExecuteWorkflow(PostJournalEntry, input)
 		require.NoError(s.T(), env.GetWorkflowError())
@@ -82,14 +82,14 @@ func (s *WorkflowUnitTestSuite) TestPostJournalEntryDefaultsIdempotencyKey() {
 }
 
 func (s *WorkflowUnitTestSuite) TestRetrieveJournalEntry() {
-	input := lt.RetrieveJournalEntryParams{ID: 10}
-	expected := &lt.RetrieveJournalEntryResult{}
+	input := jt.RetrieveJournalEntryParams{ID: 10}
+	expected := &jt.RetrieveJournalEntryResult{}
 	env := s.NewTestWorkflowEnvironment()
 	ja := activity.Activities{}
 	env.OnActivity(ja.RetrieveJournalEntry, mock.Anything, input).Return(expected, nil)
 	env.ExecuteWorkflow(RetrieveJournalEntry, input)
 	require.NoError(s.T(), env.GetWorkflowError())
-	var result *lt.RetrieveJournalEntryResult
+	var result *jt.RetrieveJournalEntryResult
 	require.NoError(s.T(), env.GetWorkflowResult(&result))
 	assert.Equal(s.T(), expected, result)
 }

@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	it "github.com/logicorg/ivfs/finance/common/types/investmenttypes"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/logicorg/ivfs/pkg/model"
 	"go.temporal.io/sdk/workflow"
@@ -48,7 +48,7 @@ func UpdateInvestment(ctx workflow.Context, input it.UpdateInvestmentInput) (*it
 			return nil, err
 		}
 		built := buildVest(vest, b, categories)
-		return replace(ctx, input.JournalEntryID, input.Kind, built.Entry, lt.ReplaceMovementInput{
+		return replace(ctx, input.JournalEntryID, input.Kind, built.Entry, jt.ReplaceMovementInput{
 			Kind:                model.PositionMovementVest,
 			FinancialAccountID:  built.FinancialAccountID,
 			AssetID:             built.AssetID,
@@ -65,7 +65,7 @@ func UpdateInvestment(ctx workflow.Context, input it.UpdateInvestmentInput) (*it
 // replaceTrade replaces the entry with the trade's entry and movement.
 func replaceTrade(ctx workflow.Context, journalEntryID int64, kind it.Kind, t trade) (*it.TradeResult, error) {
 	built := t.input()
-	return replace(ctx, journalEntryID, kind, built.Entry, lt.ReplaceMovementInput{
+	return replace(ctx, journalEntryID, kind, built.Entry, jt.ReplaceMovementInput{
 		Kind:                model.PositionMovementTrade,
 		FinancialAccountID:  built.FinancialAccountID,
 		AssetID:             built.AssetID,

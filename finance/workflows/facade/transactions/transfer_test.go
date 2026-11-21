@@ -6,6 +6,7 @@ import (
 	"time"
 
 	fxt "github.com/logicorg/ivfs/finance/common/types/fxtypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	tt "github.com/logicorg/ivfs/finance/common/types/transactiontypes"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
@@ -67,16 +68,16 @@ func (s *WorkflowUnitTestSuite) TestRecordTransfer() {
 				TagIDs: []int64{5},
 			},
 			mock: func(env *testsuite.TestWorkflowEnvironment) {
-				env.OnWorkflow(journalwf.PostJournalEntry, mock.Anything, entry(lt.PostJournalEntryInput{
+				env.OnWorkflow(journalwf.PostJournalEntry, mock.Anything, entry(jt.PostJournalEntryInput{
 					IdempotencyKey: "transfer:9c1e",
 					OccurredAt:     occurredAt,
 					Description:    ptr.NewPtr("pay the card off"),
 					TagIDs:         []int64{5},
-					Postings: []lt.PostingInput{
+					Postings: []jt.PostingInput{
 						{LedgerAccountID: cardBalance.ID, Amount: decimal.RequireFromString("300.50"), Side: model.PostingDebit},
 						{LedgerAccountID: cash.ID, Amount: decimal.RequireFromString("300.50"), Side: model.PostingCredit},
 					},
-				})).Return(&lt.PostJournalEntryResult{JournalEntryID: 42}, nil).Once()
+				})).Return(&jt.PostJournalEntryResult{JournalEntryID: 42}, nil).Once()
 			},
 		},
 		"into a savings vault, with the same amount arriving": {
@@ -85,14 +86,14 @@ func (s *WorkflowUnitTestSuite) TestRecordTransfer() {
 				Amount: decimal.RequireFromString("300.50"), ToAmount: decimal.RequireFromString("300.5"), OccurredAt: occurredAt,
 			},
 			mock: func(env *testsuite.TestWorkflowEnvironment) {
-				env.OnWorkflow(journalwf.PostJournalEntry, mock.Anything, entry(lt.PostJournalEntryInput{
+				env.OnWorkflow(journalwf.PostJournalEntry, mock.Anything, entry(jt.PostJournalEntryInput{
 					IdempotencyKey: "transfer:9c1e",
 					OccurredAt:     occurredAt,
-					Postings: []lt.PostingInput{
+					Postings: []jt.PostingInput{
 						{LedgerAccountID: savingsVault.ID, Amount: decimal.RequireFromString("300.50"), Side: model.PostingDebit},
 						{LedgerAccountID: cash.ID, Amount: decimal.RequireFromString("300.50"), Side: model.PostingCredit},
 					},
-				})).Return(&lt.PostJournalEntryResult{JournalEntryID: 42}, nil).Once()
+				})).Return(&jt.PostJournalEntryResult{JournalEntryID: 42}, nil).Once()
 			},
 		},
 		"from euros to dollars, with a note and a tag": {

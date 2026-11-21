@@ -1,7 +1,8 @@
-package ledgertypes
+package journaltypes
 
 import (
 	"cuelang.org/go/cuego"
+	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
 )
 
@@ -15,7 +16,7 @@ type DeleteJournalEntryInput struct {
 // DeleteJournalEntryResult carries the holdings that are negative after the
 // deletion, which was made regardless.
 type DeleteJournalEntryResult struct {
-	Warnings []NegativeHolding `json:"warnings,omitempty"`
+	Warnings []lt.NegativeHolding `json:"warnings,omitempty"`
 }
 
 // Validate checks the command without the database.

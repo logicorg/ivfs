@@ -3,7 +3,7 @@ package portfolio
 import (
 	"time"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	pft "github.com/logicorg/ivfs/finance/common/types/portfoliotypes"
 	"github.com/logicorg/ivfs/internal/pkg/temporaltesting"
 	"github.com/logicorg/ivfs/pkg/model"
@@ -22,11 +22,11 @@ func (s *UnitTestSuite) vest(key string) pft.RegisterVestInput {
 		Units:               decimal.NewFromInt(60),
 		CostBasisAmount:     decimal.NewFromInt(600),
 		CostBasisCurrencyID: s.eur.ID,
-		Entry: lt.PostJournalEntryInput{
+		Entry: jt.PostJournalEntryInput{
 			IdempotencyKey: key,
 			OccurredAt:     movementDay,
 			ExternalID:     ptr.NewPtr("payroll-42"),
-			Postings: []lt.PostingInput{
+			Postings: []jt.PostingInput{
 				{LedgerAccountID: s.income.ID, Amount: decimal.NewFromInt(1000), Side: model.PostingCredit},
 				{LedgerAccountID: s.holding.ID, Amount: decimal.NewFromInt(600), Side: model.PostingDebit},
 				{LedgerAccountID: s.tax.ID, Amount: decimal.NewFromInt(400), Side: model.PostingDebit},

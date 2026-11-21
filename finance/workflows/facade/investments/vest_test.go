@@ -5,7 +5,7 @@ import (
 	"time"
 
 	it "github.com/logicorg/ivfs/finance/common/types/investmenttypes"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	pft "github.com/logicorg/ivfs/finance/common/types/portfoliotypes"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/logicorg/ivfs/pkg/ptr"
@@ -33,17 +33,17 @@ func TestBuildVest(t *testing.T) {
 		}
 		return in
 	}
-	postings := func(delivered, withheld, vested string) []lt.PostingInput {
-		result := []lt.PostingInput{{LedgerAccountID: investments.ID, Amount: decimal.RequireFromString(delivered), Side: model.PostingDebit}}
+	postings := func(delivered, withheld, vested string) []jt.PostingInput {
+		result := []jt.PostingInput{{LedgerAccountID: investments.ID, Amount: decimal.RequireFromString(delivered), Side: model.PostingDebit}}
 		if withheld != "" {
-			result = append(result, lt.PostingInput{LedgerAccountID: expenses.ID, Amount: decimal.RequireFromString(withheld), Side: model.PostingDebit, CategoryID: ptr.NewPtr(taxWithheld.ID)})
+			result = append(result, jt.PostingInput{LedgerAccountID: expenses.ID, Amount: decimal.RequireFromString(withheld), Side: model.PostingDebit, CategoryID: ptr.NewPtr(taxWithheld.ID)})
 		}
-		return append(result, lt.PostingInput{LedgerAccountID: income.ID, Amount: decimal.RequireFromString(vested), Side: model.PostingCredit, CategoryID: ptr.NewPtr(compensation.ID)})
+		return append(result, jt.PostingInput{LedgerAccountID: income.ID, Amount: decimal.RequireFromString(vested), Side: model.PostingCredit, CategoryID: ptr.NewPtr(compensation.ID)})
 	}
 
 	tests := map[string]struct {
 		input       it.VestInput
-		postings    []lt.PostingInput
+		postings    []jt.PostingInput
 		delivered   string
 		description *string
 	}{
@@ -79,7 +79,7 @@ func TestBuildVest(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			want := pft.RegisterVestInput{
-				Entry: lt.PostJournalEntryInput{
+				Entry: jt.PostJournalEntryInput{
 					IdempotencyKey: "vest:a71f",
 					OccurredAt:     occurredAt,
 					Description:    tc.description,

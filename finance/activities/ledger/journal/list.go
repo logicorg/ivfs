@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/uptrace/bun"
 )
@@ -13,7 +13,7 @@ import (
 // postings in line order and its tags by name. Entries of the same instant are ordered by id, in the
 // same direction as the dates, so a page boundary can fall between them without
 // skipping or repeating any.
-func (a *Activities) ListJournalEntries(ctx context.Context, params lt.ListJournalEntriesParams) (*lt.ListJournalEntriesResult, error) {
+func (a *Activities) ListJournalEntries(ctx context.Context, params jt.ListJournalEntriesParams) (*jt.ListJournalEntriesResult, error) {
 	db, err := a.Pools.For(ctx)
 	if err != nil {
 		return nil, err
@@ -68,11 +68,11 @@ func (a *Activities) ListJournalEntries(ctx context.Context, params lt.ListJourn
 		return nil, fmt.Errorf("list journal entries: %w", err)
 	}
 
-	result := &lt.ListJournalEntriesResult{Entries: entries}
+	result := &jt.ListJournalEntriesResult{Entries: entries}
 	if len(entries) > pageSize {
 		result.Entries = entries[:pageSize]
 		last := result.Entries[pageSize-1]
-		result.Next = &lt.JournalEntryCursor{OccurredAt: last.OccurredAt, ID: last.ID}
+		result.Next = &jt.JournalEntryCursor{OccurredAt: last.OccurredAt, ID: last.ID}
 	}
 
 	if err := loadPostings(ctx, db, result.Entries); err != nil {

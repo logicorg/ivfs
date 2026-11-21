@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	tt "github.com/logicorg/ivfs/finance/common/types/transactiontypes"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
@@ -89,12 +90,12 @@ func categorized(ctx workflow.Context, balanceID, categoryID int64, kind model.L
 
 // entry is the movement as one journal entry, crediting the account the money
 // leaves and debiting the one it reaches.
-func (m movement) entry() lt.PostJournalEntryInput {
-	input := lt.PostJournalEntryInput{
+func (m movement) entry() jt.PostJournalEntryInput {
+	input := jt.PostJournalEntryInput{
 		IdempotencyKey: m.kind + ":" + m.idempotencyKey,
 		OccurredAt:     m.occurredAt,
 		TagIDs:         m.tagIDs,
-		Postings: []lt.PostingInput{
+		Postings: []jt.PostingInput{
 			{LedgerAccountID: m.to, Amount: m.amount, Side: model.PostingDebit, CategoryID: categoryOf(m.toCategory)},
 			{LedgerAccountID: m.from, Amount: m.amount, Side: model.PostingCredit, CategoryID: categoryOf(m.fromCategory)},
 		},
@@ -116,7 +117,7 @@ func categoryOf(id int64) *int64 {
 // post posts the movement as one entry. A closed or unknown account fails
 // here, inside the transaction that posts.
 func post(ctx workflow.Context, m movement) (*tt.RecordResult, error) {
-	var result lt.PostJournalEntryResult
+	var result jt.PostJournalEntryResult
 	if err := workflow.ExecuteChildWorkflow(ctx, journalwf.PostJournalEntry, m.entry()).Get(ctx, &result); err != nil {
 		return nil, fmt.Errorf("post %s: %w", m.kind, err)
 	}
@@ -127,8 +128,8 @@ func post(ctx workflow.Context, m movement) (*tt.RecordResult, error) {
 // metadata, postings, and tags, with no position movements. The entry keeps its own
 // key, so the one in entry is not used. An unknown entry, or an account it may
 // not move onto, fails here, inside the transaction that replaces.
-func replace(ctx workflow.Context, journalEntryID int64, kind string, entry lt.PostJournalEntryInput) (*tt.UpdateResult, error) {
-	input := lt.ReplaceJournalEntryInput{
+func replace(ctx workflow.Context, journalEntryID int64, kind string, entry jt.PostJournalEntryInput) (*tt.UpdateResult, error) {
+	input := jt.ReplaceJournalEntryInput{
 		JournalEntryID: journalEntryID,
 		OccurredAt:     entry.OccurredAt,
 		Description:    entry.Description,
@@ -137,7 +138,7 @@ func replace(ctx workflow.Context, journalEntryID int64, kind string, entry lt.P
 		TagIDs:         entry.TagIDs,
 	}
 
-	var result lt.ReplaceJournalEntryResult
+	var result jt.ReplaceJournalEntryResult
 	if err := workflow.ExecuteChildWorkflow(ctx, journalwf.ReplaceJournalEntry, input).Get(ctx, &result); err != nil {
 		return nil, fmt.Errorf("update %s: %w", kind, err)
 	}

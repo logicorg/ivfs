@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/logicorg/ivfs/pkg/ptr"
@@ -18,10 +18,10 @@ func TestRegisterInvestmentTradeInput_Validate(t *testing.T) {
 			FinancialAccountID: 1,
 			AssetID:            1,
 			UnitsDelta:         decimal.NewFromInt(3),
-			Entry: lt.PostJournalEntryInput{
+			Entry: jt.PostJournalEntryInput{
 				IdempotencyKey: "buy-aapl",
 				OccurredAt:     time.Now(),
-				Postings: []lt.PostingInput{
+				Postings: []jt.PostingInput{
 					{LedgerAccountID: 1, Amount: decimal.NewFromInt(10), Side: model.PostingDebit},
 					{LedgerAccountID: 2, Amount: decimal.NewFromInt(10), Side: model.PostingCredit},
 				},

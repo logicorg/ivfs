@@ -7,6 +7,7 @@ import (
 	ast "github.com/logicorg/ivfs/finance/common/types/accountsetuptypes"
 	ct "github.com/logicorg/ivfs/finance/common/types/currencytypes"
 	it "github.com/logicorg/ivfs/finance/common/types/institutiontypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	currencieswf "github.com/logicorg/ivfs/finance/workflows/currencies"
 	institutionwf "github.com/logicorg/ivfs/finance/workflows/institution"
@@ -84,8 +85,8 @@ func (f addBalanceFixtures) wantBalances() []lt.AccountSummary {
 // openingEntry matches the journal entry want by what it books rather than by
 // its representation: a decimal such as 500.50 arrives as 500.5, equal in
 // value but not in its fields, and no metadata arrives as an empty map.
-func openingEntry(want lt.PostJournalEntryInput) any {
-	return mock.MatchedBy(func(got lt.PostJournalEntryInput) bool {
+func openingEntry(want jt.PostJournalEntryInput) any {
+	return mock.MatchedBy(func(got jt.PostJournalEntryInput) bool {
 		if got.IdempotencyKey != want.IdempotencyKey || !got.OccurredAt.Equal(want.OccurredAt) ||
 			*got.Description != *want.Description || len(got.Metadata) != 0 || len(got.Postings) != len(want.Postings) {
 			return false
@@ -136,15 +137,15 @@ func (s *WorkflowUnitTestSuite) TestAddBalance() {
 			f.mockLedgerAccounts(env)
 			want := &ast.AddBalanceResult{Outcome: ast.OutcomeOpened, LedgerAccountID: 100, Balances: ast.Balances{Balances: f.wantBalances()}}
 			if !tc.postedAt.IsZero() {
-				env.OnWorkflow(journalwf.PostJournalEntry, mock.Anything, openingEntry(lt.PostJournalEntryInput{
+				env.OnWorkflow(journalwf.PostJournalEntry, mock.Anything, openingEntry(jt.PostJournalEntryInput{
 					IdempotencyKey: "opening-balance:100",
 					OccurredAt:     tc.postedAt,
 					Description:    ptr.NewPtr("Opening balance"),
-					Postings: []lt.PostingInput{
+					Postings: []jt.PostingInput{
 						{LedgerAccountID: 100, Amount: decimal.RequireFromString("500.50"), Side: model.PostingDebit},
 						{LedgerAccountID: 200, Amount: decimal.RequireFromString("500.50"), Side: model.PostingCredit},
 					},
-				})).Return(&lt.PostJournalEntryResult{JournalEntryID: 500}, nil).Once()
+				})).Return(&jt.PostJournalEntryResult{JournalEntryID: 500}, nil).Once()
 				want.OpeningEntries = []ast.OpeningEntry{{LedgerAccountID: 100, JournalEntryID: 500}}
 			}
 

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	it "github.com/logicorg/ivfs/finance/common/types/investmenttypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	pft "github.com/logicorg/ivfs/finance/common/types/portfoliotypes"
 	portfoliowf "github.com/logicorg/ivfs/finance/workflows/ledger/portfolio"
@@ -35,12 +36,12 @@ func (s *WorkflowUnitTestSuite) TestRecordInvestment() {
 				OccurredAt: occurredAt, Description: "monthly plan", TagIDs: []int64{5},
 			}},
 			want: pft.RegisterInvestmentTradeInput{
-				Entry: lt.PostJournalEntryInput{
+				Entry: jt.PostJournalEntryInput{
 					IdempotencyKey: "buy:5d0c",
 					OccurredAt:     occurredAt,
 					Description:    ptr.NewPtr("monthly plan"),
 					TagIDs:         []int64{5},
-					Postings: []lt.PostingInput{
+					Postings: []jt.PostingInput{
 						{LedgerAccountID: investments.ID, Amount: decimal.NewFromInt(1053), Side: model.PostingDebit},
 						{LedgerAccountID: cash.ID, Amount: decimal.NewFromInt(1053), Side: model.PostingCredit},
 					},
@@ -58,11 +59,11 @@ func (s *WorkflowUnitTestSuite) TestRecordInvestment() {
 				Amount: decimal.NewFromInt(12000), CurrencyCode: "EUR", OccurredAt: occurredAt, TagIDs: []int64{5, 6},
 			}},
 			want: pft.RegisterInvestmentTradeInput{
-				Entry: lt.PostJournalEntryInput{
+				Entry: jt.PostJournalEntryInput{
 					IdempotencyKey: "sell:8e41",
 					OccurredAt:     occurredAt,
 					TagIDs:         []int64{5, 6},
-					Postings: []lt.PostingInput{
+					Postings: []jt.PostingInput{
 						{LedgerAccountID: cash.ID, Amount: decimal.NewFromInt(12000), Side: model.PostingDebit},
 						{LedgerAccountID: investments.ID, Amount: decimal.NewFromInt(12000), Side: model.PostingCredit},
 					},
@@ -107,7 +108,7 @@ func (s *WorkflowUnitTestSuite) TestRecordInvestment_Vest() {
 
 	tests := map[string]struct {
 		input    it.VestInput
-		postings []lt.PostingInput
+		postings []jt.PostingInput
 		units    decimal.Decimal
 	}{
 		"with a tag and units withheld for tax": {
@@ -117,7 +118,7 @@ func (s *WorkflowUnitTestSuite) TestRecordInvestment_Vest() {
 				CurrencyCode: "eur", IncomeCategoryID: compensation.ID, TaxCategoryID: taxWithheld.ID,
 				OccurredAt: occurredAt, TagIDs: []int64{5},
 			},
-			postings: []lt.PostingInput{
+			postings: []jt.PostingInput{
 				{LedgerAccountID: investments.ID, Amount: decimal.NewFromInt(600), Side: model.PostingDebit},
 				{LedgerAccountID: expenses.ID, Amount: decimal.NewFromInt(400), Side: model.PostingDebit, CategoryID: ptr.NewPtr(taxWithheld.ID)},
 				{LedgerAccountID: income.ID, Amount: decimal.NewFromInt(1000), Side: model.PostingCredit, CategoryID: ptr.NewPtr(compensation.ID)},
@@ -131,7 +132,7 @@ func (s *WorkflowUnitTestSuite) TestRecordInvestment_Vest() {
 				CurrencyCode: "EUR", IncomeCategoryID: oldPlan.ID,
 				OccurredAt: occurredAt,
 			},
-			postings: []lt.PostingInput{
+			postings: []jt.PostingInput{
 				{LedgerAccountID: investments.ID, Amount: decimal.NewFromInt(1000), Side: model.PostingDebit},
 				{LedgerAccountID: income.ID, Amount: decimal.NewFromInt(1000), Side: model.PostingCredit, CategoryID: ptr.NewPtr(oldPlan.ID)},
 			},
@@ -145,7 +146,7 @@ func (s *WorkflowUnitTestSuite) TestRecordInvestment_Vest() {
 				CurrencyCode: "EUR", IncomeCategoryID: compensation.ID, TaxCategoryID: unknownCategory,
 				OccurredAt: occurredAt,
 			},
-			postings: []lt.PostingInput{
+			postings: []jt.PostingInput{
 				{LedgerAccountID: investments.ID, Amount: decimal.NewFromInt(1000), Side: model.PostingDebit},
 				{LedgerAccountID: income.ID, Amount: decimal.NewFromInt(1000), Side: model.PostingCredit, CategoryID: ptr.NewPtr(compensation.ID)},
 			},
@@ -156,7 +157,7 @@ func (s *WorkflowUnitTestSuite) TestRecordInvestment_Vest() {
 	for name, tc := range tests {
 		s.Run(name, func() {
 			want := normalizeVest(pft.RegisterVestInput{
-				Entry:               lt.PostJournalEntryInput{IdempotencyKey: "vest:a71f", OccurredAt: occurredAt, Postings: tc.postings, TagIDs: tc.input.TagIDs},
+				Entry:               jt.PostJournalEntryInput{IdempotencyKey: "vest:a71f", OccurredAt: occurredAt, Postings: tc.postings, TagIDs: tc.input.TagIDs},
 				FinancialAccountID:  ibkr,
 				AssetID:             7,
 				Units:               tc.units,

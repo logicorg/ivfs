@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/uuid"
 	activity "github.com/logicorg/ivfs/finance/activities/ledger/portfolio"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	pft "github.com/logicorg/ivfs/finance/common/types/portfoliotypes"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/shopspring/decimal"
@@ -37,10 +37,10 @@ func (s *WorkflowUnitTestSuite) TestRegisterVest() {
 		Units:               decimal.NewFromInt(60),
 		CostBasisAmount:     decimal.NewFromInt(600),
 		CostBasisCurrencyID: 3,
-		Entry: lt.PostJournalEntryInput{
+		Entry: jt.PostJournalEntryInput{
 			IdempotencyKey: "acme-rsu-1",
 			OccurredAt:     time.Date(2026, 3, 1, 12, 0, 0, 0, time.UTC),
-			Postings: []lt.PostingInput{
+			Postings: []jt.PostingInput{
 				{LedgerAccountID: 10, Amount: decimal.NewFromInt(600), Side: model.PostingCredit},
 				{LedgerAccountID: 20, Amount: decimal.NewFromInt(600), Side: model.PostingDebit},
 			},

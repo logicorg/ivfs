@@ -3,7 +3,7 @@ package portfolio
 import (
 	"time"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	pft "github.com/logicorg/ivfs/finance/common/types/portfoliotypes"
 	"github.com/logicorg/ivfs/internal/pkg/temporaltesting"
 	"github.com/logicorg/ivfs/pkg/model"
@@ -49,9 +49,9 @@ func (s *UnitTestSuite) TestRegisterInvestmentTradeAndPosition() {
 		UnitsDelta:          decimal.NewFromInt(1),
 		CostBasisAmount:     ptr.NewPtr(decimal.NewFromInt(100)),
 		CostBasisCurrencyID: ptr.Int64(s.eur.ID),
-		Entry: lt.PostJournalEntryInput{
+		Entry: jt.PostJournalEntryInput{
 			IdempotencyKey: "buy-aapl-1", OccurredAt: time.Now().UTC(),
-			Postings: []lt.PostingInput{
+			Postings: []jt.PostingInput{
 				{LedgerAccountID: s.offset.ID, Amount: decimal.NewFromInt(100), Side: model.PostingDebit},
 				{LedgerAccountID: s.cash.ID, Amount: decimal.NewFromInt(100), Side: model.PostingCredit},
 			},
