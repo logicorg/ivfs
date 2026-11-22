@@ -4,6 +4,7 @@ import (
 	"errors"
 	"time"
 
+	fxt "github.com/logicorg/ivfs/finance/common/types/fxtypes"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	tt "github.com/logicorg/ivfs/finance/common/types/transactiontypes"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
@@ -67,7 +68,7 @@ func (s *WorkflowUnitTestSuite) TestUpdateTransfer() {
 			},
 			want: lt.ReplaceJournalEntryInput{
 				JournalEntryID: 42, OccurredAt: occurredAt, Description: ptr.NewPtr("dollars for the trip"), TagIDs: []int64{5},
-				Metadata: map[string]string{"type": lt.FXConversionEntryType, "effective_rate": "324.15/300.5"},
+				Metadata: map[string]string{"type": fxt.FXConversionEntryType, "effective_rate": "324.15/300.5"},
 				Postings: []lt.PostingInput{
 					{LedgerAccountID: fxClearing.ID, Amount: amount, Side: model.PostingDebit},
 					{LedgerAccountID: cash.ID, Amount: amount, Side: model.PostingCredit},
@@ -84,7 +85,7 @@ func (s *WorkflowUnitTestSuite) TestUpdateTransfer() {
 			},
 			want: lt.ReplaceJournalEntryInput{
 				JournalEntryID: 42, OccurredAt: occurredAt,
-				Metadata: map[string]string{"type": lt.FXConversionEntryType, "effective_rate": "300.5/324.15"},
+				Metadata: map[string]string{"type": fxt.FXConversionEntryType, "effective_rate": "300.5/324.15"},
 				Postings: []lt.PostingInput{
 					{LedgerAccountID: fxClearingUSD.ID, Amount: arrives, Side: model.PostingDebit},
 					{LedgerAccountID: cashUSD.ID, Amount: arrives, Side: model.PostingCredit},

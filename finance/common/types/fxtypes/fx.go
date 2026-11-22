@@ -1,9 +1,12 @@
-package ledgertypes
+// Package fxtypes holds the inputs and results of the currency conversion
+// activities and workflows.
+package fxtypes
 
 import (
 	"fmt"
 	"time"
 
+	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/shopspring/decimal"
@@ -12,11 +15,6 @@ import (
 // FXConversionEntryType is the value stored under the "type" metadata key of
 // every journal entry created by RegisterFXConversion.
 const FXConversionEntryType = "fx_conversion"
-
-// FXClearingAccountName is the name of the shared asset account, one per
-// currency and of no financial account, that a conversion balances through
-// (ADR 0006).
-const FXClearingAccountName = "FX clearing"
 
 // FXFee is a fee charged in the source currency of a conversion. It is posted
 // as its own expense line, under its category, and is never folded into the
@@ -126,24 +124,24 @@ func (i *RegisterFXConversionInput) Validate() error {
 			return internalerrors.ErrInvalidParameter{Description: "fee must be smaller than the source amount"}
 		}
 	}
-	return ValidateTagIDs(i.TagIDs)
+	return lt.ValidateTagIDs(i.TagIDs)
 }
 
 // ToJournalEntry builds the generic balanced entry for the conversion:
 //
 //	source currency:      debit source clearing (net), debit fee, credit source
 //	destination currency: debit destination, credit destination clearing
-func (i *RegisterFXConversionInput) ToJournalEntry() PostJournalEntryInput {
-	postings := []PostingInput{
+func (i *RegisterFXConversionInput) ToJournalEntry() lt.PostJournalEntryInput {
+	postings := []lt.PostingInput{
 		{LedgerAccountID: i.SourceClearingLedgerAccountID, Amount: i.NetSourceAmount(), Side: model.PostingDebit},
 	}
 	if i.Fee != nil {
-		postings = append(postings, PostingInput{LedgerAccountID: i.Fee.LedgerAccountID, Amount: i.Fee.Amount, Side: model.PostingDebit, CategoryID: &i.Fee.CategoryID})
+		postings = append(postings, lt.PostingInput{LedgerAccountID: i.Fee.LedgerAccountID, Amount: i.Fee.Amount, Side: model.PostingDebit, CategoryID: &i.Fee.CategoryID})
 	}
 	postings = append(postings,
-		PostingInput{LedgerAccountID: i.SourceLedgerAccountID, Amount: i.SourceAmount, Side: model.PostingCredit},
-		PostingInput{LedgerAccountID: i.DestinationLedgerAccountID, Amount: i.DestinationAmount, Side: model.PostingDebit},
-		PostingInput{LedgerAccountID: i.DestinationClearingLedgerAccountID, Amount: i.DestinationAmount, Side: model.PostingCredit},
+		lt.PostingInput{LedgerAccountID: i.SourceLedgerAccountID, Amount: i.SourceAmount, Side: model.PostingCredit},
+		lt.PostingInput{LedgerAccountID: i.DestinationLedgerAccountID, Amount: i.DestinationAmount, Side: model.PostingDebit},
+		lt.PostingInput{LedgerAccountID: i.DestinationClearingLedgerAccountID, Amount: i.DestinationAmount, Side: model.PostingCredit},
 	)
 
 	// The rate is kept as the fraction of the two settled amounts because a
@@ -156,7 +154,7 @@ func (i *RegisterFXConversionInput) ToJournalEntry() PostJournalEntryInput {
 		metadata["provider_reference"] = *i.ProviderReference
 	}
 
-	return PostJournalEntryInput{
+	return lt.PostJournalEntryInput{
 		IdempotencyKey: i.IdempotencyKey,
 		OccurredAt:     i.OccurredAt,
 		Description:    i.Description,
