@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	reportingwf "github.com/logicorg/ivfs/finance/workflows/ledger/reporting"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/logicorg/ivfs/web/api/apitest"
@@ -17,7 +17,7 @@ import (
 // instant reaches LedgerAccountBalance, now when omitted, and that a ledger
 // account that does not exist is a 404.
 func TestLedgerBalance(t *testing.T) {
-	card := lt.LedgerAccountBalanceResult{
+	card := jt.LedgerAccountBalanceResult{
 		LedgerAccountID: 101, LedgerAccountName: "Card balance", Kind: model.LedgerAccountLiability,
 		CurrencyID: 2, CurrencyCode: "USD", Balance: decimal.RequireFromString("-0.01"),
 	}
@@ -28,7 +28,7 @@ func TestLedgerBalance(t *testing.T) {
 			Method: http.MethodGet, Path: "/api/ledger-accounts/101/balance",
 			Call: &apitest.WorkflowCall{
 				Workflow: reportingwf.LedgerAccountBalance,
-				Params:   lt.LedgerAccountBalanceParams{LedgerAccountID: 101},
+				Params:   jt.LedgerAccountBalanceParams{LedgerAccountID: 101},
 				Result:   card,
 			},
 			WantStatus: http.StatusOK, WantBody: cardBody,
@@ -37,7 +37,7 @@ func TestLedgerBalance(t *testing.T) {
 			Method: http.MethodGet, Path: "/api/ledger-accounts/101/balance?at=2026-01-31T23:59:59Z",
 			Call: &apitest.WorkflowCall{
 				Workflow: reportingwf.LedgerAccountBalance,
-				Params: lt.LedgerAccountBalanceParams{
+				Params: jt.LedgerAccountBalanceParams{
 					LedgerAccountID: 101, At: time.Date(2026, 1, 31, 23, 59, 59, 0, time.UTC),
 				},
 				Result: card,
@@ -48,7 +48,7 @@ func TestLedgerBalance(t *testing.T) {
 			Method: http.MethodGet, Path: "/api/ledger-accounts/99/balance",
 			Call: &apitest.WorkflowCall{
 				Workflow: reportingwf.LedgerAccountBalance,
-				Params:   lt.LedgerAccountBalanceParams{LedgerAccountID: 99},
+				Params:   jt.LedgerAccountBalanceParams{LedgerAccountID: 99},
 				Err:      temporal.NewApplicationError("resource LedgerAccount not found with ID: 99", "ErrNotFound"),
 			},
 			WantStatus: http.StatusNotFound,

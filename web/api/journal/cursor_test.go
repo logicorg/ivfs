@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	"github.com/stretchr/testify/require"
 )
 
@@ -13,18 +13,18 @@ import (
 func TestCursor(t *testing.T) {
 	tests := map[string]struct {
 		after  string
-		want   *lt.JournalEntryCursor
+		want   *jt.JournalEntryCursor
 		wantOK bool
 	}{
 		"the first page": {after: "", wantOK: true},
 		"a cursor": {
 			after:  "2026-01-31T10:00:00Z_7",
-			want:   &lt.JournalEntryCursor{OccurredAt: time.Date(2026, 1, 31, 10, 0, 0, 0, time.UTC), ID: 7},
+			want:   &jt.JournalEntryCursor{OccurredAt: time.Date(2026, 1, 31, 10, 0, 0, 0, time.UTC), ID: 7},
 			wantOK: true,
 		},
 		"a cursor to the nanosecond": {
 			after:  "2026-01-31T10:00:00.000000001Z_7",
-			want:   &lt.JournalEntryCursor{OccurredAt: time.Date(2026, 1, 31, 10, 0, 0, 1, time.UTC), ID: 7},
+			want:   &jt.JournalEntryCursor{OccurredAt: time.Date(2026, 1, 31, 10, 0, 0, 1, time.UTC), ID: 7},
 			wantOK: true,
 		},
 		"no id":             {after: "2026-01-31T10:00:00Z"},

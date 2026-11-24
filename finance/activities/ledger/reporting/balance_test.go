@@ -3,7 +3,7 @@ package reporting
 import (
 	"time"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	"github.com/logicorg/ivfs/internal/pkg/temporaltesting"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/shopspring/decimal"
@@ -56,14 +56,14 @@ func (s *UnitTestSuite) Test_LedgerAccountBalance() {
 	for name, tc := range tests {
 		s.Run(name, func() {
 			account := tc.account()
-			activityResult, err := s.Env.ExecuteActivity(s.ra.LedgerAccountBalance, lt.LedgerAccountBalanceParams{LedgerAccountID: account.ID, At: tc.at})
+			activityResult, err := s.Env.ExecuteActivity(s.ra.LedgerAccountBalance, jt.LedgerAccountBalanceParams{LedgerAccountID: account.ID, At: tc.at})
 			require.NoError(s.T(), err)
 
-			var got lt.LedgerAccountBalanceResult
+			var got jt.LedgerAccountBalanceResult
 			require.NoError(s.T(), activityResult.Get(&got))
 			require.Truef(s.T(), got.Balance.Equal(decimal.NewFromInt(tc.wantBalance)), "balance %s, want %d", got.Balance, tc.wantBalance)
 			got.Balance = decimal.Decimal{}
-			require.Equal(s.T(), lt.LedgerAccountBalanceResult{
+			require.Equal(s.T(), jt.LedgerAccountBalanceResult{
 				LedgerAccountID:   account.ID,
 				LedgerAccountName: account.Name,
 				Kind:              account.Kind,
@@ -87,7 +87,7 @@ func (s *UnitTestSuite) Test_LedgerAccountBalance_Errors() {
 
 	for name, tc := range tests {
 		s.Run(name, func() {
-			_, err := s.Env.ExecuteActivity(s.ra.LedgerAccountBalance, lt.LedgerAccountBalanceParams{LedgerAccountID: tc.ledgerAccountID})
+			_, err := s.Env.ExecuteActivity(s.ra.LedgerAccountBalance, jt.LedgerAccountBalanceParams{LedgerAccountID: tc.ledgerAccountID})
 			require.ErrorContains(s.T(), err, tc.wantError)
 		})
 	}

@@ -3,7 +3,7 @@ package accounts
 import (
 	"time"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	"github.com/logicorg/ivfs/web/api/gateway"
 )
 
@@ -82,7 +82,7 @@ type LedgerAccountBalanceOutput struct {
 }
 
 // newBalance is balance as the API returns it.
-func newBalance(balance lt.LedgerAccountBalanceResult) Balance {
+func newBalance(balance jt.LedgerAccountBalanceResult) Balance {
 	return Balance{
 		LedgerAccountID: balance.LedgerAccountID, LedgerAccountName: balance.LedgerAccountName,
 		Kind: string(balance.Kind), CurrencyID: balance.CurrencyID, CurrencyCode: balance.CurrencyCode,

@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"cuelang.org/go/cuego"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	errs "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/shopspring/decimal"
 )
@@ -37,7 +37,7 @@ func (i *UpdateTransferInput) Validate() error {
 	if i.FromLedgerAccountID == i.ToLedgerAccountID {
 		return errs.ErrInvalidParameter{Description: "a transfer moves money between two different balances"}
 	}
-	return lt.ValidateTagIDs(i.TagIDs)
+	return jt.ValidateTagIDs(i.TagIDs)
 }
 
 // Transfer returns the transfer the entry becomes, as it would be recorded, without

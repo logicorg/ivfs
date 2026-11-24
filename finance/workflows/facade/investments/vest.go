@@ -2,7 +2,7 @@ package investments
 
 import (
 	it "github.com/logicorg/ivfs/finance/common/types/investmenttypes"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	pft "github.com/logicorg/ivfs/finance/common/types/portfoliotypes"
 	categorieswf "github.com/logicorg/ivfs/finance/workflows/ledger/categories"
 	"github.com/logicorg/ivfs/pkg/model"
@@ -57,14 +57,14 @@ func buildVest(in *it.VestInput, b *brokerage, c *vestCategories) pft.RegisterVe
 	deliveredValue := delivered.Mul(in.FairMarketValue).Round(precision)
 	withheldValue := in.UnitsWithheld.Mul(in.FairMarketValue).Round(precision)
 
-	postings := []lt.PostingInput{{LedgerAccountID: b.investments, Amount: deliveredValue, Side: model.PostingDebit}}
+	postings := []jt.PostingInput{{LedgerAccountID: b.investments, Amount: deliveredValue, Side: model.PostingDebit}}
 	if withheldValue.IsPositive() {
-		postings = append(postings, lt.PostingInput{LedgerAccountID: c.expensesAccount, Amount: withheldValue, Side: model.PostingDebit, CategoryID: &c.tax})
+		postings = append(postings, jt.PostingInput{LedgerAccountID: c.expensesAccount, Amount: withheldValue, Side: model.PostingDebit, CategoryID: &c.tax})
 	}
-	postings = append(postings, lt.PostingInput{LedgerAccountID: c.incomeAccount, Amount: deliveredValue.Add(withheldValue), Side: model.PostingCredit, CategoryID: &c.income})
+	postings = append(postings, jt.PostingInput{LedgerAccountID: c.incomeAccount, Amount: deliveredValue.Add(withheldValue), Side: model.PostingCredit, CategoryID: &c.income})
 
 	result := pft.RegisterVestInput{
-		Entry: lt.PostJournalEntryInput{
+		Entry: jt.PostJournalEntryInput{
 			IdempotencyKey: string(it.KindVest) + ":" + in.IdempotencyKey,
 			OccurredAt:     in.OccurredAt,
 			Postings:       postings,

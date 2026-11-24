@@ -5,6 +5,7 @@ import (
 	"time"
 
 	ct "github.com/logicorg/ivfs/finance/common/types/categorytypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	tt "github.com/logicorg/ivfs/finance/common/types/transactiontypes"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
@@ -40,10 +41,10 @@ func (s *WorkflowUnitTestSuite) TestUpdateIncome() {
 			env := s.NewTestWorkflowEnvironment()
 			mockLedgerAccounts(env)
 			mockCategories(env)
-			want := lt.ReplaceJournalEntryInput{
+			want := jt.ReplaceJournalEntryInput{
 				JournalEntryID: 41,
 				OccurredAt:     occurredAt,
-				Postings: []lt.PostingInput{
+				Postings: []jt.PostingInput{
 					{LedgerAccountID: tc.balance.ID, Amount: decimal.RequireFromString("12.50"), Side: model.PostingDebit},
 					{LedgerAccountID: income.ID, Amount: decimal.RequireFromString("12.50"), Side: model.PostingCredit, CategoryID: ptr.Int64(salary.ID)},
 				},
@@ -53,7 +54,7 @@ func (s *WorkflowUnitTestSuite) TestUpdateIncome() {
 			}
 			want.TagIDs = tc.tags
 			env.OnWorkflow(journalwf.ReplaceJournalEntry, mock.Anything, replacement(want)).
-				Return(&lt.ReplaceJournalEntryResult{JournalEntryID: 41, Warnings: tc.warnings}, nil).Once()
+				Return(&jt.ReplaceJournalEntryResult{JournalEntryID: 41, Warnings: tc.warnings}, nil).Once()
 
 			env.ExecuteWorkflow(UpdateIncome, tt.UpdateIncomeInput{
 				JournalEntryID: 41, BalanceLedgerAccountID: tc.balance.ID, CategoryID: salary.ID,

@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/shopspring/decimal"
@@ -14,7 +14,7 @@ import (
 // LedgerAccountBalance returns a balance in the account's natural direction.
 // For debit-normal accounts this is debits minus credits; for credit-normal
 // accounts it is credits minus debits.
-func (a *Activities) LedgerAccountBalance(ctx context.Context, params lt.LedgerAccountBalanceParams) (*lt.LedgerAccountBalanceResult, error) {
+func (a *Activities) LedgerAccountBalance(ctx context.Context, params jt.LedgerAccountBalanceParams) (*jt.LedgerAccountBalanceResult, error) {
 	db, err := a.Pools.For(ctx)
 	if err != nil {
 		return nil, err
@@ -51,7 +51,7 @@ func (a *Activities) LedgerAccountBalance(ctx context.Context, params lt.LedgerA
 	if account.Kind == model.LedgerAccountLiability || account.Kind == model.LedgerAccountEquity || account.Kind == model.LedgerAccountIncome {
 		balance = balance.Neg()
 	}
-	return &lt.LedgerAccountBalanceResult{
+	return &jt.LedgerAccountBalanceResult{
 		LedgerAccountID:   account.ID,
 		LedgerAccountName: account.Name,
 		Kind:              account.Kind,

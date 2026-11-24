@@ -4,7 +4,7 @@ import (
 	"slices"
 	"time"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	rpt "github.com/logicorg/ivfs/finance/common/types/reportingtypes"
 	"github.com/logicorg/ivfs/internal/pkg/temporaltesting"
 	"github.com/logicorg/ivfs/pkg/model"
@@ -22,17 +22,17 @@ func (s *UnitTestSuite) TestLedgerAccountBalanceAndFinancialAccountBalances() {
 	temporaltesting.Insert(s.T(), s.DB, asset)
 	temporaltesting.Insert(s.T(), s.DB, offset)
 
-	posted, err := s.Env.ExecuteActivity(s.ja.PostJournalEntry, lt.PostJournalEntryInput{IdempotencyKey: "balance-entry", OccurredAt: time.Now().UTC(), Postings: []lt.PostingInput{
+	posted, err := s.Env.ExecuteActivity(s.ja.PostJournalEntry, jt.PostJournalEntryInput{IdempotencyKey: "balance-entry", OccurredAt: time.Now().UTC(), Postings: []jt.PostingInput{
 		{LedgerAccountID: asset.ID, Amount: decimal.NewFromInt(30), Side: model.PostingDebit},
 		{LedgerAccountID: offset.ID, Amount: decimal.NewFromInt(30), Side: model.PostingCredit},
 	}})
 	require.NoError(s.T(), err)
-	var postedResult lt.PostJournalEntryResult
+	var postedResult jt.PostJournalEntryResult
 	require.NoError(s.T(), posted.Get(&postedResult))
 
-	balanceResult, err := s.Env.ExecuteActivity(s.ra.LedgerAccountBalance, lt.LedgerAccountBalanceParams{LedgerAccountID: asset.ID})
+	balanceResult, err := s.Env.ExecuteActivity(s.ra.LedgerAccountBalance, jt.LedgerAccountBalanceParams{LedgerAccountID: asset.ID})
 	require.NoError(s.T(), err)
-	var balance lt.LedgerAccountBalanceResult
+	var balance jt.LedgerAccountBalanceResult
 	require.NoError(s.T(), balanceResult.Get(&balance))
 	require.True(s.T(), balance.Balance.Equal(decimal.NewFromInt(30)))
 
@@ -124,24 +124,24 @@ func (s *UnitTestSuite) TestListedPostingsAndTrialBalance() {
 	debit := fixture.Cash
 	credit := fixture.Expense
 	postedAt := time.Now().UTC()
-	posted, err := s.Env.ExecuteActivity(s.ja.PostJournalEntry, lt.PostJournalEntryInput{IdempotencyKey: "query-entry", OccurredAt: postedAt, Postings: []lt.PostingInput{
+	posted, err := s.Env.ExecuteActivity(s.ja.PostJournalEntry, jt.PostJournalEntryInput{IdempotencyKey: "query-entry", OccurredAt: postedAt, Postings: []jt.PostingInput{
 		{LedgerAccountID: debit.ID, Amount: decimal.NewFromInt(7), Side: model.PostingDebit},
 		{LedgerAccountID: credit.ID, Amount: decimal.NewFromInt(7), Side: model.PostingCredit},
 	}})
 	require.NoError(s.T(), err)
-	var postedResult lt.PostJournalEntryResult
+	var postedResult jt.PostJournalEntryResult
 	require.NoError(s.T(), posted.Get(&postedResult))
 
-	listResult, err := s.Env.ExecuteActivity(s.ra.ListPostings, lt.ListPostingsParams{LedgerAccountID: debit.ID})
+	listResult, err := s.Env.ExecuteActivity(s.ra.ListPostings, jt.ListPostingsParams{LedgerAccountID: debit.ID})
 	require.NoError(s.T(), err)
-	var postings lt.ListPostingsResult
+	var postings jt.ListPostingsResult
 	require.NoError(s.T(), listResult.Get(&postings))
 	require.Len(s.T(), postings.Postings, 1)
 	require.True(s.T(), postings.Postings[0].Amount.Equal(decimal.NewFromInt(7)))
 
-	trialResult, err := s.Env.ExecuteActivity(s.ra.TrialBalanceAt, lt.TrialBalanceAtParams{At: postedAt.Add(time.Second)})
+	trialResult, err := s.Env.ExecuteActivity(s.ra.TrialBalanceAt, jt.TrialBalanceAtParams{At: postedAt.Add(time.Second)})
 	require.NoError(s.T(), err)
-	var trial lt.TrialBalanceAtResult
+	var trial jt.TrialBalanceAtResult
 	require.NoError(s.T(), trialResult.Get(&trial))
 	require.Len(s.T(), trial.Rows, 2)
 	for _, row := range trial.Rows {
@@ -157,21 +157,21 @@ func (s *UnitTestSuite) TestLedgerAccountBalance_OnlyCountsPostedEntries() {
 	account := fixture.Cash
 	offset := fixture.Expense
 
-	posted, err := s.Env.ExecuteActivity(s.ja.PostJournalEntry, lt.PostJournalEntryInput{IdempotencyKey: "posted-balance", OccurredAt: time.Now().UTC(), Postings: []lt.PostingInput{
+	posted, err := s.Env.ExecuteActivity(s.ja.PostJournalEntry, jt.PostJournalEntryInput{IdempotencyKey: "posted-balance", OccurredAt: time.Now().UTC(), Postings: []jt.PostingInput{
 		{LedgerAccountID: account.ID, Amount: decimal.NewFromInt(30), Side: model.PostingDebit},
 		{LedgerAccountID: offset.ID, Amount: decimal.NewFromInt(30), Side: model.PostingCredit},
 	}})
 	require.NoError(s.T(), err)
-	var postedResult lt.PostJournalEntryResult
+	var postedResult jt.PostJournalEntryResult
 	require.NoError(s.T(), posted.Get(&postedResult))
 
 	draftEntry := &model.JournalEntry{OccurredAt: time.Now().UTC(), Status: model.JournalEntryDraft}
 	temporaltesting.Insert(s.T(), s.DB, draftEntry)
 	temporaltesting.Insert(s.T(), s.DB, &model.Posting{JournalEntryID: draftEntry.ID, LineNumber: 1, LedgerAccountID: account.ID, Amount: decimal.NewFromInt(99), Side: model.PostingDebit})
 
-	result, err := s.Env.ExecuteActivity(s.ra.LedgerAccountBalance, lt.LedgerAccountBalanceParams{LedgerAccountID: account.ID})
+	result, err := s.Env.ExecuteActivity(s.ra.LedgerAccountBalance, jt.LedgerAccountBalanceParams{LedgerAccountID: account.ID})
 	require.NoError(s.T(), err)
-	var balance lt.LedgerAccountBalanceResult
+	var balance jt.LedgerAccountBalanceResult
 	require.NoError(s.T(), result.Get(&balance))
 	require.True(s.T(), balance.Balance.Equal(decimal.NewFromInt(30)))
 	require.Equal(s.T(), account.ID, balance.LedgerAccountID)
@@ -184,21 +184,21 @@ func (s *UnitTestSuite) TestTrialBalanceAt_ExcludesDraftPostings() {
 	credit := fixture.Expense
 
 	postedAt := time.Now().UTC()
-	posted, err := s.Env.ExecuteActivity(s.ja.PostJournalEntry, lt.PostJournalEntryInput{IdempotencyKey: "trial-balance-posted", OccurredAt: postedAt, Postings: []lt.PostingInput{
+	posted, err := s.Env.ExecuteActivity(s.ja.PostJournalEntry, jt.PostJournalEntryInput{IdempotencyKey: "trial-balance-posted", OccurredAt: postedAt, Postings: []jt.PostingInput{
 		{LedgerAccountID: debit.ID, Amount: decimal.NewFromInt(25), Side: model.PostingDebit},
 		{LedgerAccountID: credit.ID, Amount: decimal.NewFromInt(25), Side: model.PostingCredit},
 	}})
 	require.NoError(s.T(), err)
-	var postedResult lt.PostJournalEntryResult
+	var postedResult jt.PostJournalEntryResult
 	require.NoError(s.T(), posted.Get(&postedResult))
 
 	draftEntry := &model.JournalEntry{OccurredAt: postedAt.Add(time.Minute), Status: model.JournalEntryDraft}
 	temporaltesting.Insert(s.T(), s.DB, draftEntry)
 	temporaltesting.Insert(s.T(), s.DB, &model.Posting{JournalEntryID: draftEntry.ID, LineNumber: 1, LedgerAccountID: debit.ID, Amount: decimal.NewFromInt(99), Side: model.PostingDebit})
 
-	trialResult, err := s.Env.ExecuteActivity(s.ra.TrialBalanceAt, lt.TrialBalanceAtParams{At: postedAt.Add(2 * time.Minute)})
+	trialResult, err := s.Env.ExecuteActivity(s.ra.TrialBalanceAt, jt.TrialBalanceAtParams{At: postedAt.Add(2 * time.Minute)})
 	require.NoError(s.T(), err)
-	var trial lt.TrialBalanceAtResult
+	var trial jt.TrialBalanceAtResult
 	require.NoError(s.T(), trialResult.Get(&trial))
 
 	for _, row := range trial.Rows {
@@ -252,12 +252,12 @@ func (s *UnitTestSuite) TestTrialBalanceAt_ReportsAccountsWithNothingCountedAtZe
 		tc.postings(account, offset)
 
 		s.Run(name, func() {
-			activityResult, err := s.Env.ExecuteActivity(s.ra.TrialBalanceAt, lt.TrialBalanceAtParams{At: at})
+			activityResult, err := s.Env.ExecuteActivity(s.ra.TrialBalanceAt, jt.TrialBalanceAtParams{At: at})
 			require.NoError(s.T(), err)
-			var trial lt.TrialBalanceAtResult
+			var trial jt.TrialBalanceAtResult
 			require.NoError(s.T(), activityResult.Get(&trial))
 
-			idx := slices.IndexFunc(trial.Rows, func(row lt.TrialBalanceRow) bool { return row.LedgerAccountID == account.ID })
+			idx := slices.IndexFunc(trial.Rows, func(row jt.TrialBalanceRow) bool { return row.LedgerAccountID == account.ID })
 			require.NotEqual(s.T(), -1, idx, "expected a row for the account")
 			row := trial.Rows[idx]
 			require.Equal(s.T(), fixture.Currency.ID, row.CurrencyID)

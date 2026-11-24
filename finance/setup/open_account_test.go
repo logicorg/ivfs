@@ -5,6 +5,7 @@ import (
 	"time"
 
 	ast "github.com/logicorg/ivfs/finance/common/types/accountsetuptypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	"github.com/logicorg/ivfs/finance/workflows/facade/accountsetup"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
@@ -143,8 +144,8 @@ func describe(rows []lt.AccountSummary) []string {
 func (s *UnitTestSuite) requireBalance(ledgerAccountID int64, want int64) {
 	s.T().Helper()
 
-	var balance lt.LedgerAccountBalanceResult
-	s.runWorkflow(reportingwf.LedgerAccountBalance, lt.LedgerAccountBalanceParams{LedgerAccountID: ledgerAccountID}, &balance)
+	var balance jt.LedgerAccountBalanceResult
+	s.runWorkflow(reportingwf.LedgerAccountBalance, jt.LedgerAccountBalanceParams{LedgerAccountID: ledgerAccountID}, &balance)
 	require.Truef(s.T(), balance.Balance.Equal(decimal.NewFromInt(want)),
 		"%s balance %s, want %d", balance.LedgerAccountName, balance.Balance, want)
 }

@@ -1,9 +1,10 @@
-package ledgertypes
+package journaltypes
 
 import (
 	"errors"
 	"time"
 
+	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/shopspring/decimal"
@@ -42,9 +43,9 @@ type ReplaceMovementInput struct {
 // order of the input, and the holdings that are negative after the replace,
 // which was made regardless.
 type ReplaceJournalEntryResult struct {
-	JournalEntryID      int64             `json:"journalEntryId"`
-	PositionMovementIDs []int64           `json:"positionMovementIds,omitempty"`
-	Warnings            []NegativeHolding `json:"warnings,omitempty"`
+	JournalEntryID      int64                `json:"journalEntryId"`
+	PositionMovementIDs []int64              `json:"positionMovementIds,omitempty"`
+	Warnings            []lt.NegativeHolding `json:"warnings,omitempty"`
 }
 
 // Entry returns the replaced fields as the input of a posting. The fields a
