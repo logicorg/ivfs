@@ -5,6 +5,7 @@ import (
 
 	activity "github.com/logicorg/ivfs/finance/activities/ledger/reporting"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	rpt "github.com/logicorg/ivfs/finance/common/types/reportingtypes"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -34,30 +35,30 @@ func (s *WorkflowUnitTestSuite) TestLedgerAccountBalance() {
 }
 
 func (s *WorkflowUnitTestSuite) TestFinancialAccountBalances() {
-	input := lt.FinancialAccountBalancesParams{FinancialAccountID: 1}
-	expected := &lt.FinancialAccountBalancesResult{FinancialAccountID: 1, Balances: []lt.LedgerAccountBalanceResult{{LedgerAccountID: 2, Balance: decimal.NewFromInt(10)}}}
+	input := rpt.FinancialAccountBalancesParams{FinancialAccountID: 1}
+	expected := &rpt.FinancialAccountBalancesResult{FinancialAccountID: 1, Balances: []lt.LedgerAccountBalanceResult{{LedgerAccountID: 2, Balance: decimal.NewFromInt(10)}}}
 	env := s.NewTestWorkflowEnvironment()
 	ra := activity.Activities{}
 	env.OnActivity(ra.FinancialAccountBalances, mock.Anything, input).Return(expected, nil)
 	env.ExecuteWorkflow(FinancialAccountBalances, input)
 	require.NoError(s.T(), env.GetWorkflowError())
-	var result *lt.FinancialAccountBalancesResult
+	var result *rpt.FinancialAccountBalancesResult
 	require.NoError(s.T(), env.GetWorkflowResult(&result))
 	assert.Equal(s.T(), expected, result)
 }
 
 func (s *WorkflowUnitTestSuite) TestListPositionsAt() {
-	input := lt.PositionsAtParams{FinancialAccountID: 1, AssetID: 2}
-	expected := &lt.PositionsAtResult{Positions: []lt.PositionResult{{
+	input := rpt.PositionsAtParams{FinancialAccountID: 1, AssetID: 2}
+	expected := &rpt.PositionsAtResult{Positions: []rpt.PositionResult{{
 		FinancialAccountID: 1, AssetID: 2, Units: decimal.NewFromInt(4),
-		CostBasis: []lt.CostBasisAmount{{CurrencyID: 3, Amount: decimal.NewFromInt(400)}}, UnknownCostBasis: true,
+		CostBasis: []rpt.CostBasisAmount{{CurrencyID: 3, Amount: decimal.NewFromInt(400)}}, UnknownCostBasis: true,
 	}}}
 	env := s.NewTestWorkflowEnvironment()
 	ra := activity.Activities{}
 	env.OnActivity(ra.PositionsAt, mock.Anything, input).Return(expected, nil)
 	env.ExecuteWorkflow(ListPositionsAt, input)
 	require.NoError(s.T(), env.GetWorkflowError())
-	var result *lt.PositionsAtResult
+	var result *rpt.PositionsAtResult
 	require.NoError(s.T(), env.GetWorkflowResult(&result))
 	assert.Equal(s.T(), expected, result)
 }

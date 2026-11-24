@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	rpt "github.com/logicorg/ivfs/finance/common/types/reportingtypes"
 	reportingwf "github.com/logicorg/ivfs/finance/workflows/ledger/reporting"
 	"github.com/logicorg/ivfs/web/api/apitest"
 	"github.com/shopspring/decimal"
@@ -17,7 +17,7 @@ import (
 // that a range that is not one is a 422.
 func TestSeries(t *testing.T) {
 	january := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
-	month := lt.NetWorthSeriesParams{From: january, To: january.AddDate(0, 0, 30)}
+	month := rpt.NetWorthSeriesParams{From: january, To: january.AddDate(0, 0, 30)}
 	path := "/api/net-worth/series?from=2026-01-01&to=2026-01-31"
 
 	apitest.RunCases(t, Register, map[string]apitest.Case{
@@ -25,9 +25,9 @@ func TestSeries(t *testing.T) {
 			Method: http.MethodGet, Path: path,
 			Call: &apitest.WorkflowCall{
 				Workflow: reportingwf.NetWorthSeries, Params: month,
-				Result: lt.NetWorthSeriesResult{
-					Balances: []lt.NetWorthBalance{{Date: january, CurrencyID: 1, Assets: decimal.RequireFromString("1000.25"), Liabilities: decimal.RequireFromString("50")}},
-					Units:    []lt.NetWorthUnits{{Date: january.AddDate(0, 0, 9), AssetID: 3, Units: decimal.RequireFromString("-0.5")}},
+				Result: rpt.NetWorthSeriesResult{
+					Balances: []rpt.NetWorthBalance{{Date: january, CurrencyID: 1, Assets: decimal.RequireFromString("1000.25"), Liabilities: decimal.RequireFromString("50")}},
+					Units:    []rpt.NetWorthUnits{{Date: january.AddDate(0, 0, 9), AssetID: 3, Units: decimal.RequireFromString("-0.5")}},
 				},
 			},
 			WantStatus: http.StatusOK,
@@ -36,7 +36,7 @@ func TestSeries(t *testing.T) {
 		},
 		"a month with nothing held": {
 			Method: http.MethodGet, Path: path,
-			Call:       &apitest.WorkflowCall{Workflow: reportingwf.NetWorthSeries, Params: month, Result: lt.NetWorthSeriesResult{}},
+			Call:       &apitest.WorkflowCall{Workflow: reportingwf.NetWorthSeries, Params: month, Result: rpt.NetWorthSeriesResult{}},
 			WantStatus: http.StatusOK, WantBody: `{"balances":[],"units":[]}`,
 		},
 		"a range of too many changes": {
