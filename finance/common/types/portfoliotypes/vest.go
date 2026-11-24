@@ -1,7 +1,8 @@
-package ledgertypes
+package portfoliotypes
 
 import (
 	"cuelang.org/go/cuego"
+	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	"github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/shopspring/decimal"
 )
@@ -13,9 +14,9 @@ import (
 // postings of the entry. Sell-to-cover is a separate trade, and an ESPP purchase
 // is a trade too, since it has cash on the other side.
 type RegisterVestInput struct {
-	Entry              PostJournalEntryInput `json:"entry" cue:"{idempotencyKey: !=\"\"}"`
-	FinancialAccountID int64                 `json:"financialAccountID" cue:">0"`
-	AssetID            int64                 `json:"assetID" cue:">0"`
+	Entry              lt.PostJournalEntryInput `json:"entry" cue:"{idempotencyKey: !=\"\"}"`
+	FinancialAccountID int64                    `json:"financialAccountID" cue:">0"`
+	AssetID            int64                    `json:"assetID" cue:">0"`
 	// Units is the number of units delivered to the account, net of any that the
 	// employer withheld for tax.
 	Units decimal.Decimal `json:"units" cue:"!=\"0\""`

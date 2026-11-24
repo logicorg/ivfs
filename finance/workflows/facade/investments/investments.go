@@ -11,6 +11,7 @@ import (
 	ct "github.com/logicorg/ivfs/finance/common/types/currencytypes"
 	it "github.com/logicorg/ivfs/finance/common/types/investmenttypes"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	pft "github.com/logicorg/ivfs/finance/common/types/portfoliotypes"
 	currencieswf "github.com/logicorg/ivfs/finance/workflows/currencies"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
 	journalwf "github.com/logicorg/ivfs/finance/workflows/ledger/journal"
@@ -102,8 +103,8 @@ func retrieveBrokerage(ctx workflow.Context, financialAccountID int64, currencyC
 }
 
 // input is the trade as the entry and the movement that record it.
-func (t trade) input() lt.RegisterInvestmentTradeInput {
-	input := lt.RegisterInvestmentTradeInput{
+func (t trade) input() pft.RegisterInvestmentTradeInput {
+	input := pft.RegisterInvestmentTradeInput{
 		Entry: lt.PostJournalEntryInput{
 			IdempotencyKey: t.kind + ":" + t.idempotencyKey,
 			OccurredAt:     t.occurredAt,
@@ -129,7 +130,7 @@ func (t trade) input() lt.RegisterInvestmentTradeInput {
 // register writes the trade's entry and movement in one transaction. A closed
 // account or an unknown asset fails here, inside it.
 func register(ctx workflow.Context, t trade) (*it.TradeResult, error) {
-	var result lt.RegisterInvestmentTradeResult
+	var result pft.RegisterInvestmentTradeResult
 	if err := workflow.ExecuteChildWorkflow(ctx, portfoliowf.RegisterInvestmentTrade, t.input()).Get(ctx, &result); err != nil {
 		return nil, fmt.Errorf("register %s: %w", t.kind, err)
 	}
@@ -142,8 +143,8 @@ func register(ctx workflow.Context, t trade) (*it.TradeResult, error) {
 
 // registerVest writes the vest's entry and movement in one transaction. A
 // closed account or an unknown asset fails here, inside it.
-func registerVest(ctx workflow.Context, input lt.RegisterVestInput) (*it.TradeResult, error) {
-	var result lt.RegisterVestResult
+func registerVest(ctx workflow.Context, input pft.RegisterVestInput) (*it.TradeResult, error) {
+	var result pft.RegisterVestResult
 	if err := workflow.ExecuteChildWorkflow(ctx, portfoliowf.RegisterVest, input).Get(ctx, &result); err != nil {
 		return nil, fmt.Errorf("register vest: %w", err)
 	}

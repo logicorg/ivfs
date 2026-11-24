@@ -4,6 +4,7 @@ import (
 	"time"
 
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	pft "github.com/logicorg/ivfs/finance/common/types/portfoliotypes"
 	"github.com/logicorg/ivfs/internal/pkg/temporaltesting"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/logicorg/ivfs/pkg/model/testhelpers"
@@ -15,16 +16,16 @@ import (
 func (s *UnitTestSuite) TestRegisterInvestmentTradeValidation() {
 	tests := []struct {
 		name string
-		in   lt.RegisterInvestmentTradeInput
+		in   pft.RegisterInvestmentTradeInput
 	}{
 		{name: "missing account"},
 		{
 			name: "missing asset",
-			in:   lt.RegisterInvestmentTradeInput{FinancialAccountID: 1},
+			in:   pft.RegisterInvestmentTradeInput{FinancialAccountID: 1},
 		},
 		{
 			name: "missing idempotency key",
-			in: lt.RegisterInvestmentTradeInput{
+			in: pft.RegisterInvestmentTradeInput{
 				FinancialAccountID: 1,
 				AssetID:            1,
 				UnitsDelta:         decimal.NewFromInt(1),
@@ -42,7 +43,7 @@ func (s *UnitTestSuite) TestRegisterInvestmentTradeValidation() {
 func (s *UnitTestSuite) TestRegisterInvestmentTradeAndPosition() {
 	// test RegisterInvestmentTrade activity
 
-	input := lt.RegisterInvestmentTradeInput{
+	input := pft.RegisterInvestmentTradeInput{
 		FinancialAccountID:  s.financialAccount.ID,
 		AssetID:             s.asset.ID,
 		UnitsDelta:          decimal.NewFromInt(1),
@@ -60,14 +61,14 @@ func (s *UnitTestSuite) TestRegisterInvestmentTradeAndPosition() {
 	activityResult, err := s.Env.ExecuteActivity(s.pa.RegisterInvestmentTrade, input)
 	require.NoError(s.T(), err)
 
-	var result lt.RegisterInvestmentTradeResult
+	var result pft.RegisterInvestmentTradeResult
 	require.NoError(s.T(), activityResult.Get(&result))
 	require.NotZero(s.T(), result.JournalEntryID)
 	require.NotZero(s.T(), result.PositionMovementID)
 
 	// test PositionAt activtiy
 
-	params := lt.PositionAtParams{
+	params := pft.PositionAtParams{
 		FinancialAccountID: s.financialAccount.ID,
 		AssetID:            s.asset.ID,
 	}
@@ -75,7 +76,7 @@ func (s *UnitTestSuite) TestRegisterInvestmentTradeAndPosition() {
 	positionResult, err := s.Env.ExecuteActivity(s.pa.PositionAt, params)
 	require.NoError(s.T(), err)
 
-	var position lt.PositionAtResult
+	var position pft.PositionAtResult
 	require.NoError(s.T(), positionResult.Get(&position))
 	require.True(s.T(), position.Units.Equal(decimal.NewFromInt(1)))
 
@@ -84,7 +85,7 @@ func (s *UnitTestSuite) TestRegisterInvestmentTradeAndPosition() {
 	retryResult, err := s.Env.ExecuteActivity(s.pa.RegisterInvestmentTrade, input)
 	require.NoError(s.T(), err)
 
-	var retry lt.RegisterInvestmentTradeResult
+	var retry pft.RegisterInvestmentTradeResult
 	require.NoError(s.T(), retryResult.Get(&retry))
 	require.Equal(s.T(), result.JournalEntryID, retry.JournalEntryID)
 	require.Equal(s.T(), result.PositionMovementID, retry.PositionMovementID)
@@ -125,7 +126,7 @@ func (s *UnitTestSuite) Test_RegisterInvestmentTrade_CostBasis() {
 			}
 			require.NoError(s.T(), err)
 
-			var result lt.RegisterInvestmentTradeResult
+			var result pft.RegisterInvestmentTradeResult
 			require.NoError(s.T(), activityResult.Get(&result))
 			var stored model.PositionMovement
 			require.NoError(s.T(), s.DB.NewSelect().Model(&stored).Where("id = ?", result.PositionMovementID).Scan(s.T().Context()))

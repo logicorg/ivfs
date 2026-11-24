@@ -9,6 +9,7 @@ import (
 	catt "github.com/logicorg/ivfs/finance/common/types/categorytypes"
 	ct "github.com/logicorg/ivfs/finance/common/types/currencytypes"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	pft "github.com/logicorg/ivfs/finance/common/types/portfoliotypes"
 	currencieswf "github.com/logicorg/ivfs/finance/workflows/currencies"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
 	categorieswf "github.com/logicorg/ivfs/finance/workflows/ledger/categories"
@@ -111,7 +112,7 @@ func requireTrade(t *testing.T, want, got trade) {
 // normalizeVest rewrites the decimals of a vest from their strings, so two
 // vests recording the same values compare equal whatever their scale: 600.00
 // and 600 both become 600.
-func normalizeVest(v lt.RegisterVestInput) lt.RegisterVestInput {
+func normalizeVest(v pft.RegisterVestInput) pft.RegisterVestInput {
 	normalize := func(d decimal.Decimal) decimal.Decimal { return decimal.RequireFromString(d.String()) }
 	v.Units, v.CostBasisAmount = normalize(v.Units), normalize(v.CostBasisAmount)
 	postings := make([]lt.PostingInput, len(v.Entry.Postings))
@@ -126,12 +127,12 @@ func normalizeVest(v lt.RegisterVestInput) lt.RegisterVestInput {
 // tradeInput matches the trade want by what it records rather than by its
 // representation: a decimal such as 1053.00 arrives as 1053, equal in value
 // but not in its fields.
-func tradeInput(want lt.RegisterInvestmentTradeInput) any {
+func tradeInput(want pft.RegisterInvestmentTradeInput) any {
 	sameDecimal := func(a, b *decimal.Decimal) bool { return (a == nil) == (b == nil) && (a == nil || a.Equal(*b)) }
 	sameID := func(a, b *int64) bool { return (a == nil) == (b == nil) && (a == nil || *a == *b) }
 	sameString := func(a, b *string) bool { return (a == nil) == (b == nil) && (a == nil || *a == *b) }
 
-	return mock.MatchedBy(func(got lt.RegisterInvestmentTradeInput) bool {
+	return mock.MatchedBy(func(got pft.RegisterInvestmentTradeInput) bool {
 		if got.FinancialAccountID != want.FinancialAccountID || got.AssetID != want.AssetID ||
 			!got.UnitsDelta.Equal(want.UnitsDelta) || !sameDecimal(got.CostBasisAmount, want.CostBasisAmount) ||
 			!sameID(got.CostBasisCurrencyID, want.CostBasisCurrencyID) {

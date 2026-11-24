@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	pft "github.com/logicorg/ivfs/finance/common/types/portfoliotypes"
 	portfoliowf "github.com/logicorg/ivfs/finance/workflows/ledger/portfolio"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/logicorg/ivfs/pkg/ptr"
@@ -48,12 +48,12 @@ func TestListMovements(t *testing.T) {
 			Method: http.MethodGet, Path: "/api/holdings/movements?financialAccountId=3&assetId=7&kind=trade&limit=2",
 			Call: &apitest.WorkflowCall{
 				Workflow: portfoliowf.ListPositionMovements,
-				Params: lt.ListPositionMovementsParams{
+				Params: pft.ListPositionMovementsParams{
 					FinancialAccountID: 3, AssetID: 7, Kinds: []model.PositionMovementKind{model.PositionMovementTrade}, Limit: 2,
 				},
-				Result: lt.ListPositionMovementsResult{
+				Result: pft.ListPositionMovementsResult{
 					Movements: []model.PositionMovement{buy, sale},
-					Next:      &lt.PositionMovementCursor{OccurredAt: day.Add(time.Hour), CreatedAt: recorded, ID: 21},
+					Next:      &pft.PositionMovementCursor{OccurredAt: day.Add(time.Hour), CreatedAt: recorded, ID: 21},
 				},
 			},
 			WantStatus: http.StatusOK,
@@ -63,10 +63,10 @@ func TestListMovements(t *testing.T) {
 			Method: http.MethodGet, Path: "/api/holdings/movements?after=2026-01-31T11:00:00Z_2026-02-03T09:30:00.123456Z_21",
 			Call: &apitest.WorkflowCall{
 				Workflow: portfoliowf.ListPositionMovements,
-				Params: lt.ListPositionMovementsParams{
-					After: &lt.PositionMovementCursor{OccurredAt: day.Add(time.Hour), CreatedAt: recorded, ID: 21},
+				Params: pft.ListPositionMovementsParams{
+					After: &pft.PositionMovementCursor{OccurredAt: day.Add(time.Hour), CreatedAt: recorded, ID: 21},
 				},
-				Result: lt.ListPositionMovementsResult{Movements: []model.PositionMovement{adjustment}},
+				Result: pft.ListPositionMovementsResult{Movements: []model.PositionMovement{adjustment}},
 			},
 			WantStatus: http.StatusOK, WantBody: `{"movements":[` + adjustmentBody + `]}`,
 		},
@@ -75,19 +75,19 @@ func TestListMovements(t *testing.T) {
 			Path:   "/api/holdings/movements?from=2026-01-01T00:00:00Z&to=2026-02-01T00:00:00Z&kind=split&kind=adjustment",
 			Call: &apitest.WorkflowCall{
 				Workflow: portfoliowf.ListPositionMovements,
-				Params: lt.ListPositionMovementsParams{
+				Params: pft.ListPositionMovementsParams{
 					Kinds: []model.PositionMovementKind{model.PositionMovementSplit, model.PositionMovementAdjustment},
 					From:  time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC), To: time.Date(2026, 2, 1, 0, 0, 0, 0, time.UTC),
 				},
-				Result: lt.ListPositionMovementsResult{Movements: []model.PositionMovement{adjustment}},
+				Result: pft.ListPositionMovementsResult{Movements: []model.PositionMovement{adjustment}},
 			},
 			WantStatus: http.StatusOK, WantBody: `{"movements":[` + adjustmentBody + `]}`,
 		},
 		"no movements": {
 			Method: http.MethodGet, Path: "/api/holdings/movements",
 			Call: &apitest.WorkflowCall{
-				Workflow: portfoliowf.ListPositionMovements, Params: lt.ListPositionMovementsParams{},
-				Result: lt.ListPositionMovementsResult{},
+				Workflow: portfoliowf.ListPositionMovements, Params: pft.ListPositionMovementsParams{},
+				Result: pft.ListPositionMovementsResult{},
 			},
 			WantStatus: http.StatusOK, WantBody: `{"movements":[]}`,
 		},
@@ -95,7 +95,7 @@ func TestListMovements(t *testing.T) {
 			Method: http.MethodGet, Path: "/api/holdings/movements?to=2026-01-01T00:00:00Z&from=2026-02-01T00:00:00Z",
 			Call: &apitest.WorkflowCall{
 				Workflow: portfoliowf.ListPositionMovements,
-				Params: lt.ListPositionMovementsParams{
+				Params: pft.ListPositionMovementsParams{
 					From: time.Date(2026, 2, 1, 0, 0, 0, 0, time.UTC), To: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC),
 				},
 				Err: temporal.NewApplicationError(backwards, "ErrInvalidParameter"),

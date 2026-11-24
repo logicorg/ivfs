@@ -1,7 +1,7 @@
 package portfolio
 
 import (
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	pft "github.com/logicorg/ivfs/finance/common/types/portfoliotypes"
 	portfoliowf "github.com/logicorg/ivfs/finance/workflows/ledger/portfolio"
 	"github.com/logicorg/ivfs/mcp/mcptypes"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -15,7 +15,7 @@ func registerRegisterInvestmentTrade(server *mcp.Server, c client.Client) {
 		Description: "Record one buy or sell of a tradable asset and its cash-side journal entry atomically. " +
 			"Look the ledger and financial account ids up first with list_accounts, and asset ids with list_assets, rather than guessing them.",
 	}, mcptypes.WorkflowWithResult[
-		func(workflow.Context, lt.RegisterInvestmentTradeInput) (*lt.RegisterInvestmentTradeResult, error),
-		RegisterInvestmentTradeToolInput, lt.RegisterInvestmentTradeResult,
+		func(workflow.Context, pft.RegisterInvestmentTradeInput) (*pft.RegisterInvestmentTradeResult, error),
+		RegisterInvestmentTradeToolInput, pft.RegisterInvestmentTradeResult,
 	](c, portfoliowf.RegisterInvestmentTrade))
 }
