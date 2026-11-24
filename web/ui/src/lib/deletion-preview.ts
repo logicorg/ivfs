@@ -1,5 +1,4 @@
-import type { AccountDeletionPreview, StrayAmount } from "@/api"
-import { negate } from "@/lib/decimal"
+import type { AccountDeletionPreview } from "@/api"
 import { formatAmount } from "@/lib/money"
 
 // describeDeletionPreview says what deleting an account would do, a sentence
@@ -20,19 +19,12 @@ export function describeDeletionPreview(preview: AccountDeletionPreview, locale?
     lines.push(`Keeps ${kept}: each also touches an account that stays, so only this side moves to the untracked accounts.`)
   }
   for (const amount of preview.strayAmounts ?? []) {
-    lines.push(`${amount.name} (${amount.kind}) receives ${formatAmount(strayAmount(amount), amount.currencyCode, undefined, locale)}.`)
+    lines.push(`Untracked accounts receives ${formatAmount(amount.amount, amount.currencyCode, undefined, locale)}.`)
   }
   for (const units of preview.strayUnits ?? []) {
     lines.push(`Untracked accounts receives ${units.units} ${units.assetName}.`)
   }
   return lines
-}
-
-// strayAmount is what an untracked account receives in the sense its kind
-// reads: earned for income, debits minus credits otherwise, so a moved balance
-// reads as it did on the account.
-function strayAmount(amount: StrayAmount): string {
-  return amount.kind === "income" ? negate(amount.amount) : amount.amount
 }
 
 function countOf(entries: number, groups: number): string {

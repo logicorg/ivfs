@@ -3,6 +3,7 @@ package auth_test
 import (
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"testing"
 	"time"
 
@@ -23,12 +24,27 @@ func TestRequire(t *testing.T) {
 		cookie       *http.Cookie
 		wantStatus   int
 		wantLocation string
+		// nextStatus is what the next handler answers with, 200 when zero.
+		nextStatus int
 		// wantUser is the user the next handler acts as; nil means it is
 		// not reached.
 		wantUser *uuid.UUID
+		// wantSignedOut means the response clears the session cookie.
+		wantSignedOut bool
 	}{
 		"an API request with a session": {
 			path: "/api/currencies", cookie: session, wantStatus: http.StatusOK, wantUser: &uid,
+		},
+		// The session's user is gone, as after the registry is recreated, so
+		// the session is cleared rather than failing every request until it
+		// expires.
+		"an API request whose session the API refuses": {
+			path: "/api/currencies", cookie: session, nextStatus: http.StatusUnauthorized,
+			wantStatus: http.StatusUnauthorized, wantUser: &uid, wantSignedOut: true,
+		},
+		"an API request the API refuses for another reason": {
+			path: "/api/currencies", cookie: session, nextStatus: http.StatusNotFound,
+			wantStatus: http.StatusNotFound, wantUser: &uid,
 		},
 		"a page with a session": {
 			path: "/accounts", cookie: session, wantStatus: http.StatusOK, wantUser: &uid,
@@ -65,9 +81,12 @@ func TestRequire(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			var reached bool
 			var got uuid.UUID
-			next := http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+			next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				reached = true
 				got, _ = tenancy.UserFrom(r.Context())
+				if tc.nextStatus != 0 {
+					w.WriteHeader(tc.nextStatus)
+				}
 			})
 			r := httptest.NewRequest(http.MethodGet, tc.path, nil)
 			if tc.cookie != nil {
@@ -83,7 +102,10 @@ func TestRequire(t *testing.T) {
 			if tc.wantUser != nil {
 				require.Equal(t, *tc.wantUser, got)
 			}
-			if tc.wantStatus == http.StatusUnauthorized {
+			require.Equal(t, tc.wantSignedOut, slices.ContainsFunc(w.Result().Cookies(), func(c *http.Cookie) bool {
+				return c.Name == auth.SessionCookie && c.MaxAge < 0
+			}))
+			if tc.wantStatus == http.StatusUnauthorized && tc.nextStatus == 0 {
 				require.Equal(t, "application/problem+json", w.Header().Get("Content-Type"))
 				require.Contains(t, w.Body.String(), "sign in at /auth/login")
 			}

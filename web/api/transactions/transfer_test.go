@@ -25,6 +25,8 @@ func TestRecordTransfer(t *testing.T) {
 	}
 	withNote := cardPaidOff
 	withNote.Description = "pay the card off"
+	withTags := cardPaidOff
+	withTags.TagIDs = []int64{3, 4}
 	toDollars := tt.RecordTransferInput{
 		IdempotencyKey: "3d4b", FromLedgerAccountID: 100, ToLedgerAccountID: 103,
 		Amount: decimal.RequireFromString("300.5"), ToAmount: decimal.RequireFromString("324.15"),
@@ -47,6 +49,11 @@ func TestRecordTransfer(t *testing.T) {
 		"with a note": {
 			Method: http.MethodPost, Path: "/api/transactions/transfers", Body: form + `,"description":"pay the card off"}`,
 			Call:       record(withNote, nil),
+			WantStatus: http.StatusOK, WantBody: `{"journalEntryId":44}`,
+		},
+		"with tags": {
+			Method: http.MethodPost, Path: "/api/transactions/transfers", Body: form + `,"tagIds":[3,4]}`,
+			Call:       record(withTags, nil),
 			WantStatus: http.StatusOK, WantBody: `{"journalEntryId":44}`,
 		},
 		"into another currency": {

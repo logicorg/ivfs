@@ -5,43 +5,45 @@ import (
 	"time"
 
 	it "github.com/logicorg/ivfs/finance/common/types/investmenttypes"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
+	pft "github.com/logicorg/ivfs/finance/common/types/portfoliotypes"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/logicorg/ivfs/pkg/ptr"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/require"
 )
 
-// TestBuildVest checks that a vest credits the income with the value of every
-// unit vested, debits "Investments" and the tax category with the values of
-// the units delivered and withheld, each rounded to the currency's precision,
-// and adds the delivered units at their value.
+// TestBuildVest checks that a vest credits "Income" with the value of every
+// unit vested, under the income category, debits "Investments" and "Expenses"
+// with the values of the units delivered and withheld, the latter under the
+// tax category, each rounded to the currency's precision, and adds the
+// delivered units at their value.
 func TestBuildVest(t *testing.T) {
 	occurredAt := time.Date(2026, 10, 3, 10, 0, 0, 0, time.UTC)
 	b := &brokerage{currency: euro, cash: cash.ID, investments: investments.ID}
-	categories := &vestCategories{income: compensation.ID, tax: taxWithheld.ID}
+	categories := &vestCategories{income: compensation.ID, incomeAccount: income.ID, tax: taxWithheld.ID, expensesAccount: expenses.ID}
 	vest := func(vested, withheld, value string) it.VestInput {
 		in := it.VestInput{
 			IdempotencyKey: "a71f", FinancialAccountID: ibkr, AssetID: 7,
 			UnitsVested: decimal.RequireFromString(vested), FairMarketValue: decimal.RequireFromString(value),
-			CurrencyCode: "EUR", IncomeCategoryLedgerAccountID: compensation.ID, OccurredAt: occurredAt,
+			CurrencyCode: "EUR", IncomeCategoryID: compensation.ID, OccurredAt: occurredAt,
 		}
 		if withheld != "" {
-			in.UnitsWithheld, in.TaxCategoryLedgerAccountID = decimal.RequireFromString(withheld), taxWithheld.ID
+			in.UnitsWithheld, in.TaxCategoryID = decimal.RequireFromString(withheld), taxWithheld.ID
 		}
 		return in
 	}
-	postings := func(delivered, withheld, income string) []lt.PostingInput {
-		result := []lt.PostingInput{{LedgerAccountID: investments.ID, Amount: decimal.RequireFromString(delivered), Side: model.PostingDebit}}
+	postings := func(delivered, withheld, vested string) []jt.PostingInput {
+		result := []jt.PostingInput{{LedgerAccountID: investments.ID, Amount: decimal.RequireFromString(delivered), Side: model.PostingDebit}}
 		if withheld != "" {
-			result = append(result, lt.PostingInput{LedgerAccountID: taxWithheld.ID, Amount: decimal.RequireFromString(withheld), Side: model.PostingDebit})
+			result = append(result, jt.PostingInput{LedgerAccountID: expenses.ID, Amount: decimal.RequireFromString(withheld), Side: model.PostingDebit, CategoryID: ptr.NewPtr(taxWithheld.ID)})
 		}
-		return append(result, lt.PostingInput{LedgerAccountID: compensation.ID, Amount: decimal.RequireFromString(income), Side: model.PostingCredit})
+		return append(result, jt.PostingInput{LedgerAccountID: income.ID, Amount: decimal.RequireFromString(vested), Side: model.PostingCredit, CategoryID: ptr.NewPtr(compensation.ID)})
 	}
 
 	tests := map[string]struct {
 		input       it.VestInput
-		postings    []lt.PostingInput
+		postings    []jt.PostingInput
 		delivered   string
 		description *string
 	}{
@@ -76,8 +78,8 @@ func TestBuildVest(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			want := lt.RegisterVestInput{
-				Entry: lt.PostJournalEntryInput{
+			want := pft.RegisterVestInput{
+				Entry: jt.PostJournalEntryInput{
 					IdempotencyKey: "vest:a71f",
 					OccurredAt:     occurredAt,
 					Description:    tc.description,

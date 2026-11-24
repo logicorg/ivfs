@@ -7,9 +7,11 @@ import (
 	"fmt"
 	"time"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	tt "github.com/logicorg/ivfs/finance/common/types/transactiontypes"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
+	categorieswf "github.com/logicorg/ivfs/finance/workflows/ledger/categories"
 	journalwf "github.com/logicorg/ivfs/finance/workflows/ledger/journal"
 	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/logicorg/ivfs/pkg/model"
@@ -25,21 +27,25 @@ type movement struct {
 	kind           string
 	idempotencyKey string
 	from, to       int64
-	amount         decimal.Decimal
-	occurredAt     time.Time
-	description    string
+	// fromCategory and toCategory classify the posting of that side, which is
+	// then on "Income" or "Expenses". Zero is no category.
+	fromCategory, toCategory int64
+	amount                   decimal.Decimal
+	occurredAt               time.Time
+	description              string
+	tagIDs                   []int64
 }
 
 // retrieveLedgerAccounts retrieves the given ledger accounts concurrently.
 func retrieveLedgerAccounts(ctx workflow.Context, ids ...int64) ([]*model.LedgerAccount, error) {
 	futures := make([]workflow.ChildWorkflowFuture, len(ids))
 	for i, id := range ids {
-		futures[i] = workflow.ExecuteChildWorkflow(ctx, ledgeraccountswf.RetrieveLedgerAccount, lt.RetrieveLedgerAccountParams{ID: id})
+		futures[i] = workflow.ExecuteChildWorkflow(ctx, ledgeraccountswf.RetrieveLedgerAccount, act.RetrieveLedgerAccountParams{ID: id})
 	}
 
 	accounts := make([]*model.LedgerAccount, len(ids))
 	for i, future := range futures {
-		var result lt.RetrieveLedgerAccountResult
+		var result act.RetrieveLedgerAccountResult
 		if err := future.Get(ctx, &result); err != nil {
 			return nil, fmt.Errorf("retrieve ledger account %d: %w", ids[i], err)
 		}
@@ -61,42 +67,37 @@ func checkBalance(account *model.LedgerAccount) error {
 	return nil
 }
 
-// checkCategory fails unless the account is a category of the given kind.
-func checkCategory(account *model.LedgerAccount, kind model.LedgerAccountKind) error {
-	if account.Kind == kind {
-		return nil
+// categorized checks the two things an expense and an income name, a balance
+// and a category of the kind, and returns the balance with the shared account
+// of that kind in the balance's currency, where the category's side is
+// booked.
+func categorized(ctx workflow.Context, balanceID, categoryID int64, kind model.LedgerAccountKind) (*model.LedgerAccount, int64, error) {
+	accounts, err := retrieveLedgerAccounts(ctx, balanceID)
+	if err != nil {
+		return nil, 0, err
 	}
-	if account.Kind == model.LedgerAccountIncome || account.Kind == model.LedgerAccountExpense {
-		return internalerrors.ErrInvalidParameter{
-			Description: fmt.Sprintf("%q is an %s category, not an %s one", account.Name, account.Kind, kind),
-		}
+	balance := accounts[0]
+	if err := checkBalance(balance); err != nil {
+		return nil, 0, err
 	}
-	return internalerrors.ErrInvalidParameter{
-		Description: fmt.Sprintf("%q is not an %s category: its kind is %s", account.Name, kind, account.Kind),
-	}
-}
 
-// checkSameCurrency fails when the two accounts are in different currencies,
-// naming the exchange such a movement is, rather than leaving it to the ledger,
-// whose unbalanced-entry error names only currency ids.
-func checkSameCurrency(a, b *model.LedgerAccount) error {
-	if a.CurrencyID != b.CurrencyID {
-		return internalerrors.ErrInvalidParameter{
-			Description: fmt.Sprintf("%q and %q are in different currencies; record an exchange between currencies with RegisterFXConversion", a.Name, b.Name),
-		}
+	account, err := categorieswf.CategoryAccount(ctx, categoryID, kind, balance.CurrencyID)
+	if err != nil {
+		return nil, 0, err
 	}
-	return nil
+	return balance, account, nil
 }
 
 // entry is the movement as one journal entry, crediting the account the money
 // leaves and debiting the one it reaches.
-func (m movement) entry() lt.PostJournalEntryInput {
-	input := lt.PostJournalEntryInput{
+func (m movement) entry() jt.PostJournalEntryInput {
+	input := jt.PostJournalEntryInput{
 		IdempotencyKey: m.kind + ":" + m.idempotencyKey,
 		OccurredAt:     m.occurredAt,
-		Postings: []lt.PostingInput{
-			{LedgerAccountID: m.to, Amount: m.amount, Side: model.PostingDebit},
-			{LedgerAccountID: m.from, Amount: m.amount, Side: model.PostingCredit},
+		TagIDs:         m.tagIDs,
+		Postings: []jt.PostingInput{
+			{LedgerAccountID: m.to, Amount: m.amount, Side: model.PostingDebit, CategoryID: categoryOf(m.toCategory)},
+			{LedgerAccountID: m.from, Amount: m.amount, Side: model.PostingCredit, CategoryID: categoryOf(m.fromCategory)},
 		},
 	}
 	if m.description != "" {
@@ -105,10 +106,18 @@ func (m movement) entry() lt.PostJournalEntryInput {
 	return input
 }
 
+// categoryOf is the category of a posting, none when id is zero.
+func categoryOf(id int64) *int64 {
+	if id == 0 {
+		return nil
+	}
+	return &id
+}
+
 // post posts the movement as one entry. A closed or unknown account fails
 // here, inside the transaction that posts.
 func post(ctx workflow.Context, m movement) (*tt.RecordResult, error) {
-	var result lt.PostJournalEntryResult
+	var result jt.PostJournalEntryResult
 	if err := workflow.ExecuteChildWorkflow(ctx, journalwf.PostJournalEntry, m.entry()).Get(ctx, &result); err != nil {
 		return nil, fmt.Errorf("post %s: %w", m.kind, err)
 	}
@@ -116,19 +125,20 @@ func post(ctx workflow.Context, m movement) (*tt.RecordResult, error) {
 }
 
 // replace makes the journal entry what entry states: its date, description,
-// metadata, and postings, with no position movements. The entry keeps its own
+// metadata, postings, and tags, with no position movements. The entry keeps its own
 // key, so the one in entry is not used. An unknown entry, or an account it may
 // not move onto, fails here, inside the transaction that replaces.
-func replace(ctx workflow.Context, journalEntryID int64, kind string, entry lt.PostJournalEntryInput) (*tt.UpdateResult, error) {
-	input := lt.ReplaceJournalEntryInput{
+func replace(ctx workflow.Context, journalEntryID int64, kind string, entry jt.PostJournalEntryInput) (*tt.UpdateResult, error) {
+	input := jt.ReplaceJournalEntryInput{
 		JournalEntryID: journalEntryID,
 		OccurredAt:     entry.OccurredAt,
 		Description:    entry.Description,
 		Metadata:       entry.Metadata,
 		Postings:       entry.Postings,
+		TagIDs:         entry.TagIDs,
 	}
 
-	var result lt.ReplaceJournalEntryResult
+	var result jt.ReplaceJournalEntryResult
 	if err := workflow.ExecuteChildWorkflow(ctx, journalwf.ReplaceJournalEntry, input).Get(ctx, &result); err != nil {
 		return nil, fmt.Errorf("update %s: %w", kind, err)
 	}

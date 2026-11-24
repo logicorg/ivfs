@@ -13,8 +13,12 @@ This document outlines the key design principles and architectural patterns obse
 - `LedgerAccount` is the balance-bearing chart of accounts. It has one
   currency and one accounting kind: asset, liability, equity, income, or
   expense.
-- A category is not a table or kind. It is an income or expense ledger
-  account, exposed through the small `categories` workflow facade.
+- A category is a row of `ledger.category`: a name, a kind (income or
+  expense), and an optional parent, with no currency and no balance. A posting
+  to an income or expense ledger account may carry one, and a category's total
+  is the sum of those postings (ADR 0019).
+- "Expenses" and "Income", one of each per currency, are the only income and
+  expense ledger accounts. Ledger accounts have no hierarchy.
 - Facades under `finance/workflows/facade` present what a person means to do,
   such as opening an account, and compose the lower-level workflows as child
   workflows rather than calling their activities.
@@ -31,8 +35,9 @@ This document outlines the key design principles and architectural patterns obse
 The detailed rationale is in [ADR 0001](adrs/0001-double-entry-ledger.md),
 [ADR 0002](adrs/0002-ledger-domain-and-application-api.md),
 [ADR 0003](adrs/0003-categories-and-tags.md),
-[ADR 0005](adrs/0005-uniqueness-and-idempotent-creation.md), and
-[ADR 0006](adrs/0006-intent-level-account-setup.md).
+[ADR 0005](adrs/0005-uniqueness-and-idempotent-creation.md),
+[ADR 0006](adrs/0006-intent-level-account-setup.md), and
+[ADR 0019](adrs/0019-currency-neutral-categories.md).
 Ideas still under discussion are in [`docs/rfcs`](rfcs/README.md).
 
 ## Idempotency in Creation Activities

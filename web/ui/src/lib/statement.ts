@@ -11,8 +11,9 @@ export type StatementLine = {
   entryId: number
   occurredAt: string
   description?: string
-  // otherAccounts names the ledger accounts on the entry's other side, such
-  // as Groceries for a payment from Cash.
+  // otherAccounts names the entry's other side: the category of a posting
+  // that has one, such as Groceries for a payment from Cash, and otherwise
+  // its ledger account.
   otherAccounts: string[]
   // amount is what the posting adds to the account's balance in its natural
   // direction, as the balance itself is shown: negative when it takes away.
@@ -24,7 +25,7 @@ export type StatementLine = {
 export function statementLines(entries: Entry[], ledgerAccountId: number, kind: Kind): StatementLine[] {
   return entries.flatMap((entry) => {
     const others = entry.postings.filter((posting) => posting.ledgerAccountId !== ledgerAccountId)
-    const otherAccounts = [...new Set(others.map((posting) => posting.ledgerAccountName))]
+    const otherAccounts = [...new Set(others.map(postingName))]
     return entry.postings
       .filter((posting) => posting.ledgerAccountId === ledgerAccountId)
       .map((posting) => ({
@@ -36,6 +37,13 @@ export function statementLines(entries: Entry[], ledgerAccountId: number, kind: 
         amount: signedAmount(posting, kind),
       }))
   })
+}
+
+// postingName is what a posting is shown as: its category when it has one,
+// since "Expenses" and "Income" say nothing about what the money was for, and
+// otherwise its ledger account.
+export function postingName(posting: Pick<Posting, "ledgerAccountName" | "categoryName">): string {
+  return posting.categoryName ?? posting.ledgerAccountName
 }
 
 // signedAmount is what posting adds to the natural balance of an account of

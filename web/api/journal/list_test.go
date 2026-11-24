@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	journalwf "github.com/logicorg/ivfs/finance/workflows/ledger/journal"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/logicorg/ivfs/pkg/ptr"
@@ -16,8 +16,9 @@ import (
 
 // TestList checks that each filter and the cursor reach ListJournalEntries,
 // that the next page's cursor goes back as after, that each entry has its
-// postings with their accounts' names, and that a cursor the API did not
-// return, or an entry without its postings' accounts, is refused.
+// postings with their accounts' names and their categories, and that a cursor
+// the API did not return, or an entry without its postings' accounts or
+// categories, is refused.
 func TestList(t *testing.T) {
 	day := time.Date(2026, 1, 31, 10, 0, 0, 0, time.UTC)
 	cash := &model.LedgerAccount{ID: 100, Name: "Cash", Kind: model.LedgerAccountAsset, CurrencyID: 1}
@@ -26,7 +27,10 @@ func TestList(t *testing.T) {
 		ID: 7, OccurredAt: day, Description: ptr.NewPtr("Supermarket"), ExternalID: ptr.NewPtr("bank-42"),
 		Status: model.JournalEntryPosted,
 		Postings: []model.Posting{
-			{ID: 70, LineNumber: 1, LedgerAccountID: 200, LedgerAccount: groceries, Amount: decimal.RequireFromString("12345678901234.56"), Side: model.PostingDebit},
+			{
+				ID: 70, LineNumber: 1, LedgerAccountID: 200, LedgerAccount: groceries, Amount: decimal.RequireFromString("12345678901234.56"), Side: model.PostingDebit,
+				CategoryID: ptr.Int64(40), Category: &model.Category{ID: 40, Name: "Food", Kind: model.LedgerAccountExpense},
+			},
 			{ID: 71, LineNumber: 2, LedgerAccountID: 100, LedgerAccount: cash, Amount: decimal.RequireFromString("12345678901234.56"), Side: model.PostingCredit},
 		},
 	}
@@ -38,22 +42,22 @@ func TestList(t *testing.T) {
 		},
 	}
 	shoppingBody := `{"id":7,"occurredAt":"2026-01-31T10:00:00Z","description":"Supermarket","externalId":"bank-42","status":"posted","postings":[` +
-		`{"lineNumber":1,"ledgerAccountId":200,"ledgerAccountName":"Groceries","kind":"expense","currencyId":1,"amount":"12345678901234.56","side":"debit"},` +
-		`{"lineNumber":2,"ledgerAccountId":100,"ledgerAccountName":"Cash","kind":"asset","currencyId":1,"amount":"12345678901234.56","side":"credit"}]}`
+		`{"lineNumber":1,"ledgerAccountId":200,"ledgerAccountName":"Groceries","kind":"expense","currencyId":1,"amount":"12345678901234.56","side":"debit","categoryId":40,"categoryName":"Food"},` +
+		`{"lineNumber":2,"ledgerAccountId":100,"ledgerAccountName":"Cash","kind":"asset","currencyId":1,"amount":"12345678901234.56","side":"credit"}],"tags":[]}`
 	refundBody := `{"id":8,"occurredAt":"2026-01-31T11:00:00Z","status":"posted","postings":[` +
 		`{"lineNumber":1,"ledgerAccountId":200,"ledgerAccountName":"Groceries","kind":"expense","currencyId":1,"amount":"1.5","side":"credit"},` +
-		`{"lineNumber":2,"ledgerAccountId":100,"ledgerAccountName":"Cash","kind":"asset","currencyId":1,"amount":"1.5","side":"debit"}]}`
+		`{"lineNumber":2,"ledgerAccountId":100,"ledgerAccountName":"Cash","kind":"asset","currencyId":1,"amount":"1.5","side":"debit"}],"tags":[]}`
 
 	apitest.RunCases(t, Register, map[string]apitest.Case{
 		"an account's posted entries, newest first": {
 			Method: http.MethodGet, Path: "/api/journal-entries?ledgerAccountId=100&status=posted&descending=true&limit=2",
 			Call: &apitest.WorkflowCall{
 				Workflow: journalwf.ListJournalEntries,
-				Params: lt.ListJournalEntriesParams{
+				Params: jt.ListJournalEntriesParams{
 					LedgerAccountID: 100, Statuses: []model.JournalEntryStatus{model.JournalEntryPosted}, Descending: true, Limit: 2,
 				},
-				Result: lt.ListJournalEntriesResult{
-					Entries: []model.JournalEntry{refund, shopping}, Next: &lt.JournalEntryCursor{OccurredAt: day, ID: 7},
+				Result: jt.ListJournalEntriesResult{
+					Entries: []model.JournalEntry{refund, shopping}, Next: &jt.JournalEntryCursor{OccurredAt: day, ID: 7},
 				},
 			},
 			WantStatus: http.StatusOK,
@@ -63,10 +67,19 @@ func TestList(t *testing.T) {
 			Method: http.MethodGet, Path: "/api/journal-entries?ledgerAccountId=100&after=2026-01-31T10:00:00Z_7",
 			Call: &apitest.WorkflowCall{
 				Workflow: journalwf.ListJournalEntries,
-				Params: lt.ListJournalEntriesParams{
-					LedgerAccountID: 100, After: &lt.JournalEntryCursor{OccurredAt: day, ID: 7},
+				Params: jt.ListJournalEntriesParams{
+					LedgerAccountID: 100, After: &jt.JournalEntryCursor{OccurredAt: day, ID: 7},
 				},
-				Result: lt.ListJournalEntriesResult{Entries: []model.JournalEntry{shopping}},
+				Result: jt.ListJournalEntriesResult{Entries: []model.JournalEntry{shopping}},
+			},
+			WantStatus: http.StatusOK, WantBody: `{"entries":[` + shoppingBody + `]}`,
+		},
+		"the entries of several categories": {
+			Method: http.MethodGet, Path: "/api/journal-entries?categoryId=40&categoryId=41",
+			Call: &apitest.WorkflowCall{
+				Workflow: journalwf.ListJournalEntries,
+				Params:   jt.ListJournalEntriesParams{CategoryIDs: []int64{40, 41}},
+				Result:   jt.ListJournalEntriesResult{Entries: []model.JournalEntry{shopping}},
 			},
 			WantStatus: http.StatusOK, WantBody: `{"entries":[` + shoppingBody + `]}`,
 		},
@@ -75,11 +88,11 @@ func TestList(t *testing.T) {
 			Path:   "/api/journal-entries?from=2026-01-01T00:00:00Z&to=2026-02-01T00:00:00Z&status=draft&status=posted",
 			Call: &apitest.WorkflowCall{
 				Workflow: journalwf.ListJournalEntries,
-				Params: lt.ListJournalEntriesParams{
+				Params: jt.ListJournalEntriesParams{
 					Statuses: []model.JournalEntryStatus{model.JournalEntryDraft, model.JournalEntryPosted},
 					From:     time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC), To: time.Date(2026, 2, 1, 0, 0, 0, 0, time.UTC),
 				},
-				Result: lt.ListJournalEntriesResult{},
+				Result: jt.ListJournalEntriesResult{},
 			},
 			WantStatus: http.StatusOK, WantBody: `{"entries":[]}`,
 		},
@@ -87,8 +100,8 @@ func TestList(t *testing.T) {
 			Method: http.MethodGet, Path: "/api/journal-entries?counterpartyId=5",
 			Call: &apitest.WorkflowCall{
 				Workflow: journalwf.ListJournalEntries,
-				Params:   lt.ListJournalEntriesParams{CounterpartyID: 5},
-				Result:   lt.ListJournalEntriesResult{},
+				Params:   jt.ListJournalEntriesParams{CounterpartyID: 5},
+				Result:   jt.ListJournalEntriesResult{},
 			},
 			WantStatus: http.StatusOK, WantBody: `{"entries":[]}`,
 		},
@@ -96,7 +109,7 @@ func TestList(t *testing.T) {
 			Method: http.MethodGet, Path: "/api/journal-entries?from=2026-02-01T00:00:00Z&to=2026-01-01T00:00:00Z",
 			Call: &apitest.WorkflowCall{
 				Workflow: journalwf.ListJournalEntries,
-				Params: lt.ListJournalEntriesParams{
+				Params: jt.ListJournalEntriesParams{
 					From: time.Date(2026, 2, 1, 0, 0, 0, 0, time.UTC), To: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC),
 				},
 				Err: temporal.NewApplicationError("the end of the date range must be after its start", "ErrInvalidParameter"),
@@ -108,10 +121,22 @@ func TestList(t *testing.T) {
 			Method: http.MethodGet, Path: "/api/journal-entries",
 			Call: &apitest.WorkflowCall{
 				Workflow: journalwf.ListJournalEntries,
-				Params:   lt.ListJournalEntriesParams{},
-				Result: lt.ListJournalEntriesResult{Entries: []model.JournalEntry{{
+				Params:   jt.ListJournalEntriesParams{},
+				Result: jt.ListJournalEntriesResult{Entries: []model.JournalEntry{{
 					ID: 9, OccurredAt: day, Status: model.JournalEntryPosted,
 					Postings: []model.Posting{{ID: 90, LineNumber: 1, LedgerAccountID: 100, Side: model.PostingDebit}},
+				}}},
+			},
+			WantStatus: http.StatusInternalServerError,
+		},
+		"an entry without its posting's category": {
+			Method: http.MethodGet, Path: "/api/journal-entries",
+			Call: &apitest.WorkflowCall{
+				Workflow: journalwf.ListJournalEntries,
+				Params:   jt.ListJournalEntriesParams{},
+				Result: jt.ListJournalEntriesResult{Entries: []model.JournalEntry{{
+					ID: 9, OccurredAt: day, Status: model.JournalEntryPosted,
+					Postings: []model.Posting{{ID: 90, LineNumber: 1, LedgerAccountID: 200, LedgerAccount: groceries, Side: model.PostingDebit, CategoryID: ptr.Int64(40)}},
 				}}},
 			},
 			WantStatus: http.StatusInternalServerError,

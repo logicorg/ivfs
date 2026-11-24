@@ -3,6 +3,8 @@ package transactions
 import (
 	"fmt"
 
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
+	fxt "github.com/logicorg/ivfs/finance/common/types/fxtypes"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	tt "github.com/logicorg/ivfs/finance/common/types/transactiontypes"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
@@ -38,7 +40,7 @@ func RecordTransfer(ctx workflow.Context, input tt.RecordTransferInput) (*tt.Rec
 		return post(ctx, *m)
 	}
 
-	var result lt.RegisterFXConversionResult
+	var result fxt.RegisterFXConversionResult
 	if err := workflow.ExecuteChildWorkflow(ctx, ledgerfxwf.RegisterFXConversion, *conversion).Get(ctx, &result); err != nil {
 		return nil, fmt.Errorf("post %s: %w", transferKind, err)
 	}
@@ -49,7 +51,7 @@ func RecordTransfer(ctx workflow.Context, input tt.RecordTransferInput) (*tt.Rec
 // returns what it is, for recording it or for updating an entry to it: a
 // movement between balances in one currency, or an FX conversion between
 // balances in two.
-func transferOf(ctx workflow.Context, input tt.RecordTransferInput) (*movement, *lt.RegisterFXConversionInput, error) {
+func transferOf(ctx workflow.Context, input tt.RecordTransferInput) (*movement, *fxt.RegisterFXConversionInput, error) {
 	accounts, err := retrieveLedgerAccounts(ctx, input.FromLedgerAccountID, input.ToLedgerAccountID)
 	if err != nil {
 		return nil, nil, err
@@ -76,6 +78,7 @@ func transferOf(ctx workflow.Context, input tt.RecordTransferInput) (*movement, 
 			amount:         input.Amount,
 			occurredAt:     input.OccurredAt,
 			description:    input.Description,
+			tagIDs:         input.TagIDs,
 		}, nil, nil
 	}
 
@@ -94,7 +97,7 @@ func transferOf(ctx workflow.Context, input tt.RecordTransferInput) (*movement, 
 // conversionOf is a transfer between currencies as an FX conversion, with no
 // fee. The clearing accounts are found by their key, or created if a balance
 // was opened without them, as account setup would have.
-func conversionOf(ctx workflow.Context, input tt.RecordTransferInput, from, to *model.LedgerAccount) (*lt.RegisterFXConversionInput, error) {
+func conversionOf(ctx workflow.Context, input tt.RecordTransferInput, from, to *model.LedgerAccount) (*fxt.RegisterFXConversionInput, error) {
 	fromClearing, err := ensureFXClearing(ctx, from.CurrencyID)
 	if err != nil {
 		return nil, err
@@ -104,7 +107,7 @@ func conversionOf(ctx workflow.Context, input tt.RecordTransferInput, from, to *
 		return nil, err
 	}
 
-	conversion := lt.RegisterFXConversionInput{
+	conversion := fxt.RegisterFXConversionInput{
 		IdempotencyKey:                     transferKind + ":" + input.IdempotencyKey,
 		OccurredAt:                         input.OccurredAt,
 		SourceLedgerAccountID:              from.ID,
@@ -113,6 +116,7 @@ func conversionOf(ctx workflow.Context, input tt.RecordTransferInput, from, to *
 		DestinationLedgerAccountID:         to.ID,
 		DestinationClearingLedgerAccountID: toClearing,
 		DestinationAmount:                  input.ToAmount,
+		TagIDs:                             input.TagIDs,
 	}
 	if input.Description != "" {
 		conversion.Description = &input.Description
@@ -123,8 +127,8 @@ func conversionOf(ctx workflow.Context, input tt.RecordTransferInput, from, to *
 
 // ensureFXClearing returns the id of the "FX clearing" account of a currency.
 func ensureFXClearing(ctx workflow.Context, currencyID int64) (int64, error) {
-	var created lt.CreateLedgerAccountResult
-	err := workflow.ExecuteChildWorkflow(ctx, ledgeraccountswf.CreateLedgerAccount, lt.CreateLedgerAccountInput{
+	var created act.CreateLedgerAccountResult
+	err := workflow.ExecuteChildWorkflow(ctx, ledgeraccountswf.CreateLedgerAccount, act.CreateLedgerAccountInput{
 		CurrencyID: currencyID, Name: lt.FXClearingAccountName, Kind: model.LedgerAccountAsset,
 	}).Get(ctx, &created)
 	if err != nil {

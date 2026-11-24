@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	ast "github.com/logicorg/ivfs/finance/common/types/accountsetuptypes"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	it "github.com/logicorg/ivfs/finance/common/types/institutiontypes"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	"github.com/logicorg/ivfs/finance/workflows"
 	institutionwf "github.com/logicorg/ivfs/finance/workflows/institution"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
@@ -53,8 +53,8 @@ func OpenAccount(ctx workflow.Context, input ast.OpenAccountInput) (*ast.OpenAcc
 		}
 	}
 
-	var created lt.CreateFinancialAccountResult
-	err = workflow.ExecuteChildWorkflow(ctx, ledgeraccountswf.CreateFinancialAccount, lt.CreateFinancialAccountInput{
+	var created act.CreateFinancialAccountResult
+	err = workflow.ExecuteChildWorkflow(ctx, ledgeraccountswf.CreateFinancialAccount, act.CreateFinancialAccountInput{
 		InstitutionID: institution.ID, Name: accountName(input),
 	}).Get(ctx, &created)
 	if err != nil {

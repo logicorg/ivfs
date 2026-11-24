@@ -3,7 +3,8 @@ package portfolio
 import (
 	"time"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
+	pft "github.com/logicorg/ivfs/finance/common/types/portfoliotypes"
 	"github.com/logicorg/ivfs/internal/pkg/temporaltesting"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/logicorg/ivfs/pkg/ptr"
@@ -14,18 +15,18 @@ import (
 // vest is a vest of 100 units worth 10 each. The employer withholds 40 of them
 // in shares, which leaves 60 units worth 600 for the account, and 50 more of tax
 // is paid from cash. The entry books the whole 1000 as income.
-func (s *UnitTestSuite) vest(key string) lt.RegisterVestInput {
-	return lt.RegisterVestInput{
+func (s *UnitTestSuite) vest(key string) pft.RegisterVestInput {
+	return pft.RegisterVestInput{
 		FinancialAccountID:  s.financialAccount.ID,
 		AssetID:             s.asset.ID,
 		Units:               decimal.NewFromInt(60),
 		CostBasisAmount:     decimal.NewFromInt(600),
 		CostBasisCurrencyID: s.eur.ID,
-		Entry: lt.PostJournalEntryInput{
+		Entry: jt.PostJournalEntryInput{
 			IdempotencyKey: key,
 			OccurredAt:     movementDay,
 			ExternalID:     ptr.NewPtr("payroll-42"),
-			Postings: []lt.PostingInput{
+			Postings: []jt.PostingInput{
 				{LedgerAccountID: s.income.ID, Amount: decimal.NewFromInt(1000), Side: model.PostingCredit},
 				{LedgerAccountID: s.holding.ID, Amount: decimal.NewFromInt(600), Side: model.PostingDebit},
 				{LedgerAccountID: s.tax.ID, Amount: decimal.NewFromInt(400), Side: model.PostingDebit},
@@ -45,7 +46,7 @@ func (s *UnitTestSuite) Test_RegisterVest() {
 	activityResult, err := s.Env.ExecuteActivity(s.pa.RegisterVest, input)
 
 	require.NoError(s.T(), err)
-	var result lt.RegisterVestResult
+	var result pft.RegisterVestResult
 	require.NoError(s.T(), activityResult.Get(&result))
 
 	var entry model.JournalEntry
@@ -79,14 +80,14 @@ func (s *UnitTestSuite) Test_RegisterVest_Idempotent() {
 
 	first, err := s.Env.ExecuteActivity(s.pa.RegisterVest, input)
 	require.NoError(s.T(), err)
-	var created lt.RegisterVestResult
+	var created pft.RegisterVestResult
 	require.NoError(s.T(), first.Get(&created))
 	entries, postings := s.Count[model.JournalEntry](), s.Count[model.Posting]()
 	movements := s.Count[model.PositionMovement]()
 
 	second, err := s.Env.ExecuteActivity(s.pa.RegisterVest, input)
 	require.NoError(s.T(), err)
-	var retried lt.RegisterVestResult
+	var retried pft.RegisterVestResult
 	require.NoError(s.T(), second.Get(&retried))
 
 	require.Equal(s.T(), created, retried)
@@ -100,7 +101,7 @@ func (s *UnitTestSuite) Test_RegisterVest_Idempotent() {
 	different.Units = decimal.NewFromInt(99)
 	third, err := s.Env.ExecuteActivity(s.pa.RegisterVest, different)
 	require.NoError(s.T(), err)
-	var unchanged lt.RegisterVestResult
+	var unchanged pft.RegisterVestResult
 	require.NoError(s.T(), third.Get(&unchanged))
 
 	require.Equal(s.T(), created, unchanged)
@@ -114,13 +115,13 @@ func (s *UnitTestSuite) Test_RegisterVest_Idempotent() {
 func (s *UnitTestSuite) Test_RegisterVest_Rejected() {
 	tests := map[string]struct {
 		// input builds the vest to attempt, after seeding what the case needs.
-		input func(key string) lt.RegisterVestInput
+		input func(key string) pft.RegisterVestInput
 		// failure is what the error has to contain.
 		failure string
 	}{
 		"a closed financial account": {
 			failure: "is closed",
-			input: func(key string) lt.RegisterVestInput {
+			input: func(key string) pft.RegisterVestInput {
 				input := s.vest(key)
 				input.FinancialAccountID = s.closedAccount("Closed " + key).ID
 				return input
@@ -128,7 +129,7 @@ func (s *UnitTestSuite) Test_RegisterVest_Rejected() {
 		},
 		"a financial account that does not exist": {
 			failure: "FinancialAccount",
-			input: func(key string) lt.RegisterVestInput {
+			input: func(key string) pft.RegisterVestInput {
 				input := s.vest(key)
 				input.FinancialAccountID = 999999
 				return input
@@ -136,7 +137,7 @@ func (s *UnitTestSuite) Test_RegisterVest_Rejected() {
 		},
 		"an asset that does not exist": {
 			failure: "Asset",
-			input: func(key string) lt.RegisterVestInput {
+			input: func(key string) pft.RegisterVestInput {
 				input := s.vest(key)
 				input.AssetID = 999999
 				return input
@@ -144,7 +145,7 @@ func (s *UnitTestSuite) Test_RegisterVest_Rejected() {
 		},
 		"a cost basis currency that does not exist": {
 			failure: "Currency",
-			input: func(key string) lt.RegisterVestInput {
+			input: func(key string) pft.RegisterVestInput {
 				input := s.vest(key)
 				input.CostBasisCurrencyID = 999999
 				return input
@@ -152,7 +153,7 @@ func (s *UnitTestSuite) Test_RegisterVest_Rejected() {
 		},
 		"an entry that does not balance": {
 			failure: "balance",
-			input: func(key string) lt.RegisterVestInput {
+			input: func(key string) pft.RegisterVestInput {
 				input := s.vest(key)
 				input.Entry.Postings[2].Amount = decimal.NewFromInt(300)
 				return input
@@ -160,7 +161,7 @@ func (s *UnitTestSuite) Test_RegisterVest_Rejected() {
 		},
 		"the key of a trade": {
 			failure: "not a vest",
-			input: func(key string) lt.RegisterVestInput {
+			input: func(key string) pft.RegisterVestInput {
 				trade := &model.PositionMovement{FinancialAccountID: s.financialAccount.ID, AssetID: s.asset.ID, UnitsDelta: decimal.NewFromInt(5)}
 				temporaltesting.InsertPostedJournalEntryWithMovements(s.T(), s.DB,
 					&model.JournalEntry{OccurredAt: movementDay, IdempotencyKey: ptr.NewPtr(key)},
@@ -174,7 +175,7 @@ func (s *UnitTestSuite) Test_RegisterVest_Rejected() {
 		},
 		"the key of an entry without a movement": {
 			failure: "without a vest",
-			input: func(key string) lt.RegisterVestInput {
+			input: func(key string) pft.RegisterVestInput {
 				temporaltesting.InsertPostedJournalEntry(s.T(), s.DB,
 					&model.JournalEntry{OccurredAt: movementDay, IdempotencyKey: ptr.NewPtr(key)},
 					model.Posting{LedgerAccountID: s.offset.ID, Amount: decimal.NewFromInt(50), Side: model.PostingDebit},
@@ -203,7 +204,7 @@ func (s *UnitTestSuite) Test_RegisterVest_Rejected() {
 }
 
 type vestOutcome struct {
-	result *lt.RegisterVestResult
+	result *pft.RegisterVestResult
 	err    error
 }
 
@@ -243,6 +244,6 @@ func (s *UnitTestSuite) Test_RegisterVest_RetryWaitsForConcurrentWriter() {
 	require.NoError(s.T(), writer.Commit())
 	outcome := <-done
 	require.NoError(s.T(), outcome.err)
-	require.Equal(s.T(), lt.RegisterVestResult{JournalEntryID: entry.ID, PositionMovementID: movement.ID}, *outcome.result)
+	require.Equal(s.T(), pft.RegisterVestResult{JournalEntryID: entry.ID, PositionMovementID: movement.ID}, *outcome.result)
 	require.Equal(s.T(), 1, s.Count[model.PositionMovement]())
 }

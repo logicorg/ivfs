@@ -2,7 +2,7 @@
 // facade, which opens accounts and adds balances to them (ADR 0006).
 package accountsetuptypes
 
-import lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+import act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 
 // AccountType says what a financial account holds, which decides the balances
 // it is opened with (ADR 0006).
@@ -54,6 +54,6 @@ type OpeningEntry struct {
 // the shared accounts of their currencies, in the form ListAccounts returns,
 // and the entries of the opening balances that were given.
 type Balances struct {
-	Balances       []lt.AccountSummary `json:"balances"`
-	OpeningEntries []OpeningEntry      `json:"openingEntries,omitempty"`
+	Balances       []act.AccountSummary `json:"balances"`
+	OpeningEntries []OpeningEntry       `json:"openingEntries,omitempty"`
 }

@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	ledgeractivity "github.com/logicorg/ivfs/finance/activities/ledger/accounts"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	it "github.com/logicorg/ivfs/finance/common/types/institutiontypes"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	"github.com/logicorg/ivfs/finance/workflows"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
 	"go.temporal.io/sdk/workflow"
@@ -42,8 +42,8 @@ func DeleteInstitution(ctx workflow.Context, params it.DeleteInstitutionParams) 
 	// A listing is capped, and an account can be opened meanwhile, so the
 	// accounts are listed again until the institution's own row goes.
 	for {
-		var listed lt.ListFinancialAccountsResult
-		list := lt.ListFinancialAccountsParams{InstitutionID: &institution.ID, IncludeClosed: true}
+		var listed act.ListFinancialAccountsResult
+		list := act.ListFinancialAccountsParams{InstitutionID: &institution.ID, IncludeClosed: true}
 		if err := workflow.ExecuteActivity(ctx, la.ListFinancialAccounts, list).Get(ctx, &listed); err != nil {
 			return fmt.Errorf("list financial accounts of institution %d: %w", institution.ID, err)
 		}
@@ -56,7 +56,7 @@ func DeleteInstitution(ctx workflow.Context, params it.DeleteInstitutionParams) 
 		}
 
 		for _, account := range listed.FinancialAccounts {
-			input := lt.DeleteFinancialAccountInput{FinancialAccountID: account.ID}
+			input := act.DeleteFinancialAccountInput{FinancialAccountID: account.ID}
 			if err := workflows.ExecuteDeletionChild(ctx, workflows.DeleteFinancialAccountWorkflowID(account.ID),
 				ledgeraccountswf.DeleteFinancialAccount, input, nil); err != nil {
 				return fmt.Errorf("delete financial account %d of institution %d: %w", account.ID, institution.ID, err)

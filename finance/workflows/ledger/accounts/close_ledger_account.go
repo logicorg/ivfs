@@ -2,15 +2,14 @@ package accounts
 
 import (
 	"fmt"
-
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	"github.com/logicorg/ivfs/finance/workflows"
 	"go.temporal.io/sdk/workflow"
 )
 
 // CloseLedgerAccount closes a ledger account. It refuses to close a shared or
 // stray account, since every later write that needs it would fail on it.
-func CloseLedgerAccount(ctx workflow.Context, input lt.CloseLedgerAccountInput) error {
+func CloseLedgerAccount(ctx workflow.Context, input act.CloseLedgerAccountInput) error {
 	ctx = workflow.WithActivityOptions(ctx, workflows.GetDefaultActivityOptions())
 
 	account, err := retrieveLedgerAccount(ctx, input.LedgerAccountID)

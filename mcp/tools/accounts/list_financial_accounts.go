@@ -2,8 +2,7 @@ package accounts
 
 import (
 	"context"
-
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
 	"github.com/logicorg/ivfs/internal/pkg/workflowrun"
 	"github.com/logicorg/ivfs/mcp/mcptypes"
@@ -25,12 +24,12 @@ func registerListFinancialAccounts(server *mcp.Server, c client.Client) {
 // mcptypes.WorkflowWithResult's doc comment), so this maps the result to
 // FinancialAccountSummary by hand instead.
 func listFinancialAccountsHandler(c client.Client) func(
-	ctx context.Context, req *mcp.CallToolRequest, args lt.ListFinancialAccountsParams,
+	ctx context.Context, req *mcp.CallToolRequest, args act.ListFinancialAccountsParams,
 ) (*mcp.CallToolResult, *ListFinancialAccountsToolResult, error) {
 	return func(
-		ctx context.Context, req *mcp.CallToolRequest, args lt.ListFinancialAccountsParams,
+		ctx context.Context, req *mcp.CallToolRequest, args act.ListFinancialAccountsParams,
 	) (*mcp.CallToolResult, *ListFinancialAccountsToolResult, error) {
-		result, err := workflowrun.Run[lt.ListFinancialAccountsResult](ctx, c, ledgeraccountswf.ListFinancialAccounts, args)
+		result, err := workflowrun.Run[act.ListFinancialAccountsResult](ctx, c, ledgeraccountswf.ListFinancialAccounts, args)
 		if err != nil {
 			return nil, nil, err
 		}

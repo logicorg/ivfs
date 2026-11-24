@@ -11,7 +11,7 @@ import (
 func TestRecordIncomeInput_Validate(t *testing.T) {
 	valid := func() RecordIncomeInput {
 		return RecordIncomeInput{
-			IdempotencyKey: "77ab", BalanceLedgerAccountID: 1, CategoryLedgerAccountID: 2,
+			IdempotencyKey: "77ab", BalanceLedgerAccountID: 1, CategoryID: 2,
 			Amount: decimal.NewFromInt(2000), OccurredAt: time.Date(2026, 10, 3, 10, 0, 0, 0, time.UTC),
 		}
 	}
@@ -22,9 +22,11 @@ func TestRecordIncomeInput_Validate(t *testing.T) {
 	}{
 		"an income":               {mutate: func(*RecordIncomeInput) {}},
 		"an income with a note":   {mutate: func(i *RecordIncomeInput) { i.Description = "October salary" }},
+		"with tags":               {mutate: func(i *RecordIncomeInput) { i.TagIDs = []int64{3, 4} }},
+		"a tag id of zero":        {mutate: func(i *RecordIncomeInput) { i.TagIDs = []int64{3, 0} }, wantError: "tag id 0"},
 		"a blank idempotency key": {mutate: func(i *RecordIncomeInput) { i.IdempotencyKey = "" }, wantError: "validation error"},
 		"no balance":              {mutate: func(i *RecordIncomeInput) { i.BalanceLedgerAccountID = 0 }, wantError: "validation error"},
-		"no category":             {mutate: func(i *RecordIncomeInput) { i.CategoryLedgerAccountID = -1 }, wantError: "validation error"},
+		"no category":             {mutate: func(i *RecordIncomeInput) { i.CategoryID = -1 }, wantError: "validation error"},
 		"a zero amount":           {mutate: func(i *RecordIncomeInput) { i.Amount = decimal.Zero }, wantError: "validation error"},
 		"a negative amount":       {mutate: func(i *RecordIncomeInput) { i.Amount = decimal.NewFromInt(-2000) }, wantError: "validation error"},
 		"no occurrence date":      {mutate: func(i *RecordIncomeInput) { i.OccurredAt = time.Time{} }, wantError: "missing required parameters: OccurredAt"},

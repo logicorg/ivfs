@@ -17,14 +17,16 @@ import (
 // the entry's id is returned, that a refusal keeps its status, and that a form
 // Huma rejects runs no workflow.
 func TestRecordIncome(t *testing.T) {
-	const form = `{"idempotencyKey":"7a2f","balanceLedgerAccountId":100,"categoryLedgerAccountId":210,` +
+	const form = `{"idempotencyKey":"7a2f","balanceLedgerAccountId":100,"categoryId":210,` +
 		`"amount":"2500.00","occurredAt":"2026-09-30T09:00:00Z"`
 	salary := tt.RecordIncomeInput{
-		IdempotencyKey: "7a2f", BalanceLedgerAccountID: 100, CategoryLedgerAccountID: 210,
+		IdempotencyKey: "7a2f", BalanceLedgerAccountID: 100, CategoryID: 210,
 		Amount: decimal.RequireFromString("2500"), OccurredAt: time.Date(2026, 9, 30, 9, 0, 0, 0, time.UTC),
 	}
 	withNote := salary
 	withNote.Description = "September salary"
+	withTags := salary
+	withTags.TagIDs = []int64{3, 4}
 	record := func(params tt.RecordIncomeInput, err error) *apitest.WorkflowCall {
 		call := &apitest.WorkflowCall{Workflow: transactionswf.RecordIncome, Params: params, Err: err}
 		if err == nil {
@@ -44,12 +46,17 @@ func TestRecordIncome(t *testing.T) {
 			Call:       record(withNote, nil),
 			WantStatus: http.StatusOK, WantBody: `{"journalEntryId":43}`,
 		},
+		"with tags": {
+			Method: http.MethodPost, Path: "/api/transactions/incomes", Body: form + `,"tagIds":[3,4]}`,
+			Call:       record(withTags, nil),
+			WantStatus: http.StatusOK, WantBody: `{"journalEntryId":43}`,
+		},
 		"a negative amount": {
 			Method: http.MethodPost, Path: "/api/transactions/incomes",
-			Body: `{"idempotencyKey":"7a2f","balanceLedgerAccountId":100,"categoryLedgerAccountId":210,"amount":"-2500.00","occurredAt":"2026-09-30T09:00:00Z"}`,
+			Body: `{"idempotencyKey":"7a2f","balanceLedgerAccountId":100,"categoryId":210,"amount":"-2500.00","occurredAt":"2026-09-30T09:00:00Z"}`,
 			Call: record(
 				tt.RecordIncomeInput{
-					IdempotencyKey: "7a2f", BalanceLedgerAccountID: 100, CategoryLedgerAccountID: 210,
+					IdempotencyKey: "7a2f", BalanceLedgerAccountID: 100, CategoryID: 210,
 					Amount: decimal.RequireFromString("-2500"), OccurredAt: time.Date(2026, 9, 30, 9, 0, 0, 0, time.UTC),
 				},
 				temporal.NewApplicationError("validation error: amount must be greater than zero", "ValidationError"),
@@ -71,27 +78,27 @@ func TestRecordIncome(t *testing.T) {
 		},
 		"no idempotency key": {
 			Method: http.MethodPost, Path: "/api/transactions/incomes",
-			Body:       `{"idempotencyKey":"","balanceLedgerAccountId":100,"categoryLedgerAccountId":210,"amount":"2500.00","occurredAt":"2026-09-30T09:00:00Z"}`,
+			Body:       `{"idempotencyKey":"","balanceLedgerAccountId":100,"categoryId":210,"amount":"2500.00","occurredAt":"2026-09-30T09:00:00Z"}`,
 			WantStatus: http.StatusUnprocessableEntity,
 		},
 		"balance 0": {
 			Method: http.MethodPost, Path: "/api/transactions/incomes",
-			Body:       `{"idempotencyKey":"7a2f","balanceLedgerAccountId":0,"categoryLedgerAccountId":210,"amount":"2500.00","occurredAt":"2026-09-30T09:00:00Z"}`,
+			Body:       `{"idempotencyKey":"7a2f","balanceLedgerAccountId":0,"categoryId":210,"amount":"2500.00","occurredAt":"2026-09-30T09:00:00Z"}`,
 			WantStatus: http.StatusUnprocessableEntity,
 		},
 		"category 0": {
 			Method: http.MethodPost, Path: "/api/transactions/incomes",
-			Body:       `{"idempotencyKey":"7a2f","balanceLedgerAccountId":100,"categoryLedgerAccountId":0,"amount":"2500.00","occurredAt":"2026-09-30T09:00:00Z"}`,
+			Body:       `{"idempotencyKey":"7a2f","balanceLedgerAccountId":100,"categoryId":0,"amount":"2500.00","occurredAt":"2026-09-30T09:00:00Z"}`,
 			WantStatus: http.StatusUnprocessableEntity,
 		},
 		"no amount": {
 			Method: http.MethodPost, Path: "/api/transactions/incomes",
-			Body:       `{"idempotencyKey":"7a2f","balanceLedgerAccountId":100,"categoryLedgerAccountId":210,"occurredAt":"2026-09-30T09:00:00Z"}`,
+			Body:       `{"idempotencyKey":"7a2f","balanceLedgerAccountId":100,"categoryId":210,"occurredAt":"2026-09-30T09:00:00Z"}`,
 			WantStatus: http.StatusUnprocessableEntity,
 		},
 		"a time that is not RFC 3339": {
 			Method: http.MethodPost, Path: "/api/transactions/incomes",
-			Body:       `{"idempotencyKey":"7a2f","balanceLedgerAccountId":100,"categoryLedgerAccountId":210,"amount":"2500.00","occurredAt":"30/09/2026"}`,
+			Body:       `{"idempotencyKey":"7a2f","balanceLedgerAccountId":100,"categoryId":210,"amount":"2500.00","occurredAt":"30/09/2026"}`,
 			WantStatus: http.StatusUnprocessableEntity,
 		},
 	})

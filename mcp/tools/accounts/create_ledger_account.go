@@ -1,7 +1,7 @@
 package accounts
 
 import (
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
 	"github.com/logicorg/ivfs/mcp/mcptypes"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -19,7 +19,7 @@ func registerCreateLedgerAccount(server *mcp.Server, c client.Client) {
 			"case-insensitively, under the same financial account and currency, or, without a financial account, under the same " +
 			"parent with the same kind and currency. Get ids with list_financial_accounts and list_currencies.",
 	}, mcptypes.WorkflowWithResult[
-		func(workflow.Context, lt.CreateLedgerAccountInput) (*lt.CreateLedgerAccountResult, error),
-		lt.CreateLedgerAccountInput, lt.CreateLedgerAccountResult,
+		func(workflow.Context, act.CreateLedgerAccountInput) (*act.CreateLedgerAccountResult, error),
+		act.CreateLedgerAccountInput, act.CreateLedgerAccountResult,
 	](c, ledgeraccountswf.CreateLedgerAccount))
 }
