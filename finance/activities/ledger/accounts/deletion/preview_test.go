@@ -2,12 +2,11 @@ package deletion
 
 import (
 	"fmt"
-	"testing"
-
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	"github.com/logicorg/ivfs/internal/pkg/temporaltesting"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/stretchr/testify/require"
+	"testing"
 )
 
 // previewOutcome is a preview with its strays as text, "currency amount" and
@@ -18,7 +17,7 @@ type previewOutcome struct {
 	amounts, units, conflicts                 []string
 }
 
-func outcomeOf(preview *lt.AccountDeletionPreview) previewOutcome {
+func outcomeOf(preview *act.AccountDeletionPreview) previewOutcome {
 	got := previewOutcome{
 		deletedEntries: preview.DeletedEntries, keptEntries: preview.KeptEntries,
 		deletedMovementGroups: preview.DeletedMovementGroups, keptMovementGroups: preview.KeptMovementGroups,
@@ -37,11 +36,11 @@ func (s *UnitTestSuite) TestPreviewAccountDeletion() {
 	f := newEntriesForDeletionFixture(s)
 	g := &movementGroupsForDeletionFixture{s: s, currency: f.currency, institution: f.institution, asset: f.asset, broker: f.broker}
 	missing := int64(999999)
-	ledgerInput := func(account *model.LedgerAccount) lt.PreviewAccountDeletionInput {
-		return lt.PreviewAccountDeletionInput{LedgerAccountID: &account.ID}
+	ledgerInput := func(account *model.LedgerAccount) act.PreviewAccountDeletionInput {
+		return act.PreviewAccountDeletionInput{LedgerAccountID: &account.ID}
 	}
-	financialInput := func(account *model.FinancialAccount) lt.PreviewAccountDeletionInput {
-		return lt.PreviewAccountDeletionInput{FinancialAccountID: &account.ID}
+	financialInput := func(account *model.FinancialAccount) act.PreviewAccountDeletionInput {
+		return act.PreviewAccountDeletionInput{FinancialAccountID: &account.ID}
 	}
 	// institution inserts an institution of its own with a financial account
 	// per name, each with a cash ledger account.
@@ -60,11 +59,11 @@ func (s *UnitTestSuite) TestPreviewAccountDeletion() {
 	tests := map[string]struct {
 		// setup inserts the case's accounts and lines, and returns what to preview
 		// and what the preview should say.
-		setup  func(t *testing.T) (lt.PreviewAccountDeletionInput, previewOutcome)
+		setup  func(t *testing.T) (act.PreviewAccountDeletionInput, previewOutcome)
 		errStr string
 	}{
 		"a ledger account's expense is deleted and its transfer kept": {
-			setup: func(t *testing.T) (lt.PreviewAccountDeletionInput, previewOutcome) {
+			setup: func(t *testing.T) (act.PreviewAccountDeletionInput, previewOutcome) {
 				wallet := f.ledgerAccount(t, "Wallet", model.LedgerAccountAsset, nil)
 				f.entry(t, f.expenses, wallet)
 				f.entry(t, wallet, f.bank)
@@ -76,14 +75,14 @@ func (s *UnitTestSuite) TestPreviewAccountDeletion() {
 			},
 		},
 		"an equity account's kept entry lands on untracked accounts": {
-			setup: func(t *testing.T) (lt.PreviewAccountDeletionInput, previewOutcome) {
+			setup: func(t *testing.T) (act.PreviewAccountDeletionInput, previewOutcome) {
 				adjustments := f.ledgerAccount(t, "Adjustments", model.LedgerAccountEquity, nil)
 				f.entry(t, adjustments, f.bank)
 				return ledgerInput(adjustments), previewOutcome{keptEntries: 1, amounts: []string{"EUR 100"}}
 			},
 		},
 		"a kept entry and one undoing it land nothing": {
-			setup: func(t *testing.T) (lt.PreviewAccountDeletionInput, previewOutcome) {
+			setup: func(t *testing.T) (act.PreviewAccountDeletionInput, previewOutcome) {
 				loan := f.ledgerAccount(t, "Loan cash", model.LedgerAccountAsset, nil)
 				f.entry(t, loan, f.bank)
 				f.entry(t, f.bank, loan)
@@ -91,12 +90,12 @@ func (s *UnitTestSuite) TestPreviewAccountDeletion() {
 			},
 		},
 		"a ledger account without lines": {
-			setup: func(t *testing.T) (lt.PreviewAccountDeletionInput, previewOutcome) {
+			setup: func(t *testing.T) (act.PreviewAccountDeletionInput, previewOutcome) {
 				return ledgerInput(f.ledgerAccount(t, "Unused cash", model.LedgerAccountAsset, nil)), previewOutcome{}
 			},
 		},
 		"a shared ledger account with entries": {
-			setup: func(t *testing.T) (lt.PreviewAccountDeletionInput, previewOutcome) {
+			setup: func(t *testing.T) (act.PreviewAccountDeletionInput, previewOutcome) {
 				f.entry(t, f.bank, f.clearing)
 				return ledgerInput(f.clearing), previewOutcome{
 					keptEntries: 1,
@@ -106,7 +105,7 @@ func (s *UnitTestSuite) TestPreviewAccountDeletion() {
 			},
 		},
 		"a financial account's trade inside it is deleted and its trade from a surviving balance kept": {
-			setup: func(t *testing.T) (lt.PreviewAccountDeletionInput, previewOutcome) {
+			setup: func(t *testing.T) (act.PreviewAccountDeletionInput, previewOutcome) {
 				account := f.financialAccount(t, "Degiro")
 				investments := f.ledgerAccount(t, "Degiro investments", model.LedgerAccountAsset, &account.ID)
 				cash := f.ledgerAccount(t, "Degiro cash", model.LedgerAccountAsset, &account.ID)
@@ -120,7 +119,7 @@ func (s *UnitTestSuite) TestPreviewAccountDeletion() {
 			},
 		},
 		"a financial account's groups": {
-			setup: func(t *testing.T) (lt.PreviewAccountDeletionInput, previewOutcome) {
+			setup: func(t *testing.T) (act.PreviewAccountDeletionInput, previewOutcome) {
 				account := f.financialAccount(t, "IBKR")
 				g.group(t, model.PositionMovementTransfer, leg{account, -5}, leg{f.broker, 5})
 				g.group(t, model.PositionMovementTransfer, leg{account, -3}, leg{f.broker, 3})
@@ -134,7 +133,7 @@ func (s *UnitTestSuite) TestPreviewAccountDeletion() {
 			},
 		},
 		"the stray financial account with entries": {
-			setup: func(t *testing.T) (lt.PreviewAccountDeletionInput, previewOutcome) {
+			setup: func(t *testing.T) (act.PreviewAccountDeletionInput, previewOutcome) {
 				stray := f.strayFinancialAccount(t)
 				f.entry(t, f.expenses, f.income, f.units(stray))
 				return financialInput(stray), previewOutcome{
@@ -144,49 +143,49 @@ func (s *UnitTestSuite) TestPreviewAccountDeletion() {
 			},
 		},
 		"an institution's transfer between its accounts is deleted": {
-			setup: func(t *testing.T) (lt.PreviewAccountDeletionInput, previewOutcome) {
+			setup: func(t *testing.T) (act.PreviewAccountDeletionInput, previewOutcome) {
 				institution, cash := institution(t, "N26", "N26 main", "N26 savings")
 				f.entry(t, cash[1], cash[0])
 				f.entry(t, cash[0], f.bank)
-				return lt.PreviewAccountDeletionInput{InstitutionID: &institution.ID}, previewOutcome{
+				return act.PreviewAccountDeletionInput{InstitutionID: &institution.ID}, previewOutcome{
 					deletedEntries: 1, keptEntries: 1,
 					amounts: []string{"EUR 100"},
 				}
 			},
 		},
 		"an institution without accounts": {
-			setup: func(t *testing.T) (lt.PreviewAccountDeletionInput, previewOutcome) {
+			setup: func(t *testing.T) (act.PreviewAccountDeletionInput, previewOutcome) {
 				institution, _ := institution(t, "Bunq")
-				return lt.PreviewAccountDeletionInput{InstitutionID: &institution.ID}, previewOutcome{}
+				return act.PreviewAccountDeletionInput{InstitutionID: &institution.ID}, previewOutcome{}
 			},
 		},
 		"a ledger account that does not exist": {
-			setup: func(*testing.T) (lt.PreviewAccountDeletionInput, previewOutcome) {
-				return lt.PreviewAccountDeletionInput{LedgerAccountID: &missing}, previewOutcome{}
+			setup: func(*testing.T) (act.PreviewAccountDeletionInput, previewOutcome) {
+				return act.PreviewAccountDeletionInput{LedgerAccountID: &missing}, previewOutcome{}
 			},
 			errStr: "resource LedgerAccount not found with ID: 999999",
 		},
 		"a financial account that does not exist": {
-			setup: func(*testing.T) (lt.PreviewAccountDeletionInput, previewOutcome) {
-				return lt.PreviewAccountDeletionInput{FinancialAccountID: &missing}, previewOutcome{}
+			setup: func(*testing.T) (act.PreviewAccountDeletionInput, previewOutcome) {
+				return act.PreviewAccountDeletionInput{FinancialAccountID: &missing}, previewOutcome{}
 			},
 			errStr: "resource FinancialAccount not found with ID: 999999",
 		},
 		"an institution that does not exist": {
-			setup: func(*testing.T) (lt.PreviewAccountDeletionInput, previewOutcome) {
-				return lt.PreviewAccountDeletionInput{InstitutionID: &missing}, previewOutcome{}
+			setup: func(*testing.T) (act.PreviewAccountDeletionInput, previewOutcome) {
+				return act.PreviewAccountDeletionInput{InstitutionID: &missing}, previewOutcome{}
 			},
 			errStr: "resource Institution not found with ID: 999999",
 		},
 		"two targets": {
-			setup: func(*testing.T) (lt.PreviewAccountDeletionInput, previewOutcome) {
-				return lt.PreviewAccountDeletionInput{LedgerAccountID: &missing, InstitutionID: &missing}, previewOutcome{}
+			setup: func(*testing.T) (act.PreviewAccountDeletionInput, previewOutcome) {
+				return act.PreviewAccountDeletionInput{LedgerAccountID: &missing, InstitutionID: &missing}, previewOutcome{}
 			},
 			errStr: "a deletion preview takes exactly one of a ledger account, a financial account, or an institution",
 		},
 		"an id that is not positive": {
-			setup: func(*testing.T) (lt.PreviewAccountDeletionInput, previewOutcome) {
-				return lt.PreviewAccountDeletionInput{LedgerAccountID: new(int64)}, previewOutcome{}
+			setup: func(*testing.T) (act.PreviewAccountDeletionInput, previewOutcome) {
+				return act.PreviewAccountDeletionInput{LedgerAccountID: new(int64)}, previewOutcome{}
 			},
 			errStr: "validation error",
 		},
@@ -205,7 +204,7 @@ func (s *UnitTestSuite) TestPreviewAccountDeletion() {
 				return
 			}
 			require.NoError(t, err)
-			var preview lt.AccountDeletionPreview
+			var preview act.AccountDeletionPreview
 			require.NoError(t, result.Get(&preview))
 			require.Equal(t, want, outcomeOf(&preview))
 			require.Equal(t, entries, f.rows(t), "a preview changes nothing")
@@ -221,10 +220,10 @@ func (s *UnitTestSuite) TestPreviewAccountDeletion_Untracked() {
 	stray := f.strayFinancialAccount(t)
 	f.entry(t, f.expenses, f.income, f.units(stray))
 
-	result, err := s.Env.ExecuteActivity(s.aa.PreviewAccountDeletion, lt.PreviewAccountDeletionInput{InstitutionID: &stray.InstitutionID})
+	result, err := s.Env.ExecuteActivity(s.aa.PreviewAccountDeletion, act.PreviewAccountDeletionInput{InstitutionID: &stray.InstitutionID})
 
 	require.NoError(t, err)
-	var preview lt.AccountDeletionPreview
+	var preview act.AccountDeletionPreview
 	require.NoError(t, result.Get(&preview))
 	require.Equal(t, previewOutcome{
 		deletedEntries: 1,

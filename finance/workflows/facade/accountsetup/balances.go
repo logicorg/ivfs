@@ -6,9 +6,9 @@ import (
 	"time"
 
 	ast "github.com/logicorg/ivfs/finance/common/types/accountsetuptypes"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	ct "github.com/logicorg/ivfs/finance/common/types/currencytypes"
 	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	currencieswf "github.com/logicorg/ivfs/finance/workflows/currencies"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
 	journalwf "github.com/logicorg/ivfs/finance/workflows/ledger/journal"
@@ -58,7 +58,7 @@ func openBalances(
 
 	balances := make([]*model.LedgerAccount, 0, len(specs))
 	for _, spec := range specs {
-		balance, err := ensureLedgerAccount(ctx, lt.CreateLedgerAccountInput{
+		balance, err := ensureLedgerAccount(ctx, act.CreateLedgerAccountInput{
 			FinancialAccountID: &account.id, CurrencyID: currency.ID, Name: spec.name, Kind: spec.kind,
 		})
 		if err != nil {
@@ -70,7 +70,7 @@ func openBalances(
 
 	shared := make([]*model.LedgerAccount, 0, len(sharedAccounts()))
 	for _, spec := range sharedAccounts() {
-		sharedAccount, err := ensureLedgerAccount(ctx, lt.CreateLedgerAccountInput{
+		sharedAccount, err := ensureLedgerAccount(ctx, act.CreateLedgerAccountInput{
 			CurrencyID: currency.ID, Name: spec.name, Kind: spec.kind,
 		})
 		if err != nil {
@@ -103,14 +103,14 @@ func openBalances(
 // ensureLedgerAccount creates a ledger account, or finds the one with its key,
 // and retrieves it, so the result shows it as stored: in the casing it was
 // first given, and closed if it is.
-func ensureLedgerAccount(ctx workflow.Context, input lt.CreateLedgerAccountInput) (*model.LedgerAccount, error) {
-	var created lt.CreateLedgerAccountResult
+func ensureLedgerAccount(ctx workflow.Context, input act.CreateLedgerAccountInput) (*model.LedgerAccount, error) {
+	var created act.CreateLedgerAccountResult
 	if err := workflow.ExecuteChildWorkflow(ctx, ledgeraccountswf.CreateLedgerAccount, input).Get(ctx, &created); err != nil {
 		return nil, fmt.Errorf("create ledger account %s: %w", input.Name, err)
 	}
 
-	var retrieved lt.RetrieveLedgerAccountResult
-	err := workflow.ExecuteChildWorkflow(ctx, ledgeraccountswf.RetrieveLedgerAccount, lt.RetrieveLedgerAccountParams{
+	var retrieved act.RetrieveLedgerAccountResult
+	err := workflow.ExecuteChildWorkflow(ctx, ledgeraccountswf.RetrieveLedgerAccount, act.RetrieveLedgerAccountParams{
 		ID: created.LedgerAccountID,
 	}).Get(ctx, &retrieved)
 	if err != nil {
@@ -121,8 +121,8 @@ func ensureLedgerAccount(ctx workflow.Context, input lt.CreateLedgerAccountInput
 
 // summarise is a ledger account as a row of the result, under account, or
 // under no financial account when account is nil.
-func summarise(ledgerAccount *model.LedgerAccount, account *financialAccountRef) lt.AccountSummary {
-	summary := lt.AccountSummary{
+func summarise(ledgerAccount *model.LedgerAccount, account *financialAccountRef) act.AccountSummary {
+	summary := act.AccountSummary{
 		LedgerAccountID:   ledgerAccount.ID,
 		LedgerAccountName: ledgerAccount.Name,
 		Kind:              ledgerAccount.Kind,

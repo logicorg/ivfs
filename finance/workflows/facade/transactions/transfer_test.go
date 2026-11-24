@@ -5,9 +5,9 @@ import (
 	"slices"
 	"time"
 
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	fxt "github.com/logicorg/ivfs/finance/common/types/fxtypes"
 	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	tt "github.com/logicorg/ivfs/finance/common/types/transactiontypes"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
 	ledgerfxwf "github.com/logicorg/ivfs/finance/workflows/ledger/fx"
@@ -24,9 +24,9 @@ import (
 // each fixture currency.
 func mockFXClearing(env *testsuite.TestWorkflowEnvironment) {
 	for _, account := range []*model.LedgerAccount{fxClearing, fxClearingUSD} {
-		env.OnWorkflow(ledgeraccountswf.CreateLedgerAccount, mock.Anything, lt.CreateLedgerAccountInput{
+		env.OnWorkflow(ledgeraccountswf.CreateLedgerAccount, mock.Anything, act.CreateLedgerAccountInput{
 			CurrencyID: account.CurrencyID, Name: "FX clearing", Kind: model.LedgerAccountAsset,
-		}).Return(&lt.CreateLedgerAccountResult{LedgerAccountID: account.ID}, nil).Maybe()
+		}).Return(&act.CreateLedgerAccountResult{LedgerAccountID: account.ID}, nil).Maybe()
 	}
 }
 
@@ -200,7 +200,7 @@ func (s *WorkflowUnitTestSuite) TestRecordTransfer_Errors() {
 				Amount: decimal.NewFromInt(300), OccurredAt: time.Date(2026, 10, 3, 10, 0, 0, 0, time.UTC),
 			},
 			mock: func(env *testsuite.TestWorkflowEnvironment) {
-				env.OnWorkflow(ledgeraccountswf.RetrieveLedgerAccount, mock.Anything, lt.RetrieveLedgerAccountParams{ID: 999}).
+				env.OnWorkflow(ledgeraccountswf.RetrieveLedgerAccount, mock.Anything, act.RetrieveLedgerAccountParams{ID: 999}).
 					Return(nil, errors.New("resource LedgerAccount not found with ID: 999"))
 			},
 			wantError: "retrieve ledger account 999",

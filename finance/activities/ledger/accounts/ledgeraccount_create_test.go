@@ -2,13 +2,12 @@ package accounts
 
 import (
 	"fmt"
-	"time"
-
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	"github.com/logicorg/ivfs/internal/pkg/temporaltesting"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/logicorg/ivfs/pkg/model/testhelpers"
 	"github.com/stretchr/testify/require"
+	"time"
 )
 
 // ledgerAccountFixtures is the reference data the ledger account creation
@@ -33,12 +32,12 @@ func (s *UnitTestSuite) seedLedgerAccountFixtures() ledgerAccountFixtures {
 	return f
 }
 
-func (s *UnitTestSuite) createLedgerAccount(input lt.CreateLedgerAccountInput) lt.CreateLedgerAccountResult {
+func (s *UnitTestSuite) createLedgerAccount(input act.CreateLedgerAccountInput) act.CreateLedgerAccountResult {
 	s.T().Helper()
 
 	activityResult, err := s.Env.ExecuteActivity(s.aa.CreateLedgerAccount, input)
 	require.NoError(s.T(), err)
-	var result lt.CreateLedgerAccountResult
+	var result act.CreateLedgerAccountResult
 	require.NoError(s.T(), activityResult.Get(&result))
 	return result
 }
@@ -63,31 +62,31 @@ func (s *UnitTestSuite) Test_CreateLedgerAccount_RetrievesExisting() {
 
 	tests := map[string]struct {
 		existing func() *model.LedgerAccount
-		input    lt.CreateLedgerAccountInput
+		input    act.CreateLedgerAccountInput
 	}{
 		"under a financial account, in another casing": {
 			existing: func() *model.LedgerAccount {
 				return &model.LedgerAccount{FinancialAccountID: &f.personal.ID, CurrencyID: f.euro.ID, Name: "Cash", Kind: model.LedgerAccountAsset}
 			},
-			input: lt.CreateLedgerAccountInput{FinancialAccountID: &f.personal.ID, CurrencyID: f.euro.ID, Name: " cash ", Kind: model.LedgerAccountAsset},
+			input: act.CreateLedgerAccountInput{FinancialAccountID: &f.personal.ID, CurrencyID: f.euro.ID, Name: " cash ", Kind: model.LedgerAccountAsset},
 		},
 		"under a financial account, of another kind": {
 			existing: func() *model.LedgerAccount {
 				return &model.LedgerAccount{FinancialAccountID: &f.personal.ID, CurrencyID: f.euro.ID, Name: "Cash", Kind: model.LedgerAccountAsset}
 			},
-			input: lt.CreateLedgerAccountInput{FinancialAccountID: &f.personal.ID, CurrencyID: f.euro.ID, Name: "Cash", Kind: model.LedgerAccountLiability},
+			input: act.CreateLedgerAccountInput{FinancialAccountID: &f.personal.ID, CurrencyID: f.euro.ID, Name: "Cash", Kind: model.LedgerAccountLiability},
 		},
 		"a shared account in another casing": {
 			existing: func() *model.LedgerAccount {
 				return &model.LedgerAccount{CurrencyID: f.euro.ID, Name: "Expenses", Kind: model.LedgerAccountExpense}
 			},
-			input: lt.CreateLedgerAccountInput{CurrencyID: f.euro.ID, Name: "EXPENSES", Kind: model.LedgerAccountExpense},
+			input: act.CreateLedgerAccountInput{CurrencyID: f.euro.ID, Name: "EXPENSES", Kind: model.LedgerAccountExpense},
 		},
 		"a closed account": {
 			existing: func() *model.LedgerAccount {
 				return &model.LedgerAccount{FinancialAccountID: &f.personal.ID, CurrencyID: f.euro.ID, Name: "Savings vault", Kind: model.LedgerAccountAsset, ClosedAt: &closedAt}
 			},
-			input: lt.CreateLedgerAccountInput{FinancialAccountID: &f.personal.ID, CurrencyID: f.euro.ID, Name: "Savings vault", Kind: model.LedgerAccountAsset},
+			input: act.CreateLedgerAccountInput{FinancialAccountID: &f.personal.ID, CurrencyID: f.euro.ID, Name: "Savings vault", Kind: model.LedgerAccountAsset},
 		},
 	}
 
@@ -128,33 +127,33 @@ func (s *UnitTestSuite) Test_CreateLedgerAccount_Scope() {
 
 	tests := map[string]struct {
 		existing func() *model.LedgerAccount
-		input    lt.CreateLedgerAccountInput
+		input    act.CreateLedgerAccountInput
 	}{
 		"the same name in another currency, under a financial account": {
 			existing: cashUnderPersonal,
-			input:    lt.CreateLedgerAccountInput{FinancialAccountID: &f.personal.ID, CurrencyID: f.dollar.ID, Name: "Cash", Kind: model.LedgerAccountAsset},
+			input:    act.CreateLedgerAccountInput{FinancialAccountID: &f.personal.ID, CurrencyID: f.dollar.ID, Name: "Cash", Kind: model.LedgerAccountAsset},
 		},
 		"the same name under another financial account": {
 			existing: cashUnderPersonal,
-			input:    lt.CreateLedgerAccountInput{FinancialAccountID: &f.business.ID, CurrencyID: f.euro.ID, Name: "Cash", Kind: model.LedgerAccountAsset},
+			input:    act.CreateLedgerAccountInput{FinancialAccountID: &f.business.ID, CurrencyID: f.euro.ID, Name: "Cash", Kind: model.LedgerAccountAsset},
 		},
 		"the same name with no financial account, rather than under one": {
 			existing: cashUnderPersonal,
-			input:    lt.CreateLedgerAccountInput{CurrencyID: f.euro.ID, Name: "Cash", Kind: model.LedgerAccountAsset},
+			input:    act.CreateLedgerAccountInput{CurrencyID: f.euro.ID, Name: "Cash", Kind: model.LedgerAccountAsset},
 		},
 		"the same shared name of another kind": {
 			existing: sharedEquity,
-			input:    lt.CreateLedgerAccountInput{CurrencyID: f.euro.ID, Name: "Adjustments", Kind: model.LedgerAccountAsset},
+			input:    act.CreateLedgerAccountInput{CurrencyID: f.euro.ID, Name: "Adjustments", Kind: model.LedgerAccountAsset},
 		},
 		"the same shared name in another currency": {
 			existing: sharedEquity,
-			input:    lt.CreateLedgerAccountInput{CurrencyID: f.dollar.ID, Name: "Adjustments", Kind: model.LedgerAccountEquity},
+			input:    act.CreateLedgerAccountInput{CurrencyID: f.dollar.ID, Name: "Adjustments", Kind: model.LedgerAccountEquity},
 		},
 		"the shared income account in another currency": {
 			existing: func() *model.LedgerAccount {
 				return &model.LedgerAccount{CurrencyID: f.euro.ID, Name: "Income", Kind: model.LedgerAccountIncome}
 			},
-			input: lt.CreateLedgerAccountInput{CurrencyID: f.dollar.ID, Name: "Income", Kind: model.LedgerAccountIncome},
+			input: act.CreateLedgerAccountInput{CurrencyID: f.dollar.ID, Name: "Income", Kind: model.LedgerAccountIncome},
 		},
 	}
 
@@ -182,23 +181,23 @@ func (s *UnitTestSuite) Test_CreateLedgerAccount_OnlySharedCategoryAccounts() {
 	f := s.seedLedgerAccountFixtures()
 
 	tests := map[string]struct {
-		input   lt.CreateLedgerAccountInput
+		input   act.CreateLedgerAccountInput
 		wantErr string
 	}{
 		"an expense account of another name": {
-			input:   lt.CreateLedgerAccountInput{CurrencyID: f.euro.ID, Name: "Groceries", Kind: model.LedgerAccountExpense},
+			input:   act.CreateLedgerAccountInput{CurrencyID: f.euro.ID, Name: "Groceries", Kind: model.LedgerAccountExpense},
 			wantErr: `the only expense account is "Expenses", with no financial account; create a category for "Groceries" instead`,
 		},
 		"an income account of another name": {
-			input:   lt.CreateLedgerAccountInput{CurrencyID: f.euro.ID, Name: "Salary", Kind: model.LedgerAccountIncome},
+			input:   act.CreateLedgerAccountInput{CurrencyID: f.euro.ID, Name: "Salary", Kind: model.LedgerAccountIncome},
 			wantErr: `the only income account is "Income", with no financial account; create a category for "Salary" instead`,
 		},
 		"an income account named as the expense one": {
-			input:   lt.CreateLedgerAccountInput{CurrencyID: f.euro.ID, Name: "Expenses", Kind: model.LedgerAccountIncome},
+			input:   act.CreateLedgerAccountInput{CurrencyID: f.euro.ID, Name: "Expenses", Kind: model.LedgerAccountIncome},
 			wantErr: `the only income account is "Income"`,
 		},
 		"the expense account under a financial account": {
-			input:   lt.CreateLedgerAccountInput{FinancialAccountID: &f.personal.ID, CurrencyID: f.euro.ID, Name: "Expenses", Kind: model.LedgerAccountExpense},
+			input:   act.CreateLedgerAccountInput{FinancialAccountID: &f.personal.ID, CurrencyID: f.euro.ID, Name: "Expenses", Kind: model.LedgerAccountExpense},
 			wantErr: `the only expense account is "Expenses", with no financial account`,
 		},
 	}
@@ -223,23 +222,23 @@ func (s *UnitTestSuite) Test_CreateLedgerAccount_ReservedNames() {
 	f := s.seedLedgerAccountFixtures()
 
 	tests := map[string]struct {
-		input   lt.CreateLedgerAccountInput
+		input   act.CreateLedgerAccountInput
 		wantErr string
 	}{
 		"the clearing account's name as equity": {
-			input:   lt.CreateLedgerAccountInput{CurrencyID: f.euro.ID, Name: " fx CLEARING ", Kind: model.LedgerAccountEquity},
+			input:   act.CreateLedgerAccountInput{CurrencyID: f.euro.ID, Name: " fx CLEARING ", Kind: model.LedgerAccountEquity},
 			wantErr: `"fx CLEARING" is the name of the ledger's asset account and cannot name an equity account with no financial account; pick another name`,
 		},
 		"the income account's name as an asset": {
-			input:   lt.CreateLedgerAccountInput{CurrencyID: f.euro.ID, Name: "Income", Kind: model.LedgerAccountAsset},
+			input:   act.CreateLedgerAccountInput{CurrencyID: f.euro.ID, Name: "Income", Kind: model.LedgerAccountAsset},
 			wantErr: `"Income" is the name of the ledger's income account`,
 		},
 		"the stray's name as a liability": {
-			input:   lt.CreateLedgerAccountInput{CurrencyID: f.euro.ID, Name: "Untracked accounts", Kind: model.LedgerAccountLiability},
+			input:   act.CreateLedgerAccountInput{CurrencyID: f.euro.ID, Name: "Untracked accounts", Kind: model.LedgerAccountLiability},
 			wantErr: `"Untracked accounts" is the name of the ledger's equity account`,
 		},
 		"the clearing account's name under a financial account": {
-			input: lt.CreateLedgerAccountInput{FinancialAccountID: &f.personal.ID, CurrencyID: f.euro.ID, Name: "FX clearing", Kind: model.LedgerAccountLiability},
+			input: act.CreateLedgerAccountInput{FinancialAccountID: &f.personal.ID, CurrencyID: f.euro.ID, Name: "FX clearing", Kind: model.LedgerAccountLiability},
 		},
 	}
 
@@ -250,7 +249,7 @@ func (s *UnitTestSuite) Test_CreateLedgerAccount_ReservedNames() {
 			activityResult, err := s.Env.ExecuteActivity(s.aa.CreateLedgerAccount, tc.input)
 			if tc.wantErr == "" {
 				require.NoError(s.T(), err)
-				var result lt.CreateLedgerAccountResult
+				var result act.CreateLedgerAccountResult
 				require.NoError(s.T(), activityResult.Get(&result))
 				s.deleteLedgerAccounts(result.LedgerAccountID)
 				return
@@ -263,7 +262,7 @@ func (s *UnitTestSuite) Test_CreateLedgerAccount_ReservedNames() {
 }
 
 type ledgerAccountOutcome struct {
-	result *lt.CreateLedgerAccountResult
+	result *act.CreateLedgerAccountResult
 	err    error
 }
 
@@ -277,15 +276,15 @@ func (s *UnitTestSuite) Test_CreateLedgerAccount_RetryWaitsForConcurrentWriter()
 
 	tests := map[string]struct {
 		first *model.LedgerAccount
-		input lt.CreateLedgerAccountInput
+		input act.CreateLedgerAccountInput
 	}{
 		"a shared account": {
 			first: &model.LedgerAccount{CurrencyID: f.euro.ID, Name: "Expenses", Kind: model.LedgerAccountExpense},
-			input: lt.CreateLedgerAccountInput{CurrencyID: f.euro.ID, Name: "expenses", Kind: model.LedgerAccountExpense},
+			input: act.CreateLedgerAccountInput{CurrencyID: f.euro.ID, Name: "expenses", Kind: model.LedgerAccountExpense},
 		},
 		"an account under a financial account": {
 			first: &model.LedgerAccount{FinancialAccountID: &f.personal.ID, CurrencyID: f.euro.ID, Name: "Cash", Kind: model.LedgerAccountAsset},
-			input: lt.CreateLedgerAccountInput{FinancialAccountID: &f.personal.ID, CurrencyID: f.euro.ID, Name: " cash ", Kind: model.LedgerAccountAsset},
+			input: act.CreateLedgerAccountInput{FinancialAccountID: &f.personal.ID, CurrencyID: f.euro.ID, Name: " cash ", Kind: model.LedgerAccountAsset},
 		},
 	}
 
@@ -334,17 +333,17 @@ func (s *UnitTestSuite) Test_CreateLedgerAccount_ClosedScope() {
 	tests := map[string]struct {
 		// scope inserts the closed financial account, and returns the input
 		// that creates an account under it.
-		scope     func() (lt.CreateLedgerAccountInput, func())
-		wantError func(input lt.CreateLedgerAccountInput) string
+		scope     func() (act.CreateLedgerAccountInput, func())
+		wantError func(input act.CreateLedgerAccountInput) string
 	}{
 		"under a closed financial account": {
-			scope: func() (lt.CreateLedgerAccountInput, func()) {
+			scope: func() (act.CreateLedgerAccountInput, func()) {
 				closed := &model.FinancialAccount{InstitutionID: f.personal.InstitutionID, Name: "Revolut Old", ClosedAt: &closedAt}
 				temporaltesting.Insert(s.T(), s.DB, closed)
-				input := lt.CreateLedgerAccountInput{FinancialAccountID: &closed.ID, CurrencyID: f.euro.ID, Name: "Cash", Kind: model.LedgerAccountAsset}
+				input := act.CreateLedgerAccountInput{FinancialAccountID: &closed.ID, CurrencyID: f.euro.ID, Name: "Cash", Kind: model.LedgerAccountAsset}
 				return input, func() { temporaltesting.DeleteIgnoreNotFound(s.T(), s.DB, (*model.FinancialAccount)(nil), closed.ID) }
 			},
-			wantError: func(input lt.CreateLedgerAccountInput) string {
+			wantError: func(input act.CreateLedgerAccountInput) string {
 				return fmt.Sprintf("resource FinancialAccount with ID: %d is closed", *input.FinancialAccountID)
 			},
 		},

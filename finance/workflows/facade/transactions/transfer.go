@@ -3,6 +3,7 @@ package transactions
 import (
 	"fmt"
 
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	fxt "github.com/logicorg/ivfs/finance/common/types/fxtypes"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	tt "github.com/logicorg/ivfs/finance/common/types/transactiontypes"
@@ -126,8 +127,8 @@ func conversionOf(ctx workflow.Context, input tt.RecordTransferInput, from, to *
 
 // ensureFXClearing returns the id of the "FX clearing" account of a currency.
 func ensureFXClearing(ctx workflow.Context, currencyID int64) (int64, error) {
-	var created lt.CreateLedgerAccountResult
-	err := workflow.ExecuteChildWorkflow(ctx, ledgeraccountswf.CreateLedgerAccount, lt.CreateLedgerAccountInput{
+	var created act.CreateLedgerAccountResult
+	err := workflow.ExecuteChildWorkflow(ctx, ledgeraccountswf.CreateLedgerAccount, act.CreateLedgerAccountInput{
 		CurrencyID: currencyID, Name: lt.FXClearingAccountName, Kind: model.LedgerAccountAsset,
 	}).Get(ctx, &created)
 	if err != nil {

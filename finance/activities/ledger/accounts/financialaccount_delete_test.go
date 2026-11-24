@@ -1,15 +1,14 @@
 package accounts
 
 import (
-	"testing"
-	"time"
-
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	"github.com/logicorg/ivfs/internal/pkg/temporaltesting"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/logicorg/ivfs/pkg/model/testhelpers"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/require"
+	"testing"
+	"time"
 )
 
 // deleteFinancialAccountFixture inserts what the cases of DeleteFinancialAccount
@@ -141,7 +140,7 @@ func (s *UnitTestSuite) TestDeleteFinancialAccount() {
 			id := tc.account(t)
 			before := f.rows(t, id)
 
-			_, err := s.Env.ExecuteActivity(s.aa.DeleteFinancialAccount, lt.DeleteFinancialAccountInput{FinancialAccountID: id})
+			_, err := s.Env.ExecuteActivity(s.aa.DeleteFinancialAccount, act.DeleteFinancialAccountInput{FinancialAccountID: id})
 
 			if tc.errStr != "" {
 				require.ErrorContains(t, err, tc.errStr)
@@ -161,7 +160,7 @@ func (s *UnitTestSuite) TestDeleteFinancialAccount_Idempotency() {
 	account := f.financialAccount(t, "Revolut EUR")
 	f.ledgerAccount(t, "Revolut cash", account)
 	f.ledgerAccount(t, "Revolut pot", account)
-	input := lt.DeleteFinancialAccountInput{FinancialAccountID: account.ID}
+	input := act.DeleteFinancialAccountInput{FinancialAccountID: account.ID}
 
 	for range 2 {
 		_, err := s.Env.ExecuteActivity(s.aa.DeleteFinancialAccount, input)

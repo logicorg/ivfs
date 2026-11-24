@@ -8,10 +8,10 @@ import (
 	"strings"
 	"time"
 
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	ct "github.com/logicorg/ivfs/finance/common/types/currencytypes"
 	it "github.com/logicorg/ivfs/finance/common/types/investmenttypes"
 	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	pft "github.com/logicorg/ivfs/finance/common/types/portfoliotypes"
 	currencieswf "github.com/logicorg/ivfs/finance/workflows/currencies"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
@@ -72,8 +72,8 @@ func retrieveBrokerage(ctx workflow.Context, financialAccountID int64, currencyC
 		return nil, fmt.Errorf("retrieve currency %s: %w", code, err)
 	}
 
-	var listed lt.ListLedgerAccountsResult
-	err = workflow.ExecuteChildWorkflow(ctx, ledgeraccountswf.ListLedgerAccounts, lt.ListLedgerAccountsParams{
+	var listed act.ListLedgerAccountsResult
+	err = workflow.ExecuteChildWorkflow(ctx, ledgeraccountswf.ListLedgerAccounts, act.ListLedgerAccountsParams{
 		FinancialAccountID: &financialAccountID,
 		CurrencyID:         &currency.ID,
 		Kinds:              []model.LedgerAccountKind{model.LedgerAccountAsset},

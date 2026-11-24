@@ -1,7 +1,7 @@
 package accounts
 
 import (
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/stretchr/testify/require"
 )
@@ -10,19 +10,19 @@ func (s *UnitTestSuite) TestDeleteLedgerAccount() {
 	f := insertBalanceFixture(s.T(), s)
 
 	tests := map[string]struct {
-		input  lt.DeleteLedgerAccountInput
+		input  act.DeleteLedgerAccountInput
 		errStr string
 	}{
 		"an asset with a balance": {
-			input:  lt.DeleteLedgerAccountInput{LedgerAccountID: f.cash.ID},
+			input:  act.DeleteLedgerAccountInput{LedgerAccountID: f.cash.ID},
 			errStr: "resource LedgerAccount conflict: ledger account has postings; close it instead",
 		},
 		"an asset with a draft entry": {
-			input:  lt.DeleteLedgerAccountInput{LedgerAccountID: f.drafted.ID},
+			input:  act.DeleteLedgerAccountInput{LedgerAccountID: f.drafted.ID},
 			errStr: "resource LedgerAccount conflict: ledger account has postings; close it instead",
 		},
 		"an account with no postings": {
-			input: lt.DeleteLedgerAccountInput{LedgerAccountID: f.unused.ID},
+			input: act.DeleteLedgerAccountInput{LedgerAccountID: f.unused.ID},
 		},
 	}
 

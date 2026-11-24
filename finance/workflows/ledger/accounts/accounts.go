@@ -6,7 +6,7 @@ import (
 	institutionactivity "github.com/logicorg/ivfs/finance/activities/institution"
 	ledgeractivity "github.com/logicorg/ivfs/finance/activities/ledger/accounts"
 	accountdeletion "github.com/logicorg/ivfs/finance/activities/ledger/accounts/deletion"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	"github.com/logicorg/ivfs/finance/workflows"
 	"go.temporal.io/sdk/workflow"
 )
@@ -23,10 +23,10 @@ var (
 )
 
 // RetrieveFinancialAccount is a workflow that retrieves a financial account.
-func RetrieveFinancialAccount(ctx workflow.Context, params lt.RetrieveFinancialAccountParams) (*lt.RetrieveFinancialAccountResult, error) {
+func RetrieveFinancialAccount(ctx workflow.Context, params act.RetrieveFinancialAccountParams) (*act.RetrieveFinancialAccountResult, error) {
 	ctx = workflow.WithActivityOptions(ctx, workflows.GetDefaultActivityOptions())
 
-	var result lt.RetrieveFinancialAccountResult
+	var result act.RetrieveFinancialAccountResult
 	if err := workflow.ExecuteActivity(ctx, la.RetrieveFinancialAccount, params).Get(ctx, &result); err != nil {
 		return nil, fmt.Errorf("retrieve financial account: %w", err)
 	}
@@ -34,40 +34,40 @@ func RetrieveFinancialAccount(ctx workflow.Context, params lt.RetrieveFinancialA
 }
 
 // ListFinancialAccounts is a workflow that lists financial accounts.
-func ListFinancialAccounts(ctx workflow.Context, params lt.ListFinancialAccountsParams) (*lt.ListFinancialAccountsResult, error) {
+func ListFinancialAccounts(ctx workflow.Context, params act.ListFinancialAccountsParams) (*act.ListFinancialAccountsResult, error) {
 	ctx = workflow.WithActivityOptions(ctx, workflows.GetDefaultActivityOptions())
 
-	var result lt.ListFinancialAccountsResult
+	var result act.ListFinancialAccountsResult
 	if err := workflow.ExecuteActivity(ctx, la.ListFinancialAccounts, params).Get(ctx, &result); err != nil {
 		return nil, fmt.Errorf("list financial accounts: %w", err)
 	}
 	return &result, nil
 }
 
-func CreateLedgerAccount(ctx workflow.Context, input lt.CreateLedgerAccountInput) (*lt.CreateLedgerAccountResult, error) {
+func CreateLedgerAccount(ctx workflow.Context, input act.CreateLedgerAccountInput) (*act.CreateLedgerAccountResult, error) {
 	ctx = workflow.WithActivityOptions(ctx, workflows.GetDefaultActivityOptions())
 
-	var result lt.CreateLedgerAccountResult
+	var result act.CreateLedgerAccountResult
 	if err := workflow.ExecuteActivity(ctx, la.CreateLedgerAccount, input).Get(ctx, &result); err != nil {
 		return nil, fmt.Errorf("create ledger account: %w", err)
 	}
 	return &result, nil
 }
 
-func RetrieveLedgerAccount(ctx workflow.Context, params lt.RetrieveLedgerAccountParams) (*lt.RetrieveLedgerAccountResult, error) {
+func RetrieveLedgerAccount(ctx workflow.Context, params act.RetrieveLedgerAccountParams) (*act.RetrieveLedgerAccountResult, error) {
 	ctx = workflow.WithActivityOptions(ctx, workflows.GetDefaultActivityOptions())
 
-	var result lt.RetrieveLedgerAccountResult
+	var result act.RetrieveLedgerAccountResult
 	if err := workflow.ExecuteActivity(ctx, la.RetrieveLedgerAccount, params).Get(ctx, &result); err != nil {
 		return nil, fmt.Errorf("retrieve ledger account: %w", err)
 	}
 	return &result, nil
 }
 
-func ListLedgerAccounts(ctx workflow.Context, params lt.ListLedgerAccountsParams) (*lt.ListLedgerAccountsResult, error) {
+func ListLedgerAccounts(ctx workflow.Context, params act.ListLedgerAccountsParams) (*act.ListLedgerAccountsResult, error) {
 	ctx = workflow.WithActivityOptions(ctx, workflows.GetDefaultActivityOptions())
 
-	var result lt.ListLedgerAccountsResult
+	var result act.ListLedgerAccountsResult
 	if err := workflow.ExecuteActivity(ctx, la.ListLedgerAccounts, params).Get(ctx, &result); err != nil {
 		return nil, fmt.Errorf("list ledger accounts: %w", err)
 	}

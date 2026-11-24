@@ -3,7 +3,7 @@ package accounts
 import (
 	activity "github.com/logicorg/ivfs/finance/activities/ledger/accounts"
 	accountdeletion "github.com/logicorg/ivfs/finance/activities/ledger/accounts/deletion"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/logicorg/ivfs/pkg/ptr"
 	"github.com/stretchr/testify/assert"
@@ -23,9 +23,9 @@ func (s *WorkflowUnitTestSuite) TestDeleteFinancialAccount() {
 
 	tests := []struct {
 		name  string
-		input lt.DeleteFinancialAccountInput
+		input act.DeleteFinancialAccountInput
 		// closed is what CloseAccountForDeletion returns; nil skips it.
-		closed   *lt.CloseAccountForDeletionResult
+		closed   *act.CloseAccountForDeletionResult
 		closeErr error
 		passes   []financialAccountPass
 		// entryErr and groupErr fail the first batch of their kind.
@@ -39,110 +39,110 @@ func (s *WorkflowUnitTestSuite) TestDeleteFinancialAccount() {
 	}{
 		{
 			name:    "an id that is not positive",
-			input:   lt.DeleteFinancialAccountInput{},
+			input:   act.DeleteFinancialAccountInput{},
 			wantErr: "validation error",
 		},
 		{
 			name:    "a replacement",
-			input:   lt.DeleteFinancialAccountInput{FinancialAccountID: 7, ReplacementID: ptr.Int64(8)},
+			input:   act.DeleteFinancialAccountInput{FinancialAccountID: 7, ReplacementID: ptr.Int64(8)},
 			wantErr: "merging an account into a replacement is not supported yet",
 		},
 		{
 			name:   "an account that does not exist",
-			input:  lt.DeleteFinancialAccountInput{FinancialAccountID: 7},
-			closed: &lt.CloseAccountForDeletionResult{Gone: true},
+			input:  act.DeleteFinancialAccountInput{FinancialAccountID: 7},
+			closed: &act.CloseAccountForDeletionResult{Gone: true},
 		},
 		{
 			name:     "an account the close refuses",
-			input:    lt.DeleteFinancialAccountInput{FinancialAccountID: 7},
-			closed:   &lt.CloseAccountForDeletionResult{},
+			input:    act.DeleteFinancialAccountInput{FinancialAccountID: 7},
+			closed:   &act.CloseAccountForDeletionResult{},
 			closeErr: internalerrors.ErrResourceConflict{ResourceType: "LedgerAccount", Reason: "ledger account 9 has child accounts outside it; delete or move them first"},
 			wantErr:  "resource LedgerAccount conflict: ledger account 9 has child accounts outside it",
 		},
 		{
 			name:       "an empty account",
-			input:      lt.DeleteFinancialAccountInput{FinancialAccountID: 7},
-			closed:     &lt.CloseAccountForDeletionResult{},
+			input:      act.DeleteFinancialAccountInput{FinancialAccountID: 7},
+			closed:     &act.CloseAccountForDeletionResult{},
 			passes:     []financialAccountPass{{}},
 			deleteErrs: []error{nil},
 		},
 		{
 			name:       "an account with entries and movement groups",
-			input:      lt.DeleteFinancialAccountInput{FinancialAccountID: 7},
-			closed:     &lt.CloseAccountForDeletionResult{},
+			input:      act.DeleteFinancialAccountInput{FinancialAccountID: 7},
+			closed:     &act.CloseAccountForDeletionResult{},
 			passes:     []financialAccountPass{{entries: []int{100, 4}, groups: []int{100, 100, 2}}},
 			deleteErrs: []error{nil},
 		},
 		{
 			name:       "rows deleted meanwhile",
-			input:      lt.DeleteFinancialAccountInput{FinancialAccountID: 7},
-			closed:     &lt.CloseAccountForDeletionResult{},
+			input:      act.DeleteFinancialAccountInput{FinancialAccountID: 7},
+			closed:     &act.CloseAccountForDeletionResult{},
 			passes:     []financialAccountPass{{entries: []int{3}}},
 			deleteErrs: []error{internalerrors.ErrNotFound{ResourceType: "FinancialAccount", ID: 7}},
 		},
 		{
 			name:       "a movement recorded meanwhile",
-			input:      lt.DeleteFinancialAccountInput{FinancialAccountID: 7},
-			closed:     &lt.CloseAccountForDeletionResult{},
+			input:      act.DeleteFinancialAccountInput{FinancialAccountID: 7},
+			closed:     &act.CloseAccountForDeletionResult{},
 			passes:     []financialAccountPass{{entries: []int{100}}, {groups: []int{1}}},
 			deleteErrs: []error{conflict, nil},
 		},
 		{
 			name:       "a conflict after a pass that handled only groups",
-			input:      lt.DeleteFinancialAccountInput{FinancialAccountID: 7},
-			closed:     &lt.CloseAccountForDeletionResult{},
+			input:      act.DeleteFinancialAccountInput{FinancialAccountID: 7},
+			closed:     &act.CloseAccountForDeletionResult{},
 			passes:     []financialAccountPass{{groups: []int{5}}, {}},
 			deleteErrs: []error{conflict, conflict},
 			wantErr:    "resource FinancialAccount conflict: still referenced by asset.position_movement.financial_account_id",
 		},
 		{
 			name:       "a conflict on an empty account",
-			input:      lt.DeleteFinancialAccountInput{FinancialAccountID: 7},
-			closed:     &lt.CloseAccountForDeletionResult{},
+			input:      act.DeleteFinancialAccountInput{FinancialAccountID: 7},
+			closed:     &act.CloseAccountForDeletionResult{},
 			passes:     []financialAccountPass{{}},
 			deleteErrs: []error{conflict},
 			wantErr:    "resource FinancialAccount conflict: still referenced by asset.position_movement.financial_account_id",
 		},
 		{
 			name:     "an entry batch that fails",
-			input:    lt.DeleteFinancialAccountInput{FinancialAccountID: 7},
-			closed:   &lt.CloseAccountForDeletionResult{},
+			input:    act.DeleteFinancialAccountInput{FinancialAccountID: 7},
+			closed:   &act.CloseAccountForDeletionResult{},
 			entryErr: assert.AnError,
 			wantErr:  "handle entries for deletion",
 		},
 		{
 			name:     "a movement group batch that fails",
-			input:    lt.DeleteFinancialAccountInput{FinancialAccountID: 7},
-			closed:   &lt.CloseAccountForDeletionResult{},
+			input:    act.DeleteFinancialAccountInput{FinancialAccountID: 7},
+			closed:   &act.CloseAccountForDeletionResult{},
 			passes:   []financialAccountPass{{entries: []int{2}}},
 			groupErr: assert.AnError,
 			wantErr:  "handle movement groups for deletion",
 		},
 		{
 			name:       "a delete that fails",
-			input:      lt.DeleteFinancialAccountInput{FinancialAccountID: 7},
-			closed:     &lt.CloseAccountForDeletionResult{},
+			input:      act.DeleteFinancialAccountInput{FinancialAccountID: 7},
+			closed:     &act.CloseAccountForDeletionResult{},
 			passes:     []financialAccountPass{{}},
 			deleteErrs: []error{assert.AnError},
 			wantErr:    "delete financial account",
 		},
 		{
 			name:          "continuing as new before a batch",
-			input:         lt.DeleteFinancialAccountInput{FinancialAccountID: 7},
-			closed:        &lt.CloseAccountForDeletionResult{},
+			input:         act.DeleteFinancialAccountInput{FinancialAccountID: 7},
+			closed:        &act.CloseAccountForDeletionResult{},
 			continueAsNew: -1,
 		},
 		{
 			name:          "continuing as new among the entries",
-			input:         lt.DeleteFinancialAccountInput{FinancialAccountID: 7},
-			closed:        &lt.CloseAccountForDeletionResult{},
+			input:         act.DeleteFinancialAccountInput{FinancialAccountID: 7},
+			closed:        &act.CloseAccountForDeletionResult{},
 			passes:        []financialAccountPass{{entries: []int{100}}},
 			continueAsNew: 1,
 		},
 		{
 			name:          "continuing as new among the movement groups",
-			input:         lt.DeleteFinancialAccountInput{FinancialAccountID: 7},
-			closed:        &lt.CloseAccountForDeletionResult{},
+			input:         act.DeleteFinancialAccountInput{FinancialAccountID: 7},
+			closed:        &act.CloseAccountForDeletionResult{},
 			passes:        []financialAccountPass{{entries: []int{100}, groups: []int{100}}},
 			continueAsNew: 2,
 		},
@@ -153,8 +153,8 @@ func (s *WorkflowUnitTestSuite) TestDeleteFinancialAccount() {
 			env := s.NewTestWorkflowEnvironment()
 			aa := activity.Activities{}
 			da := accountdeletion.Activities{}
-			target := lt.DeletionTarget{FinancialAccountID: &tc.input.FinancialAccountID}
-			batch := lt.DeletionBatchInput{Target: target, Limit: deletionBatchSize}
+			target := act.DeletionTarget{FinancialAccountID: &tc.input.FinancialAccountID}
+			batch := act.DeletionBatchInput{Target: target, Limit: deletionBatchSize}
 
 			if tc.closed != nil {
 				env.OnActivity(da.CloseAccountForDeletion, mock.Anything, target).Return(tc.closed, tc.closeErr).Once()
@@ -173,14 +173,14 @@ func (s *WorkflowUnitTestSuite) TestDeleteFinancialAccount() {
 			// them, and reports whether Temporal suggested continuing as new.
 			expect := func(activity any, handled []int) bool {
 				for _, n := range handled {
-					call := env.OnActivity(activity, mock.Anything, batch).Return(&lt.DeletionBatchResult{Handled: n}, nil).Once()
+					call := env.OnActivity(activity, mock.Anything, batch).Return(&act.DeletionBatchResult{Handled: n}, nil).Once()
 					batches++
 					if suggested() {
 						call.Run(func(mock.Arguments) { env.SetContinueAsNewSuggested(true) })
 						return true
 					}
 				}
-				env.OnActivity(activity, mock.Anything, batch).Return(&lt.DeletionBatchResult{}, nil).Once()
+				env.OnActivity(activity, mock.Anything, batch).Return(&act.DeletionBatchResult{}, nil).Once()
 				return false
 			}
 			for n, pass := range tc.passes {
@@ -213,7 +213,7 @@ func (s *WorkflowUnitTestSuite) TestDeleteFinancialAccount() {
 				return
 			}
 			require.NoError(t, env.GetWorkflowError())
-			var result lt.DeleteAccountResult
+			var result act.DeleteAccountResult
 			require.NoError(t, env.GetWorkflowResult(&result))
 			require.Empty(t, result.Warnings)
 		})

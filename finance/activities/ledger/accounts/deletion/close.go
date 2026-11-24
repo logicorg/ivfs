@@ -9,6 +9,7 @@ import (
 
 	ledgerdeletion "github.com/logicorg/ivfs/finance/activities/ledger/internal/deletion"
 	"github.com/logicorg/ivfs/finance/activities/ledger/internal/positions"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/logicorg/ivfs/pkg/model"
@@ -24,7 +25,7 @@ import (
 //
 // It refuses, with ErrResourceConflict, a shared or stray account that has
 // postings or movements.
-func (a *Activities) CloseAccountForDeletion(ctx context.Context, target lt.DeletionTarget) (*lt.CloseAccountForDeletionResult, error) {
+func (a *Activities) CloseAccountForDeletion(ctx context.Context, target act.DeletionTarget) (*act.CloseAccountForDeletionResult, error) {
 	db, err := a.Pools.For(ctx)
 	if err != nil {
 		return nil, err
@@ -35,7 +36,7 @@ func (a *Activities) CloseAccountForDeletion(ctx context.Context, target lt.Dele
 	}
 
 	now := time.Now().UTC()
-	result := &lt.CloseAccountForDeletionResult{}
+	result := &act.CloseAccountForDeletionResult{}
 	err = db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
 		var err error
 		if target.LedgerAccountID != nil {

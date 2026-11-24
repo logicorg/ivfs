@@ -1,13 +1,12 @@
 package accounts
 
 import (
-	"time"
-
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	"github.com/logicorg/ivfs/internal/pkg/temporaltesting"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/require"
+	"time"
 )
 
 func (s *UnitTestSuite) Test_CloseFinancialAccount() {
@@ -19,7 +18,7 @@ func (s *UnitTestSuite) Test_CloseFinancialAccount() {
 		account := &model.FinancialAccount{InstitutionID: institution.ID, Name: "Revolut EUR"}
 		temporaltesting.Insert(s.T(), s.DB, account)
 
-		_, err := s.Env.ExecuteActivity(s.aa.CloseFinancialAccount, lt.CloseFinancialAccountInput{
+		_, err := s.Env.ExecuteActivity(s.aa.CloseFinancialAccount, act.CloseFinancialAccountInput{
 			FinancialAccountID: account.ID,
 			ClosedAt:           closedAt,
 		})
@@ -39,7 +38,7 @@ func (s *UnitTestSuite) Test_CloseFinancialAccount() {
 		ledgerAccount := &model.LedgerAccount{FinancialAccountID: &account.ID, CurrencyID: currency.ID, Name: "cash", Kind: model.LedgerAccountAsset}
 		temporaltesting.Insert(s.T(), s.DB, ledgerAccount)
 
-		_, err := s.Env.ExecuteActivity(s.aa.CloseFinancialAccount, lt.CloseFinancialAccountInput{
+		_, err := s.Env.ExecuteActivity(s.aa.CloseFinancialAccount, act.CloseFinancialAccountInput{
 			FinancialAccountID: account.ID,
 			ClosedAt:           closedAt,
 		})
@@ -59,7 +58,7 @@ func (s *UnitTestSuite) Test_CloseFinancialAccount() {
 		ledgerAccount := &model.LedgerAccount{FinancialAccountID: &account.ID, CurrencyID: currency.ID, Name: "cash", Kind: model.LedgerAccountAsset, ClosedAt: &laClosedAt}
 		temporaltesting.Insert(s.T(), s.DB, ledgerAccount)
 
-		_, err := s.Env.ExecuteActivity(s.aa.CloseFinancialAccount, lt.CloseFinancialAccountInput{
+		_, err := s.Env.ExecuteActivity(s.aa.CloseFinancialAccount, act.CloseFinancialAccountInput{
 			FinancialAccountID: account.ID,
 			ClosedAt:           closedAt,
 		})
@@ -67,7 +66,7 @@ func (s *UnitTestSuite) Test_CloseFinancialAccount() {
 	})
 
 	s.Run("not found", func() {
-		_, err := s.Env.ExecuteActivity(s.aa.CloseFinancialAccount, lt.CloseFinancialAccountInput{
+		_, err := s.Env.ExecuteActivity(s.aa.CloseFinancialAccount, act.CloseFinancialAccountInput{
 			FinancialAccountID: 999999,
 			ClosedAt:           closedAt,
 		})
@@ -75,7 +74,7 @@ func (s *UnitTestSuite) Test_CloseFinancialAccount() {
 	})
 
 	s.Run("invalid id", func() {
-		_, err := s.Env.ExecuteActivity(s.aa.CloseFinancialAccount, lt.CloseFinancialAccountInput{
+		_, err := s.Env.ExecuteActivity(s.aa.CloseFinancialAccount, act.CloseFinancialAccountInput{
 			FinancialAccountID: 0,
 			ClosedAt:           closedAt,
 		})
@@ -90,7 +89,7 @@ func (s *UnitTestSuite) Test_CloseFinancialAccount_Idempotency() {
 	account := &model.FinancialAccount{InstitutionID: institution.ID, Name: "Revolut EUR"}
 	temporaltesting.Insert(s.T(), s.DB, account)
 
-	params := lt.CloseFinancialAccountInput{FinancialAccountID: account.ID, ClosedAt: closedAt}
+	params := act.CloseFinancialAccountInput{FinancialAccountID: account.ID, ClosedAt: closedAt}
 
 	_, err := s.Env.ExecuteActivity(s.aa.CloseFinancialAccount, params)
 	require.NoError(s.T(), err)
@@ -115,7 +114,7 @@ func (s *UnitTestSuite) Test_CloseFinancialAccount_HoldingUnits() {
 
 	holding := &model.PositionMovement{FinancialAccountID: account.ID, AssetID: asset.ID, UnitsDelta: decimal.NewFromInt(5), OccurredAt: time.Now().UTC().Add(-time.Hour)}
 	temporaltesting.InsertPositionMovement(s.T(), s.DB, holding)
-	params := lt.CloseFinancialAccountInput{FinancialAccountID: account.ID, ClosedAt: time.Now().UTC()}
+	params := act.CloseFinancialAccountInput{FinancialAccountID: account.ID, ClosedAt: time.Now().UTC()}
 
 	_, err := s.Env.ExecuteActivity(s.aa.CloseFinancialAccount, params)
 	require.ErrorContains(s.T(), err, "still holds units")
@@ -151,7 +150,7 @@ func (s *UnitTestSuite) Test_CloseFinancialAccount_WaitsForConcurrentTrade() {
 
 	closed := make(chan error, 1)
 	go func() {
-		closed <- s.aa.CloseFinancialAccount(s.T().Context(), lt.CloseFinancialAccountInput{FinancialAccountID: account.ID, ClosedAt: time.Now().UTC()})
+		closed <- s.aa.CloseFinancialAccount(s.T().Context(), act.CloseFinancialAccountInput{FinancialAccountID: account.ID, ClosedAt: time.Now().UTC()})
 	}()
 
 	select {

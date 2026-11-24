@@ -1,4 +1,4 @@
-package ledgertypes
+package accounttypes
 
 import (
 	"cuelang.org/go/cuego"
