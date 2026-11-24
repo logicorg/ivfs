@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"testing"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	cpt "github.com/logicorg/ivfs/finance/common/types/counterpartytypes"
 	counterpartieswf "github.com/logicorg/ivfs/finance/workflows/ledger/counterparties"
 	"github.com/logicorg/ivfs/pkg/ptr"
 	"github.com/logicorg/ivfs/web/api/apitest"
@@ -20,8 +20,8 @@ func TestCreate(t *testing.T) {
 			Method: http.MethodPost, Path: "/api/counterparties", Body: `{"name":"Tesco"}`,
 			Call: &apitest.WorkflowCall{
 				Workflow: counterpartieswf.CreateCounterparty,
-				Params:   lt.CreateCounterpartyInput{Name: "Tesco"},
-				Result:   lt.CreateCounterpartyResult{CounterpartyID: 3},
+				Params:   cpt.CreateCounterpartyInput{Name: "Tesco"},
+				Result:   cpt.CreateCounterpartyResult{CounterpartyID: 3},
 			},
 			WantStatus: http.StatusOK, WantBody: `{"id":3}`,
 		},
@@ -29,8 +29,8 @@ func TestCreate(t *testing.T) {
 			Method: http.MethodPost, Path: "/api/counterparties", Body: `{"name":"Acme","externalId":"payroll-7"}`,
 			Call: &apitest.WorkflowCall{
 				Workflow: counterpartieswf.CreateCounterparty,
-				Params:   lt.CreateCounterpartyInput{Name: "Acme", ExternalID: ptr.NewPtr("payroll-7")},
-				Result:   lt.CreateCounterpartyResult{CounterpartyID: 1},
+				Params:   cpt.CreateCounterpartyInput{Name: "Acme", ExternalID: ptr.NewPtr("payroll-7")},
+				Result:   cpt.CreateCounterpartyResult{CounterpartyID: 1},
 			},
 			WantStatus: http.StatusOK, WantBody: `{"id":1}`,
 		},
@@ -38,7 +38,7 @@ func TestCreate(t *testing.T) {
 			Method: http.MethodPost, Path: "/api/counterparties", Body: `{"name":"  "}`,
 			Call: &apitest.WorkflowCall{
 				Workflow: counterpartieswf.CreateCounterparty,
-				Params:   lt.CreateCounterpartyInput{Name: "  "},
+				Params:   cpt.CreateCounterpartyInput{Name: "  "},
 				Err:      temporal.NewApplicationError("missing required parameters: Name", "ErrMissingRequiredParameter"),
 			},
 			WantStatus: http.StatusUnprocessableEntity,
