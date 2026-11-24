@@ -3,7 +3,7 @@ package portfolio
 import (
 	"time"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	pft "github.com/logicorg/ivfs/finance/common/types/portfoliotypes"
 	"github.com/logicorg/ivfs/internal/pkg/temporaltesting"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/logicorg/ivfs/pkg/ptr"
@@ -89,12 +89,12 @@ func idsOf(history []*model.PositionMovement, positions ...int) []int64 {
 	return ids
 }
 
-func (s *UnitTestSuite) listMovements(params lt.ListPositionMovementsParams) lt.ListPositionMovementsResult {
+func (s *UnitTestSuite) listMovements(params pft.ListPositionMovementsParams) pft.ListPositionMovementsResult {
 	s.T().Helper()
 
 	activityResult, err := s.Env.ExecuteActivity(s.pa.ListPositionMovements, params)
 	require.NoError(s.T(), err)
-	var result lt.ListPositionMovementsResult
+	var result pft.ListPositionMovementsResult
 	require.NoError(s.T(), activityResult.Get(&result))
 	return result
 }
@@ -104,48 +104,48 @@ func (s *UnitTestSuite) listMovements(params lt.ListPositionMovementsParams) lt.
 func (s *UnitTestSuite) Test_ListPositionMovements() {
 	tests := map[string]struct {
 		// filter narrows the history of asset, which every case has to select.
-		filter func(params *lt.ListPositionMovementsParams)
+		filter func(params *pft.ListPositionMovementsParams)
 		// want are the positions in the history of the movements listed.
 		want []int
 	}{
 		"everything, oldest first": {
-			filter: func(*lt.ListPositionMovementsParams) {},
+			filter: func(*pft.ListPositionMovementsParams) {},
 			want:   []int{0, 1, 2, 3, 4, 5, 6, 7},
 		},
 		"one financial account": {
-			filter: func(p *lt.ListPositionMovementsParams) { p.FinancialAccountID = s.financialAccount.ID },
+			filter: func(p *pft.ListPositionMovementsParams) { p.FinancialAccountID = s.financialAccount.ID },
 			want:   []int{0, 1, 2, 4, 6},
 		},
 		"the other financial account": {
-			filter: func(p *lt.ListPositionMovementsParams) { p.FinancialAccountID = s.otherAccount.ID },
+			filter: func(p *pft.ListPositionMovementsParams) { p.FinancialAccountID = s.otherAccount.ID },
 			want:   []int{3, 5, 7},
 		},
 		"several kinds": {
-			filter: func(p *lt.ListPositionMovementsParams) {
+			filter: func(p *pft.ListPositionMovementsParams) {
 				p.Kinds = []model.PositionMovementKind{model.PositionMovementSplit, model.PositionMovementTransfer}
 			},
 			want: []int{2, 3, 4, 5, 6, 7},
 		},
 		"the kind of an entry": {
-			filter: func(p *lt.ListPositionMovementsParams) {
+			filter: func(p *pft.ListPositionMovementsParams) {
 				p.Kinds = []model.PositionMovementKind{model.PositionMovementTrade}
 			},
 			want: []int{1},
 		},
 		"a range includes its start": {
-			filter: func(p *lt.ListPositionMovementsParams) { p.From = historyDay(3) },
+			filter: func(p *pft.ListPositionMovementsParams) { p.From = historyDay(3) },
 			want:   []int{2, 3, 4, 5, 6, 7},
 		},
 		"a range excludes its end": {
-			filter: func(p *lt.ListPositionMovementsParams) { p.To = historyDay(3) },
+			filter: func(p *pft.ListPositionMovementsParams) { p.To = historyDay(3) },
 			want:   []int{0, 1},
 		},
 		"a range between two dates": {
-			filter: func(p *lt.ListPositionMovementsParams) { p.From, p.To = historyDay(2), historyDay(4) },
+			filter: func(p *pft.ListPositionMovementsParams) { p.From, p.To = historyDay(2), historyDay(4) },
 			want:   []int{1, 2, 3},
 		},
 		"an account, kinds and a range together": {
-			filter: func(p *lt.ListPositionMovementsParams) {
+			filter: func(p *pft.ListPositionMovementsParams) {
 				p.FinancialAccountID = s.financialAccount.ID
 				p.Kinds = []model.PositionMovementKind{model.PositionMovementSplit, model.PositionMovementTransfer}
 				p.From, p.To = historyDay(3), historyDay(5)
@@ -153,7 +153,7 @@ func (s *UnitTestSuite) Test_ListPositionMovements() {
 			want: []int{2, 4},
 		},
 		"a range after the history": {
-			filter: func(p *lt.ListPositionMovementsParams) { p.From = historyDay(10) },
+			filter: func(p *pft.ListPositionMovementsParams) { p.From = historyDay(10) },
 			want:   []int{},
 		},
 	}
@@ -163,7 +163,7 @@ func (s *UnitTestSuite) Test_ListPositionMovements() {
 			asset := &model.Asset{Name: name, Kind: model.AssetKindStock}
 			temporaltesting.Insert(s.T(), s.DB, asset)
 			history := s.seedHistory(asset)
-			params := lt.ListPositionMovementsParams{AssetID: asset.ID}
+			params := pft.ListPositionMovementsParams{AssetID: asset.ID}
 			tc.filter(&params)
 
 			result := s.listMovements(params)
@@ -195,7 +195,7 @@ func (s *UnitTestSuite) Test_ListPositionMovements_Pages() {
 			asset := &model.Asset{Name: name, Kind: model.AssetKindStock}
 			temporaltesting.Insert(s.T(), s.DB, asset)
 			history := s.seedHistory(asset)
-			params := lt.ListPositionMovementsParams{AssetID: asset.ID, Limit: tc.limit}
+			params := pft.ListPositionMovementsParams{AssetID: asset.ID, Limit: tc.limit}
 
 			for n, want := range tc.pages {
 				result := s.listMovements(params)
@@ -237,10 +237,10 @@ func (s *UnitTestSuite) Test_ListPositionMovements_RecordingOrder() {
 	later := movement(1, recorded.Add(2*time.Minute))
 	want := []int64{buy.ID, sale.ID, later.ID}
 
-	whole := s.listMovements(lt.ListPositionMovementsParams{AssetID: asset.ID})
+	whole := s.listMovements(pft.ListPositionMovementsParams{AssetID: asset.ID})
 	require.Equal(s.T(), want, movementIDs(whole.Movements))
 
-	params := lt.ListPositionMovementsParams{AssetID: asset.ID, Limit: 1}
+	params := pft.ListPositionMovementsParams{AssetID: asset.ID, Limit: 1}
 	var paged []int64
 	for {
 		page := s.listMovements(params)
@@ -264,17 +264,17 @@ func (s *UnitTestSuite) Test_ListPositionMovements_MatchesPositionAt() {
 		at := historyDay(day).Add(time.Hour)
 
 		for _, account := range []*model.FinancialAccount{s.financialAccount, s.otherAccount} {
-			result := s.listMovements(lt.ListPositionMovementsParams{
-				FinancialAccountID: account.ID, AssetID: s.asset.ID, To: at, Limit: lt.MaxPositionMovementsLimit,
+			result := s.listMovements(pft.ListPositionMovementsParams{
+				FinancialAccountID: account.ID, AssetID: s.asset.ID, To: at, Limit: pft.MaxPositionMovementsLimit,
 			})
 
 			sum := decimal.Zero
 			for _, movement := range result.Movements {
 				sum = sum.Add(movement.UnitsDelta)
 			}
-			position, err := s.Env.ExecuteActivity(s.pa.PositionAt, lt.PositionAtParams{FinancialAccountID: account.ID, AssetID: s.asset.ID, At: at})
+			position, err := s.Env.ExecuteActivity(s.pa.PositionAt, pft.PositionAtParams{FinancialAccountID: account.ID, AssetID: s.asset.ID, At: at})
 			require.NoError(s.T(), err)
-			var held lt.PositionAtResult
+			var held pft.PositionAtResult
 			require.NoError(s.T(), position.Get(&held))
 
 			require.True(s.T(), sum.Equal(held.Units), "day %d, account %d: history sums to %s, position is %s", day, account.ID, sum, held.Units)
@@ -285,7 +285,7 @@ func (s *UnitTestSuite) Test_ListPositionMovements_MatchesPositionAt() {
 // Test_ListPositionMovements_Validation checks that parameters that cannot select
 // a history are rejected.
 func (s *UnitTestSuite) Test_ListPositionMovements_Validation() {
-	_, err := s.Env.ExecuteActivity(s.pa.ListPositionMovements, lt.ListPositionMovementsParams{Limit: lt.MaxPositionMovementsLimit + 1})
+	_, err := s.Env.ExecuteActivity(s.pa.ListPositionMovements, pft.ListPositionMovementsParams{Limit: pft.MaxPositionMovementsLimit + 1})
 
 	require.ErrorContains(s.T(), err, "limit")
 }

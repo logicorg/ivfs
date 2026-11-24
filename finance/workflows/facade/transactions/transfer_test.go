@@ -5,8 +5,9 @@ import (
 	"slices"
 	"time"
 
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	fxt "github.com/logicorg/ivfs/finance/common/types/fxtypes"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	tt "github.com/logicorg/ivfs/finance/common/types/transactiontypes"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
 	ledgerfxwf "github.com/logicorg/ivfs/finance/workflows/ledger/fx"
@@ -23,9 +24,9 @@ import (
 // each fixture currency.
 func mockFXClearing(env *testsuite.TestWorkflowEnvironment) {
 	for _, account := range []*model.LedgerAccount{fxClearing, fxClearingUSD} {
-		env.OnWorkflow(ledgeraccountswf.CreateLedgerAccount, mock.Anything, lt.CreateLedgerAccountInput{
+		env.OnWorkflow(ledgeraccountswf.CreateLedgerAccount, mock.Anything, act.CreateLedgerAccountInput{
 			CurrencyID: account.CurrencyID, Name: "FX clearing", Kind: model.LedgerAccountAsset,
-		}).Return(&lt.CreateLedgerAccountResult{LedgerAccountID: account.ID}, nil).Maybe()
+		}).Return(&act.CreateLedgerAccountResult{LedgerAccountID: account.ID}, nil).Maybe()
 	}
 }
 
@@ -67,16 +68,16 @@ func (s *WorkflowUnitTestSuite) TestRecordTransfer() {
 				TagIDs: []int64{5},
 			},
 			mock: func(env *testsuite.TestWorkflowEnvironment) {
-				env.OnWorkflow(journalwf.PostJournalEntry, mock.Anything, entry(lt.PostJournalEntryInput{
+				env.OnWorkflow(journalwf.PostJournalEntry, mock.Anything, entry(jt.PostJournalEntryInput{
 					IdempotencyKey: "transfer:9c1e",
 					OccurredAt:     occurredAt,
 					Description:    ptr.NewPtr("pay the card off"),
 					TagIDs:         []int64{5},
-					Postings: []lt.PostingInput{
+					Postings: []jt.PostingInput{
 						{LedgerAccountID: cardBalance.ID, Amount: decimal.RequireFromString("300.50"), Side: model.PostingDebit},
 						{LedgerAccountID: cash.ID, Amount: decimal.RequireFromString("300.50"), Side: model.PostingCredit},
 					},
-				})).Return(&lt.PostJournalEntryResult{JournalEntryID: 42}, nil).Once()
+				})).Return(&jt.PostJournalEntryResult{JournalEntryID: 42}, nil).Once()
 			},
 		},
 		"into a savings vault, with the same amount arriving": {
@@ -85,14 +86,14 @@ func (s *WorkflowUnitTestSuite) TestRecordTransfer() {
 				Amount: decimal.RequireFromString("300.50"), ToAmount: decimal.RequireFromString("300.5"), OccurredAt: occurredAt,
 			},
 			mock: func(env *testsuite.TestWorkflowEnvironment) {
-				env.OnWorkflow(journalwf.PostJournalEntry, mock.Anything, entry(lt.PostJournalEntryInput{
+				env.OnWorkflow(journalwf.PostJournalEntry, mock.Anything, entry(jt.PostJournalEntryInput{
 					IdempotencyKey: "transfer:9c1e",
 					OccurredAt:     occurredAt,
-					Postings: []lt.PostingInput{
+					Postings: []jt.PostingInput{
 						{LedgerAccountID: savingsVault.ID, Amount: decimal.RequireFromString("300.50"), Side: model.PostingDebit},
 						{LedgerAccountID: cash.ID, Amount: decimal.RequireFromString("300.50"), Side: model.PostingCredit},
 					},
-				})).Return(&lt.PostJournalEntryResult{JournalEntryID: 42}, nil).Once()
+				})).Return(&jt.PostJournalEntryResult{JournalEntryID: 42}, nil).Once()
 			},
 		},
 		"from euros to dollars, with a note and a tag": {
@@ -199,7 +200,7 @@ func (s *WorkflowUnitTestSuite) TestRecordTransfer_Errors() {
 				Amount: decimal.NewFromInt(300), OccurredAt: time.Date(2026, 10, 3, 10, 0, 0, 0, time.UTC),
 			},
 			mock: func(env *testsuite.TestWorkflowEnvironment) {
-				env.OnWorkflow(ledgeraccountswf.RetrieveLedgerAccount, mock.Anything, lt.RetrieveLedgerAccountParams{ID: 999}).
+				env.OnWorkflow(ledgeraccountswf.RetrieveLedgerAccount, mock.Anything, act.RetrieveLedgerAccountParams{ID: 999}).
 					Return(nil, errors.New("resource LedgerAccount not found with ID: 999"))
 			},
 			wantError: "retrieve ledger account 999",

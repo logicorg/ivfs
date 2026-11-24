@@ -6,6 +6,7 @@ import (
 	"time"
 
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	pft "github.com/logicorg/ivfs/finance/common/types/portfoliotypes"
 	portfoliowf "github.com/logicorg/ivfs/finance/workflows/ledger/portfolio"
 	"github.com/logicorg/ivfs/web/api/apitest"
 	"github.com/shopspring/decimal"
@@ -16,10 +17,10 @@ import (
 // id, returns its warnings, turns a movement of a journal entry into a 422, and
 // that an invalid id runs no workflow.
 func TestDeleteMovement(t *testing.T) {
-	remove := func(result lt.DeletePositionMovementResult, err error) *apitest.WorkflowCall {
+	remove := func(result pft.DeletePositionMovementResult, err error) *apitest.WorkflowCall {
 		return &apitest.WorkflowCall{
 			Workflow: portfoliowf.DeletePositionMovement,
-			Params:   lt.DeletePositionMovementInput{MovementID: 7},
+			Params:   pft.DeletePositionMovementInput{MovementID: 7},
 			Result:   result,
 			Err:      err,
 		}
@@ -29,12 +30,12 @@ func TestDeleteMovement(t *testing.T) {
 	apitest.RunCases(t, Register, map[string]apitest.Case{
 		"delete a movement group": {
 			Method: http.MethodDelete, Path: "/api/position-movements/7",
-			Call:       remove(lt.DeletePositionMovementResult{}, nil),
+			Call:       remove(pft.DeletePositionMovementResult{}, nil),
 			WantStatus: http.StatusOK, WantBody: `{}`,
 		},
 		"delete a movement group that leaves a holding negative": {
 			Method: http.MethodDelete, Path: "/api/position-movements/7",
-			Call: remove(lt.DeletePositionMovementResult{Warnings: []lt.NegativeHolding{{
+			Call: remove(pft.DeletePositionMovementResult{Warnings: []lt.NegativeHolding{{
 				FinancialAccountID: 3, FinancialAccountName: "IBKR", AssetID: 12, AssetName: "ACME",
 				At: time.Date(2026, 3, 3, 0, 0, 0, 0, time.UTC), Units: decimal.NewFromInt(-10),
 			}}}, nil),
@@ -44,7 +45,7 @@ func TestDeleteMovement(t *testing.T) {
 		},
 		"a movement of a journal entry": {
 			Method: http.MethodDelete, Path: "/api/position-movements/7",
-			Call:       remove(lt.DeletePositionMovementResult{}, temporal.NewApplicationError(ofEntry, "ErrInvalidParameter")),
+			Call:       remove(pft.DeletePositionMovementResult{}, temporal.NewApplicationError(ofEntry, "ErrInvalidParameter")),
 			WantStatus: http.StatusUnprocessableEntity,
 			WantBody:   apitest.Problem(http.StatusUnprocessableEntity, ofEntry),
 		},

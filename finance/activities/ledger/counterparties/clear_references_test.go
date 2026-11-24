@@ -3,6 +3,7 @@ package counterparties
 import (
 	"time"
 
+	cpt "github.com/logicorg/ivfs/finance/common/types/counterpartytypes"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	"github.com/logicorg/ivfs/internal/pkg/temporaltesting"
 	"github.com/logicorg/ivfs/pkg/model"
@@ -90,9 +91,9 @@ func (s *UnitTestSuite) Test_ClearCounterpartyReferences() {
 		}
 
 		s.Run(name, func() {
-			val, err := s.Env.ExecuteActivity(s.aa.ClearCounterpartyReferences, lt.ClearCounterpartyReferencesInput{CounterpartyID: payee.ID})
+			val, err := s.Env.ExecuteActivity(s.aa.ClearCounterpartyReferences, cpt.ClearCounterpartyReferencesInput{CounterpartyID: payee.ID})
 			require.NoError(s.T(), err)
-			var result lt.ClearCounterpartyReferencesResult
+			var result cpt.ClearCounterpartyReferencesResult
 			require.NoError(s.T(), val.Get(&result))
 			require.Equal(s.T(), tc.expCleared, result.Cleared)
 
@@ -120,7 +121,7 @@ func (s *UnitTestSuite) Test_ClearCounterpartyReferences() {
 }
 
 func (s *UnitTestSuite) Test_ClearCounterpartyReferences_InvalidInput() {
-	_, err := s.Env.ExecuteActivity(s.aa.ClearCounterpartyReferences, lt.ClearCounterpartyReferencesInput{})
+	_, err := s.Env.ExecuteActivity(s.aa.ClearCounterpartyReferences, cpt.ClearCounterpartyReferencesInput{})
 	require.ErrorContains(s.T(), err, "validation error")
 }
 
@@ -132,12 +133,12 @@ func (s *UnitTestSuite) Test_ClearCounterpartyReferences_Idempotency() {
 	payee := &model.Counterparty{Name: "Tesco"}
 	temporaltesting.Insert(s.T(), s.DB, payee)
 	entries := []*model.JournalEntry{fixture.post(payee.ID), fixture.draft(payee.ID)}
-	input := lt.ClearCounterpartyReferencesInput{CounterpartyID: payee.ID}
+	input := cpt.ClearCounterpartyReferencesInput{CounterpartyID: payee.ID}
 
 	for _, expCleared := range []int64{2, 0} {
 		val, err := s.Env.ExecuteActivity(s.aa.ClearCounterpartyReferences, input)
 		require.NoError(s.T(), err)
-		var result lt.ClearCounterpartyReferencesResult
+		var result cpt.ClearCounterpartyReferencesResult
 		require.NoError(s.T(), val.Get(&result))
 		require.Equal(s.T(), expCleared, result.Cleared)
 	}

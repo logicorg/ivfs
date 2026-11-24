@@ -5,6 +5,7 @@ import (
 
 	activity "github.com/logicorg/ivfs/finance/activities/ledger/portfolio"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	pft "github.com/logicorg/ivfs/finance/common/types/portfoliotypes"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -19,11 +20,11 @@ func (s *WorkflowUnitTestSuite) TestDeletePositionMovement() {
 	}{
 		{
 			name:   "success",
-			result: []any{&lt.DeletePositionMovementResult{}, nil},
+			result: []any{&pft.DeletePositionMovementResult{}, nil},
 		},
 		{
 			name:   "success with warnings",
-			result: []any{&lt.DeletePositionMovementResult{Warnings: []lt.NegativeHolding{{FinancialAccountID: 1, FinancialAccountName: "Broker", AssetID: 2, AssetName: "ACME", At: time.Date(2026, 3, 1, 12, 0, 0, 0, time.UTC), Units: decimal.NewFromInt(-1)}}}, nil},
+			result: []any{&pft.DeletePositionMovementResult{Warnings: []lt.NegativeHolding{{FinancialAccountID: 1, FinancialAccountName: "Broker", AssetID: 2, AssetName: "ACME", At: time.Date(2026, 3, 1, 12, 0, 0, 0, time.UTC), Units: decimal.NewFromInt(-1)}}}, nil},
 		},
 		{
 			name:    "activity failure",
@@ -32,7 +33,7 @@ func (s *WorkflowUnitTestSuite) TestDeletePositionMovement() {
 		},
 	}
 
-	input := lt.DeletePositionMovementInput{MovementID: 10}
+	input := pft.DeletePositionMovementInput{MovementID: 10}
 
 	for _, tc := range tests {
 		s.Run(tc.name, func() {
@@ -48,7 +49,7 @@ func (s *WorkflowUnitTestSuite) TestDeletePositionMovement() {
 				return
 			}
 			require.NoError(s.T(), env.GetWorkflowError())
-			var result *lt.DeletePositionMovementResult
+			var result *pft.DeletePositionMovementResult
 			require.NoError(s.T(), env.GetWorkflowResult(&result))
 			assert.Equal(s.T(), tc.result[0], result)
 		})

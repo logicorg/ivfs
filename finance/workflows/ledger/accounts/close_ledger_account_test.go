@@ -4,7 +4,7 @@ import (
 	"time"
 
 	activity "github.com/logicorg/ivfs/finance/activities/ledger/accounts"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/logicorg/ivfs/pkg/ptr"
 	"github.com/stretchr/testify/assert"
@@ -54,10 +54,10 @@ func (s *WorkflowUnitTestSuite) TestCloseLedgerAccount() {
 		s.Run(tc.name, func() {
 			env := s.NewTestWorkflowEnvironment()
 			aa := activity.Activities{}
-			input := lt.CloseLedgerAccountInput{LedgerAccountID: tc.account.ID, ClosedAt: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)}
+			input := act.CloseLedgerAccountInput{LedgerAccountID: tc.account.ID, ClosedAt: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)}
 
-			env.OnActivity(aa.RetrieveLedgerAccount, mock.Anything, lt.RetrieveLedgerAccountParams{ID: tc.account.ID}).
-				Return(&lt.RetrieveLedgerAccountResult{LedgerAccount: &tc.account}, nil)
+			env.OnActivity(aa.RetrieveLedgerAccount, mock.Anything, act.RetrieveLedgerAccountParams{ID: tc.account.ID}).
+				Return(&act.RetrieveLedgerAccountResult{LedgerAccount: &tc.account}, nil)
 
 			if tc.closes {
 				env.OnActivity(aa.CloseLedgerAccount, mock.Anything, input).Return(tc.closeErr)

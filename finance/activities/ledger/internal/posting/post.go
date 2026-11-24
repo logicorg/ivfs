@@ -6,7 +6,7 @@ import (
 	"slices"
 	"time"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/logicorg/ivfs/pkg/sqllib"
@@ -15,7 +15,7 @@ import (
 )
 
 // PostJournalEntryTx writes and posts a balanced entry using an existing SQL transaction.
-func PostJournalEntryTx(ctx context.Context, tx bun.Tx, input lt.PostJournalEntryInput) (int64, error) {
+func PostJournalEntryTx(ctx context.Context, tx bun.Tx, input jt.PostJournalEntryInput) (int64, error) {
 	return PostEntryWithMovementsTx(ctx, tx, input, nil)
 }
 
@@ -24,7 +24,7 @@ func PostJournalEntryTx(ctx context.Context, tx bun.Tx, input lt.PostJournalEntr
 // entry is inserted as posted, and the database checks its balance when the
 // transaction commits. The movements take the entry's date and are updated in
 // place with their ids; the caller only supplies the rest of their fields.
-func PostEntryWithMovementsTx(ctx context.Context, tx bun.Tx, input lt.PostJournalEntryInput, movements []model.PositionMovement) (int64, error) {
+func PostEntryWithMovementsTx(ctx context.Context, tx bun.Tx, input jt.PostJournalEntryInput, movements []model.PositionMovement) (int64, error) {
 	if err := checkPostingsTx(ctx, tx, input, nil); err != nil {
 		return 0, err
 	}
@@ -52,7 +52,7 @@ func PostEntryWithMovementsTx(ctx context.Context, tx bun.Tx, input lt.PostJourn
 // their currency, debits that equal credits in each currency, and categories
 // a posting may carry. A closed ledger account is accepted when it is one of
 // allowedClosedLedgerAccountIDs.
-func checkPostingsTx(ctx context.Context, tx bun.Tx, input lt.PostJournalEntryInput, allowedClosedLedgerAccountIDs []int64) error {
+func checkPostingsTx(ctx context.Context, tx bun.Tx, input jt.PostJournalEntryInput, allowedClosedLedgerAccountIDs []int64) error {
 	if err := input.Validate(); err != nil {
 		return err
 	}
@@ -124,7 +124,7 @@ func checkPostingsTx(ctx context.Context, tx bun.Tx, input lt.PostJournalEntryIn
 // A closed category is accepted. Closing one only stops the UI from offering
 // it: a category has no balance and stands for nothing that can cease to
 // exist, and an expense that arrives late still belongs where it belongs.
-func checkCategoriesTx(ctx context.Context, tx bun.Tx, input lt.PostJournalEntryInput, accountKinds map[int64]model.LedgerAccountKind) error {
+func checkCategoriesTx(ctx context.Context, tx bun.Tx, input jt.PostJournalEntryInput, accountKinds map[int64]model.LedgerAccountKind) error {
 	categoryIDs := input.CategoryIDs()
 	if len(categoryIDs) == 0 {
 		return nil
@@ -168,7 +168,7 @@ func checkCategoriesTx(ctx context.Context, tx bun.Tx, input lt.PostJournalEntry
 
 // insertLinesTx inserts the postings and the movements of an entry that is
 // already stored. The movements take the entry's id and date.
-func insertLinesTx(ctx context.Context, tx bun.Tx, entry *model.JournalEntry, lines []lt.PostingInput, movements []model.PositionMovement) error {
+func insertLinesTx(ctx context.Context, tx bun.Tx, entry *model.JournalEntry, lines []jt.PostingInput, movements []model.PositionMovement) error {
 	postings := make([]model.Posting, 0, len(lines))
 	for i, p := range lines {
 		postings = append(postings, model.Posting{JournalEntryID: entry.ID, LineNumber: i + 1, LedgerAccountID: p.LedgerAccountID, Amount: p.Amount, Side: p.Side, CategoryID: p.CategoryID})

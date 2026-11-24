@@ -2,7 +2,7 @@ package counterparties
 
 import (
 	activity "github.com/logicorg/ivfs/finance/activities/ledger/counterparties"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	cpt "github.com/logicorg/ivfs/finance/common/types/counterpartytypes"
 	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -14,7 +14,7 @@ func (s *WorkflowUnitTestSuite) TestDeleteCounterparty() {
 
 	tests := []struct {
 		name  string
-		input lt.DeleteCounterpartyInput
+		input cpt.DeleteCounterpartyInput
 		// cleared and deleteErrs are what the clear and the delete return in
 		// each round.
 		cleared    []int64
@@ -26,47 +26,47 @@ func (s *WorkflowUnitTestSuite) TestDeleteCounterparty() {
 	}{
 		{
 			name:    "an id that is not positive",
-			input:   lt.DeleteCounterpartyInput{},
+			input:   cpt.DeleteCounterpartyInput{},
 			wantErr: "validation error",
 		},
 		{
 			name:        "deleted in one round",
-			input:       lt.DeleteCounterpartyInput{CounterpartyID: 7},
+			input:       cpt.DeleteCounterpartyInput{CounterpartyID: 7},
 			cleared:     []int64{4},
 			deleteErrs:  []error{nil},
 			wantCleared: 4,
 		},
 		{
 			name:        "a counterparty nothing names",
-			input:       lt.DeleteCounterpartyInput{CounterpartyID: 7},
+			input:       cpt.DeleteCounterpartyInput{CounterpartyID: 7},
 			cleared:     []int64{0},
 			deleteErrs:  []error{nil},
 			wantCleared: 0,
 		},
 		{
 			name:        "an entry recorded between the clear and the delete",
-			input:       lt.DeleteCounterpartyInput{CounterpartyID: 7},
+			input:       cpt.DeleteCounterpartyInput{CounterpartyID: 7},
 			cleared:     []int64{4, 1},
 			deleteErrs:  []error{conflict, nil},
 			wantCleared: 5,
 		},
 		{
 			name:       "a conflict in the last round",
-			input:      lt.DeleteCounterpartyInput{CounterpartyID: 7},
+			input:      cpt.DeleteCounterpartyInput{CounterpartyID: 7},
 			cleared:    []int64{4, 1},
 			deleteErrs: []error{conflict, conflict},
 			wantErr:    "resource Counterparty conflict: still referenced by ledger.journal_entry.counterparty_id",
 		},
 		{
 			name:       "a delete that fails otherwise",
-			input:      lt.DeleteCounterpartyInput{CounterpartyID: 7},
+			input:      cpt.DeleteCounterpartyInput{CounterpartyID: 7},
 			cleared:    []int64{4},
 			deleteErrs: []error{assert.AnError},
 			wantErr:    "delete counterparty",
 		},
 		{
 			name:     "a clear that fails",
-			input:    lt.DeleteCounterpartyInput{CounterpartyID: 7},
+			input:    cpt.DeleteCounterpartyInput{CounterpartyID: 7},
 			clearErr: assert.AnError,
 			wantErr:  "clear counterparty references",
 		},
@@ -77,7 +77,7 @@ func (s *WorkflowUnitTestSuite) TestDeleteCounterparty() {
 			t := s.T()
 			env := s.NewTestWorkflowEnvironment()
 			aa := activity.Activities{}
-			clearInput := lt.ClearCounterpartyReferencesInput{CounterpartyID: tc.input.CounterpartyID}
+			clearInput := cpt.ClearCounterpartyReferencesInput{CounterpartyID: tc.input.CounterpartyID}
 
 			if tc.clearErr != nil {
 				// Not Once: a retryable error is retried.
@@ -85,7 +85,7 @@ func (s *WorkflowUnitTestSuite) TestDeleteCounterparty() {
 			}
 			for round, cleared := range tc.cleared {
 				env.OnActivity(aa.ClearCounterpartyReferences, mock.Anything, clearInput).
-					Return(&lt.ClearCounterpartyReferencesResult{Cleared: cleared}, nil).Once()
+					Return(&cpt.ClearCounterpartyReferencesResult{Cleared: cleared}, nil).Once()
 				deleted := env.OnActivity(aa.DeleteCounterparty, mock.Anything, tc.input).Return(tc.deleteErrs[round])
 				if tc.deleteErrs[round] != assert.AnError {
 					deleted.Once()
@@ -100,9 +100,9 @@ func (s *WorkflowUnitTestSuite) TestDeleteCounterparty() {
 				return
 			}
 			require.NoError(t, env.GetWorkflowError())
-			var result lt.DeleteCounterpartyResult
+			var result cpt.DeleteCounterpartyResult
 			require.NoError(t, env.GetWorkflowResult(&result))
-			require.Equal(t, lt.DeleteCounterpartyResult{Cleared: tc.wantCleared}, result)
+			require.Equal(t, cpt.DeleteCounterpartyResult{Cleared: tc.wantCleared}, result)
 		})
 	}
 }

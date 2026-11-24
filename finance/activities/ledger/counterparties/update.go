@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"strings"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	cpt "github.com/logicorg/ivfs/finance/common/types/counterpartytypes"
 	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/logicorg/ivfs/pkg/sqllib"
 )
 
-func (a *Activities) RenameCounterparty(ctx context.Context, input lt.RenameCounterpartyInput) (*lt.CounterpartyMutationResult, error) {
+func (a *Activities) RenameCounterparty(ctx context.Context, input cpt.RenameCounterpartyInput) (*cpt.CounterpartyMutationResult, error) {
 	db, err := a.Pools.For(ctx)
 	if err != nil {
 		return nil, err
@@ -23,7 +23,7 @@ func (a *Activities) RenameCounterparty(ctx context.Context, input lt.RenameCoun
 
 	input.Name = strings.TrimSpace(input.Name)
 
-	result := &lt.CounterpartyMutationResult{CounterpartyID: input.CounterpartyID}
+	result := &cpt.CounterpartyMutationResult{CounterpartyID: input.CounterpartyID}
 	res, err := db.NewUpdate().
 		Model(&model.Counterparty{ID: input.CounterpartyID, Name: input.Name}).
 		Column("name", "updated_at").

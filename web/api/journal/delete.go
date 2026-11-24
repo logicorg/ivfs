@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	journalwf "github.com/logicorg/ivfs/finance/workflows/ledger/journal"
 	"github.com/logicorg/ivfs/web/api/gateway"
 	"go.temporal.io/sdk/client"
@@ -23,8 +23,8 @@ func registerDelete(api huma.API, c client.Client) {
 		Tags:   tags,
 		Errors: []int{http.StatusUnprocessableEntity},
 	}, func(ctx context.Context, in *DeleteJournalEntryInput) (*DeleteJournalEntryOutput, error) {
-		result, err := gateway.RunWorkflow[lt.DeleteJournalEntryResult](ctx, c, journalwf.DeleteJournalEntry,
-			lt.DeleteJournalEntryInput{JournalEntryID: in.ID})
+		result, err := gateway.RunWorkflow[jt.DeleteJournalEntryResult](ctx, c, journalwf.DeleteJournalEntry,
+			jt.DeleteJournalEntryInput{JournalEntryID: in.ID})
 		if err != nil {
 			return nil, err
 		}

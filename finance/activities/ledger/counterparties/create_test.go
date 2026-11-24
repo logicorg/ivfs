@@ -3,19 +3,19 @@ package counterparties
 import (
 	"time"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	cpt "github.com/logicorg/ivfs/finance/common/types/counterpartytypes"
 	"github.com/logicorg/ivfs/internal/pkg/temporaltesting"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/logicorg/ivfs/pkg/ptr"
 	"github.com/stretchr/testify/require"
 )
 
-func (s *UnitTestSuite) createCounterparty(input lt.CreateCounterpartyInput) lt.CreateCounterpartyResult {
+func (s *UnitTestSuite) createCounterparty(input cpt.CreateCounterpartyInput) cpt.CreateCounterpartyResult {
 	s.T().Helper()
 
 	activityResult, err := s.Env.ExecuteActivity(s.aa.CreateCounterparty, input)
 	require.NoError(s.T(), err)
-	var result lt.CreateCounterpartyResult
+	var result cpt.CreateCounterpartyResult
 	require.NoError(s.T(), activityResult.Get(&result))
 	return result
 }
@@ -35,7 +35,7 @@ func (s *UnitTestSuite) Test_CreateCounterparty() {
 
 	for name, tc := range tests {
 		s.Run(name, func() {
-			activityResult, err := s.Env.ExecuteActivity(s.aa.CreateCounterparty, lt.CreateCounterpartyInput{Name: tc.name})
+			activityResult, err := s.Env.ExecuteActivity(s.aa.CreateCounterparty, cpt.CreateCounterpartyInput{Name: tc.name})
 
 			if tc.errStr != "" {
 				require.ErrorContains(s.T(), err, tc.errStr)
@@ -43,7 +43,7 @@ func (s *UnitTestSuite) Test_CreateCounterparty() {
 				return
 			}
 			require.NoError(s.T(), err)
-			var result lt.CreateCounterpartyResult
+			var result cpt.CreateCounterpartyResult
 			require.NoError(s.T(), activityResult.Get(&result))
 			s.T().Cleanup(func() { temporaltesting.Delete(s.T(), s.DB, (*model.Counterparty)(nil), result.CounterpartyID) })
 
@@ -59,13 +59,13 @@ func (s *UnitTestSuite) Test_CreateCounterparty() {
 // name in another casing, returns the first counterparty and changes nothing,
 // whatever the rest of the request says.
 func (s *UnitTestSuite) Test_CreateCounterparty_Idempotent() {
-	created := s.createCounterparty(lt.CreateCounterpartyInput{Name: "Tesco", ExternalID: ptr.NewPtr("merchant-1")})
-	retried := s.createCounterparty(lt.CreateCounterpartyInput{Name: "Tesco", ExternalID: ptr.NewPtr("merchant-1")})
+	created := s.createCounterparty(cpt.CreateCounterpartyInput{Name: "Tesco", ExternalID: ptr.NewPtr("merchant-1")})
+	retried := s.createCounterparty(cpt.CreateCounterpartyInput{Name: "Tesco", ExternalID: ptr.NewPtr("merchant-1")})
 
 	require.Equal(s.T(), created, retried)
 	require.Equal(s.T(), 1, s.Count[model.Counterparty]())
 
-	different := s.createCounterparty(lt.CreateCounterpartyInput{Name: " TESCO ", ExternalID: ptr.NewPtr("merchant-2")})
+	different := s.createCounterparty(cpt.CreateCounterpartyInput{Name: " TESCO ", ExternalID: ptr.NewPtr("merchant-2")})
 
 	require.Equal(s.T(), created, different)
 	require.Equal(s.T(), 1, s.Count[model.Counterparty]())
@@ -76,7 +76,7 @@ func (s *UnitTestSuite) Test_CreateCounterparty_Idempotent() {
 }
 
 type counterpartyOutcome struct {
-	result *lt.CreateCounterpartyResult
+	result *cpt.CreateCounterpartyResult
 	err    error
 }
 
@@ -95,7 +95,7 @@ func (s *UnitTestSuite) Test_CreateCounterparty_RetryWaitsForConcurrentWriter() 
 
 	done := make(chan counterpartyOutcome, 1)
 	go func() {
-		result, err := s.aa.CreateCounterparty(s.T().Context(), lt.CreateCounterpartyInput{Name: "tesco"})
+		result, err := s.aa.CreateCounterparty(s.T().Context(), cpt.CreateCounterpartyInput{Name: "tesco"})
 		done <- counterpartyOutcome{result, err}
 	}()
 	select {

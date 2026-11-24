@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	"github.com/logicorg/ivfs/internal/pkg/temporaltesting"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/shopspring/decimal"
@@ -120,9 +120,9 @@ func (s *UnitTestSuite) Test_RewriteEntryTx_Tags() {
 			_, err := s.DB.NewInsert().Model(&model.JournalEntryTag{JournalEntryID: entry.ID, TagID: tags[0].ID}).Exec(ctx)
 			require.NoError(s.T(), err)
 
-			input := lt.PostJournalEntryInput{
+			input := jt.PostJournalEntryInput{
 				OccurredAt: entry.OccurredAt,
-				Postings: []lt.PostingInput{
+				Postings: []jt.PostingInput{
 					{LedgerAccountID: s.debit.ID, Amount: decimal.NewFromInt(10), Side: model.PostingDebit},
 					{LedgerAccountID: s.credit.ID, Amount: decimal.NewFromInt(10), Side: model.PostingCredit},
 				},

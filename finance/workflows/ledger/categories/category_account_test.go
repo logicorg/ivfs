@@ -3,8 +3,8 @@ package categories
 import (
 	"errors"
 
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	ct "github.com/logicorg/ivfs/finance/common/types/categorytypes"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/stretchr/testify/mock"
@@ -60,11 +60,11 @@ func (s *WorkflowUnitTestSuite) TestCategoryAccount() {
 			}
 			if tc.wantAccount != "" {
 				creation := env.OnWorkflow(ledgeraccountswf.CreateLedgerAccount, mock.Anything,
-					lt.CreateLedgerAccountInput{CurrencyID: 2, Name: tc.wantAccount, Kind: tc.kind}).Once()
+					act.CreateLedgerAccountInput{CurrencyID: 2, Name: tc.wantAccount, Kind: tc.kind}).Once()
 				if tc.createErr != "" {
 					creation.Return(nil, errors.New(tc.createErr))
 				} else {
-					creation.Return(&lt.CreateLedgerAccountResult{LedgerAccountID: 200}, nil)
+					creation.Return(&act.CreateLedgerAccountResult{LedgerAccountID: 200}, nil)
 				}
 			}
 

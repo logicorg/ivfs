@@ -1,7 +1,7 @@
 package counterparties
 
 import (
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	cpt "github.com/logicorg/ivfs/finance/common/types/counterpartytypes"
 	"github.com/logicorg/ivfs/internal/pkg/temporaltesting"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/stretchr/testify/require"
@@ -12,24 +12,24 @@ func (s *UnitTestSuite) Test_RenameCounterparty() {
 	temporaltesting.Insert(s.T(), s.DB, counterparty)
 
 	tests := map[string]struct {
-		params  lt.RenameCounterpartyInput
+		params  cpt.RenameCounterpartyInput
 		expErr  bool
 		expName string
 	}{
 		"rename": {
-			params:  lt.RenameCounterpartyInput{CounterpartyID: counterparty.ID, Name: "Tesco Ltd"},
+			params:  cpt.RenameCounterpartyInput{CounterpartyID: counterparty.ID, Name: "Tesco Ltd"},
 			expName: "Tesco Ltd",
 		},
 		"blank name": {
-			params: lt.RenameCounterpartyInput{CounterpartyID: counterparty.ID, Name: "   "},
+			params: cpt.RenameCounterpartyInput{CounterpartyID: counterparty.ID, Name: "   "},
 			expErr: true,
 		},
 		"invalid id": {
-			params: lt.RenameCounterpartyInput{CounterpartyID: 0, Name: "x"},
+			params: cpt.RenameCounterpartyInput{CounterpartyID: 0, Name: "x"},
 			expErr: true,
 		},
 		"not found": {
-			params: lt.RenameCounterpartyInput{CounterpartyID: 999999, Name: "x"},
+			params: cpt.RenameCounterpartyInput{CounterpartyID: 999999, Name: "x"},
 			expErr: true,
 		},
 	}
@@ -55,7 +55,7 @@ func (s *UnitTestSuite) Test_RenameCounterparty() {
 }
 
 func (s *UnitTestSuite) Test_RenameCounterparty_NotFound() {
-	_, err := s.Env.ExecuteActivity(s.aa.RenameCounterparty, lt.RenameCounterpartyInput{
+	_, err := s.Env.ExecuteActivity(s.aa.RenameCounterparty, cpt.RenameCounterpartyInput{
 		CounterpartyID: 999999,
 		Name:           "x",
 	})
@@ -66,7 +66,7 @@ func (s *UnitTestSuite) Test_RenameCounterparty_Idempotency() {
 	counterparty := &model.Counterparty{Name: "Tesco"}
 	temporaltesting.Insert(s.T(), s.DB, counterparty)
 
-	params := lt.RenameCounterpartyInput{CounterpartyID: counterparty.ID, Name: "Tesco Ltd"}
+	params := cpt.RenameCounterpartyInput{CounterpartyID: counterparty.ID, Name: "Tesco Ltd"}
 
 	_, err := s.Env.ExecuteActivity(s.aa.RenameCounterparty, params)
 	require.NoError(s.T(), err)
@@ -110,7 +110,7 @@ func (s *UnitTestSuite) Test_RenameCounterparty_Taken() {
 		target := tc.target(tesco, waitrose)
 
 		s.Run(name, func() {
-			_, err := s.Env.ExecuteActivity(s.aa.RenameCounterparty, lt.RenameCounterpartyInput{CounterpartyID: target.ID, Name: tc.newName})
+			_, err := s.Env.ExecuteActivity(s.aa.RenameCounterparty, cpt.RenameCounterpartyInput{CounterpartyID: target.ID, Name: tc.newName})
 
 			if tc.errStr != "" {
 				require.ErrorContains(s.T(), err, tc.errStr)

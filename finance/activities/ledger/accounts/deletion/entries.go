@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	ledgerdeletion "github.com/logicorg/ivfs/finance/activities/ledger/internal/deletion"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/uptrace/bun"
@@ -23,7 +24,7 @@ import (
 //
 // It refuses a shared or stray target that has entries with
 // ErrResourceConflict. A target that does not exist has nothing to handle.
-func (a *Activities) HandleEntriesForDeletion(ctx context.Context, input lt.DeletionBatchInput) (*lt.DeletionBatchResult, error) {
+func (a *Activities) HandleEntriesForDeletion(ctx context.Context, input act.DeletionBatchInput) (*act.DeletionBatchResult, error) {
 	db, err := a.Pools.For(ctx)
 	if err != nil {
 		return nil, err
@@ -33,7 +34,7 @@ func (a *Activities) HandleEntriesForDeletion(ctx context.Context, input lt.Dele
 		return nil, err
 	}
 
-	result := &lt.DeletionBatchResult{}
+	result := &act.DeletionBatchResult{}
 	err = db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
 		target, err := loadDeletionTargetTx(ctx, tx, input.Target)
 		if err != nil || target == nil {

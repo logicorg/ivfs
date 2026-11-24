@@ -1,4 +1,4 @@
-package ledgertypes
+package portfoliotypes
 
 import (
 	"testing"

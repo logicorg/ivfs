@@ -3,7 +3,8 @@ package portfolio
 import (
 	"github.com/google/uuid"
 	activity "github.com/logicorg/ivfs/finance/activities/ledger/portfolio"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
+	pft "github.com/logicorg/ivfs/finance/common/types/portfoliotypes"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -19,7 +20,7 @@ func (s *WorkflowUnitTestSuite) TestRegisterInvestmentTrade() {
 		{
 			name: "success",
 			result: []any{
-				&lt.RegisterInvestmentTradeResult{
+				&pft.RegisterInvestmentTradeResult{
 					JournalEntryID:     10,
 					PositionMovementID: 20,
 				},
@@ -36,8 +37,8 @@ func (s *WorkflowUnitTestSuite) TestRegisterInvestmentTrade() {
 		},
 	}
 
-	input := lt.RegisterInvestmentTradeInput{
-		Entry:              lt.PostJournalEntryInput{IdempotencyKey: "buy-aapl-1"},
+	input := pft.RegisterInvestmentTradeInput{
+		Entry:              jt.PostJournalEntryInput{IdempotencyKey: "buy-aapl-1"},
 		FinancialAccountID: 1,
 		AssetID:            2,
 		UnitsDelta:         decimal.NewFromInt(1),
@@ -57,7 +58,7 @@ func (s *WorkflowUnitTestSuite) TestRegisterInvestmentTrade() {
 				return
 			}
 			require.NoError(s.T(), env.GetWorkflowError())
-			var result *lt.RegisterInvestmentTradeResult
+			var result *pft.RegisterInvestmentTradeResult
 			require.NoError(s.T(), env.GetWorkflowResult(&result))
 			assert.Equal(s.T(), tc.result[0], result)
 		})
@@ -69,17 +70,17 @@ func (s *WorkflowUnitTestSuite) TestRegisterInvestmentTrade() {
 // the activity is called, and that two independent executions produce two
 // different generated keys.
 func (s *WorkflowUnitTestSuite) TestRegisterInvestmentTradeDefaultsIdempotencyKey() {
-	input := lt.RegisterInvestmentTradeInput{FinancialAccountID: 1, AssetID: 2, UnitsDelta: decimal.NewFromInt(1)}
+	input := pft.RegisterInvestmentTradeInput{FinancialAccountID: 1, AssetID: 2, UnitsDelta: decimal.NewFromInt(1)}
 
 	var generated [2]string
 	for i := range generated {
 		env := s.NewTestWorkflowEnvironment()
 		pa := activity.Activities{}
 
-		env.OnActivity(pa.RegisterInvestmentTrade, mock.Anything, mock.MatchedBy(func(got lt.RegisterInvestmentTradeInput) bool {
+		env.OnActivity(pa.RegisterInvestmentTrade, mock.Anything, mock.MatchedBy(func(got pft.RegisterInvestmentTradeInput) bool {
 			generated[i] = got.Entry.IdempotencyKey
 			return true
-		})).Return(&lt.RegisterInvestmentTradeResult{JournalEntryID: 1, PositionMovementID: 1}, nil)
+		})).Return(&pft.RegisterInvestmentTradeResult{JournalEntryID: 1, PositionMovementID: 1}, nil)
 
 		env.ExecuteWorkflow(RegisterInvestmentTrade, input)
 		require.NoError(s.T(), env.GetWorkflowError())

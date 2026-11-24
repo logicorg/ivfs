@@ -6,13 +6,13 @@ import (
 	"fmt"
 	"strings"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	cpt "github.com/logicorg/ivfs/finance/common/types/counterpartytypes"
 	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/uptrace/bun"
 )
 
-func (a *Activities) RetrieveCounterparty(ctx context.Context, params lt.RetrieveCounterpartyParams) (*lt.RetrieveCounterpartyResult, error) {
+func (a *Activities) RetrieveCounterparty(ctx context.Context, params cpt.RetrieveCounterpartyParams) (*cpt.RetrieveCounterpartyResult, error) {
 	db, err := a.Pools.For(ctx)
 	if err != nil {
 		return nil, err
@@ -30,7 +30,7 @@ func (a *Activities) RetrieveCounterparty(ctx context.Context, params lt.Retriev
 		case counterparty == nil:
 			return nil, internalerrors.ErrNotFound{ResourceType: "Counterparty", ID: params.Name}
 		default:
-			return &lt.RetrieveCounterpartyResult{Counterparty: counterparty}, nil
+			return &cpt.RetrieveCounterpartyResult{Counterparty: counterparty}, nil
 		}
 	}
 
@@ -38,10 +38,10 @@ func (a *Activities) RetrieveCounterparty(ctx context.Context, params lt.Retriev
 	if err != nil {
 		return nil, err
 	}
-	return &lt.RetrieveCounterpartyResult{Counterparty: counterparty}, nil
+	return &cpt.RetrieveCounterpartyResult{Counterparty: counterparty}, nil
 }
 
-func (a *Activities) ListCounterparties(ctx context.Context, params lt.ListCounterpartiesParams) (*lt.ListCounterpartiesResult, error) {
+func (a *Activities) ListCounterparties(ctx context.Context, params cpt.ListCounterpartiesParams) (*cpt.ListCounterpartiesResult, error) {
 	db, err := a.Pools.For(ctx)
 	if err != nil {
 		return nil, err
@@ -56,7 +56,7 @@ func (a *Activities) ListCounterparties(ctx context.Context, params lt.ListCount
 	if err := query.Scan(ctx, &counterparties); err != nil {
 		return nil, fmt.Errorf("list counterparties: %w", err)
 	}
-	return &lt.ListCounterpartiesResult{Counterparties: counterparties}, nil
+	return &cpt.ListCounterpartiesResult{Counterparties: counterparties}, nil
 }
 
 // loadCounterparty retrieves a Counterparty by ID or returns

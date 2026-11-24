@@ -1,3 +1,5 @@
+// Package ledgertypes holds the ledger primitives shared across the types
+// packages: reserved account names and the negative-holding policy.
 package ledgertypes
 
 import (

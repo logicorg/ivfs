@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	cpt "github.com/logicorg/ivfs/finance/common/types/counterpartytypes"
 	"github.com/logicorg/ivfs/pkg/model"
 )
 
@@ -13,7 +13,7 @@ import (
 // movements are untouched, so no balance or holding changes. It is one
 // statement and needs no transaction. A retry finds nothing left to clear and
 // reports 0.
-func (a *Activities) ClearCounterpartyReferences(ctx context.Context, input lt.ClearCounterpartyReferencesInput) (*lt.ClearCounterpartyReferencesResult, error) {
+func (a *Activities) ClearCounterpartyReferences(ctx context.Context, input cpt.ClearCounterpartyReferencesInput) (*cpt.ClearCounterpartyReferencesResult, error) {
 	db, err := a.Pools.For(ctx)
 	if err != nil {
 		return nil, err
@@ -35,5 +35,5 @@ func (a *Activities) ClearCounterpartyReferences(ctx context.Context, input lt.C
 	if err != nil {
 		return nil, fmt.Errorf("count cleared counterparty references: %w", err)
 	}
-	return &lt.ClearCounterpartyReferencesResult{Cleared: cleared}, nil
+	return &cpt.ClearCounterpartyReferencesResult{Cleared: cleared}, nil
 }

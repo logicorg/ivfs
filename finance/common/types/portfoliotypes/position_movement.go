@@ -1,4 +1,6 @@
-package ledgertypes
+// Package portfoliotypes holds the inputs and results of the position
+// movement, trade and vest activities and workflows.
+package portfoliotypes
 
 import (
 	"fmt"
@@ -6,6 +8,7 @@ import (
 	"time"
 
 	"cuelang.org/go/cuego"
+	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/shopspring/decimal"
@@ -58,7 +61,7 @@ type RegisterPositionMovementResult struct {
 	PositionMovementIDs []int64 `json:"positionMovementIds"`
 	// Warnings lists the holdings that are negative after the movement, which
 	// was written regardless.
-	Warnings []NegativeHolding `json:"warnings,omitempty"`
+	Warnings []lt.NegativeHolding `json:"warnings,omitempty"`
 }
 
 // Validate checks the command without the database.
