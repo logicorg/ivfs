@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/logicorg/ivfs/finance/activities/ledger/internal/positions"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/uptrace/bun"
@@ -18,7 +18,7 @@ import (
 // accounts, or while it still holds units of an asset; those must be closed or
 // moved out first so a balance is never left stranded under a closed financial
 // account.
-func (a *Activities) CloseFinancialAccount(ctx context.Context, input lt.CloseFinancialAccountInput) error {
+func (a *Activities) CloseFinancialAccount(ctx context.Context, input act.CloseFinancialAccountInput) error {
 	db, err := a.Pools.For(ctx)
 	if err != nil {
 		return err

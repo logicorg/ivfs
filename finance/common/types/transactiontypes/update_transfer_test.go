@@ -21,6 +21,8 @@ func TestUpdateTransferInput_Validate(t *testing.T) {
 		wantError string
 	}{
 		"a transfer":         {mutate: func(*UpdateTransferInput) {}},
+		"with tags":          {mutate: func(i *UpdateTransferInput) { i.TagIDs = []int64{3, 4} }},
+		"a tag id of zero":   {mutate: func(i *UpdateTransferInput) { i.TagIDs = []int64{3, 0} }, wantError: "tag id 0"},
 		"without an arrival": {mutate: func(i *UpdateTransferInput) { i.ToAmount = decimal.Zero }},
 		"no journal entry":   {mutate: func(i *UpdateTransferInput) { i.JournalEntryID = 0 }, wantError: "validation error"},
 		"no source":          {mutate: func(i *UpdateTransferInput) { i.FromLedgerAccountID = 0 }, wantError: "validation error"},

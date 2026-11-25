@@ -3,8 +3,12 @@ import type { Category, CategoryTotal } from "@/api"
 import { addDecimals, compareDecimals, negate } from "./decimal"
 
 // A PeriodRow is a top-level category's total, with the totals of every
-// category under it rolled up into it.
-export type PeriodRow = { id: number; name: string; kind: Category["kind"]; total: string }
+// category under it rolled up into it, or, without an id, the total of what
+// has no category.
+export type PeriodRow = { id?: number; name: string; kind: Category["kind"]; total: string }
+
+// uncategorizedName names the row of what has no category.
+export const uncategorizedName = "Uncategorized"
 
 // CurrencyPeriod is what was earned and spent in one currency over a period,
 // and the difference, as exact decimal strings.
@@ -20,9 +24,13 @@ export type CurrencyPeriod = {
 // periodTotals sums each category's total into its top-level category, and
 // those by currency, sorted by code. A category whose parent is not listed is
 // its own top level, and one that is not listed at all is shown by its id.
+// What has no category is a row of its own in each kind.
 export function periodTotals(totals: CategoryTotal[], categories: Category[]): CurrencyPeriod[] {
   const byID = new Map(categories.map((category) => [category.id, category]))
-  const topLevel = (id: number): { id: number; name: string } => {
+  const topLevel = (id: number | undefined): { id?: number; name: string } => {
+    if (id === undefined) {
+      return { name: uncategorizedName }
+    }
     let category = byID.get(id)
     if (!category) {
       return { id, name: `Category ${id}` }
@@ -33,13 +41,16 @@ export function periodTotals(totals: CategoryTotal[], categories: Category[]): C
     return category
   }
 
-  const periods = new Map<string, Map<number, PeriodRow>>()
-  for (const { id, kind, currencyCode, total } of totals) {
-    const rows = periods.get(currencyCode) ?? new Map<number, PeriodRow>()
-    const root = topLevel(id)
-    const row = rows.get(root.id) ?? { id: root.id, name: root.name, kind, total: "0" }
+  const periods = new Map<string, Map<string, PeriodRow>>()
+  for (const { categoryId, kind, currencyCode, total } of totals) {
+    const rows = periods.get(currencyCode) ?? new Map<string, PeriodRow>()
+    const root = topLevel(categoryId)
+    // The kind is part of the key for the rows without a category, one of
+    // each kind.
+    const key = `${kind}:${root.id ?? ""}`
+    const row = rows.get(key) ?? { id: root.id, name: root.name, kind, total: "0" }
     row.total = addDecimals(row.total, total)
-    rows.set(root.id, row)
+    rows.set(key, row)
     periods.set(currencyCode, rows)
   }
 

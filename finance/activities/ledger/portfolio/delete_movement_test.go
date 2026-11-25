@@ -3,7 +3,7 @@ package portfolio
 import (
 	"time"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	pft "github.com/logicorg/ivfs/finance/common/types/portfoliotypes"
 	"github.com/logicorg/ivfs/internal/pkg/temporaltesting"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/logicorg/ivfs/pkg/ptr"
@@ -102,10 +102,10 @@ func (s *UnitTestSuite) Test_DeletePositionMovement() {
 				})
 			}
 
-			activityResult, err := s.Env.ExecuteActivity(s.pa.DeletePositionMovement, lt.DeletePositionMovementInput{MovementID: target.ID})
+			activityResult, err := s.Env.ExecuteActivity(s.pa.DeletePositionMovement, pft.DeletePositionMovementInput{MovementID: target.ID})
 
 			require.NoError(s.T(), err)
-			var result lt.DeletePositionMovementResult
+			var result pft.DeletePositionMovementResult
 			require.NoError(s.T(), activityResult.Get(&result))
 			require.Zero(s.T(), s.movementsExist(gone))
 			require.EqualValues(s.T(), len(kept), s.movementsExist(kept))
@@ -126,16 +126,16 @@ func (s *UnitTestSuite) Test_DeletePositionMovement() {
 // deleted leaves no row behind.
 func (s *UnitTestSuite) Test_DeletePositionMovement_Rejected() {
 	tests := map[string]struct {
-		input   func(asset *model.Asset) lt.DeletePositionMovementInput
+		input   func(asset *model.Asset) pft.DeletePositionMovementInput
 		failure string
 	}{
 		"no movement": {
 			failure: "validation error",
-			input:   func(*model.Asset) lt.DeletePositionMovementInput { return lt.DeletePositionMovementInput{} },
+			input:   func(*model.Asset) pft.DeletePositionMovementInput { return pft.DeletePositionMovementInput{} },
 		},
 		"a movement of a journal entry": {
 			failure: "delete the journal entry",
-			input: func(asset *model.Asset) lt.DeletePositionMovementInput {
+			input: func(asset *model.Asset) pft.DeletePositionMovementInput {
 				movement := &model.PositionMovement{FinancialAccountID: s.financialAccount.ID, AssetID: asset.ID, UnitsDelta: decimal.NewFromInt(5), Kind: model.PositionMovementTrade}
 				temporaltesting.InsertPostedJournalEntryWithMovements(s.T(), s.DB,
 					&model.JournalEntry{OccurredAt: movementDay},
@@ -144,7 +144,7 @@ func (s *UnitTestSuite) Test_DeletePositionMovement_Rejected() {
 						{LedgerAccountID: s.cash.ID, Amount: decimal.NewFromInt(50), Side: model.PostingCredit},
 					},
 					[]*model.PositionMovement{movement})
-				return lt.DeletePositionMovementInput{MovementID: movement.ID}
+				return pft.DeletePositionMovementInput{MovementID: movement.ID}
 			},
 		},
 	}
@@ -169,18 +169,18 @@ func (s *UnitTestSuite) Test_DeletePositionMovement_Rejected() {
 func (s *UnitTestSuite) Test_DeletePositionMovement_Idempotent() {
 	purchase := s.seedAdjustment("purchase", s.asset, 10, 1)
 	sale := s.seedAdjustment("sale", s.asset, -10, 5)
-	input := lt.DeletePositionMovementInput{MovementID: purchase.ID}
+	input := pft.DeletePositionMovementInput{MovementID: purchase.ID}
 
 	first, err := s.Env.ExecuteActivity(s.pa.DeletePositionMovement, input)
 	require.NoError(s.T(), err)
-	var created lt.DeletePositionMovementResult
+	var created pft.DeletePositionMovementResult
 	require.NoError(s.T(), first.Get(&created))
 	require.Len(s.T(), created.Warnings, 1)
 	require.Equal(s.T(), 1, s.Count[model.PositionMovement]())
 
 	second, err := s.Env.ExecuteActivity(s.pa.DeletePositionMovement, input)
 	require.NoError(s.T(), err)
-	var retried lt.DeletePositionMovementResult
+	var retried pft.DeletePositionMovementResult
 	require.NoError(s.T(), second.Get(&retried))
 	require.Empty(s.T(), retried.Warnings, "a delete that finds nothing touches no position")
 	require.Equal(s.T(), 1, s.Count[model.PositionMovement]())

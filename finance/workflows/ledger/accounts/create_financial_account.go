@@ -2,8 +2,7 @@ package accounts
 
 import (
 	"fmt"
-
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	"github.com/logicorg/ivfs/finance/workflows"
 	"go.temporal.io/sdk/workflow"
 )
@@ -11,7 +10,7 @@ import (
 // CreateFinancialAccount is a workflow that creates a financial account. It
 // refuses to create "Untracked accounts" under the "Untracked" institution,
 // which only the ledger creates.
-func CreateFinancialAccount(ctx workflow.Context, input lt.CreateFinancialAccountInput) (*lt.CreateFinancialAccountResult, error) {
+func CreateFinancialAccount(ctx workflow.Context, input act.CreateFinancialAccountInput) (*act.CreateFinancialAccountResult, error) {
 	ctx = workflow.WithActivityOptions(ctx, workflows.GetDefaultActivityOptions())
 
 	untracked, err := isUntrackedFinancialAccount(ctx, input.InstitutionID, input.Name)
@@ -22,7 +21,7 @@ func CreateFinancialAccount(ctx workflow.Context, input lt.CreateFinancialAccoun
 		return nil, becomingUntrackedFinancialAccountError(input.Name, "created")
 	}
 
-	var result lt.CreateFinancialAccountResult
+	var result act.CreateFinancialAccountResult
 	if err := workflow.ExecuteActivity(ctx, la.CreateFinancialAccount, input).Get(ctx, &result); err != nil {
 		return nil, fmt.Errorf("create financial account: %w", err)
 	}

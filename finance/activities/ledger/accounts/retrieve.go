@@ -4,14 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/uptrace/bun"
 )
 
-func (a *Activities) RetrieveLedgerAccount(ctx context.Context, params lt.RetrieveLedgerAccountParams) (*lt.RetrieveLedgerAccountResult, error) {
+func (a *Activities) RetrieveLedgerAccount(ctx context.Context, params act.RetrieveLedgerAccountParams) (*act.RetrieveLedgerAccountResult, error) {
 	db, err := a.Pools.For(ctx)
 	if err != nil {
 		return nil, err
@@ -25,7 +24,6 @@ func (a *Activities) RetrieveLedgerAccount(ctx context.Context, params lt.Retrie
 	err = model.FindLedgerAccountByIDQuery(db, params.ID).
 		Relation("Currency").
 		Relation("FinancialAccount").
-		Relation("Parent").
 		Scan(ctx, account)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -33,10 +31,10 @@ func (a *Activities) RetrieveLedgerAccount(ctx context.Context, params lt.Retrie
 		}
 		return nil, fmt.Errorf("retrieve ledger account: %w", err)
 	}
-	return &lt.RetrieveLedgerAccountResult{LedgerAccount: account}, nil
+	return &act.RetrieveLedgerAccountResult{LedgerAccount: account}, nil
 }
 
-func (a *Activities) ListLedgerAccounts(ctx context.Context, params lt.ListLedgerAccountsParams) (*lt.ListLedgerAccountsResult, error) {
+func (a *Activities) ListLedgerAccounts(ctx context.Context, params act.ListLedgerAccountsParams) (*act.ListLedgerAccountsResult, error) {
 	db, err := a.Pools.For(ctx)
 	if err != nil {
 		return nil, err
@@ -48,12 +46,9 @@ func (a *Activities) ListLedgerAccounts(ctx context.Context, params lt.ListLedge
 
 	query := db.NewSelect().Model((*model.LedgerAccount)(nil)).
 		Relation("Currency").
-		OrderExpr("la.parent_id NULLS FIRST, la.id ASC")
+		OrderExpr("la.id ASC")
 	if params.FinancialAccountID != nil {
 		query = query.Where("la.financial_account_id = ?", *params.FinancialAccountID)
-	}
-	if params.ParentID != nil {
-		query = query.Where("la.parent_id = ?", *params.ParentID)
 	}
 	if params.CurrencyID != nil {
 		query = query.Where("la.currency_id = ?", *params.CurrencyID)
@@ -72,5 +67,5 @@ func (a *Activities) ListLedgerAccounts(ctx context.Context, params lt.ListLedge
 	if err := query.Scan(ctx, &accounts); err != nil {
 		return nil, fmt.Errorf("list ledger accounts: %w", err)
 	}
-	return &lt.ListLedgerAccountsResult{LedgerAccounts: accounts}, nil
+	return &act.ListLedgerAccountsResult{LedgerAccounts: accounts}, nil
 }

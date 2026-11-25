@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	pft "github.com/logicorg/ivfs/finance/common/types/portfoliotypes"
 	portfoliowf "github.com/logicorg/ivfs/finance/workflows/ledger/portfolio"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/logicorg/ivfs/web/api/gateway"
@@ -23,7 +23,7 @@ func registerListMovements(api huma.API, c client.Client) {
 		Tags:   tags,
 		Errors: []int{http.StatusUnprocessableEntity},
 	}, func(ctx context.Context, in *ListMovementsInput) (*ListMovementsOutput, error) {
-		params := lt.ListPositionMovementsParams{
+		params := pft.ListPositionMovementsParams{
 			FinancialAccountID: in.FinancialAccountID, AssetID: in.AssetID, From: in.From, To: in.To, Limit: in.Limit,
 		}
 		if in.After != "" {
@@ -38,7 +38,7 @@ func registerListMovements(api huma.API, c client.Client) {
 			params.Kinds = append(params.Kinds, model.PositionMovementKind(kind))
 		}
 
-		result, err := gateway.RunWorkflow[lt.ListPositionMovementsResult](ctx, c, portfoliowf.ListPositionMovements, params)
+		result, err := gateway.RunWorkflow[pft.ListPositionMovementsResult](ctx, c, portfoliowf.ListPositionMovements, params)
 		if err != nil {
 			return nil, err
 		}

@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/logicorg/ivfs/finance/activities/ledger/internal/posting"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	fxt "github.com/logicorg/ivfs/finance/common/types/fxtypes"
 	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/uptrace/bun"
@@ -15,7 +15,7 @@ import (
 // journal entry, validating that every account involved is open and of the
 // right kind and currency. Retrying with the same idempotency key returns
 // the original entry without comparing the rest of the request.
-func (a *Activities) RegisterFXConversion(ctx context.Context, input lt.RegisterFXConversionInput) (*lt.RegisterFXConversionResult, error) {
+func (a *Activities) RegisterFXConversion(ctx context.Context, input fxt.RegisterFXConversionInput) (*fxt.RegisterFXConversionResult, error) {
 	db, err := a.Pools.For(ctx)
 	if err != nil {
 		return nil, err
@@ -25,14 +25,14 @@ func (a *Activities) RegisterFXConversion(ctx context.Context, input lt.Register
 		return nil, err
 	}
 
-	result := &lt.RegisterFXConversionResult{}
+	result := &fxt.RegisterFXConversionResult{}
 	err = db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
 		existing, err := posting.FindEntryByIdempotencyKeyTx(ctx, tx, input.IdempotencyKey)
 		if err != nil {
 			return err
 		}
 		if existing != nil {
-			if existing.Metadata["type"] != lt.FXConversionEntryType {
+			if existing.Metadata["type"] != fxt.FXConversionEntryType {
 				return internalerrors.ErrResourceConflict{ResourceType: "JournalEntry", Reason: "idempotency key belongs to an entry that is not an FX conversion"}
 			}
 			result.JournalEntryID = existing.ID

@@ -2,15 +2,15 @@ package accounts
 
 import (
 	"fmt"
-
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	"github.com/logicorg/ivfs/finance/workflows"
 	"go.temporal.io/sdk/workflow"
 )
 
 // RenameLedgerAccount renames a ledger account. It refuses to rename a shared
-// or stray account, or to give a top-level account one of their names.
-func RenameLedgerAccount(ctx workflow.Context, input lt.RenameLedgerAccountInput) (*lt.LedgerAccountMutationResult, error) {
+// or stray account, or to give an account of no financial account one of
+// their names.
+func RenameLedgerAccount(ctx workflow.Context, input act.RenameLedgerAccountInput) (*act.LedgerAccountMutationResult, error) {
 	ctx = workflow.WithActivityOptions(ctx, workflows.GetDefaultActivityOptions())
 
 	account, err := retrieveLedgerAccount(ctx, input.LedgerAccountID)
@@ -26,7 +26,7 @@ func RenameLedgerAccount(ctx workflow.Context, input lt.RenameLedgerAccountInput
 		return nil, err
 	}
 
-	var result lt.LedgerAccountMutationResult
+	var result act.LedgerAccountMutationResult
 	if err := workflow.ExecuteActivity(ctx, la.RenameLedgerAccount, input).Get(ctx, &result); err != nil {
 		return nil, fmt.Errorf("rename ledger account: %w", err)
 	}

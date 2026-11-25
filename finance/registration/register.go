@@ -10,6 +10,9 @@ import (
 	"github.com/logicorg/ivfs/finance/activities/currency/currency"
 	"github.com/logicorg/ivfs/finance/activities/institution"
 	ledgeraccounts "github.com/logicorg/ivfs/finance/activities/ledger/accounts"
+	ledgeraccountdeletion "github.com/logicorg/ivfs/finance/activities/ledger/accounts/deletion"
+	ledgercategories "github.com/logicorg/ivfs/finance/activities/ledger/categories"
+	ledgercounterparties "github.com/logicorg/ivfs/finance/activities/ledger/counterparties"
 	ledgerfx "github.com/logicorg/ivfs/finance/activities/ledger/fx"
 	ledgerjournal "github.com/logicorg/ivfs/finance/activities/ledger/journal"
 	ledgerportfolio "github.com/logicorg/ivfs/finance/activities/ledger/portfolio"
@@ -20,11 +23,13 @@ import (
 	"github.com/logicorg/ivfs/finance/workflows/assets/assetvalues"
 	"github.com/logicorg/ivfs/finance/workflows/currencies"
 	"github.com/logicorg/ivfs/finance/workflows/facade/accountsetup"
-	"github.com/logicorg/ivfs/finance/workflows/facade/categories"
 	"github.com/logicorg/ivfs/finance/workflows/facade/investments"
+	"github.com/logicorg/ivfs/finance/workflows/facade/presets"
 	"github.com/logicorg/ivfs/finance/workflows/facade/transactions"
 	institutionwf "github.com/logicorg/ivfs/finance/workflows/institution"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
+	"github.com/logicorg/ivfs/finance/workflows/ledger/categories"
+	ledgercounterpartieswf "github.com/logicorg/ivfs/finance/workflows/ledger/counterparties"
 	ledgerfxwf "github.com/logicorg/ivfs/finance/workflows/ledger/fx"
 	ledgerjournalwf "github.com/logicorg/ivfs/finance/workflows/ledger/journal"
 	ledgerportfoliowf "github.com/logicorg/ivfs/finance/workflows/ledger/portfolio"
@@ -45,6 +50,9 @@ func Register(r worker.Registry, pools tenancy.Pools) {
 	conversionActivity := conversion.Conversion{Pools: pools}
 	tagActivity := tag.Tag{Pools: pools}
 	ledgerAccountsActivity := ledgeraccounts.Activities{Pools: pools}
+	ledgerAccountDeletionActivity := ledgeraccountdeletion.Activities{Pools: pools}
+	ledgerCounterpartiesActivity := ledgercounterparties.Activities{Pools: pools}
+	ledgerCategoriesActivity := ledgercategories.Activities{Pools: pools}
 	ledgerFXActivity := ledgerfx.Activities{Pools: pools}
 	ledgerJournalActivity := ledgerjournal.Activities{Pools: pools}
 	ledgerPortfolioActivity := ledgerportfolio.Activities{Pools: pools}
@@ -58,6 +66,9 @@ func Register(r worker.Registry, pools tenancy.Pools) {
 	r.RegisterActivity(&conversionActivity)
 	r.RegisterActivity(&tagActivity)
 	r.RegisterActivity(&ledgerAccountsActivity)
+	r.RegisterActivity(&ledgerAccountDeletionActivity)
+	r.RegisterActivity(&ledgerCounterpartiesActivity)
+	r.RegisterActivity(&ledgerCategoriesActivity)
 	r.RegisterActivity(&ledgerFXActivity)
 	r.RegisterActivity(&ledgerJournalActivity)
 	r.RegisterActivity(&ledgerPortfolioActivity)
@@ -74,6 +85,8 @@ func Register(r worker.Registry, pools tenancy.Pools) {
 
 	r.RegisterWorkflow(accountsetup.AddBalance)
 	r.RegisterWorkflow(accountsetup.OpenAccount)
+
+	r.RegisterWorkflow(presets.ApplyPreset)
 
 	r.RegisterWorkflow(categories.CreateCategory)
 	r.RegisterWorkflow(categories.RetrieveCategory)
@@ -122,6 +135,7 @@ func Register(r worker.Registry, pools tenancy.Pools) {
 	r.RegisterWorkflow(ledgerjournalwf.DeleteJournalEntry)
 	r.RegisterWorkflow(ledgerjournalwf.ReplaceJournalEntry)
 	r.RegisterWorkflow(ledgerjournalwf.ListJournalEntries)
+	r.RegisterWorkflow(ledgerjournalwf.SetJournalEntryTags)
 	r.RegisterWorkflow(ledgerreportingwf.LedgerAccountBalance)
 	r.RegisterWorkflow(ledgeraccountswf.CreateFinancialAccount)
 	r.RegisterWorkflow(ledgeraccountswf.RetrieveFinancialAccount)
@@ -129,16 +143,15 @@ func Register(r worker.Registry, pools tenancy.Pools) {
 	r.RegisterWorkflow(ledgeraccountswf.UpdateFinancialAccountMetadata)
 	r.RegisterWorkflow(ledgeraccountswf.CloseFinancialAccount)
 	r.RegisterWorkflow(ledgeraccountswf.CreateLedgerAccount)
-	r.RegisterWorkflow(ledgeraccountswf.CreateCounterparty)
-	r.RegisterWorkflow(ledgeraccountswf.RetrieveCounterparty)
-	r.RegisterWorkflow(ledgeraccountswf.ListCounterparties)
-	r.RegisterWorkflow(ledgeraccountswf.RenameCounterparty)
-	r.RegisterWorkflow(ledgeraccountswf.DeleteCounterparty)
+	r.RegisterWorkflow(ledgercounterpartieswf.CreateCounterparty)
+	r.RegisterWorkflow(ledgercounterpartieswf.RetrieveCounterparty)
+	r.RegisterWorkflow(ledgercounterpartieswf.ListCounterparties)
+	r.RegisterWorkflow(ledgercounterpartieswf.RenameCounterparty)
+	r.RegisterWorkflow(ledgercounterpartieswf.DeleteCounterparty)
 	r.RegisterWorkflow(ledgeraccountswf.RetrieveLedgerAccount)
 	r.RegisterWorkflow(ledgeraccountswf.ListLedgerAccounts)
 	r.RegisterWorkflow(ledgeraccountswf.ListAccounts)
 	r.RegisterWorkflow(ledgeraccountswf.RenameLedgerAccount)
-	r.RegisterWorkflow(ledgeraccountswf.MoveLedgerAccount)
 	r.RegisterWorkflow(ledgeraccountswf.CloseLedgerAccount)
 	r.RegisterWorkflow(ledgeraccountswf.DeleteLedgerAccount)
 	r.RegisterWorkflow(ledgeraccountswf.DeleteFinancialAccount)

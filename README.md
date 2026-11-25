@@ -8,8 +8,9 @@ and no migration compatibility is provided.
 
 The source of truth for monetary events is `ledger.journal_entry` plus its
 `ledger.posting` rows. Investment units are tracked separately in
-`ledger.position_movement`. A category is an income or expense
-`ledger.ledger_account` (with a bounded hierarchy), not a separate table.
+`ledger.position_movement`. A category is a row of `ledger.category`, with a
+bounded hierarchy and no currency: it classifies a posting to the "Expenses"
+or "Income" ledger account of a currency, and holds no money itself.
 Tags are flat, optional annotations in `tag.tag`.
 
 The database schemas are:
@@ -18,11 +19,11 @@ The database schemas are:
 - `asset` — securities and other assets;
 - `currency` — currencies and observed conversions;
 - `institution` — banks, brokers, and other providers;
-- `ledger` — financial accounts, ledger accounts, counterparties, journal
-  entries, postings, and position movements; and
+- `ledger` — financial accounts, ledger accounts, categories, counterparties,
+  journal entries, postings, and position movements; and
 - `tag` — flat tags.
 
-See [ADR 0001](docs/adrs/0001-double-entry-ledger.md), [ADR 0002](docs/adrs/0002-ledger-domain-and-application-api.md), and [ADR 0003](docs/adrs/0003-categories-and-tags.md) for the design decisions.
+See [ADR 0001](docs/adrs/0001-double-entry-ledger.md), [ADR 0002](docs/adrs/0002-ledger-domain-and-application-api.md), [ADR 0003](docs/adrs/0003-categories-and-tags.md), and [ADR 0019](docs/adrs/0019-currency-neutral-categories.md) for the design decisions.
 
 ## Development
 
