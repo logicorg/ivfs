@@ -1,12 +1,12 @@
 package journal
 
 import (
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	"github.com/logicorg/ivfs/web/api/gateway"
 )
 
 // encodeCursor is cursor as the after of the next page, or empty on the last.
-func encodeCursor(cursor *lt.JournalEntryCursor) string {
+func encodeCursor(cursor *jt.JournalEntryCursor) string {
 	if cursor == nil {
 		return ""
 	}
@@ -15,7 +15,7 @@ func encodeCursor(cursor *lt.JournalEntryCursor) string {
 
 // decodeCursor is the cursor after names, nil for the first page, or false if
 // after is not one encodeCursor returns.
-func decodeCursor(after string) (*lt.JournalEntryCursor, bool) {
+func decodeCursor(after string) (*jt.JournalEntryCursor, bool) {
 	if after == "" {
 		return nil, true
 	}
@@ -23,5 +23,5 @@ func decodeCursor(after string) (*lt.JournalEntryCursor, bool) {
 	if !ok {
 		return nil, false
 	}
-	return &lt.JournalEntryCursor{OccurredAt: occurredAt, ID: id}, true
+	return &jt.JournalEntryCursor{OccurredAt: occurredAt, ID: id}, true
 }

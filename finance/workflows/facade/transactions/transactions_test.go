@@ -6,7 +6,9 @@ import (
 	"testing"
 	"time"
 
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	ct "github.com/logicorg/ivfs/finance/common/types/categorytypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
 	categorieswf "github.com/logicorg/ivfs/finance/workflows/ledger/categories"
@@ -56,13 +58,13 @@ var (
 func mockLedgerAccounts(env *testsuite.TestWorkflowEnvironment) {
 	shared := []*model.LedgerAccount{expenses, expensesUSD, income, incomeUSD}
 	for _, account := range append([]*model.LedgerAccount{cash, cardBalance, savingsVault, cashUSD, openingBalance, fxClearing, fxClearingUSD}, shared...) {
-		env.OnWorkflow(ledgeraccountswf.RetrieveLedgerAccount, mock.Anything, lt.RetrieveLedgerAccountParams{ID: account.ID}).
-			Return(&lt.RetrieveLedgerAccountResult{LedgerAccount: account}, nil).Maybe()
+		env.OnWorkflow(ledgeraccountswf.RetrieveLedgerAccount, mock.Anything, act.RetrieveLedgerAccountParams{ID: account.ID}).
+			Return(&act.RetrieveLedgerAccountResult{LedgerAccount: account}, nil).Maybe()
 	}
 	for _, account := range shared {
-		env.OnWorkflow(ledgeraccountswf.CreateLedgerAccount, mock.Anything, lt.CreateLedgerAccountInput{
+		env.OnWorkflow(ledgeraccountswf.CreateLedgerAccount, mock.Anything, act.CreateLedgerAccountInput{
 			CurrencyID: account.CurrencyID, Name: account.Name, Kind: account.Kind,
-		}).Return(&lt.CreateLedgerAccountResult{LedgerAccountID: account.ID}, nil).Maybe()
+		}).Return(&act.CreateLedgerAccountResult{LedgerAccountID: account.ID}, nil).Maybe()
 	}
 }
 
@@ -76,7 +78,7 @@ func mockCategories(env *testsuite.TestWorkflowEnvironment) {
 
 // samePostings reports whether got books what want does, on the same accounts
 // and with the same categories.
-func samePostings(got, want []lt.PostingInput) bool {
+func samePostings(got, want []jt.PostingInput) bool {
 	if len(got) != len(want) {
 		return false
 	}
@@ -94,8 +96,8 @@ func samePostings(got, want []lt.PostingInput) bool {
 // entry matches the journal entry want by what it books rather than by its
 // representation: a decimal such as 12.50 arrives as 12.5, equal in value but
 // not in its fields.
-func entry(want lt.PostJournalEntryInput) any {
-	return mock.MatchedBy(func(got lt.PostJournalEntryInput) bool {
+func entry(want jt.PostJournalEntryInput) any {
+	return mock.MatchedBy(func(got jt.PostJournalEntryInput) bool {
 		sameDescription := (got.Description == nil) == (want.Description == nil) &&
 			(got.Description == nil || *got.Description == *want.Description)
 		if got.IdempotencyKey != want.IdempotencyKey || !got.OccurredAt.Equal(want.OccurredAt) || !sameDescription ||
@@ -108,8 +110,8 @@ func entry(want lt.PostJournalEntryInput) any {
 
 // replacement matches the replace want by what it books, as entry does, and
 // checks that it carries no position movement.
-func replacement(want lt.ReplaceJournalEntryInput) any {
-	return mock.MatchedBy(func(got lt.ReplaceJournalEntryInput) bool {
+func replacement(want jt.ReplaceJournalEntryInput) any {
+	return mock.MatchedBy(func(got jt.ReplaceJournalEntryInput) bool {
 		sameDescription := (got.Description == nil) == (want.Description == nil) &&
 			(got.Description == nil || *got.Description == *want.Description)
 		if got.JournalEntryID != want.JournalEntryID || !got.OccurredAt.Equal(want.OccurredAt) || !sameDescription ||

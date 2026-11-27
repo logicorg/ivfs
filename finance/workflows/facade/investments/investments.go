@@ -8,9 +8,11 @@ import (
 	"strings"
 	"time"
 
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	ct "github.com/logicorg/ivfs/finance/common/types/currencytypes"
 	it "github.com/logicorg/ivfs/finance/common/types/investmenttypes"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
+	pft "github.com/logicorg/ivfs/finance/common/types/portfoliotypes"
 	currencieswf "github.com/logicorg/ivfs/finance/workflows/currencies"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
 	journalwf "github.com/logicorg/ivfs/finance/workflows/ledger/journal"
@@ -70,8 +72,8 @@ func retrieveBrokerage(ctx workflow.Context, financialAccountID int64, currencyC
 		return nil, fmt.Errorf("retrieve currency %s: %w", code, err)
 	}
 
-	var listed lt.ListLedgerAccountsResult
-	err = workflow.ExecuteChildWorkflow(ctx, ledgeraccountswf.ListLedgerAccounts, lt.ListLedgerAccountsParams{
+	var listed act.ListLedgerAccountsResult
+	err = workflow.ExecuteChildWorkflow(ctx, ledgeraccountswf.ListLedgerAccounts, act.ListLedgerAccountsParams{
 		FinancialAccountID: &financialAccountID,
 		CurrencyID:         &currency.ID,
 		Kinds:              []model.LedgerAccountKind{model.LedgerAccountAsset},
@@ -102,13 +104,13 @@ func retrieveBrokerage(ctx workflow.Context, financialAccountID int64, currencyC
 }
 
 // input is the trade as the entry and the movement that record it.
-func (t trade) input() lt.RegisterInvestmentTradeInput {
-	input := lt.RegisterInvestmentTradeInput{
-		Entry: lt.PostJournalEntryInput{
+func (t trade) input() pft.RegisterInvestmentTradeInput {
+	input := pft.RegisterInvestmentTradeInput{
+		Entry: jt.PostJournalEntryInput{
 			IdempotencyKey: t.kind + ":" + t.idempotencyKey,
 			OccurredAt:     t.occurredAt,
 			TagIDs:         t.tagIDs,
-			Postings: []lt.PostingInput{
+			Postings: []jt.PostingInput{
 				{LedgerAccountID: t.to, Amount: t.amount, Side: model.PostingDebit},
 				{LedgerAccountID: t.from, Amount: t.amount, Side: model.PostingCredit},
 			},
@@ -129,7 +131,7 @@ func (t trade) input() lt.RegisterInvestmentTradeInput {
 // register writes the trade's entry and movement in one transaction. A closed
 // account or an unknown asset fails here, inside it.
 func register(ctx workflow.Context, t trade) (*it.TradeResult, error) {
-	var result lt.RegisterInvestmentTradeResult
+	var result pft.RegisterInvestmentTradeResult
 	if err := workflow.ExecuteChildWorkflow(ctx, portfoliowf.RegisterInvestmentTrade, t.input()).Get(ctx, &result); err != nil {
 		return nil, fmt.Errorf("register %s: %w", t.kind, err)
 	}
@@ -142,8 +144,8 @@ func register(ctx workflow.Context, t trade) (*it.TradeResult, error) {
 
 // registerVest writes the vest's entry and movement in one transaction. A
 // closed account or an unknown asset fails here, inside it.
-func registerVest(ctx workflow.Context, input lt.RegisterVestInput) (*it.TradeResult, error) {
-	var result lt.RegisterVestResult
+func registerVest(ctx workflow.Context, input pft.RegisterVestInput) (*it.TradeResult, error) {
+	var result pft.RegisterVestResult
 	if err := workflow.ExecuteChildWorkflow(ctx, portfoliowf.RegisterVest, input).Get(ctx, &result); err != nil {
 		return nil, fmt.Errorf("register vest: %w", err)
 	}
@@ -155,18 +157,18 @@ func registerVest(ctx workflow.Context, input lt.RegisterVestInput) (*it.TradeRe
 // keeps its own key, so the one in entry is not used. An unknown entry or
 // asset, or an account the entry may not move onto, fails here, inside the
 // transaction that replaces.
-func replace(ctx workflow.Context, journalEntryID int64, kind it.Kind, entry lt.PostJournalEntryInput, movement lt.ReplaceMovementInput) (*it.TradeResult, error) {
-	input := lt.ReplaceJournalEntryInput{
+func replace(ctx workflow.Context, journalEntryID int64, kind it.Kind, entry jt.PostJournalEntryInput, movement jt.ReplaceMovementInput) (*it.TradeResult, error) {
+	input := jt.ReplaceJournalEntryInput{
 		JournalEntryID: journalEntryID,
 		OccurredAt:     entry.OccurredAt,
 		Description:    entry.Description,
 		Metadata:       entry.Metadata,
 		Postings:       entry.Postings,
 		TagIDs:         entry.TagIDs,
-		Movements:      []lt.ReplaceMovementInput{movement},
+		Movements:      []jt.ReplaceMovementInput{movement},
 	}
 
-	var result lt.ReplaceJournalEntryResult
+	var result jt.ReplaceJournalEntryResult
 	if err := workflow.ExecuteChildWorkflow(ctx, journalwf.ReplaceJournalEntry, input).Get(ctx, &result); err != nil {
 		return nil, fmt.Errorf("update %s: %w", kind, err)
 	}

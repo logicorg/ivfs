@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	rpt "github.com/logicorg/ivfs/finance/common/types/reportingtypes"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/shopspring/decimal"
 )
@@ -23,7 +23,7 @@ type categoryTotal struct {
 // over the posted entries of a period, by their category and the account's
 // currency, in the account's natural direction. The postings without a
 // category make one total per kind and currency.
-func (a *Activities) CategoryTotals(ctx context.Context, params lt.CategoryTotalsParams) (*lt.CategoryTotalsResult, error) {
+func (a *Activities) CategoryTotals(ctx context.Context, params rpt.CategoryTotalsParams) (*rpt.CategoryTotalsResult, error) {
 	db, err := a.Pools.For(ctx)
 	if err != nil {
 		return nil, err
@@ -55,13 +55,13 @@ func (a *Activities) CategoryTotals(ctx context.Context, params lt.CategoryTotal
 		return nil, fmt.Errorf("total categories: %w", err)
 	}
 
-	result := &lt.CategoryTotalsResult{Totals: make([]lt.CategoryTotal, 0, len(rows))}
+	result := &rpt.CategoryTotalsResult{Totals: make([]rpt.CategoryTotal, 0, len(rows))}
 	for _, row := range rows {
 		total := row.Debits
 		if row.Kind == model.LedgerAccountIncome {
 			total = total.Neg()
 		}
-		result.Totals = append(result.Totals, lt.CategoryTotal{
+		result.Totals = append(result.Totals, rpt.CategoryTotal{
 			CategoryID:   row.CategoryID,
 			Kind:         row.Kind,
 			CurrencyID:   row.CurrencyID,

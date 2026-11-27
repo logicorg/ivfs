@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/uptrace/bun"
 )
@@ -24,7 +24,7 @@ import (
 // touchedLedgerAccountIDs are the ledger accounts the entry had postings on. A
 // correction may leave a posting on one of them that has since been closed,
 // which a new entry may not.
-func RewriteEntryTx(ctx context.Context, tx bun.Tx, entry *model.JournalEntry, input lt.PostJournalEntryInput, movements []model.PositionMovement, touchedLedgerAccountIDs []int64) error {
+func RewriteEntryTx(ctx context.Context, tx bun.Tx, entry *model.JournalEntry, input jt.PostJournalEntryInput, movements []model.PositionMovement, touchedLedgerAccountIDs []int64) error {
 	if err := checkPostingsTx(ctx, tx, input, touchedLedgerAccountIDs); err != nil {
 		return err
 	}

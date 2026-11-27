@@ -6,9 +6,11 @@ import (
 	"testing"
 	"time"
 
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	catt "github.com/logicorg/ivfs/finance/common/types/categorytypes"
 	ct "github.com/logicorg/ivfs/finance/common/types/currencytypes"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
+	pft "github.com/logicorg/ivfs/finance/common/types/portfoliotypes"
 	currencieswf "github.com/logicorg/ivfs/finance/workflows/currencies"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
 	categorieswf "github.com/logicorg/ivfs/finance/workflows/ledger/categories"
@@ -67,9 +69,9 @@ func mockCategories(env *testsuite.TestWorkflowEnvironment) {
 	env.OnWorkflow(categorieswf.RetrieveCategory, mock.Anything, catt.RetrieveCategoryParams{ID: unknownCategory}).
 		Return(nil, errors.New("resource Category not found with ID: 999")).Maybe()
 	for _, account := range []model.LedgerAccount{income, expenses} {
-		env.OnWorkflow(ledgeraccountswf.CreateLedgerAccount, mock.Anything, lt.CreateLedgerAccountInput{
+		env.OnWorkflow(ledgeraccountswf.CreateLedgerAccount, mock.Anything, act.CreateLedgerAccountInput{
 			CurrencyID: account.CurrencyID, Name: account.Name, Kind: account.Kind,
-		}).Return(&lt.CreateLedgerAccountResult{LedgerAccountID: account.ID}, nil).Maybe()
+		}).Return(&act.CreateLedgerAccountResult{LedgerAccountID: account.ID}, nil).Maybe()
 	}
 }
 
@@ -85,12 +87,12 @@ func mockBrokerage(env *testsuite.TestWorkflowEnvironment) {
 		Return(nil, errors.New("resource Currency not found with code: XYZ")).Maybe()
 
 	for currencyID, balances := range map[int64][]model.LedgerAccount{euro.ID: {cash, investments}, dollar.ID: {cashUSD}} {
-		env.OnWorkflow(ledgeraccountswf.ListLedgerAccounts, mock.Anything, lt.ListLedgerAccountsParams{
+		env.OnWorkflow(ledgeraccountswf.ListLedgerAccounts, mock.Anything, act.ListLedgerAccountsParams{
 			FinancialAccountID: ptr.Int64(ibkr),
 			CurrencyID:         ptr.Int64(currencyID),
 			Kinds:              []model.LedgerAccountKind{model.LedgerAccountAsset},
 			IncludeClosed:      true,
-		}).Return(&lt.ListLedgerAccountsResult{LedgerAccounts: balances}, nil).Maybe()
+		}).Return(&act.ListLedgerAccountsResult{LedgerAccounts: balances}, nil).Maybe()
 	}
 }
 
@@ -111,10 +113,10 @@ func requireTrade(t *testing.T, want, got trade) {
 // normalizeVest rewrites the decimals of a vest from their strings, so two
 // vests recording the same values compare equal whatever their scale: 600.00
 // and 600 both become 600.
-func normalizeVest(v lt.RegisterVestInput) lt.RegisterVestInput {
+func normalizeVest(v pft.RegisterVestInput) pft.RegisterVestInput {
 	normalize := func(d decimal.Decimal) decimal.Decimal { return decimal.RequireFromString(d.String()) }
 	v.Units, v.CostBasisAmount = normalize(v.Units), normalize(v.CostBasisAmount)
-	postings := make([]lt.PostingInput, len(v.Entry.Postings))
+	postings := make([]jt.PostingInput, len(v.Entry.Postings))
 	for i, posting := range v.Entry.Postings {
 		posting.Amount = normalize(posting.Amount)
 		postings[i] = posting
@@ -126,12 +128,12 @@ func normalizeVest(v lt.RegisterVestInput) lt.RegisterVestInput {
 // tradeInput matches the trade want by what it records rather than by its
 // representation: a decimal such as 1053.00 arrives as 1053, equal in value
 // but not in its fields.
-func tradeInput(want lt.RegisterInvestmentTradeInput) any {
+func tradeInput(want pft.RegisterInvestmentTradeInput) any {
 	sameDecimal := func(a, b *decimal.Decimal) bool { return (a == nil) == (b == nil) && (a == nil || a.Equal(*b)) }
 	sameID := func(a, b *int64) bool { return (a == nil) == (b == nil) && (a == nil || *a == *b) }
 	sameString := func(a, b *string) bool { return (a == nil) == (b == nil) && (a == nil || *a == *b) }
 
-	return mock.MatchedBy(func(got lt.RegisterInvestmentTradeInput) bool {
+	return mock.MatchedBy(func(got pft.RegisterInvestmentTradeInput) bool {
 		if got.FinancialAccountID != want.FinancialAccountID || got.AssetID != want.AssetID ||
 			!got.UnitsDelta.Equal(want.UnitsDelta) || !sameDecimal(got.CostBasisAmount, want.CostBasisAmount) ||
 			!sameID(got.CostBasisCurrencyID, want.CostBasisCurrencyID) {

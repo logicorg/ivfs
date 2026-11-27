@@ -4,7 +4,7 @@ import (
 	"time"
 
 	activity "github.com/logicorg/ivfs/finance/activities/ledger/reporting"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	rpt "github.com/logicorg/ivfs/finance/common/types/reportingtypes"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/logicorg/ivfs/pkg/ptr"
 	"github.com/shopspring/decimal"
@@ -15,15 +15,15 @@ import (
 
 func (s *WorkflowUnitTestSuite) TestCategoryTotals() {
 	january := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
-	input := lt.CategoryTotalsParams{From: january, To: january.AddDate(0, 1, 0)}
-	totals := &lt.CategoryTotalsResult{Totals: []lt.CategoryTotal{
+	input := rpt.CategoryTotalsParams{From: january, To: january.AddDate(0, 1, 0)}
+	totals := &rpt.CategoryTotalsResult{Totals: []rpt.CategoryTotal{
 		{CategoryID: ptr.Int64(1), Kind: model.LedgerAccountExpense, CurrencyID: 2, CurrencyCode: "EUR", Total: decimal.NewFromInt(120)},
 	}}
 
 	tests := map[string]struct {
-		result  *lt.CategoryTotalsResult
+		result  *rpt.CategoryTotalsResult
 		err     error
-		want    *lt.CategoryTotalsResult
+		want    *rpt.CategoryTotalsResult
 		wantErr bool
 	}{
 		"the activity's totals": {result: totals, want: totals},
@@ -41,7 +41,7 @@ func (s *WorkflowUnitTestSuite) TestCategoryTotals() {
 				return
 			}
 			require.NoError(s.T(), env.GetWorkflowError())
-			var got *lt.CategoryTotalsResult
+			var got *rpt.CategoryTotalsResult
 			require.NoError(s.T(), env.GetWorkflowResult(&got))
 			assert.Equal(s.T(), tc.want, got)
 		})

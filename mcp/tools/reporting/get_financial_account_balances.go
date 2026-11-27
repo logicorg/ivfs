@@ -1,7 +1,7 @@
 package reporting
 
 import (
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	rpt "github.com/logicorg/ivfs/finance/common/types/reportingtypes"
 	reportingwf "github.com/logicorg/ivfs/finance/workflows/ledger/reporting"
 	"github.com/logicorg/ivfs/mcp/mcptypes"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -18,7 +18,7 @@ func registerGetFinancialAccountBalances(server *mcp.Server, c client.Client) {
 			"entries count. A balance is in the account's natural direction, so a positive liability is money owed. Get the " +
 			"financial account id with list_financial_accounts.",
 	}, mcptypes.WorkflowWithResult[
-		func(workflow.Context, lt.FinancialAccountBalancesParams) (*lt.FinancialAccountBalancesResult, error),
-		lt.FinancialAccountBalancesParams, lt.FinancialAccountBalancesResult,
+		func(workflow.Context, rpt.FinancialAccountBalancesParams) (*rpt.FinancialAccountBalancesResult, error),
+		rpt.FinancialAccountBalancesParams, rpt.FinancialAccountBalancesResult,
 	](c, reportingwf.FinancialAccountBalances))
 }

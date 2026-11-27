@@ -2,7 +2,7 @@ package accounts
 
 import (
 	accountdeletion "github.com/logicorg/ivfs/finance/activities/ledger/accounts/deletion"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/logicorg/ivfs/pkg/ptr"
 	"github.com/stretchr/testify/mock"
@@ -10,33 +10,33 @@ import (
 )
 
 func (s *WorkflowUnitTestSuite) TestPreviewAccountDeletion() {
-	preview := &lt.AccountDeletionPreview{DeletedEntries: 2, KeptEntries: 1, Conflicts: []string{"ledger account 7 has child accounts; delete them first"}}
+	preview := &act.AccountDeletionPreview{DeletedEntries: 2, KeptEntries: 1, Conflicts: []string{"ledger account 7 has child accounts; delete them first"}}
 
 	tests := []struct {
 		name  string
-		input lt.PreviewAccountDeletionInput
+		input act.PreviewAccountDeletionInput
 		// previews is whether the activity runs, and previewErr what it returns.
 		previews   bool
 		previewErr error
-		want       *lt.AccountDeletionPreview
+		want       *act.AccountDeletionPreview
 		wantErr    string
 	}{
 		{
 			name:     "a ledger account",
-			input:    lt.PreviewAccountDeletionInput{LedgerAccountID: ptr.Int64(7)},
+			input:    act.PreviewAccountDeletionInput{LedgerAccountID: ptr.Int64(7)},
 			previews: true,
 			want:     preview,
 		},
 		{
 			name:       "an institution that does not exist",
-			input:      lt.PreviewAccountDeletionInput{InstitutionID: ptr.Int64(7)},
+			input:      act.PreviewAccountDeletionInput{InstitutionID: ptr.Int64(7)},
 			previews:   true,
 			previewErr: internalerrors.ErrNotFound{ResourceType: "Institution", ID: 7},
 			wantErr:    "resource Institution not found with ID: 7",
 		},
 		{
 			name:    "no target",
-			input:   lt.PreviewAccountDeletionInput{},
+			input:   act.PreviewAccountDeletionInput{},
 			wantErr: "a deletion preview takes exactly one of a ledger account, a financial account, or an institution",
 		},
 	}
@@ -57,7 +57,7 @@ func (s *WorkflowUnitTestSuite) TestPreviewAccountDeletion() {
 				return
 			}
 			require.NoError(t, env.GetWorkflowError())
-			var got lt.AccountDeletionPreview
+			var got act.AccountDeletionPreview
 			require.NoError(t, env.GetWorkflowResult(&got))
 			require.Equal(t, *tc.want, got)
 		})

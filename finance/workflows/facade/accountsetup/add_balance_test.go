@@ -5,9 +5,10 @@ import (
 	"time"
 
 	ast "github.com/logicorg/ivfs/finance/common/types/accountsetuptypes"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	ct "github.com/logicorg/ivfs/finance/common/types/currencytypes"
 	it "github.com/logicorg/ivfs/finance/common/types/institutiontypes"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	currencieswf "github.com/logicorg/ivfs/finance/workflows/currencies"
 	institutionwf "github.com/logicorg/ivfs/finance/workflows/institution"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
@@ -46,8 +47,8 @@ func newAddBalanceFixtures() addBalanceFixtures {
 // mockLookups mocks the currency, financial account, and institution lookups.
 func (f addBalanceFixtures) mockLookups(env *testsuite.TestWorkflowEnvironment) {
 	env.OnWorkflow(currencieswf.RetrieveCurrency, mock.Anything, &ct.RetrieveCurrencyParams{Code: "EUR"}).Return(f.euro, nil)
-	env.OnWorkflow(ledgeraccountswf.RetrieveFinancialAccount, mock.Anything, lt.RetrieveFinancialAccountParams{ID: f.account.ID}).
-		Return(&lt.RetrieveFinancialAccountResult{FinancialAccount: f.account}, nil)
+	env.OnWorkflow(ledgeraccountswf.RetrieveFinancialAccount, mock.Anything, act.RetrieveFinancialAccountParams{ID: f.account.ID}).
+		Return(&act.RetrieveFinancialAccountResult{FinancialAccount: f.account}, nil)
 	env.OnWorkflow(institutionwf.RetrieveInstitution, mock.Anything, it.RetrieveInstitutionParams{ID: f.institution.ID}).
 		Return(&it.RetrieveInstitutionResult{Institution: f.institution}, nil)
 }
@@ -55,23 +56,23 @@ func (f addBalanceFixtures) mockLookups(env *testsuite.TestWorkflowEnvironment) 
 // mockLedgerAccounts mocks creating and retrieving the vault and the shared
 // accounts, as the child workflows would find or create them.
 func (f addBalanceFixtures) mockLedgerAccounts(env *testsuite.TestWorkflowEnvironment) {
-	for input, account := range map[lt.CreateLedgerAccountInput]*model.LedgerAccount{
+	for input, account := range map[act.CreateLedgerAccountInput]*model.LedgerAccount{
 		{FinancialAccountID: nil, CurrencyID: 1, Name: "Opening balances", Kind: model.LedgerAccountEquity}: f.openingBalances,
 		{FinancialAccountID: nil, CurrencyID: 1, Name: "FX clearing", Kind: model.LedgerAccountAsset}:       f.fxClearing,
 	} {
-		env.OnWorkflow(ledgeraccountswf.CreateLedgerAccount, mock.Anything, input).Return(&lt.CreateLedgerAccountResult{LedgerAccountID: account.ID}, nil)
+		env.OnWorkflow(ledgeraccountswf.CreateLedgerAccount, mock.Anything, input).Return(&act.CreateLedgerAccountResult{LedgerAccountID: account.ID}, nil)
 	}
-	env.OnWorkflow(ledgeraccountswf.CreateLedgerAccount, mock.Anything, lt.CreateLedgerAccountInput{
+	env.OnWorkflow(ledgeraccountswf.CreateLedgerAccount, mock.Anything, act.CreateLedgerAccountInput{
 		FinancialAccountID: ptr.Int64(f.account.ID), CurrencyID: 1, Name: "Savings vault", Kind: model.LedgerAccountAsset,
-	}).Return(&lt.CreateLedgerAccountResult{LedgerAccountID: f.vault.ID}, nil)
+	}).Return(&act.CreateLedgerAccountResult{LedgerAccountID: f.vault.ID}, nil)
 	for _, account := range []*model.LedgerAccount{f.vault, f.openingBalances, f.fxClearing} {
-		env.OnWorkflow(ledgeraccountswf.RetrieveLedgerAccount, mock.Anything, lt.RetrieveLedgerAccountParams{ID: account.ID}).
-			Return(&lt.RetrieveLedgerAccountResult{LedgerAccount: account}, nil)
+		env.OnWorkflow(ledgeraccountswf.RetrieveLedgerAccount, mock.Anything, act.RetrieveLedgerAccountParams{ID: account.ID}).
+			Return(&act.RetrieveLedgerAccountResult{LedgerAccount: account}, nil)
 	}
 }
 
-func (f addBalanceFixtures) wantBalances() []lt.AccountSummary {
-	return []lt.AccountSummary{
+func (f addBalanceFixtures) wantBalances() []act.AccountSummary {
+	return []act.AccountSummary{
 		{
 			LedgerAccountID: 100, LedgerAccountName: "Savings vault", Kind: model.LedgerAccountAsset, CurrencyID: 1, CurrencyCode: "EUR",
 			FinancialAccountID: ptr.Int64(10), FinancialAccountName: "Revolut Personal", InstitutionName: "Revolut",
@@ -84,8 +85,8 @@ func (f addBalanceFixtures) wantBalances() []lt.AccountSummary {
 // openingEntry matches the journal entry want by what it books rather than by
 // its representation: a decimal such as 500.50 arrives as 500.5, equal in
 // value but not in its fields, and no metadata arrives as an empty map.
-func openingEntry(want lt.PostJournalEntryInput) any {
-	return mock.MatchedBy(func(got lt.PostJournalEntryInput) bool {
+func openingEntry(want jt.PostJournalEntryInput) any {
+	return mock.MatchedBy(func(got jt.PostJournalEntryInput) bool {
 		if got.IdempotencyKey != want.IdempotencyKey || !got.OccurredAt.Equal(want.OccurredAt) ||
 			*got.Description != *want.Description || len(got.Metadata) != 0 || len(got.Postings) != len(want.Postings) {
 			return false
@@ -136,15 +137,15 @@ func (s *WorkflowUnitTestSuite) TestAddBalance() {
 			f.mockLedgerAccounts(env)
 			want := &ast.AddBalanceResult{Outcome: ast.OutcomeOpened, LedgerAccountID: 100, Balances: ast.Balances{Balances: f.wantBalances()}}
 			if !tc.postedAt.IsZero() {
-				env.OnWorkflow(journalwf.PostJournalEntry, mock.Anything, openingEntry(lt.PostJournalEntryInput{
+				env.OnWorkflow(journalwf.PostJournalEntry, mock.Anything, openingEntry(jt.PostJournalEntryInput{
 					IdempotencyKey: "opening-balance:100",
 					OccurredAt:     tc.postedAt,
 					Description:    ptr.NewPtr("Opening balance"),
-					Postings: []lt.PostingInput{
+					Postings: []jt.PostingInput{
 						{LedgerAccountID: 100, Amount: decimal.RequireFromString("500.50"), Side: model.PostingDebit},
 						{LedgerAccountID: 200, Amount: decimal.RequireFromString("500.50"), Side: model.PostingCredit},
 					},
-				})).Return(&lt.PostJournalEntryResult{JournalEntryID: 500}, nil).Once()
+				})).Return(&jt.PostJournalEntryResult{JournalEntryID: 500}, nil).Once()
 				want.OpeningEntries = []ast.OpeningEntry{{LedgerAccountID: 100, JournalEntryID: 500}}
 			}
 
@@ -192,7 +193,7 @@ func (s *WorkflowUnitTestSuite) TestAddBalance_Errors() {
 				closed := *f.account
 				closed.ClosedAt = &closedAt
 				env.OnWorkflow(ledgeraccountswf.RetrieveFinancialAccount, mock.Anything, mock.Anything).
-					Return(&lt.RetrieveFinancialAccountResult{FinancialAccount: &closed}, nil)
+					Return(&act.RetrieveFinancialAccountResult{FinancialAccount: &closed}, nil)
 			},
 			wantError: "resource FinancialAccount with ID: 10 is closed",
 		},
@@ -201,7 +202,7 @@ func (s *WorkflowUnitTestSuite) TestAddBalance_Errors() {
 			mock: func(env *testsuite.TestWorkflowEnvironment) {
 				env.OnWorkflow(currencieswf.RetrieveCurrency, mock.Anything, mock.Anything).Return(f.euro, nil)
 				env.OnWorkflow(ledgeraccountswf.RetrieveFinancialAccount, mock.Anything, mock.Anything).
-					Return(&lt.RetrieveFinancialAccountResult{FinancialAccount: f.account}, nil)
+					Return(&act.RetrieveFinancialAccountResult{FinancialAccount: f.account}, nil)
 				closed := *f.institution
 				closed.ClosedAt = &closedAt
 				env.OnWorkflow(institutionwf.RetrieveInstitution, mock.Anything, mock.Anything).

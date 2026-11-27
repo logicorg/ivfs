@@ -2,8 +2,7 @@ package accounts
 
 import (
 	"fmt"
-
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	"github.com/logicorg/ivfs/finance/workflows"
 	"go.temporal.io/sdk/workflow"
 )
@@ -12,7 +11,7 @@ import (
 // account and/or updates its external ID. It refuses to change the stray
 // financial account, or to rename another account of the "Untracked"
 // institution onto its name.
-func UpdateFinancialAccountMetadata(ctx workflow.Context, input lt.UpdateFinancialAccountMetadataInput) (*lt.FinancialAccountMutationResult, error) {
+func UpdateFinancialAccountMetadata(ctx workflow.Context, input act.UpdateFinancialAccountMetadataInput) (*act.FinancialAccountMutationResult, error) {
 	ctx = workflow.WithActivityOptions(ctx, workflows.GetDefaultActivityOptions())
 
 	account, err := retrieveFinancialAccount(ctx, input.FinancialAccountID)
@@ -36,7 +35,7 @@ func UpdateFinancialAccountMetadata(ctx workflow.Context, input lt.UpdateFinanci
 		}
 	}
 
-	var result lt.FinancialAccountMutationResult
+	var result act.FinancialAccountMutationResult
 	if err := workflow.ExecuteActivity(ctx, la.UpdateFinancialAccountMetadata, input).Get(ctx, &result); err != nil {
 		return nil, fmt.Errorf("update financial account metadata: %w", err)
 	}

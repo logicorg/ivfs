@@ -2,8 +2,7 @@ package accounts
 
 import (
 	"fmt"
-
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	"github.com/logicorg/ivfs/finance/workflows"
 	"go.temporal.io/sdk/workflow"
 )
@@ -11,7 +10,7 @@ import (
 // CloseFinancialAccount is a workflow that closes a financial account. It
 // refuses to close the stray financial account, since every later deletion
 // that moves units onto it would fail on the closed account.
-func CloseFinancialAccount(ctx workflow.Context, input lt.CloseFinancialAccountInput) error {
+func CloseFinancialAccount(ctx workflow.Context, input act.CloseFinancialAccountInput) error {
 	ctx = workflow.WithActivityOptions(ctx, workflows.GetDefaultActivityOptions())
 
 	account, err := retrieveFinancialAccount(ctx, input.FinancialAccountID)

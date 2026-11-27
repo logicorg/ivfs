@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	journalwf "github.com/logicorg/ivfs/finance/workflows/ledger/journal"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/logicorg/ivfs/pkg/ptr"
@@ -53,11 +53,11 @@ func TestList(t *testing.T) {
 			Method: http.MethodGet, Path: "/api/journal-entries?ledgerAccountId=100&status=posted&descending=true&limit=2",
 			Call: &apitest.WorkflowCall{
 				Workflow: journalwf.ListJournalEntries,
-				Params: lt.ListJournalEntriesParams{
+				Params: jt.ListJournalEntriesParams{
 					LedgerAccountID: 100, Statuses: []model.JournalEntryStatus{model.JournalEntryPosted}, Descending: true, Limit: 2,
 				},
-				Result: lt.ListJournalEntriesResult{
-					Entries: []model.JournalEntry{refund, shopping}, Next: &lt.JournalEntryCursor{OccurredAt: day, ID: 7},
+				Result: jt.ListJournalEntriesResult{
+					Entries: []model.JournalEntry{refund, shopping}, Next: &jt.JournalEntryCursor{OccurredAt: day, ID: 7},
 				},
 			},
 			WantStatus: http.StatusOK,
@@ -67,10 +67,10 @@ func TestList(t *testing.T) {
 			Method: http.MethodGet, Path: "/api/journal-entries?ledgerAccountId=100&after=2026-01-31T10:00:00Z_7",
 			Call: &apitest.WorkflowCall{
 				Workflow: journalwf.ListJournalEntries,
-				Params: lt.ListJournalEntriesParams{
-					LedgerAccountID: 100, After: &lt.JournalEntryCursor{OccurredAt: day, ID: 7},
+				Params: jt.ListJournalEntriesParams{
+					LedgerAccountID: 100, After: &jt.JournalEntryCursor{OccurredAt: day, ID: 7},
 				},
-				Result: lt.ListJournalEntriesResult{Entries: []model.JournalEntry{shopping}},
+				Result: jt.ListJournalEntriesResult{Entries: []model.JournalEntry{shopping}},
 			},
 			WantStatus: http.StatusOK, WantBody: `{"entries":[` + shoppingBody + `]}`,
 		},
@@ -78,8 +78,8 @@ func TestList(t *testing.T) {
 			Method: http.MethodGet, Path: "/api/journal-entries?categoryId=40&categoryId=41",
 			Call: &apitest.WorkflowCall{
 				Workflow: journalwf.ListJournalEntries,
-				Params:   lt.ListJournalEntriesParams{CategoryIDs: []int64{40, 41}},
-				Result:   lt.ListJournalEntriesResult{Entries: []model.JournalEntry{shopping}},
+				Params:   jt.ListJournalEntriesParams{CategoryIDs: []int64{40, 41}},
+				Result:   jt.ListJournalEntriesResult{Entries: []model.JournalEntry{shopping}},
 			},
 			WantStatus: http.StatusOK, WantBody: `{"entries":[` + shoppingBody + `]}`,
 		},
@@ -88,11 +88,11 @@ func TestList(t *testing.T) {
 			Path:   "/api/journal-entries?from=2026-01-01T00:00:00Z&to=2026-02-01T00:00:00Z&status=draft&status=posted",
 			Call: &apitest.WorkflowCall{
 				Workflow: journalwf.ListJournalEntries,
-				Params: lt.ListJournalEntriesParams{
+				Params: jt.ListJournalEntriesParams{
 					Statuses: []model.JournalEntryStatus{model.JournalEntryDraft, model.JournalEntryPosted},
 					From:     time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC), To: time.Date(2026, 2, 1, 0, 0, 0, 0, time.UTC),
 				},
-				Result: lt.ListJournalEntriesResult{},
+				Result: jt.ListJournalEntriesResult{},
 			},
 			WantStatus: http.StatusOK, WantBody: `{"entries":[]}`,
 		},
@@ -100,8 +100,8 @@ func TestList(t *testing.T) {
 			Method: http.MethodGet, Path: "/api/journal-entries?counterpartyId=5",
 			Call: &apitest.WorkflowCall{
 				Workflow: journalwf.ListJournalEntries,
-				Params:   lt.ListJournalEntriesParams{CounterpartyID: 5},
-				Result:   lt.ListJournalEntriesResult{},
+				Params:   jt.ListJournalEntriesParams{CounterpartyID: 5},
+				Result:   jt.ListJournalEntriesResult{},
 			},
 			WantStatus: http.StatusOK, WantBody: `{"entries":[]}`,
 		},
@@ -109,7 +109,7 @@ func TestList(t *testing.T) {
 			Method: http.MethodGet, Path: "/api/journal-entries?from=2026-02-01T00:00:00Z&to=2026-01-01T00:00:00Z",
 			Call: &apitest.WorkflowCall{
 				Workflow: journalwf.ListJournalEntries,
-				Params: lt.ListJournalEntriesParams{
+				Params: jt.ListJournalEntriesParams{
 					From: time.Date(2026, 2, 1, 0, 0, 0, 0, time.UTC), To: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC),
 				},
 				Err: temporal.NewApplicationError("the end of the date range must be after its start", "ErrInvalidParameter"),
@@ -121,8 +121,8 @@ func TestList(t *testing.T) {
 			Method: http.MethodGet, Path: "/api/journal-entries",
 			Call: &apitest.WorkflowCall{
 				Workflow: journalwf.ListJournalEntries,
-				Params:   lt.ListJournalEntriesParams{},
-				Result: lt.ListJournalEntriesResult{Entries: []model.JournalEntry{{
+				Params:   jt.ListJournalEntriesParams{},
+				Result: jt.ListJournalEntriesResult{Entries: []model.JournalEntry{{
 					ID: 9, OccurredAt: day, Status: model.JournalEntryPosted,
 					Postings: []model.Posting{{ID: 90, LineNumber: 1, LedgerAccountID: 100, Side: model.PostingDebit}},
 				}}},
@@ -133,8 +133,8 @@ func TestList(t *testing.T) {
 			Method: http.MethodGet, Path: "/api/journal-entries",
 			Call: &apitest.WorkflowCall{
 				Workflow: journalwf.ListJournalEntries,
-				Params:   lt.ListJournalEntriesParams{},
-				Result: lt.ListJournalEntriesResult{Entries: []model.JournalEntry{{
+				Params:   jt.ListJournalEntriesParams{},
+				Result: jt.ListJournalEntriesResult{Entries: []model.JournalEntry{{
 					ID: 9, OccurredAt: day, Status: model.JournalEntryPosted,
 					Postings: []model.Posting{{ID: 90, LineNumber: 1, LedgerAccountID: 200, LedgerAccount: groceries, Side: model.PostingDebit, CategoryID: ptr.Int64(40)}},
 				}}},

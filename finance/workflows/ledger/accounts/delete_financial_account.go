@@ -2,8 +2,7 @@ package accounts
 
 import (
 	"fmt"
-
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	"github.com/logicorg/ivfs/finance/workflows"
 	"go.temporal.io/sdk/workflow"
 )
@@ -17,7 +16,7 @@ import (
 //
 // It runs under DeleteFinancialAccountWorkflowID, and DeleteInstitution runs
 // it as a child under the same ID.
-func DeleteFinancialAccount(ctx workflow.Context, input lt.DeleteFinancialAccountInput) (*lt.DeleteAccountResult, error) {
+func DeleteFinancialAccount(ctx workflow.Context, input act.DeleteFinancialAccountInput) (*act.DeleteAccountResult, error) {
 	if err := input.Validate(); err != nil {
 		return nil, err
 	}
@@ -26,13 +25,13 @@ func DeleteFinancialAccount(ctx workflow.Context, input lt.DeleteFinancialAccoun
 	}
 	ctx = workflow.WithActivityOptions(ctx, workflows.GetDefaultActivityOptions())
 
-	target := lt.DeletionTarget{FinancialAccountID: &input.FinancialAccountID}
-	var closed lt.CloseAccountForDeletionResult
+	target := act.DeletionTarget{FinancialAccountID: &input.FinancialAccountID}
+	var closed act.CloseAccountForDeletionResult
 	if err := workflow.ExecuteActivity(ctx, da.CloseAccountForDeletion, target).Get(ctx, &closed); err != nil {
 		return nil, fmt.Errorf("close financial account for deletion: %w", err)
 	}
 	if closed.Gone {
-		return &lt.DeleteAccountResult{}, nil
+		return &act.DeleteAccountResult{}, nil
 	}
 
 	// Entries go first: a trade's movement group is handled with its entry, so
@@ -52,7 +51,7 @@ func DeleteFinancialAccount(ctx workflow.Context, input lt.DeleteFinancialAccoun
 
 		err = workflow.ExecuteActivity(ctx, la.DeleteFinancialAccount, input).Get(ctx, nil)
 		if err == nil || workflows.HasErrorType(err, "ErrNotFound") {
-			return &lt.DeleteAccountResult{}, nil
+			return &act.DeleteAccountResult{}, nil
 		}
 		// A conflict after a pass that handled something is a line recorded
 		// meanwhile, which the next pass handles. After an empty pass, nothing

@@ -5,8 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/logicorg/ivfs/pkg/sqllib"
 	"github.com/uptrace/bun"
@@ -18,7 +17,7 @@ import (
 // A row something still refers to, such as a posting or a movement recorded
 // since the batches emptied it, fails with ErrResourceConflict and deletes
 // nothing, so the deletion can empty it again.
-func (a *Activities) DeleteFinancialAccount(ctx context.Context, input lt.DeleteFinancialAccountInput) error {
+func (a *Activities) DeleteFinancialAccount(ctx context.Context, input act.DeleteFinancialAccountInput) error {
 	db, err := a.Pools.For(ctx)
 	if err != nil {
 		return err

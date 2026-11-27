@@ -3,7 +3,7 @@ package journal
 import (
 	"time"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	"github.com/logicorg/ivfs/internal/pkg/temporaltesting"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/logicorg/ivfs/pkg/ptr"
@@ -17,18 +17,18 @@ var replaceDay = time.Date(2026, 4, 2, 0, 0, 0, 0, time.UTC)
 // replaceInput is a correction of an entry to amount euro between the ledger
 // accounts of h, on replaceDay, moving units of the asset when units is not
 // zero.
-func replaceInput(h held, entryID int64, asset *model.Asset, amount, units int64) lt.ReplaceJournalEntryInput {
-	input := lt.ReplaceJournalEntryInput{
+func replaceInput(h held, entryID int64, asset *model.Asset, amount, units int64) jt.ReplaceJournalEntryInput {
+	input := jt.ReplaceJournalEntryInput{
 		JournalEntryID: entryID,
 		OccurredAt:     replaceDay,
 		Description:    ptr.NewPtr("as corrected"),
-		Postings: []lt.PostingInput{
+		Postings: []jt.PostingInput{
 			{LedgerAccountID: h.debit.ID, Amount: decimal.NewFromInt(amount), Side: model.PostingDebit},
 			{LedgerAccountID: h.credit.ID, Amount: decimal.NewFromInt(amount), Side: model.PostingCredit},
 		},
 	}
 	if units != 0 {
-		input.Movements = []lt.ReplaceMovementInput{{Kind: model.PositionMovementTrade, FinancialAccountID: h.account.ID, AssetID: asset.ID, UnitsDelta: decimal.NewFromInt(units)}}
+		input.Movements = []jt.ReplaceMovementInput{{Kind: model.PositionMovementTrade, FinancialAccountID: h.account.ID, AssetID: asset.ID, UnitsDelta: decimal.NewFromInt(units)}}
 	}
 	return input
 }
@@ -103,7 +103,7 @@ func (s *UnitTestSuite) Test_ReplaceJournalEntry() {
 			activityResult, err := s.Env.ExecuteActivity(s.ja.ReplaceJournalEntry, replaceInput(h, entry.ID, asset, 25, tc.newUnits))
 
 			require.NoError(s.T(), err)
-			var result lt.ReplaceJournalEntryResult
+			var result jt.ReplaceJournalEntryResult
 			require.NoError(s.T(), activityResult.Get(&result))
 			require.Equal(s.T(), entry.ID, result.JournalEntryID)
 
@@ -221,15 +221,15 @@ func (s *UnitTestSuite) Test_ReplaceJournalEntry_Rejected() {
 	missing, ofDraft, unbalanced, noPostings, unknownAccount, unknownAsset, unknownFinancialAccount := valid, valid, valid, valid, valid, valid, valid
 	missing.JournalEntryID = 987654
 	ofDraft.JournalEntryID = draft.entry.ID
-	unbalanced.Postings = []lt.PostingInput{valid.Postings[0], {LedgerAccountID: h.credit.ID, Amount: decimal.NewFromInt(24), Side: model.PostingCredit}}
+	unbalanced.Postings = []jt.PostingInput{valid.Postings[0], {LedgerAccountID: h.credit.ID, Amount: decimal.NewFromInt(24), Side: model.PostingCredit}}
 	noPostings.Postings = nil
-	unknownAccount.Postings = []lt.PostingInput{valid.Postings[0], {LedgerAccountID: 987654, Amount: decimal.NewFromInt(25), Side: model.PostingCredit}}
-	unknownAsset.Movements = []lt.ReplaceMovementInput{{Kind: model.PositionMovementTrade, FinancialAccountID: h.account.ID, AssetID: 987654, UnitsDelta: decimal.NewFromInt(1)}}
-	unknownFinancialAccount.Movements = []lt.ReplaceMovementInput{{Kind: model.PositionMovementTrade, FinancialAccountID: 987654, AssetID: h.asset.ID, UnitsDelta: decimal.NewFromInt(1)}}
+	unknownAccount.Postings = []jt.PostingInput{valid.Postings[0], {LedgerAccountID: 987654, Amount: decimal.NewFromInt(25), Side: model.PostingCredit}}
+	unknownAsset.Movements = []jt.ReplaceMovementInput{{Kind: model.PositionMovementTrade, FinancialAccountID: h.account.ID, AssetID: 987654, UnitsDelta: decimal.NewFromInt(1)}}
+	unknownFinancialAccount.Movements = []jt.ReplaceMovementInput{{Kind: model.PositionMovementTrade, FinancialAccountID: 987654, AssetID: h.asset.ID, UnitsDelta: decimal.NewFromInt(1)}}
 
 	tests := []struct {
 		name    string
-		input   lt.ReplaceJournalEntryInput
+		input   jt.ReplaceJournalEntryInput
 		wantErr string
 	}{
 		{name: "missing entry", input: missing, wantErr: "JournalEntry not found"},
@@ -267,13 +267,13 @@ func (s *UnitTestSuite) Test_ReplaceJournalEntry_Idempotent() {
 
 	first, err := s.Env.ExecuteActivity(s.ja.ReplaceJournalEntry, input)
 	require.NoError(s.T(), err)
-	var created lt.ReplaceJournalEntryResult
+	var created jt.ReplaceJournalEntryResult
 	require.NoError(s.T(), first.Get(&created))
 	afterFirst := s.storedEntry(purchase.entry.ID)
 
 	second, err := s.Env.ExecuteActivity(s.ja.ReplaceJournalEntry, input)
 	require.NoError(s.T(), err)
-	var retried lt.ReplaceJournalEntryResult
+	var retried jt.ReplaceJournalEntryResult
 	require.NoError(s.T(), second.Get(&retried))
 	afterSecond := s.storedEntry(purchase.entry.ID)
 

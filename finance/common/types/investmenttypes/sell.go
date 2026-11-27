@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"cuelang.org/go/cuego"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	errs "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/shopspring/decimal"
 )
@@ -43,5 +43,5 @@ func (i *SellAssetInput) rules() error {
 	if i.Fee.GreaterThanOrEqual(i.Amount) {
 		return errs.ErrInvalidParameter{Description: "the fee of a sale must be less than its amount, so the sale leaves some proceeds"}
 	}
-	return lt.ValidateTagIDs(i.TagIDs)
+	return jt.ValidateTagIDs(i.TagIDs)
 }

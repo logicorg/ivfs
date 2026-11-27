@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"cuelang.org/go/cuego"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	errs "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/shopspring/decimal"
 )
@@ -51,5 +51,5 @@ func (i *VestInput) rules() error {
 	if i.UnitsWithheld.IsPositive() && i.TaxCategoryID == 0 {
 		return errs.ErrMissingRequiredParameter{Parameters: []string{"TaxCategoryID"}}
 	}
-	return lt.ValidateTagIDs(i.TagIDs)
+	return jt.ValidateTagIDs(i.TagIDs)
 }

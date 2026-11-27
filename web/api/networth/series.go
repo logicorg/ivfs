@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	rpt "github.com/logicorg/ivfs/finance/common/types/reportingtypes"
 	reportingwf "github.com/logicorg/ivfs/finance/workflows/ledger/reporting"
 	"github.com/logicorg/ivfs/web/api/gateway"
 	"go.temporal.io/sdk/client"
@@ -32,8 +32,8 @@ func registerSeries(api huma.API, c client.Client) {
 		if err != nil {
 			return nil, huma.Error422UnprocessableEntity("to is not a date, such as 2026-01-31")
 		}
-		result, err := gateway.RunWorkflow[lt.NetWorthSeriesResult](ctx, c, reportingwf.NetWorthSeries,
-			lt.NetWorthSeriesParams{From: from, To: to})
+		result, err := gateway.RunWorkflow[rpt.NetWorthSeriesResult](ctx, c, reportingwf.NetWorthSeries,
+			rpt.NetWorthSeriesParams{From: from, To: to})
 		if err != nil {
 			return nil, err
 		}

@@ -4,7 +4,9 @@ import (
 	"errors"
 	"time"
 
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	fxt "github.com/logicorg/ivfs/finance/common/types/fxtypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	tt "github.com/logicorg/ivfs/finance/common/types/transactiontypes"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
@@ -27,7 +29,7 @@ func (s *WorkflowUnitTestSuite) TestUpdateTransfer() {
 	tests := []struct {
 		name     string
 		input    tt.UpdateTransferInput
-		want     lt.ReplaceJournalEntryInput
+		want     jt.ReplaceJournalEntryInput
 		warnings []lt.NegativeHolding
 	}{
 		{
@@ -36,9 +38,9 @@ func (s *WorkflowUnitTestSuite) TestUpdateTransfer() {
 				JournalEntryID: 42, FromLedgerAccountID: cash.ID, ToLedgerAccountID: cardBalance.ID,
 				Amount: amount, OccurredAt: occurredAt, Description: "pay the card off", TagIDs: []int64{5},
 			},
-			want: lt.ReplaceJournalEntryInput{
+			want: jt.ReplaceJournalEntryInput{
 				JournalEntryID: 42, OccurredAt: occurredAt, Description: ptr.NewPtr("pay the card off"), TagIDs: []int64{5},
-				Postings: []lt.PostingInput{
+				Postings: []jt.PostingInput{
 					{LedgerAccountID: cardBalance.ID, Amount: amount, Side: model.PostingDebit},
 					{LedgerAccountID: cash.ID, Amount: amount, Side: model.PostingCredit},
 				},
@@ -50,9 +52,9 @@ func (s *WorkflowUnitTestSuite) TestUpdateTransfer() {
 				JournalEntryID: 42, FromLedgerAccountID: cash.ID, ToLedgerAccountID: savingsVault.ID,
 				Amount: amount, ToAmount: decimal.RequireFromString("300.5"), OccurredAt: occurredAt,
 			},
-			want: lt.ReplaceJournalEntryInput{
+			want: jt.ReplaceJournalEntryInput{
 				JournalEntryID: 42, OccurredAt: occurredAt,
-				Postings: []lt.PostingInput{
+				Postings: []jt.PostingInput{
 					{LedgerAccountID: savingsVault.ID, Amount: amount, Side: model.PostingDebit},
 					{LedgerAccountID: cash.ID, Amount: amount, Side: model.PostingCredit},
 				},
@@ -66,10 +68,10 @@ func (s *WorkflowUnitTestSuite) TestUpdateTransfer() {
 				Amount: amount, ToAmount: arrives, OccurredAt: occurredAt, Description: "dollars for the trip",
 				TagIDs: []int64{5},
 			},
-			want: lt.ReplaceJournalEntryInput{
+			want: jt.ReplaceJournalEntryInput{
 				JournalEntryID: 42, OccurredAt: occurredAt, Description: ptr.NewPtr("dollars for the trip"), TagIDs: []int64{5},
 				Metadata: map[string]string{"type": fxt.FXConversionEntryType, "effective_rate": "324.15/300.5"},
-				Postings: []lt.PostingInput{
+				Postings: []jt.PostingInput{
 					{LedgerAccountID: fxClearing.ID, Amount: amount, Side: model.PostingDebit},
 					{LedgerAccountID: cash.ID, Amount: amount, Side: model.PostingCredit},
 					{LedgerAccountID: cashUSD.ID, Amount: arrives, Side: model.PostingDebit},
@@ -83,10 +85,10 @@ func (s *WorkflowUnitTestSuite) TestUpdateTransfer() {
 				JournalEntryID: 42, FromLedgerAccountID: cashUSD.ID, ToLedgerAccountID: cash.ID,
 				Amount: arrives, ToAmount: amount, OccurredAt: occurredAt,
 			},
-			want: lt.ReplaceJournalEntryInput{
+			want: jt.ReplaceJournalEntryInput{
 				JournalEntryID: 42, OccurredAt: occurredAt,
 				Metadata: map[string]string{"type": fxt.FXConversionEntryType, "effective_rate": "300.5/324.15"},
-				Postings: []lt.PostingInput{
+				Postings: []jt.PostingInput{
 					{LedgerAccountID: fxClearingUSD.ID, Amount: arrives, Side: model.PostingDebit},
 					{LedgerAccountID: cashUSD.ID, Amount: arrives, Side: model.PostingCredit},
 					{LedgerAccountID: cash.ID, Amount: amount, Side: model.PostingDebit},
@@ -102,7 +104,7 @@ func (s *WorkflowUnitTestSuite) TestUpdateTransfer() {
 			mockLedgerAccounts(env)
 			mockFXClearing(env)
 			env.OnWorkflow(journalwf.ReplaceJournalEntry, mock.Anything, replacement(tc.want)).
-				Return(&lt.ReplaceJournalEntryResult{JournalEntryID: 42, Warnings: tc.warnings}, nil).Once()
+				Return(&jt.ReplaceJournalEntryResult{JournalEntryID: 42, Warnings: tc.warnings}, nil).Once()
 
 			env.ExecuteWorkflow(UpdateTransfer, tc.input)
 
@@ -149,7 +151,7 @@ func (s *WorkflowUnitTestSuite) TestUpdateTransfer_Errors() {
 		s.Run(tc.name, func() {
 			env := s.NewTestWorkflowEnvironment()
 			if tc.unknownAccount != 0 {
-				env.OnWorkflow(ledgeraccountswf.RetrieveLedgerAccount, mock.Anything, lt.RetrieveLedgerAccountParams{ID: tc.unknownAccount}).
+				env.OnWorkflow(ledgeraccountswf.RetrieveLedgerAccount, mock.Anything, act.RetrieveLedgerAccountParams{ID: tc.unknownAccount}).
 					Return(nil, errors.New("resource LedgerAccount not found"))
 			}
 			if tc.clearingErr != "" {

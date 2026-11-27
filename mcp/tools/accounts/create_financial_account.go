@@ -1,7 +1,7 @@
 package accounts
 
 import (
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
 	"github.com/logicorg/ivfs/mcp/mcptypes"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -18,7 +18,7 @@ func registerCreateFinancialAccount(server *mcp.Server, c client.Client) {
 			"create_ledger_account. Returns the existing account instead when the institution already has one with that name, " +
 			"compared case-insensitively. Get the institution id with create_institution and currency ids with list_currencies.",
 	}, mcptypes.WorkflowWithResult[
-		func(workflow.Context, lt.CreateFinancialAccountInput) (*lt.CreateFinancialAccountResult, error),
-		lt.CreateFinancialAccountInput, lt.CreateFinancialAccountResult,
+		func(workflow.Context, act.CreateFinancialAccountInput) (*act.CreateFinancialAccountResult, error),
+		act.CreateFinancialAccountInput, act.CreateFinancialAccountResult,
 	](c, ledgeraccountswf.CreateFinancialAccount))
 }

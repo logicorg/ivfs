@@ -3,7 +3,7 @@ package journal
 import (
 	"time"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	"github.com/logicorg/ivfs/internal/pkg/temporaltesting"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/stretchr/testify/require"
@@ -60,7 +60,7 @@ func (s *UnitTestSuite) Test_SetJournalEntryTags() {
 				return tags[i].ID
 			}
 
-			input := lt.SetJournalEntryTagsInput{JournalEntryID: entry.ID}
+			input := jt.SetJournalEntryTagsInput{JournalEntryID: entry.ID}
 			if tt.unknownEntry {
 				input.JournalEntryID = 999999
 			}
@@ -81,7 +81,7 @@ func (s *UnitTestSuite) Test_SetJournalEntryTags() {
 				require.ErrorContains(s.T(), err, tt.wantErr)
 			} else {
 				require.NoError(s.T(), err)
-				var result lt.SetJournalEntryTagsResult
+				var result jt.SetJournalEntryTagsResult
 				require.NoError(s.T(), got.Get(&result))
 				require.Equal(s.T(), want, append([]int64{}, result.TagIDs...))
 			}
@@ -103,9 +103,9 @@ func (s *UnitTestSuite) Test_SetJournalEntryTags_Idempotent() {
 	a, b := &model.Tag{Name: "vacation"}, &model.Tag{Name: "reimbursable"}
 	temporaltesting.Insert(s.T(), s.DB, a)
 	temporaltesting.Insert(s.T(), s.DB, b)
-	input := lt.SetJournalEntryTagsInput{JournalEntryID: entry.ID, TagIDs: []int64{b.ID, a.ID}}
+	input := jt.SetJournalEntryTagsInput{JournalEntryID: entry.ID, TagIDs: []int64{b.ID, a.ID}}
 
-	var results [2]lt.SetJournalEntryTagsResult
+	var results [2]jt.SetJournalEntryTagsResult
 	for i := range results {
 		got, err := s.Env.ExecuteActivity(s.ja.SetJournalEntryTags, input)
 		require.NoError(s.T(), err)

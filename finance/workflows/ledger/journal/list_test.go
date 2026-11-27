@@ -4,7 +4,7 @@ import (
 	"time"
 
 	activity "github.com/logicorg/ivfs/finance/activities/ledger/journal"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -12,9 +12,9 @@ import (
 )
 
 func (s *WorkflowUnitTestSuite) TestListJournalEntries() {
-	page := &lt.ListJournalEntriesResult{
+	page := &jt.ListJournalEntriesResult{
 		Entries: []model.JournalEntry{{ID: 10, Status: model.JournalEntryPosted}},
-		Next:    &lt.JournalEntryCursor{OccurredAt: time.Date(2026, 3, 1, 12, 0, 0, 0, time.UTC), ID: 10},
+		Next:    &jt.JournalEntryCursor{OccurredAt: time.Date(2026, 3, 1, 12, 0, 0, 0, time.UTC), ID: 10},
 	}
 
 	tests := []struct {
@@ -26,7 +26,7 @@ func (s *WorkflowUnitTestSuite) TestListJournalEntries() {
 		{name: "activity failure", result: []any{nil, assert.AnError}, wantErr: true},
 	}
 
-	params := lt.ListJournalEntriesParams{LedgerAccountID: 1, Descending: true, Limit: 1}
+	params := jt.ListJournalEntriesParams{LedgerAccountID: 1, Descending: true, Limit: 1}
 
 	for _, tc := range tests {
 		s.Run(tc.name, func() {
@@ -42,7 +42,7 @@ func (s *WorkflowUnitTestSuite) TestListJournalEntries() {
 				return
 			}
 			require.NoError(s.T(), env.GetWorkflowError())
-			var result *lt.ListJournalEntriesResult
+			var result *jt.ListJournalEntriesResult
 			require.NoError(s.T(), env.GetWorkflowResult(&result))
 			require.Len(s.T(), result.Entries, 1)
 			assert.Equal(s.T(), page.Entries[0].ID, result.Entries[0].ID)

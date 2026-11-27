@@ -2,7 +2,8 @@ package investments
 
 import (
 	it "github.com/logicorg/ivfs/finance/common/types/investmenttypes"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
+	pft "github.com/logicorg/ivfs/finance/common/types/portfoliotypes"
 	categorieswf "github.com/logicorg/ivfs/finance/workflows/ledger/categories"
 	"github.com/logicorg/ivfs/pkg/model"
 	"go.temporal.io/sdk/workflow"
@@ -50,20 +51,20 @@ func retrieveVestCategories(ctx workflow.Context, in *it.VestInput, currency *mo
 // rounded to the currency's precision and the income is their sum, so the
 // entry balances; a withholding worth less than the smallest unit is not
 // posted, as a posting must be positive.
-func buildVest(in *it.VestInput, b *brokerage, c *vestCategories) lt.RegisterVestInput {
+func buildVest(in *it.VestInput, b *brokerage, c *vestCategories) pft.RegisterVestInput {
 	precision := int32(b.currency.Precision)
 	delivered := in.UnitsVested.Sub(in.UnitsWithheld)
 	deliveredValue := delivered.Mul(in.FairMarketValue).Round(precision)
 	withheldValue := in.UnitsWithheld.Mul(in.FairMarketValue).Round(precision)
 
-	postings := []lt.PostingInput{{LedgerAccountID: b.investments, Amount: deliveredValue, Side: model.PostingDebit}}
+	postings := []jt.PostingInput{{LedgerAccountID: b.investments, Amount: deliveredValue, Side: model.PostingDebit}}
 	if withheldValue.IsPositive() {
-		postings = append(postings, lt.PostingInput{LedgerAccountID: c.expensesAccount, Amount: withheldValue, Side: model.PostingDebit, CategoryID: &c.tax})
+		postings = append(postings, jt.PostingInput{LedgerAccountID: c.expensesAccount, Amount: withheldValue, Side: model.PostingDebit, CategoryID: &c.tax})
 	}
-	postings = append(postings, lt.PostingInput{LedgerAccountID: c.incomeAccount, Amount: deliveredValue.Add(withheldValue), Side: model.PostingCredit, CategoryID: &c.income})
+	postings = append(postings, jt.PostingInput{LedgerAccountID: c.incomeAccount, Amount: deliveredValue.Add(withheldValue), Side: model.PostingCredit, CategoryID: &c.income})
 
-	result := lt.RegisterVestInput{
-		Entry: lt.PostJournalEntryInput{
+	result := pft.RegisterVestInput{
+		Entry: jt.PostJournalEntryInput{
 			IdempotencyKey: string(it.KindVest) + ":" + in.IdempotencyKey,
 			OccurredAt:     in.OccurredAt,
 			Postings:       postings,

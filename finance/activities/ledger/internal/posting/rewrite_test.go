@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	"github.com/logicorg/ivfs/internal/pkg/temporaltesting"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/shopspring/decimal"
@@ -69,9 +69,9 @@ func (s *UnitTestSuite) Test_RewriteEntryTx() {
 			newDescription := "as corrected"
 			// The key and the external id of the input are not the entry's, and
 			// have to be ignored.
-			input := lt.PostJournalEntryInput{
+			input := jt.PostJournalEntryInput{
 				IdempotencyKey: "ignored", OccurredAt: newOccurredAt, Description: &newDescription,
-				Postings: []lt.PostingInput{
+				Postings: []jt.PostingInput{
 					{LedgerAccountID: s.debit.ID, Amount: debitAmount, Side: model.PostingDebit},
 					{LedgerAccountID: credit.ID, Amount: decimal.NewFromInt(10), Side: model.PostingCredit},
 				},
@@ -178,9 +178,9 @@ func (s *UnitTestSuite) Test_RewriteEntryTx_Categories() {
 			if !tt.drop {
 				want = &after.ID
 			}
-			input := lt.PostJournalEntryInput{
+			input := jt.PostJournalEntryInput{
 				OccurredAt: entry.OccurredAt,
-				Postings: []lt.PostingInput{
+				Postings: []jt.PostingInput{
 					{LedgerAccountID: expenses.ID, Amount: decimal.NewFromInt(10), Side: model.PostingDebit, CategoryID: want},
 					{LedgerAccountID: s.debit.ID, Amount: decimal.NewFromInt(10), Side: model.PostingCredit},
 				},
