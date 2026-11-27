@@ -8,6 +8,7 @@ import (
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	tt "github.com/logicorg/ivfs/finance/common/types/transactiontypes"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
+	categorieswf "github.com/logicorg/ivfs/finance/workflows/ledger/categories"
 	ledgerfxwf "github.com/logicorg/ivfs/finance/workflows/ledger/fx"
 	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/logicorg/ivfs/pkg/model"
@@ -21,9 +22,14 @@ const transferKind = "transfer"
 // it leaves is credited and the one it reaches debited (ADR 0008). Paying a
 // card off is a transfer to its liability, so the amount owed shrinks.
 //
+// Charges are what moving the money cost, such as an instalment's interest:
+// each is debited on "Expenses" under its category, out of the amount, and the
+// balance reached is debited the rest.
+//
 // Between balances in different currencies the money that arrives is given as
 // ToAmount, and the transfer is posted through RegisterFXConversion, each
-// currency balancing through its "FX clearing" account. It fails with
+// currency balancing through its "FX clearing" account, with the one charge
+// allowed as its fee. It fails with
 // ErrInvalidParameter, writing nothing, when an account is not a balance, or
 // when the amounts do not fit the balances' currencies. A repeated idempotency
 // key returns the entry first posted with it.
@@ -65,12 +71,18 @@ func transferOf(ctx workflow.Context, input tt.RecordTransferInput) (*movement, 
 	}
 
 	if from.CurrencyID == to.CurrencyID {
-		if !input.ToAmount.IsZero() && !input.ToAmount.Equal(input.Amount) {
+		reaching := input.Amount.Sub(tt.ChargesTotal(input.Charges))
+		if !input.ToAmount.IsZero() && !input.ToAmount.Equal(reaching) {
 			return nil, nil, internalerrors.ErrInvalidParameter{
-				Description: fmt.Sprintf("%q and %q are in the same currency, so the amount that arrives is the amount that leaves", from.Name, to.Name),
+				Description: fmt.Sprintf("%q and %q are in the same currency, so the amount that arrives is the amount that leaves less the charges, %s", from.Name, to.Name, reaching),
 			}
 		}
+		charges, err := chargesOf(ctx, input.Charges, from.CurrencyID)
+		if err != nil {
+			return nil, nil, err
+		}
 		return &movement{
+			splits:         charges,
 			kind:           transferKind,
 			idempotencyKey: input.IdempotencyKey,
 			from:           from.ID,
@@ -87,6 +99,11 @@ func transferOf(ctx workflow.Context, input tt.RecordTransferInput) (*movement, 
 			Description: fmt.Sprintf("%q and %q are in different currencies; give the amount that arrives as toAmount", from.Name, to.Name),
 		}
 	}
+	if len(input.Charges) > 1 {
+		return nil, nil, internalerrors.ErrInvalidParameter{
+			Description: fmt.Sprintf("%q and %q are in different currencies, so the transfer takes at most one charge, its exchange fee", from.Name, to.Name),
+		}
+	}
 	conversion, err := conversionOf(ctx, input, from, to)
 	if err != nil {
 		return nil, nil, err
@@ -94,9 +111,10 @@ func transferOf(ctx workflow.Context, input tt.RecordTransferInput) (*movement, 
 	return nil, conversion, nil
 }
 
-// conversionOf is a transfer between currencies as an FX conversion, with no
-// fee. The clearing accounts are found by their key, or created if a balance
-// was opened without them, as account setup would have.
+// conversionOf is a transfer between currencies as an FX conversion, whose
+// fee is the charge if there is one. The clearing accounts are found by their
+// key, or created if a balance was opened without them, as account setup would
+// have.
 func conversionOf(ctx workflow.Context, input tt.RecordTransferInput, from, to *model.LedgerAccount) (*fxt.RegisterFXConversionInput, error) {
 	fromClearing, err := ensureFXClearing(ctx, from.CurrencyID)
 	if err != nil {
@@ -121,8 +139,31 @@ func conversionOf(ctx workflow.Context, input tt.RecordTransferInput, from, to *
 	if input.Description != "" {
 		conversion.Description = &input.Description
 	}
+	if len(input.Charges) == 1 {
+		// RegisterFXConversion finds the fee's account itself, but an update
+		// posts the conversion's entry without it.
+		charges, err := chargesOf(ctx, input.Charges, from.CurrencyID)
+		if err != nil {
+			return nil, err
+		}
+		conversion.Fee = &fxt.FXFee{CategoryID: charges[0].category, Amount: charges[0].amount, LedgerAccountID: charges[0].account}
+	}
 
 	return &conversion, nil
+}
+
+// chargesOf returns the charges as splits on "Expenses" in the currency the
+// money leaves in, each checked to be an expense category.
+func chargesOf(ctx workflow.Context, charges []tt.Charge, currencyID int64) ([]split, error) {
+	splits := make([]split, len(charges))
+	for i, charge := range charges {
+		account, err := categorieswf.CategoryAccount(ctx, charge.CategoryID, model.LedgerAccountExpense, currencyID)
+		if err != nil {
+			return nil, err
+		}
+		splits[i] = split{account: account, category: charge.CategoryID, amount: charge.Amount}
+	}
+	return splits, nil
 }
 
 // ensureFXClearing returns the id of the "FX clearing" account of a currency.

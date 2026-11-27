@@ -19,9 +19,9 @@ import (
 )
 
 // TestUpdateTransfer checks that an update replaces the entry with what
-// RecordTransfer would post: two postings in one currency, and between
-// currencies the postings and the metadata of an FX conversion without a fee,
-// through the clearing account of each currency.
+// RecordTransfer would post: two postings in one currency and one per charge,
+// and between currencies the postings and the metadata of an FX conversion,
+// its charge as the fee, through the clearing account of each currency.
 func (s *WorkflowUnitTestSuite) TestUpdateTransfer() {
 	occurredAt := time.Date(2026, 10, 3, 10, 0, 0, 0, time.UTC)
 	amount, arrives := decimal.RequireFromString("300.50"), decimal.RequireFromString("324.15")
@@ -80,6 +80,41 @@ func (s *WorkflowUnitTestSuite) TestUpdateTransfer() {
 			},
 		},
 		{
+			name: "a mortgage instalment, part of it interest",
+			input: tt.UpdateTransferInput{
+				JournalEntryID: 42, FromLedgerAccountID: cash.ID, ToLedgerAccountID: principal.ID,
+				Amount: decimal.NewFromInt(1200), OccurredAt: occurredAt,
+				Charges: []tt.Charge{{CategoryID: interest.ID, Amount: decimal.NewFromInt(800)}},
+			},
+			want: jt.ReplaceJournalEntryInput{
+				JournalEntryID: 42, OccurredAt: occurredAt,
+				Postings: []jt.PostingInput{
+					{LedgerAccountID: principal.ID, Amount: decimal.NewFromInt(400), Side: model.PostingDebit},
+					{LedgerAccountID: expenses.ID, Amount: decimal.NewFromInt(800), Side: model.PostingDebit, CategoryID: ptr.Int64(interest.ID)},
+					{LedgerAccountID: cash.ID, Amount: decimal.NewFromInt(1200), Side: model.PostingCredit},
+				},
+			},
+		},
+		{
+			name: "from euros to dollars, with a charge as the fee",
+			input: tt.UpdateTransferInput{
+				JournalEntryID: 42, FromLedgerAccountID: cash.ID, ToLedgerAccountID: cashUSD.ID,
+				Amount: amount, ToAmount: arrives, OccurredAt: occurredAt,
+				Charges: []tt.Charge{{CategoryID: groceries.ID, Amount: decimal.RequireFromString("1.50")}},
+			},
+			want: jt.ReplaceJournalEntryInput{
+				JournalEntryID: 42, OccurredAt: occurredAt,
+				Metadata: map[string]string{"type": fxt.FXConversionEntryType, "effective_rate": "324.15/299"},
+				Postings: []jt.PostingInput{
+					{LedgerAccountID: fxClearing.ID, Amount: decimal.NewFromInt(299), Side: model.PostingDebit},
+					{LedgerAccountID: expenses.ID, Amount: decimal.RequireFromString("1.50"), Side: model.PostingDebit, CategoryID: ptr.Int64(groceries.ID)},
+					{LedgerAccountID: cash.ID, Amount: amount, Side: model.PostingCredit},
+					{LedgerAccountID: cashUSD.ID, Amount: arrives, Side: model.PostingDebit},
+					{LedgerAccountID: fxClearingUSD.ID, Amount: arrives, Side: model.PostingCredit},
+				},
+			},
+		},
+		{
 			name: "from dollars to euros, without a note",
 			input: tt.UpdateTransferInput{
 				JournalEntryID: 42, FromLedgerAccountID: cashUSD.ID, ToLedgerAccountID: cash.ID,
@@ -102,6 +137,7 @@ func (s *WorkflowUnitTestSuite) TestUpdateTransfer() {
 		s.Run(tc.name, func() {
 			env := s.NewTestWorkflowEnvironment()
 			mockLedgerAccounts(env)
+			mockCategories(env)
 			mockFXClearing(env)
 			env.OnWorkflow(journalwf.ReplaceJournalEntry, mock.Anything, replacement(tc.want)).
 				Return(&jt.ReplaceJournalEntryResult{JournalEntryID: 42, Warnings: tc.warnings}, nil).Once()
@@ -127,6 +163,7 @@ func (s *WorkflowUnitTestSuite) TestUpdateTransfer_Errors() {
 		// entry, from, and to are the ids the request names.
 		entry, from, to int64
 		toAmount        string
+		charges         []tt.Charge
 		// unknownAccount makes the retrieval of that account fail.
 		unknownAccount int64
 		// clearingErr is what finding an "FX clearing" account fails with.
@@ -141,6 +178,16 @@ func (s *WorkflowUnitTestSuite) TestUpdateTransfer_Errors() {
 		{name: "a destination of no financial account", entry: 42, from: cash.ID, to: fxClearing.ID, toAmount: "0", wantError: `invalid parameter: "FX clearing" is not a balance`},
 		{name: "a different amount arriving in the same currency", entry: 42, from: cash.ID, to: savingsVault.ID, toAmount: "299", wantError: `invalid parameter: "Cash" and "Savings vault" are in the same currency`},
 		{name: "no amount arriving in another currency", entry: 42, from: cash.ID, to: cashUSD.ID, toAmount: "0", wantError: `are in different currencies; give the amount that arrives as toAmount`},
+		{
+			name: "two charges between currencies", entry: 42, from: cash.ID, to: cashUSD.ID, toAmount: "324.15",
+			charges:   []tt.Charge{{CategoryID: interest.ID, Amount: decimal.NewFromInt(1)}, {CategoryID: groceries.ID, Amount: decimal.NewFromInt(1)}},
+			wantError: "so the transfer takes at most one charge, its exchange fee",
+		},
+		{
+			name: "a charge under an income category", entry: 42, from: cash.ID, to: principal.ID, toAmount: "0",
+			charges:   []tt.Charge{{CategoryID: salary.ID, Amount: decimal.NewFromInt(1)}},
+			wantError: `"Salary" is an income category, not an expense one`,
+		},
 		{name: "an unknown account", entry: 42, from: cash.ID, to: 999, toAmount: "0", unknownAccount: 999, wantError: "retrieve ledger account 999"},
 		{name: "a failed clearing account lookup", entry: 42, from: cash.ID, to: cashUSD.ID, toAmount: "324.15", clearingErr: "resource Currency not found with ID: 1", wantError: "find the FX clearing account of currency 1"},
 		{name: "an unknown entry", entry: 42, from: cash.ID, to: savingsVault.ID, toAmount: "0", replaceErr: "resource JournalEntry not found with ID: 42", wantError: "update transfer: "},
@@ -161,11 +208,12 @@ func (s *WorkflowUnitTestSuite) TestUpdateTransfer_Errors() {
 				env.OnWorkflow(journalwf.ReplaceJournalEntry, mock.Anything, mock.Anything).Return(nil, errors.New(tc.replaceErr))
 			}
 			mockLedgerAccounts(env)
+			mockCategories(env)
 			mockFXClearing(env)
 
 			env.ExecuteWorkflow(UpdateTransfer, tt.UpdateTransferInput{
 				JournalEntryID: tc.entry, FromLedgerAccountID: tc.from, ToLedgerAccountID: tc.to,
-				Amount: decimal.NewFromInt(300), ToAmount: decimal.RequireFromString(tc.toAmount),
+				Amount: decimal.NewFromInt(300), ToAmount: decimal.RequireFromString(tc.toAmount), Charges: tc.charges,
 				OccurredAt: time.Date(2026, 10, 3, 10, 0, 0, 0, time.UTC),
 			})
 

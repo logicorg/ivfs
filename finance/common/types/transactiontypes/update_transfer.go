@@ -23,10 +23,11 @@ type UpdateTransferInput struct {
 	OccurredAt  time.Time       `json:"occurredAt" jsonschema:"the instant it was moved, such as 2026-10-03T10:00:00Z"`
 	Description string          `json:"description,omitempty" jsonschema:"a note"`
 	TagIDs      []int64         `json:"tagIds,omitempty" jsonschema:"the tags of the entry, each taken once"`
+	Charges     []Charge        `json:"charges,omitempty" jsonschema:"what moving the money cost, such as an instalment's interest or a fee, taken out of the amount that leaves; at most one between currencies"`
 }
 
 // Validate checks the input against its CUE constraints, its date, its tag
-// ids, and that the money moves between two different accounts.
+// ids, its charges, and that the money moves between two different accounts.
 func (i *UpdateTransferInput) Validate() error {
 	if err := cuego.Validate(i); err != nil {
 		return errs.ValidationError{Err: err}
@@ -37,6 +38,9 @@ func (i *UpdateTransferInput) Validate() error {
 	if i.FromLedgerAccountID == i.ToLedgerAccountID {
 		return errs.ErrInvalidParameter{Description: "a transfer moves money between two different balances"}
 	}
+	if err := validateCharges(i.Amount, i.Charges); err != nil {
+		return err
+	}
 	return jt.ValidateTagIDs(i.TagIDs)
 }
 
@@ -46,6 +50,6 @@ func (i *UpdateTransferInput) Transfer() RecordTransferInput {
 	return RecordTransferInput{
 		FromLedgerAccountID: i.FromLedgerAccountID, ToLedgerAccountID: i.ToLedgerAccountID,
 		Amount: i.Amount, ToAmount: i.ToAmount, OccurredAt: i.OccurredAt, Description: i.Description,
-		TagIDs: i.TagIDs,
+		TagIDs: i.TagIDs, Charges: i.Charges,
 	}
 }

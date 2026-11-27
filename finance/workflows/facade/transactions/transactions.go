@@ -30,10 +30,20 @@ type movement struct {
 	// fromCategory and toCategory classify the posting of that side, which is
 	// then on "Income" or "Expenses". Zero is no category.
 	fromCategory, toCategory int64
-	amount                   decimal.Decimal
-	occurredAt               time.Time
-	description              string
-	tagIDs                   []int64
+	// splits are debited besides to, out of amount, so to receives what they
+	// leave of it.
+	splits      []split
+	amount      decimal.Decimal
+	occurredAt  time.Time
+	description string
+	tagIDs      []int64
+}
+
+// split is part of a movement's amount debited on an account of its own,
+// under a category.
+type split struct {
+	account, category int64
+	amount            decimal.Decimal
 }
 
 // retrieveLedgerAccounts retrieves the given ledger accounts concurrently.
@@ -89,16 +99,23 @@ func categorized(ctx workflow.Context, balanceID, categoryID int64, kind model.L
 }
 
 // entry is the movement as one journal entry, crediting the account the money
-// leaves and debiting the one it reaches.
+// leaves and debiting the one it reaches, and each split.
 func (m movement) entry() jt.PostJournalEntryInput {
+	reaching := m.amount
+	splits := make([]jt.PostingInput, len(m.splits))
+	for i, split := range m.splits {
+		reaching = reaching.Sub(split.amount)
+		splits[i] = jt.PostingInput{LedgerAccountID: split.account, Amount: split.amount, Side: model.PostingDebit, CategoryID: categoryOf(split.category)}
+	}
+
+	postings := []jt.PostingInput{{LedgerAccountID: m.to, Amount: reaching, Side: model.PostingDebit, CategoryID: categoryOf(m.toCategory)}}
+	postings = append(postings, splits...)
+	postings = append(postings, jt.PostingInput{LedgerAccountID: m.from, Amount: m.amount, Side: model.PostingCredit, CategoryID: categoryOf(m.fromCategory)})
 	input := jt.PostJournalEntryInput{
 		IdempotencyKey: m.kind + ":" + m.idempotencyKey,
 		OccurredAt:     m.occurredAt,
 		TagIDs:         m.tagIDs,
-		Postings: []jt.PostingInput{
-			{LedgerAccountID: m.to, Amount: m.amount, Side: model.PostingDebit, CategoryID: categoryOf(m.toCategory)},
-			{LedgerAccountID: m.from, Amount: m.amount, Side: model.PostingCredit, CategoryID: categoryOf(m.fromCategory)},
-		},
+		Postings:       postings,
 	}
 	if m.description != "" {
 		input.Description = &m.description
