@@ -10,7 +10,7 @@ ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 
 WORKDIR /build/web/ui
 
-RUN npm install --global pnpm@10.34.9
+RUN npm install --global pnpm@12.18.0
 
 # The lockfile alone first, so a source change reuses the installed
 # dependencies.
