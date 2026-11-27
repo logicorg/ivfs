@@ -16,6 +16,8 @@ RUN npm install --global pnpm@10.34.9
 # dependencies.
 COPY web/ui/package.json web/ui/pnpm-lock.yaml ./
 
+RUN pnpm install --frozen-lockfile
+
 COPY web/ui ./
 
 RUN pnpm build
