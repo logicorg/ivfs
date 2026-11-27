@@ -3,6 +3,10 @@
 - Status: Implemented
 - Date: 2026-09-05
 - Depends on: [ADR 0001](0001-double-entry-ledger.md) and [ADR 0002](0002-ledger-domain-and-application-api.md)
+- Amended by: [ADR 0019](0019-currency-neutral-categories.md) (a category is a table of
+  its own again, with no currency, and ledger accounts have no hierarchy) and
+  [ADR 0021](0021-tagging-journal-entries.md) (tags are assigned to entries,
+  and an assigned tag is deleted rather than archived)
 
 ## Context
 

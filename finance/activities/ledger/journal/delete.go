@@ -6,7 +6,7 @@ import (
 
 	"github.com/logicorg/ivfs/finance/activities/ledger/internal/deletion"
 	"github.com/logicorg/ivfs/finance/activities/ledger/internal/positions"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/uptrace/bun"
 )
@@ -18,7 +18,7 @@ import (
 //
 // The units an entry gave are gone from the history afterwards, so the holdings
 // that are negative as a result are returned as warnings.
-func (a *Activities) DeleteJournalEntry(ctx context.Context, input lt.DeleteJournalEntryInput) (*lt.DeleteJournalEntryResult, error) {
+func (a *Activities) DeleteJournalEntry(ctx context.Context, input jt.DeleteJournalEntryInput) (*jt.DeleteJournalEntryResult, error) {
 	db, err := a.Pools.For(ctx)
 	if err != nil {
 		return nil, err
@@ -28,7 +28,7 @@ func (a *Activities) DeleteJournalEntry(ctx context.Context, input lt.DeleteJour
 		return nil, err
 	}
 
-	result := &lt.DeleteJournalEntryResult{}
+	result := &jt.DeleteJournalEntryResult{}
 	err = db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
 		// The accounts are read before they are locked. A replace of the entry
 		// that commits in between can move it onto others, which then go

@@ -7,19 +7,22 @@ type RetrieveCategoryParams struct {
 }
 
 type ListCategoriesParams struct {
-	ParentID   *int64 `json:"parentId,omitempty"`
-	CurrencyID *int64 `json:"currencyId,omitempty"`
+	ParentID *int64 `json:"parentId,omitempty" jsonschema:"only the categories directly under this one"`
+	// Kind is income or expense, and every kind when empty.
+	Kind model.LedgerAccountKind `json:"kind,omitempty" jsonschema:"income or expense; both if omitted"`
 	// NameContains matches a case-insensitive substring of the category's
 	// name, for example to resolve "groceries" to a category before a write
 	// command.
-	NameContains  string `json:"nameContains,omitempty"`
-	IncludeClosed bool   `json:"includeClosed,omitempty"`
+	NameContains string `json:"nameContains,omitempty"`
+	// IncludeClosed also lists the closed categories. A closed category still
+	// takes postings; it is only not offered.
+	IncludeClosed bool `json:"includeClosed,omitempty" jsonschema:"also list closed categories, which are kept for their history and not meant for new entries"`
 }
 
 type RetrieveCategoryResult struct {
-	LedgerAccount *model.LedgerAccount `json:"ledgerAccount"`
+	Category *model.Category `json:"category"`
 }
 
 type ListCategoriesResult struct {
-	LedgerAccounts []model.LedgerAccount `json:"ledgerAccounts"`
+	Categories []model.Category `json:"categories"`
 }

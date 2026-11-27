@@ -92,6 +92,16 @@ func (e ErrResourceClosed) Error() string {
 	return fmt.Sprintf("resource %s with ID: %v is closed", e.ResourceType, e.ID)
 }
 
+// ErrUnauthenticated is a request whose session names no one the service
+// knows, such as a user a recreated registry no longer has. Signing in
+// again, not retrying, is what fixes it. It is a struct, not a sentinel, so
+// its type name survives Temporal and the gateway can match it.
+type ErrUnauthenticated struct{}
+
+func (ErrUnauthenticated) Error() string {
+	return "the session's user is not registered; sign in again"
+}
+
 // ValidationError is an error type that indicates that a validation error occurred.
 type ValidationError struct {
 	// Err is the underlying error.

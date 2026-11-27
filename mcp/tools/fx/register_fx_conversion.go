@@ -1,7 +1,7 @@
 package fx
 
 import (
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	fxt "github.com/logicorg/ivfs/finance/common/types/fxtypes"
 	fxwf "github.com/logicorg/ivfs/finance/workflows/ledger/fx"
 	"github.com/logicorg/ivfs/mcp/mcptypes"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -13,10 +13,11 @@ func registerRegisterFXConversion(server *mcp.Server, c client.Client) {
 	mcptypes.AddTool(server, &mcp.Tool{
 		Name: "register_fx_conversion",
 		Description: "Convert money between two currencies as one balanced journal entry, bridged by a clearing account per currency. " +
-			"Both amounts are what actually settled - the rate is derived and stored, not supplied. Look ledger account ids up first " +
-			"with list_accounts rather than guessing them.",
+			"Both amounts are what actually settled - the rate is derived and stored, not supplied. A fee names an expense category " +
+			"and is part of the source amount. Look ledger account ids up first with list_accounts, and the fee's category with " +
+			"list_categories, rather than guessing them.",
 	}, mcptypes.WorkflowWithResult[
-		func(workflow.Context, lt.RegisterFXConversionInput) (*lt.RegisterFXConversionResult, error),
-		RegisterFXConversionToolInput, lt.RegisterFXConversionResult,
+		func(workflow.Context, fxt.RegisterFXConversionInput) (*fxt.RegisterFXConversionResult, error),
+		RegisterFXConversionToolInput, fxt.RegisterFXConversionResult,
 	](c, fxwf.RegisterFXConversion))
 }

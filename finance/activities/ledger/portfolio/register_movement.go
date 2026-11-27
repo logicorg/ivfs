@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/logicorg/ivfs/finance/activities/ledger/internal/positions"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	pft "github.com/logicorg/ivfs/finance/common/types/portfoliotypes"
 	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/logicorg/ivfs/pkg/sqllib"
 	"github.com/uptrace/bun"
@@ -17,7 +17,7 @@ import (
 // the first call without comparing the rest of the request. A holding that is
 // negative afterwards does not refuse the movement and is returned as a
 // warning.
-func (a *Activities) RegisterPositionMovement(ctx context.Context, input lt.RegisterPositionMovementInput) (*lt.RegisterPositionMovementResult, error) {
+func (a *Activities) RegisterPositionMovement(ctx context.Context, input pft.RegisterPositionMovementInput) (*pft.RegisterPositionMovementResult, error) {
 	db, err := a.Pools.For(ctx)
 	if err != nil {
 		return nil, err
@@ -27,7 +27,7 @@ func (a *Activities) RegisterPositionMovement(ctx context.Context, input lt.Regi
 		return nil, err
 	}
 
-	result := &lt.RegisterPositionMovementResult{}
+	result := &pft.RegisterPositionMovementResult{}
 	err = db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
 		accounts, err := positions.LockFinancialAccountsTx(ctx, tx, input.FinancialAccountIDs())
 		if err != nil {

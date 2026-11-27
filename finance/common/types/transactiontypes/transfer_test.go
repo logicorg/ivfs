@@ -23,6 +23,8 @@ func TestRecordTransferInput_Validate(t *testing.T) {
 		"a transfer":                     {mutate: func(*RecordTransferInput) {}},
 		"a transfer with an arrival":     {mutate: func(i *RecordTransferInput) { i.ToAmount = decimal.RequireFromString("324.15") }},
 		"a transfer with a note":         {mutate: func(i *RecordTransferInput) { i.Description = "pay the card off" }},
+		"with tags":                      {mutate: func(i *RecordTransferInput) { i.TagIDs = []int64{3, 4} }},
+		"a tag id of zero":               {mutate: func(i *RecordTransferInput) { i.TagIDs = []int64{3, 0} }, wantError: "tag id 0"},
 		"a blank idempotency key":        {mutate: func(i *RecordTransferInput) { i.IdempotencyKey = "\t" }, wantError: "validation error"},
 		"no source":                      {mutate: func(i *RecordTransferInput) { i.FromLedgerAccountID = 0 }, wantError: "validation error"},
 		"no destination":                 {mutate: func(i *RecordTransferInput) { i.ToLedgerAccountID = 0 }, wantError: "validation error"},

@@ -4,7 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	ledgerdeletion "github.com/logicorg/ivfs/finance/activities/ledger/internal/deletion"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/logicorg/ivfs/pkg/sqllib"
@@ -12,8 +13,8 @@ import (
 )
 
 // DeleteLedgerAccount is an activity that deletes a ledger account.
-// If the account has postings, or has child accounts, it will return an error indicating that the account cannot be deleted.
-func (a *Activities) DeleteLedgerAccount(ctx context.Context, input lt.DeleteLedgerAccountInput) error {
+// If the account has postings, it will return an error indicating that the account cannot be deleted.
+func (a *Activities) DeleteLedgerAccount(ctx context.Context, input act.DeleteLedgerAccountInput) error {
 	db, err := a.Pools.For(ctx)
 	if err != nil {
 		return err
@@ -28,18 +29,10 @@ func (a *Activities) DeleteLedgerAccount(ctx context.Context, input lt.DeleteLed
 			return err
 		}
 
-		if hasPostings, err := ledgerAccountHasPostings(ctx, tx, input.LedgerAccountID); err != nil {
+		if hasPostings, err := ledgerdeletion.LedgerAccountHasPostingsTx(ctx, tx, input.LedgerAccountID); err != nil {
 			return err
 		} else if hasPostings {
 			return internalerrors.ErrResourceConflict{ResourceType: "LedgerAccount", Reason: "ledger account has postings; close it instead"}
-		}
-
-		children, err := tx.NewSelect().Model((*model.LedgerAccount)(nil)).Where("la.parent_id = ?", input.LedgerAccountID).Exists(ctx)
-		if err != nil {
-			return fmt.Errorf("check child ledger accounts: %w", err)
-		}
-		if children {
-			return internalerrors.ErrResourceConflict{ResourceType: "LedgerAccount", Reason: "ledger account has children"}
 		}
 
 		if _, err := tx.NewDelete().Model((*model.LedgerAccount)(nil)).Where("id = ?", input.LedgerAccountID).Exec(ctx); err != nil {

@@ -16,12 +16,12 @@ func TestIsReservedLedgerAccount(t *testing.T) {
 	}{
 		{name: "opening balances", account: model.LedgerAccount{Name: "Opening balances", Kind: model.LedgerAccountEquity}, want: true},
 		{name: "fx clearing", account: model.LedgerAccount{Name: "FX clearing", Kind: model.LedgerAccountAsset}, want: true},
+		{name: "expenses", account: model.LedgerAccount{Name: "Expenses", Kind: model.LedgerAccountExpense}, want: true},
+		{name: "income", account: model.LedgerAccount{Name: "Income", Kind: model.LedgerAccountIncome}, want: true},
+		{name: "expenses of the other kind", account: model.LedgerAccount{Name: "Expenses", Kind: model.LedgerAccountIncome}, want: true},
 		{name: "untracked accounts", account: model.LedgerAccount{Name: "Untracked accounts", Kind: model.LedgerAccountEquity}, want: true},
-		{name: "uncategorized expense", account: model.LedgerAccount{Name: "Uncategorized", Kind: model.LedgerAccountExpense}, want: true},
-		{name: "uncategorized income", account: model.LedgerAccount{Name: "Uncategorized", Kind: model.LedgerAccountIncome}, want: true},
 		{name: "other case and spaces", account: model.LedgerAccount{Name: " fx CLEARING ", Kind: model.LedgerAccountAsset}, want: true},
-		{name: "another kind", account: model.LedgerAccount{Name: "FX clearing", Kind: model.LedgerAccountEquity}},
-		{name: "a child", account: model.LedgerAccount{Name: "Opening balances", Kind: model.LedgerAccountEquity, ParentID: ptr.NewPtr(int64(1))}},
+		{name: "another kind", account: model.LedgerAccount{Name: "FX clearing", Kind: model.LedgerAccountEquity}, want: true},
 		{name: "of a financial account", account: model.LedgerAccount{Name: "FX clearing", Kind: model.LedgerAccountAsset, FinancialAccountID: ptr.NewPtr(int64(1))}},
 		{name: "an ordinary account", account: model.LedgerAccount{Name: "Groceries", Kind: model.LedgerAccountExpense}},
 	}

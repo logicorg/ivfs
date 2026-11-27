@@ -24,6 +24,7 @@ var (
 				"ErrNotFound",
 				"ErrResourceClosed",
 				"ErrResourceConflict",
+				"ErrUnauthenticated",
 			},
 		},
 	}

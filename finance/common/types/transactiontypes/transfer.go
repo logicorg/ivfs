@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"cuelang.org/go/cuego"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	errs "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/shopspring/decimal"
 )
@@ -21,10 +22,11 @@ type RecordTransferInput struct {
 	ToAmount    decimal.Decimal `json:"toAmount,omitzero" cue:"!~\"^-\"" jsonschema:"the amount that arrives, required when the balances are in different currencies; the amount that leaves if omitted"`
 	OccurredAt  time.Time       `json:"occurredAt" jsonschema:"the instant it was moved, such as 2026-10-03T10:00:00Z"`
 	Description string          `json:"description,omitempty" jsonschema:"a note"`
+	TagIDs      []int64         `json:"tagIds,omitempty" jsonschema:"the tags of the entry, each taken once"`
 }
 
-// Validate checks the input against its CUE constraints, its date, and that
-// the money moves between two different accounts.
+// Validate checks the input against its CUE constraints, its date, its tag
+// ids, and that the money moves between two different accounts.
 func (i *RecordTransferInput) Validate() error {
 	if err := cuego.Validate(i); err != nil {
 		return errs.ValidationError{Err: err}
@@ -35,5 +37,5 @@ func (i *RecordTransferInput) Validate() error {
 	if i.FromLedgerAccountID == i.ToLedgerAccountID {
 		return errs.ErrInvalidParameter{Description: "a transfer moves money between two different balances"}
 	}
-	return nil
+	return jt.ValidateTagIDs(i.TagIDs)
 }

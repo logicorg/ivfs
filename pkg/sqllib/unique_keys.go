@@ -24,12 +24,17 @@ var uniqueKeys = []string{
 	`CREATE UNIQUE INDEX IF NOT EXISTS ledger_account_financial_account_name_lower_key
 		ON ledger.ledger_account (financial_account_id, currency_id, lower(name))
 		WHERE financial_account_id IS NOT NULL`,
-	// A top-level account has no parent, and NULLS NOT DISTINCT makes two
-	// top-level accounts with the same kind, currency, and name collide, which
-	// they would not by default. It needs PostgreSQL 15 or later.
+	// The shared accounts, which belong to no financial account, are one per
+	// kind, currency, and name.
 	`CREATE UNIQUE INDEX IF NOT EXISTS ledger_account_name_lower_key
-		ON ledger.ledger_account (parent_id, kind, currency_id, lower(name)) NULLS NOT DISTINCT
+		ON ledger.ledger_account (kind, currency_id, lower(name))
 		WHERE financial_account_id IS NULL`,
+	// A category has no currency, so its name is unique among the siblings of
+	// its kind. A top-level one has no parent, and NULLS NOT DISTINCT makes two
+	// of them with the same kind and name collide, which they would not by
+	// default. It needs PostgreSQL 15 or later.
+	`CREATE UNIQUE INDEX IF NOT EXISTS category_name_lower_key
+		ON ledger.category (parent_id, kind, lower(name)) NULLS NOT DISTINCT`,
 	`CREATE UNIQUE INDEX IF NOT EXISTS counterparty_name_lower_key ON ledger.counterparty (lower(name))`,
 	`CREATE UNIQUE INDEX IF NOT EXISTS tag_name_lower_key ON tag.tag (lower(name))`,
 }

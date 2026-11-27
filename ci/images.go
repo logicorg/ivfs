@@ -8,5 +8,5 @@ const (
 
 	renovateImage = "renovate/renovate:latest"
 
-	golangImage = "golang:1.27.3"
+	golangImage = "golang:1.27.4"
 )
