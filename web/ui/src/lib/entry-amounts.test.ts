@@ -14,7 +14,7 @@ const posting = (lineNumber: number, side: Posting["side"], amount: string, curr
   side,
 })
 
-const entry = (...postings: Posting[]): Entry => ({ id: 1, occurredAt: "2026-01-31T10:00:00Z", status: "posted", postings })
+const entry = (...postings: Posting[]): Entry => ({ id: 1, occurredAt: "2026-01-31T10:00:00Z", status: "posted", postings, tags: [] })
 
 describe("entryAmounts", () => {
   const cases: { name: string; entry: Entry; want: EntryAmount[] }[] = [

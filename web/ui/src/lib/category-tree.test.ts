@@ -2,14 +2,12 @@ import { describe, expect, it } from "vitest"
 
 import type { Category } from "@/api"
 
-import { categoryRows, parentChoices } from "./category-tree"
+import { categoryRows, describeCategoryDeletion, parentChoices, replacementChoices } from "./category-tree"
 
 const category = (id: number, name: string, fields: Partial<Category> = {}): Category => ({
   id,
   name,
   kind: "expense",
-  currencyId: 1,
-  currencyCode: "EUR",
   closed: false,
   ...fields,
 })
@@ -20,7 +18,6 @@ const bakery = category(3, "Bakery", { parentId: 2 })
 const eatingOut = category(4, "Eating out", { parentId: 1 })
 const travel = category(5, "Travel")
 const salary = category(6, "Salary", { kind: "income" })
-const dollarFood = category(7, "Food", { currencyId: 2, currencyCode: "USD" })
 const oldHobby = category(8, "Old hobby", { closed: true })
 const orphan = category(9, "Orphan", { parentId: 99 })
 
@@ -49,40 +46,83 @@ describe("categoryRows", () => {
   }
 })
 
-describe("parentChoices", () => {
-  const all = [food, groceries, bakery, eatingOut, travel, salary, dollarFood, oldHobby]
+const all = [food, groceries, bakery, eatingOut, travel, salary, oldHobby]
 
-  const cases: { name: string; kind: Category["kind"]; currencyId: number; moving?: Category; want: string[] }[] = [
+describe("parentChoices", () => {
+  const cases: { name: string; kind: Category["kind"]; moving?: Category; want: string[] }[] = [
     {
-      name: "a new category: open ones of its kind and currency",
+      name: "a new category: open ones of its kind",
       kind: "expense",
-      currencyId: 1,
       want: ["Food", "-Eating out", "-Groceries", "--Bakery", "Travel"],
-    },
-    {
-      name: "another currency",
-      kind: "expense",
-      currencyId: 2,
-      want: ["Food"],
     },
     {
       name: "another kind",
       kind: "income",
-      currencyId: 1,
       want: ["Salary"],
     },
     {
       name: "a moved category cannot go under itself or what is under it",
       kind: "expense",
-      currencyId: 1,
       moving: groceries,
       want: ["Food", "-Eating out", "Travel"],
     },
   ]
 
-  for (const { name, kind, currencyId, moving, want } of cases) {
+  for (const { name, kind, moving, want } of cases) {
     it(name, () => {
-      expect(names(parentChoices(all, kind, currencyId, moving))).toEqual(want)
+      expect(names(parentChoices(all, kind, moving))).toEqual(want)
+    })
+  }
+})
+
+describe("replacementChoices", () => {
+  const cases: { name: string; categories: Category[]; deleting: Category; want: string[] }[] = [
+    {
+      name: "the other open ones of its kind with none under them, named with their parents",
+      categories: all,
+      deleting: travel,
+      want: ["Food › Eating out", "Food › Groceries › Bakery"],
+    },
+    {
+      name: "not the category itself",
+      categories: all,
+      deleting: bakery,
+      want: ["Food › Eating out", "Travel"],
+    },
+    {
+      name: "another kind has its own",
+      categories: [...all, category(7, "Gifts", { kind: "income" })],
+      deleting: salary,
+      want: ["Gifts"],
+    },
+    { name: "the only category", categories: [travel], deleting: travel, want: [] },
+  ]
+
+  for (const { name, categories, deleting, want } of cases) {
+    it(name, () => {
+      expect(replacementChoices(categories, deleting).map((choice) => choice.label)).toEqual(want)
+    })
+  }
+})
+
+describe("describeCategoryDeletion", () => {
+  const cases: { name: string; entries: number; replacement?: string; want: string }[] = [
+    { name: "no entries", entries: 0, want: "No journal entry is filed under it." },
+    { name: "no entries, with a replacement", entries: 0, replacement: "Travel", want: "No journal entry is filed under it." },
+    { name: "one entry", entries: 1, want: "1 journal entry loses its category." },
+    { name: "several entries", entries: 3, want: "3 journal entries lose their category." },
+    { name: "one entry, with a replacement", entries: 1, replacement: "Travel", want: "1 journal entry moves to Travel." },
+    {
+      name: "several entries, with a replacement",
+      entries: 3,
+      replacement: "Food › Groceries",
+      want: "3 journal entries move to Food › Groceries.",
+    },
+  ]
+
+  for (const { name, entries, replacement, want } of cases) {
+    it(name, () => {
+      expect(describeCategoryDeletion(entries, replacement)).toEqual(want)
     })
   }
 })

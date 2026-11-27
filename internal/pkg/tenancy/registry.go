@@ -74,7 +74,9 @@ func (p *RegistryPools) open(ctx context.Context, uid uuid.UUID) (*bun.DB, error
 	err := p.registry.NewSelect().Model(user).WherePK().Scan(ctx)
 	switch {
 	case sqllib.IsNotFound(err):
-		return nil, internalerrors.ErrNotFound{ResourceType: "User", ID: uid}
+		// Not ErrNotFound: workflows read that as their target being gone,
+		// and a deletion would then succeed for a user who does not exist.
+		return nil, internalerrors.ErrUnauthenticated{}
 	case err != nil:
 		return nil, fmt.Errorf("retrieve user %s: %w", uid, err)
 	case user.ProvisionedAt == nil:

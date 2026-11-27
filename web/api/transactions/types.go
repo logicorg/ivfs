@@ -9,23 +9,25 @@ import (
 // ExpenseForm is the answers to the form that records money spent from a
 // balance on a category.
 type ExpenseForm struct {
-	IdempotencyKey          string         `json:"idempotencyKey" minLength:"1" doc:"one per transaction meant, such as one per opening of the form; a repeated key returns the entry first recorded with it"`
-	BalanceLedgerAccountID  int64          `json:"balanceLedgerAccountId" minimum:"1" doc:"the balance the money leaves"`
-	CategoryLedgerAccountID int64          `json:"categoryLedgerAccountId" minimum:"1" doc:"the expense category it is spent on, in the balance's currency"`
-	Amount                  gateway.Amount `json:"amount" doc:"the amount spent, greater than zero"`
-	OccurredAt              time.Time      `json:"occurredAt" doc:"the instant the money was spent"`
-	Description             string         `json:"description" required:"false" doc:"a note on the entry"`
+	IdempotencyKey         string         `json:"idempotencyKey" minLength:"1" doc:"one per transaction meant, such as one per opening of the form; a repeated key returns the entry first recorded with it"`
+	BalanceLedgerAccountID int64          `json:"balanceLedgerAccountId" minimum:"1" doc:"the balance the money leaves"`
+	CategoryID             int64          `json:"categoryId" minimum:"1" doc:"the expense category it is spent on"`
+	Amount                 gateway.Amount `json:"amount" doc:"the amount spent, greater than zero"`
+	OccurredAt             time.Time      `json:"occurredAt" doc:"the instant the money was spent"`
+	Description            string         `json:"description" required:"false" doc:"a note on the entry"`
+	TagIDs                 []int64        `json:"tagIds" required:"false" doc:"the tags of the entry; a repeated id counts once"`
 }
 
 // IncomeForm is the answers to the form that records money earned on a
 // category into a balance.
 type IncomeForm struct {
-	IdempotencyKey          string         `json:"idempotencyKey" minLength:"1" doc:"one per transaction meant, such as one per opening of the form; a repeated key returns the entry first recorded with it"`
-	BalanceLedgerAccountID  int64          `json:"balanceLedgerAccountId" minimum:"1" doc:"the balance the money reaches"`
-	CategoryLedgerAccountID int64          `json:"categoryLedgerAccountId" minimum:"1" doc:"the income category it is earned on, in the balance's currency"`
-	Amount                  gateway.Amount `json:"amount" doc:"the amount earned, greater than zero"`
-	OccurredAt              time.Time      `json:"occurredAt" doc:"the instant the money was earned"`
-	Description             string         `json:"description" required:"false" doc:"a note on the entry"`
+	IdempotencyKey         string         `json:"idempotencyKey" minLength:"1" doc:"one per transaction meant, such as one per opening of the form; a repeated key returns the entry first recorded with it"`
+	BalanceLedgerAccountID int64          `json:"balanceLedgerAccountId" minimum:"1" doc:"the balance the money reaches"`
+	CategoryID             int64          `json:"categoryId" minimum:"1" doc:"the income category it is earned on"`
+	Amount                 gateway.Amount `json:"amount" doc:"the amount earned, greater than zero"`
+	OccurredAt             time.Time      `json:"occurredAt" doc:"the instant the money was earned"`
+	Description            string         `json:"description" required:"false" doc:"a note on the entry"`
+	TagIDs                 []int64        `json:"tagIds" required:"false" doc:"the tags of the entry; a repeated id counts once"`
 }
 
 // TransferForm is the answers to the form that records money moved from one
@@ -39,6 +41,7 @@ type TransferForm struct {
 	ToAmount            gateway.Amount `json:"toAmount" required:"false" doc:"the amount that arrives: required between currencies, else omitted or equal to amount"`
 	OccurredAt          time.Time      `json:"occurredAt" doc:"the instant the money moved"`
 	Description         string         `json:"description" required:"false" doc:"a note on the entry"`
+	TagIDs              []int64        `json:"tagIds" required:"false" doc:"the tags of the entry; a repeated id counts once"`
 }
 
 // RecordedTransaction is the journal entry a transaction is recorded as,

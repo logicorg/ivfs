@@ -3,7 +3,7 @@ package journal
 import (
 	"context"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	journalwf "github.com/logicorg/ivfs/finance/workflows/ledger/journal"
 	"github.com/logicorg/ivfs/internal/pkg/workflowrun"
 	"github.com/logicorg/ivfs/mcp/mcptypes"
@@ -25,12 +25,12 @@ func registerListJournalEntries(server *mcp.Server, c client.Client) {
 // mcptypes.WorkflowWithResult's doc comment), so this maps the result to
 // JournalEntrySummary by hand instead.
 func listJournalEntriesHandler(c client.Client) func(
-	ctx context.Context, req *mcp.CallToolRequest, args lt.ListJournalEntriesParams,
+	ctx context.Context, req *mcp.CallToolRequest, args jt.ListJournalEntriesParams,
 ) (*mcp.CallToolResult, *ListJournalEntriesToolResult, error) {
 	return func(
-		ctx context.Context, req *mcp.CallToolRequest, args lt.ListJournalEntriesParams,
+		ctx context.Context, req *mcp.CallToolRequest, args jt.ListJournalEntriesParams,
 	) (*mcp.CallToolResult, *ListJournalEntriesToolResult, error) {
-		result, err := workflowrun.Run[lt.ListJournalEntriesResult](ctx, c, journalwf.ListJournalEntries, args)
+		result, err := workflowrun.Run[jt.ListJournalEntriesResult](ctx, c, journalwf.ListJournalEntries, args)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -39,7 +39,7 @@ func listJournalEntriesHandler(c client.Client) func(
 		for i, je := range result.Entries {
 			postings := make([]PostingSummary, len(je.Postings))
 			for j, p := range je.Postings {
-				postings[j] = PostingSummary{LedgerAccountID: p.LedgerAccountID, LineNumber: p.LineNumber, Amount: p.Amount, Side: string(p.Side)}
+				postings[j] = PostingSummary{LedgerAccountID: p.LedgerAccountID, LineNumber: p.LineNumber, Amount: p.Amount, Side: string(p.Side), CategoryID: p.CategoryID}
 			}
 			out.Entries[i] = JournalEntrySummary{
 				ID: je.ID, Status: string(je.Status), OccurredAt: je.OccurredAt,

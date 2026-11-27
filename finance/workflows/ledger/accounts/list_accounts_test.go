@@ -5,7 +5,7 @@ import (
 	"time"
 
 	activity "github.com/logicorg/ivfs/finance/activities/ledger/accounts"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/logicorg/ivfs/pkg/ptr"
 	"github.com/stretchr/testify/mock"
@@ -21,7 +21,7 @@ type listAccountsFixtures struct {
 	financialAccounts []model.FinancialAccount
 	ledgerAccounts    []model.LedgerAccount
 
-	revolutEUR, revolutUSD, n26EUR, groceries, salary lt.AccountSummary
+	revolutEUR, revolutUSD, n26EUR, groceries, salary act.AccountSummary
 }
 
 func newListAccountsFixtures() listAccountsFixtures {
@@ -44,20 +44,20 @@ func newListAccountsFixtures() listAccountsFixtures {
 			{ID: 301, CurrencyID: euro.ID, Currency: euro, Name: "Salary", Kind: model.LedgerAccountIncome},
 		},
 	}
-	f.revolutEUR = lt.AccountSummary{
+	f.revolutEUR = act.AccountSummary{
 		LedgerAccountID: 100, LedgerAccountName: "Cash", Kind: model.LedgerAccountAsset, CurrencyID: 1, CurrencyCode: "EUR",
 		FinancialAccountID: ptr.Int64(10), FinancialAccountName: "Revolut Personal", InstitutionName: "Revolut",
 	}
-	f.revolutUSD = lt.AccountSummary{
+	f.revolutUSD = act.AccountSummary{
 		LedgerAccountID: 101, LedgerAccountName: "Cash", Kind: model.LedgerAccountAsset, CurrencyID: 2, CurrencyCode: "USD",
 		FinancialAccountID: ptr.Int64(10), FinancialAccountName: "Revolut Personal", InstitutionName: "Revolut",
 	}
-	f.n26EUR = lt.AccountSummary{
+	f.n26EUR = act.AccountSummary{
 		LedgerAccountID: 200, LedgerAccountName: "Cash", Kind: model.LedgerAccountAsset, CurrencyID: 1, CurrencyCode: "EUR",
 		FinancialAccountID: ptr.Int64(20), FinancialAccountName: "N26 Old", InstitutionName: "N26", Closed: true,
 	}
-	f.groceries = lt.AccountSummary{LedgerAccountID: 300, LedgerAccountName: "Groceries", Kind: model.LedgerAccountExpense, CurrencyID: 1, CurrencyCode: "EUR"}
-	f.salary = lt.AccountSummary{LedgerAccountID: 301, LedgerAccountName: "Salary", Kind: model.LedgerAccountIncome, CurrencyID: 1, CurrencyCode: "EUR"}
+	f.groceries = act.AccountSummary{LedgerAccountID: 300, LedgerAccountName: "Groceries", Kind: model.LedgerAccountExpense, CurrencyID: 1, CurrencyCode: "EUR"}
+	f.salary = act.AccountSummary{LedgerAccountID: 301, LedgerAccountName: "Salary", Kind: model.LedgerAccountIncome, CurrencyID: 1, CurrencyCode: "EUR"}
 	return f
 }
 
@@ -71,54 +71,54 @@ func (s *WorkflowUnitTestSuite) TestListAccounts() {
 	f := newListAccountsFixtures()
 
 	tests := map[string]struct {
-		params lt.ListAccountsParams
+		params act.ListAccountsParams
 		// ledgerParams is what ListLedgerAccounts is expected to be called
 		// with, and ledgerAccounts what it returns, all of them if nil.
-		ledgerParams   lt.ListLedgerAccountsParams
+		ledgerParams   act.ListLedgerAccountsParams
 		ledgerAccounts []model.LedgerAccount
-		want           []lt.AccountSummary
+		want           []act.AccountSummary
 	}{
 		"every open account": {
-			want: []lt.AccountSummary{f.revolutEUR, f.revolutUSD, f.groceries, f.salary},
+			want: []act.AccountSummary{f.revolutEUR, f.revolutUSD, f.groceries, f.salary},
 		},
 		"closed accounts, and those of a closed financial account": {
-			params:       lt.ListAccountsParams{IncludeClosed: true},
-			ledgerParams: lt.ListLedgerAccountsParams{IncludeClosed: true},
-			want:         []lt.AccountSummary{f.revolutEUR, f.revolutUSD, f.n26EUR, f.groceries, f.salary},
+			params:       act.ListAccountsParams{IncludeClosed: true},
+			ledgerParams: act.ListLedgerAccountsParams{IncludeClosed: true},
+			want:         []act.AccountSummary{f.revolutEUR, f.revolutUSD, f.n26EUR, f.groceries, f.salary},
 		},
 		"kinds are filtered by ListLedgerAccounts": {
-			params:         lt.ListAccountsParams{Kinds: []model.LedgerAccountKind{model.LedgerAccountExpense}},
-			ledgerParams:   lt.ListLedgerAccountsParams{Kinds: []model.LedgerAccountKind{model.LedgerAccountExpense}},
+			params:         act.ListAccountsParams{Kinds: []model.LedgerAccountKind{model.LedgerAccountExpense}},
+			ledgerParams:   act.ListLedgerAccountsParams{Kinds: []model.LedgerAccountKind{model.LedgerAccountExpense}},
 			ledgerAccounts: f.ledgerAccounts[3:4],
-			want:           []lt.AccountSummary{f.groceries},
+			want:           []act.AccountSummary{f.groceries},
 		},
 		"search words across the institution's name and the currency code": {
-			params: lt.ListAccountsParams{Search: "revolut usd"},
-			want:   []lt.AccountSummary{f.revolutUSD},
+			params: act.ListAccountsParams{Search: "revolut usd"},
+			want:   []act.AccountSummary{f.revolutUSD},
 		},
 		"search by the ledger account's name, in another casing": {
-			params: lt.ListAccountsParams{Search: "GROCER"},
-			want:   []lt.AccountSummary{f.groceries},
+			params: act.ListAccountsParams{Search: "GROCER"},
+			want:   []act.AccountSummary{f.groceries},
 		},
 		"search by the financial account's name": {
-			params: lt.ListAccountsParams{Search: "personal"},
-			want:   []lt.AccountSummary{f.revolutEUR, f.revolutUSD},
+			params: act.ListAccountsParams{Search: "personal"},
+			want:   []act.AccountSummary{f.revolutEUR, f.revolutUSD},
 		},
 		"search that matches nothing": {
-			params: lt.ListAccountsParams{Search: "revolut gbp"},
-			want:   []lt.AccountSummary{},
+			params: act.ListAccountsParams{Search: "revolut gbp"},
+			want:   []act.AccountSummary{},
 		},
 		"currency code, in another casing": {
-			params: lt.ListAccountsParams{CurrencyCode: "usd"},
-			want:   []lt.AccountSummary{f.revolutUSD},
+			params: act.ListAccountsParams{CurrencyCode: "usd"},
+			want:   []act.AccountSummary{f.revolutUSD},
 		},
 		"accounts that belong to a financial account": {
-			params: lt.ListAccountsParams{Scope: lt.AccountScopeFinancial},
-			want:   []lt.AccountSummary{f.revolutEUR, f.revolutUSD},
+			params: act.ListAccountsParams{Scope: act.AccountScopeFinancial},
+			want:   []act.AccountSummary{f.revolutEUR, f.revolutUSD},
 		},
 		"accounts that belong to none": {
-			params: lt.ListAccountsParams{Scope: lt.AccountScopeUnlinked},
-			want:   []lt.AccountSummary{f.groceries, f.salary},
+			params: act.ListAccountsParams{Scope: act.AccountScopeUnlinked},
+			want:   []act.AccountSummary{f.groceries, f.salary},
 		},
 	}
 
@@ -131,14 +131,14 @@ func (s *WorkflowUnitTestSuite) TestListAccounts() {
 
 			env := s.NewTestWorkflowEnvironment()
 			env.OnActivity(aa.ListLedgerAccounts, mock.Anything, tc.ledgerParams).
-				Return(&lt.ListLedgerAccountsResult{LedgerAccounts: ledgerAccounts}, nil)
-			env.OnActivity(aa.ListFinancialAccounts, mock.Anything, lt.ListFinancialAccountsParams{IncludeClosed: true}).
-				Return(&lt.ListFinancialAccountsResult{FinancialAccounts: f.financialAccounts}, nil)
+				Return(&act.ListLedgerAccountsResult{LedgerAccounts: ledgerAccounts}, nil)
+			env.OnActivity(aa.ListFinancialAccounts, mock.Anything, act.ListFinancialAccountsParams{IncludeClosed: true}).
+				Return(&act.ListFinancialAccountsResult{FinancialAccounts: f.financialAccounts}, nil)
 			env.ExecuteWorkflow(ListAccounts, tc.params)
 
 			require.NoError(s.T(), env.GetWorkflowError())
 
-			var listed *lt.ListAccountsResult
+			var listed *act.ListAccountsResult
 			require.NoError(s.T(), env.GetWorkflowResult(&listed))
 			require.Equal(s.T(), tc.want, listed.Accounts)
 		})
@@ -156,22 +156,22 @@ func (s *WorkflowUnitTestSuite) TestListAccounts_Errors() {
 	orphan := model.LedgerAccount{ID: 400, FinancialAccountID: ptr.Int64(30), CurrencyID: 1, Currency: &model.Currency{ID: 1, Code: "EUR"}, Name: "Cash", Kind: model.LedgerAccountAsset}
 
 	tests := map[string]struct {
-		params lt.ListAccountsParams
+		params act.ListAccountsParams
 		// mock sets up the activities the case reaches, if any.
 		mock      func(env *testsuite.TestWorkflowEnvironment)
 		wantError string
 	}{
 		"an unknown scope": {
-			params:    lt.ListAccountsParams{Scope: "everything"},
+			params:    act.ListAccountsParams{Scope: "everything"},
 			mock:      func(*testsuite.TestWorkflowEnvironment) {},
 			wantError: "unknown account scope",
 		},
 		"a financial account that was not listed": {
 			mock: func(env *testsuite.TestWorkflowEnvironment) {
 				env.OnActivity(aa.ListLedgerAccounts, mock.Anything, mock.Anything).
-					Return(&lt.ListLedgerAccountsResult{LedgerAccounts: append(f.ledgerAccounts, orphan)}, nil)
+					Return(&act.ListLedgerAccountsResult{LedgerAccounts: append(f.ledgerAccounts, orphan)}, nil)
 				env.OnActivity(aa.ListFinancialAccounts, mock.Anything, mock.Anything).
-					Return(&lt.ListFinancialAccountsResult{FinancialAccounts: f.financialAccounts}, nil)
+					Return(&act.ListFinancialAccountsResult{FinancialAccounts: f.financialAccounts}, nil)
 			},
 			wantError: "financial account 30 of ledger account 400 was not listed",
 		},
@@ -180,9 +180,9 @@ func (s *WorkflowUnitTestSuite) TestListAccounts_Errors() {
 				noCurrency := f.ledgerAccounts[0]
 				noCurrency.Currency = nil
 				env.OnActivity(aa.ListLedgerAccounts, mock.Anything, mock.Anything).
-					Return(&lt.ListLedgerAccountsResult{LedgerAccounts: []model.LedgerAccount{noCurrency}}, nil)
+					Return(&act.ListLedgerAccountsResult{LedgerAccounts: []model.LedgerAccount{noCurrency}}, nil)
 				env.OnActivity(aa.ListFinancialAccounts, mock.Anything, mock.Anything).
-					Return(&lt.ListFinancialAccountsResult{FinancialAccounts: f.financialAccounts}, nil)
+					Return(&act.ListFinancialAccountsResult{FinancialAccounts: f.financialAccounts}, nil)
 			},
 			wantError: "ledger account 100 has no currency loaded",
 		},
@@ -195,7 +195,7 @@ func (s *WorkflowUnitTestSuite) TestListAccounts_Errors() {
 		"listing the financial accounts fails": {
 			mock: func(env *testsuite.TestWorkflowEnvironment) {
 				env.OnActivity(aa.ListLedgerAccounts, mock.Anything, mock.Anything).
-					Return(&lt.ListLedgerAccountsResult{LedgerAccounts: f.ledgerAccounts}, nil)
+					Return(&act.ListLedgerAccountsResult{LedgerAccounts: f.ledgerAccounts}, nil)
 				env.OnActivity(aa.ListFinancialAccounts, mock.Anything, mock.Anything).Return(nil, errors.New("database down"))
 			},
 			wantError: "list financial accounts",

@@ -1,94 +1,74 @@
 package investments
 
 import (
-	"fmt"
-
 	it "github.com/logicorg/ivfs/finance/common/types/investmenttypes"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
-	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
+	pft "github.com/logicorg/ivfs/finance/common/types/portfoliotypes"
+	categorieswf "github.com/logicorg/ivfs/finance/workflows/ledger/categories"
 	"github.com/logicorg/ivfs/pkg/model"
 	"go.temporal.io/sdk/workflow"
 )
 
-// vestCategories is the income category a vest credits and the expense one
-// it debits for the units withheld, zero when none are.
+// vestCategories is what a vest books besides its units: the income category
+// and the "Income" account of the vest's currency it is credited on, and the
+// tax category with the "Expenses" account it is debited on, both zero when
+// no units are withheld.
 type vestCategories struct {
-	income, tax int64
+	income, incomeAccount int64
+	tax, expensesAccount  int64
 }
 
-// retrieveVestCategories finds the categories a vest names and checks each is
-// of the kind it is booked as and in the vest's currency, which the ledger
-// would otherwise refuse only as an unbalanced entry naming currency ids.
+// retrieveVestCategories finds, for each category a vest names, the shared
+// account of the kind it is booked as in the vest's currency.
 func retrieveVestCategories(ctx workflow.Context, in *it.VestInput, currency *model.Currency) (*vestCategories, error) {
-	ids := []int64{in.IncomeCategoryLedgerAccountID}
+	ids := []int64{in.IncomeCategoryID}
 	kinds := []model.LedgerAccountKind{model.LedgerAccountIncome}
 	if in.UnitsWithheld.IsPositive() {
-		ids = append(ids, in.TaxCategoryLedgerAccountID)
+		ids = append(ids, in.TaxCategoryID)
 		kinds = append(kinds, model.LedgerAccountExpense)
 	}
 
-	accounts, err := retrieveLedgerAccounts(ctx, ids...)
-	if err != nil {
-		return nil, err
-	}
-	for i, account := range accounts {
-		if err := checkCategory(account, kinds[i], currency); err != nil {
+	accounts := make([]int64, len(ids))
+	for i, id := range ids {
+		account, err := categorieswf.CategoryAccount(ctx, id, kinds[i], currency.ID)
+		if err != nil {
 			return nil, err
 		}
+		accounts[i] = account
 	}
 
-	result := &vestCategories{income: accounts[0].ID}
-	if len(accounts) > 1 {
-		result.tax = accounts[1].ID
+	result := &vestCategories{income: ids[0], incomeAccount: accounts[0]}
+	if len(ids) > 1 {
+		result.tax, result.expensesAccount = ids[1], accounts[1]
 	}
 	return result, nil
 }
 
-// checkCategory fails unless the account is a category of the given kind in
-// the currency.
-func checkCategory(account *model.LedgerAccount, kind model.LedgerAccountKind, currency *model.Currency) error {
-	switch {
-	case account.Kind == kind && account.CurrencyID == currency.ID:
-		return nil
-	case account.Kind == kind:
-		return internalerrors.ErrInvalidParameter{
-			Description: fmt.Sprintf("%q is not in %s, the currency of the vest: pick a category in %s", account.Name, currency.Code, currency.Code),
-		}
-	case account.Kind == model.LedgerAccountIncome || account.Kind == model.LedgerAccountExpense:
-		return internalerrors.ErrInvalidParameter{
-			Description: fmt.Sprintf("%q is an %s category, not an %s one", account.Name, account.Kind, kind),
-		}
-	default:
-		return internalerrors.ErrInvalidParameter{
-			Description: fmt.Sprintf("%q is not an %s category: its kind is %s", account.Name, kind, account.Kind),
-		}
-	}
-}
-
-// buildVest is units received as compensation: the income category is
-// credited with the value of every unit vested, "Investments" debited with
-// that of the units delivered, and the tax category with that of the units
-// withheld. The delivered units are added at their value. Each value is
+// buildVest is units received as compensation: "Income" is credited with the
+// value of every unit vested, under the income category, "Investments"
+// debited with that of the units delivered, and "Expenses" with that of the
+// units withheld, under the tax category. The delivered units are added at their value. Each value is
 // rounded to the currency's precision and the income is their sum, so the
 // entry balances; a withholding worth less than the smallest unit is not
 // posted, as a posting must be positive.
-func buildVest(in *it.VestInput, b *brokerage, c *vestCategories) lt.RegisterVestInput {
+func buildVest(in *it.VestInput, b *brokerage, c *vestCategories) pft.RegisterVestInput {
 	precision := int32(b.currency.Precision)
 	delivered := in.UnitsVested.Sub(in.UnitsWithheld)
 	deliveredValue := delivered.Mul(in.FairMarketValue).Round(precision)
 	withheldValue := in.UnitsWithheld.Mul(in.FairMarketValue).Round(precision)
 
-	postings := []lt.PostingInput{{LedgerAccountID: b.investments, Amount: deliveredValue, Side: model.PostingDebit}}
+	postings := []jt.PostingInput{{LedgerAccountID: b.investments, Amount: deliveredValue, Side: model.PostingDebit}}
 	if withheldValue.IsPositive() {
-		postings = append(postings, lt.PostingInput{LedgerAccountID: c.tax, Amount: withheldValue, Side: model.PostingDebit})
+		postings = append(postings, jt.PostingInput{LedgerAccountID: c.expensesAccount, Amount: withheldValue, Side: model.PostingDebit, CategoryID: &c.tax})
 	}
-	postings = append(postings, lt.PostingInput{LedgerAccountID: c.income, Amount: deliveredValue.Add(withheldValue), Side: model.PostingCredit})
+	postings = append(postings, jt.PostingInput{LedgerAccountID: c.incomeAccount, Amount: deliveredValue.Add(withheldValue), Side: model.PostingCredit, CategoryID: &c.income})
 
-	result := lt.RegisterVestInput{
-		Entry: lt.PostJournalEntryInput{
+	result := pft.RegisterVestInput{
+		Entry: jt.PostJournalEntryInput{
 			IdempotencyKey: string(it.KindVest) + ":" + in.IdempotencyKey,
 			OccurredAt:     in.OccurredAt,
 			Postings:       postings,
+			TagIDs:         in.TagIDs,
 		},
 		FinancialAccountID:  in.FinancialAccountID,
 		AssetID:             in.AssetID,

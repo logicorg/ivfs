@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	fxt "github.com/logicorg/ivfs/finance/common/types/fxtypes"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	"github.com/logicorg/ivfs/internal/pkg/temporaltesting"
 	"github.com/logicorg/ivfs/internal/pkg/tenancy"
@@ -26,12 +27,15 @@ type UnitTestSuite struct {
 	revolutEUR  *model.LedgerAccount
 	usdClearing *model.LedgerAccount
 	eurClearing *model.LedgerAccount
-	usdFees     *model.LedgerAccount
-	eurFees     *model.LedgerAccount
+	usdExpenses *model.LedgerAccount
+	eurExpenses *model.LedgerAccount
 	usdIncome   *model.LedgerAccount
 	savingsUSD  *model.LedgerAccount
 	savingsEUR  *model.LedgerAccount
 	closedUSD   *model.LedgerAccount
+
+	fxFees   *model.Category
+	interest *model.Category
 }
 
 func (s *UnitTestSuite) SetupTest() {
@@ -52,8 +56,12 @@ func (s *UnitTestSuite) BeforeTest(_, _ string) {
 	s.revolutEUR = s.insertAccount(s.eur, "Revolut EUR", model.LedgerAccountAsset)
 	s.usdClearing = s.insertAccount(s.usd, "FX-Clearing USD", model.LedgerAccountAsset)
 	s.eurClearing = s.insertAccount(s.eur, "FX-Clearing EUR", model.LedgerAccountAsset)
-	s.usdFees = s.insertAccount(s.usd, "FX-Fees USD", model.LedgerAccountExpense)
-	s.eurFees = s.insertAccount(s.eur, "FX-Fees EUR", model.LedgerAccountExpense)
+	s.usdExpenses = s.insertAccount(s.usd, lt.ExpensesAccountName, model.LedgerAccountExpense)
+	s.eurExpenses = s.insertAccount(s.eur, lt.ExpensesAccountName, model.LedgerAccountExpense)
+	s.fxFees = &model.Category{Name: "FX fees", Kind: model.LedgerAccountExpense}
+	s.interest = &model.Category{Name: "Interest", Kind: model.LedgerAccountIncome}
+	temporaltesting.Insert(s.T(), s.DB, s.fxFees)
+	temporaltesting.Insert(s.T(), s.DB, s.interest)
 	s.usdIncome = s.insertAccount(s.usd, "Interest USD", model.LedgerAccountIncome)
 	s.savingsUSD = s.insertAccount(s.usd, "Savings USD", model.LedgerAccountAsset)
 	s.savingsEUR = s.insertAccount(s.eur, "Savings EUR", model.LedgerAccountAsset)
@@ -76,9 +84,9 @@ func (s *UnitTestSuite) insertAccount(currency *model.Currency, name string, kin
 }
 
 // adrExample is the conversion from ADR 0001: USD100 leave Revolut USD, of
-// which USD1 is a fee, and EUR90 arrive in Revolut EUR.
-func (s *UnitTestSuite) adrExample() lt.RegisterFXConversionInput {
-	return lt.RegisterFXConversionInput{
+// which USD1 is a fee booked under "FX fees", and EUR90 arrive in Revolut EUR.
+func (s *UnitTestSuite) adrExample() fxt.RegisterFXConversionInput {
+	return fxt.RegisterFXConversionInput{
 		IdempotencyKey:                     "fx-usd-eur-1",
 		OccurredAt:                         time.Date(2026, 9, 1, 12, 0, 0, 0, time.UTC),
 		SourceLedgerAccountID:              s.revolutUSD.ID,
@@ -87,6 +95,6 @@ func (s *UnitTestSuite) adrExample() lt.RegisterFXConversionInput {
 		DestinationLedgerAccountID:         s.revolutEUR.ID,
 		DestinationClearingLedgerAccountID: s.eurClearing.ID,
 		DestinationAmount:                  decimal.NewFromInt(90),
-		Fee:                                &lt.FXFee{LedgerAccountID: s.usdFees.ID, Amount: decimal.NewFromInt(1)},
+		Fee:                                &fxt.FXFee{CategoryID: s.fxFees.ID, LedgerAccountID: s.usdExpenses.ID, Amount: decimal.NewFromInt(1)},
 	}
 }

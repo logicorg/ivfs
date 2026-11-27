@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	ct "github.com/logicorg/ivfs/finance/common/types/categorytypes"
-	categorieswf "github.com/logicorg/ivfs/finance/workflows/facade/categories"
+	categorieswf "github.com/logicorg/ivfs/finance/workflows/ledger/categories"
 	"github.com/logicorg/ivfs/web/api/apitest"
 	"go.temporal.io/sdk/temporal"
 )
@@ -19,7 +19,7 @@ func TestClose(t *testing.T) {
 			Method: http.MethodPost, Path: "/api/categories/11/close",
 			Call: &apitest.WorkflowCall{
 				Workflow: categorieswf.CloseCategory,
-				Params:   ct.CloseCategoryInput{LedgerAccountID: 11},
+				Params:   ct.CloseCategoryInput{CategoryID: 11},
 			},
 			WantStatus: http.StatusNoContent,
 		},
@@ -27,21 +27,21 @@ func TestClose(t *testing.T) {
 			Method: http.MethodPost, Path: "/api/categories/10/close",
 			Call: &apitest.WorkflowCall{
 				Workflow: categorieswf.CloseCategory,
-				Params:   ct.CloseCategoryInput{LedgerAccountID: 10},
-				Err:      apitest.ChildWorkflowError("ErrResourceConflict", "ledger account has active children"),
+				Params:   ct.CloseCategoryInput{CategoryID: 10},
+				Err:      temporal.NewApplicationError("resource Category conflict: category 10 has open categories under it; close them first", "ErrResourceConflict"),
 			},
 			WantStatus: http.StatusConflict,
-			WantBody:   apitest.Problem(http.StatusConflict, "ledger account has active children"),
+			WantBody:   apitest.Problem(http.StatusConflict, "resource Category conflict: category 10 has open categories under it; close them first"),
 		},
 		"close a category that does not exist": {
 			Method: http.MethodPost, Path: "/api/categories/99/close",
 			Call: &apitest.WorkflowCall{
 				Workflow: categorieswf.CloseCategory,
-				Params:   ct.CloseCategoryInput{LedgerAccountID: 99},
-				Err:      temporal.NewApplicationError("resource LedgerAccount not found with ID: 99", "ErrNotFound"),
+				Params:   ct.CloseCategoryInput{CategoryID: 99},
+				Err:      temporal.NewApplicationError("resource Category not found with ID: 99", "ErrNotFound"),
 			},
 			WantStatus: http.StatusNotFound,
-			WantBody:   apitest.Problem(http.StatusNotFound, "resource LedgerAccount not found with ID: 99"),
+			WantBody:   apitest.Problem(http.StatusNotFound, "resource Category not found with ID: 99"),
 		},
 	})
 }

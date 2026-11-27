@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/shopspring/decimal"
@@ -21,8 +21,8 @@ type row struct {
 }
 
 // ToTrialBalanceRow converts a row to a ledgertypes `TrialBalanceRow`.
-func (r *row) ToTrialBalanceRow() lt.TrialBalanceRow {
-	return lt.TrialBalanceRow{
+func (r *row) ToTrialBalanceRow() jt.TrialBalanceRow {
+	return jt.TrialBalanceRow{
 		LedgerAccountID: r.LedgerAccountID,
 		CurrencyID:      r.CurrencyID,
 		Debit:           r.Debit,
@@ -32,7 +32,7 @@ func (r *row) ToTrialBalanceRow() lt.TrialBalanceRow {
 }
 
 // ListPostings lists postings of a LedgerAccount
-func (a *Activities) ListPostings(ctx context.Context, params lt.ListPostingsParams) (*lt.ListPostingsResult, error) {
+func (a *Activities) ListPostings(ctx context.Context, params jt.ListPostingsParams) (*jt.ListPostingsResult, error) {
 	db, err := a.Pools.For(ctx)
 	if err != nil {
 		return nil, err
@@ -59,10 +59,10 @@ func (a *Activities) ListPostings(ctx context.Context, params lt.ListPostingsPar
 	if err := query.Scan(ctx, &postings); err != nil {
 		return nil, fmt.Errorf("list postings: %w", err)
 	}
-	return &lt.ListPostingsResult{Postings: postings}, nil
+	return &jt.ListPostingsResult{Postings: postings}, nil
 }
 
-func (a *Activities) TrialBalanceAt(ctx context.Context, params lt.TrialBalanceAtParams) (*lt.TrialBalanceAtResult, error) {
+func (a *Activities) TrialBalanceAt(ctx context.Context, params jt.TrialBalanceAtParams) (*jt.TrialBalanceAtResult, error) {
 	db, err := a.Pools.For(ctx)
 	if err != nil {
 		return nil, err
@@ -91,7 +91,7 @@ func (a *Activities) TrialBalanceAt(ctx context.Context, params lt.TrialBalanceA
 	if err := query.Scan(ctx, &rows); err != nil {
 		return nil, fmt.Errorf("calculate trial balance: %w", err)
 	}
-	result := &lt.TrialBalanceAtResult{Rows: make([]lt.TrialBalanceRow, 0, len(rows))}
+	result := &jt.TrialBalanceAtResult{Rows: make([]jt.TrialBalanceRow, 0, len(rows))}
 	for _, row := range rows {
 		result.Rows = append(result.Rows, row.ToTrialBalanceRow())
 	}

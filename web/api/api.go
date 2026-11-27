@@ -30,10 +30,12 @@ import (
 	"github.com/logicorg/ivfs/web/api/gateway"
 	"github.com/logicorg/ivfs/web/api/health"
 	"github.com/logicorg/ivfs/web/api/holdings"
+	"github.com/logicorg/ivfs/web/api/institutions"
 	"github.com/logicorg/ivfs/web/api/investments"
 	"github.com/logicorg/ivfs/web/api/journal"
 	"github.com/logicorg/ivfs/web/api/networth"
 	"github.com/logicorg/ivfs/web/api/positions"
+	"github.com/logicorg/ivfs/web/api/presets"
 	"github.com/logicorg/ivfs/web/api/settings"
 	"github.com/logicorg/ivfs/web/api/tags"
 	"github.com/logicorg/ivfs/web/api/transactions"
@@ -93,6 +95,7 @@ func newAPI(router chi.Router, c client.Client, sources assetvalue.Sources) huma
 	categories.Register(api, c)
 	counterparties.Register(api, c)
 	accounts.Register(api, c)
+	institutions.Register(api, c)
 	journal.Register(api, c)
 	positions.Register(api, c)
 	transactions.Register(api, c)
@@ -103,6 +106,7 @@ func newAPI(router chi.Router, c client.Client, sources assetvalue.Sources) huma
 	settings.Register(api, c)
 	networth.Register(api, c)
 	tags.Register(api, c)
+	presets.Register(api, c)
 
 	gateway.PlainIntegers(api.OpenAPI())
 	return api

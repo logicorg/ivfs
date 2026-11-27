@@ -2,6 +2,7 @@ package tag
 
 import (
 	"testing"
+	"time"
 
 	tt "github.com/logicorg/ivfs/finance/common/types/tagtypes"
 	"github.com/logicorg/ivfs/internal/pkg/temporaltesting"
@@ -75,4 +76,23 @@ func (s *UnitTestSuite) Test_DeleteTag() {
 		})
 		temporaltesting.DeleteIgnoreNotFound(s.T(), s.DB, &tag, id)
 	}
+}
+
+// Test_DeleteTag_Assigned checks that deleting a tag an entry has detaches it
+// from the entry and keeps the entry.
+func (s *UnitTestSuite) Test_DeleteTag_Assigned() {
+	entry := &model.JournalEntry{OccurredAt: time.Now().UTC(), Status: model.JournalEntryDraft}
+	tag := &model.Tag{Name: "vacation"}
+	temporaltesting.Insert(s.T(), s.DB, entry)
+	temporaltesting.Insert(s.T(), s.DB, tag)
+	_, err := s.DB.NewInsert().Model(&model.JournalEntryTag{JournalEntryID: entry.ID, TagID: tag.ID}).Exec(s.T().Context())
+	require.NoError(s.T(), err)
+	defer temporaltesting.DeleteIgnoreNotFound(s.T(), s.DB, (*model.JournalEntry)(nil), entry.ID)
+
+	_, err = s.Env.ExecuteActivity(s.activity.DeleteTag, tt.DeleteTagParams{ID: tag.ID})
+	require.NoError(s.T(), err)
+
+	require.Zero(s.T(), s.CountWhere[model.Tag]("id = ?", tag.ID))
+	require.Zero(s.T(), s.Count[model.JournalEntryTag]())
+	require.Equal(s.T(), 1, s.CountWhere[model.JournalEntry]("id = ?", entry.ID))
 }

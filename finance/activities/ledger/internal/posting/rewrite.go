@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"time"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/uptrace/bun"
 )
 
 // RewriteEntryTx replaces what a correction changes in a stored entry: its
-// date, description, and metadata from the input, and its postings and
-// movements, which are deleted and written again. The row stays, so the entry
+// date, description, and metadata from the input, and its postings,
+// movements, and tags, which are deleted and written again. The row stays, so the entry
 // keeps its id, its keys, its counterparty, and its times, and the rest of the
 // input is ignored. The caller holds the lock on the entry's row, and entry is
 // the row as read under it; it is updated in place.
@@ -24,7 +24,7 @@ import (
 // touchedLedgerAccountIDs are the ledger accounts the entry had postings on. A
 // correction may leave a posting on one of them that has since been closed,
 // which a new entry may not.
-func RewriteEntryTx(ctx context.Context, tx bun.Tx, entry *model.JournalEntry, input lt.PostJournalEntryInput, movements []model.PositionMovement, touchedLedgerAccountIDs []int64) error {
+func RewriteEntryTx(ctx context.Context, tx bun.Tx, entry *model.JournalEntry, input jt.PostJournalEntryInput, movements []model.PositionMovement, touchedLedgerAccountIDs []int64) error {
 	if err := checkPostingsTx(ctx, tx, input, touchedLedgerAccountIDs); err != nil {
 		return err
 	}
@@ -46,5 +46,8 @@ func RewriteEntryTx(ctx context.Context, tx bun.Tx, entry *model.JournalEntry, i
 		movements[i].CreatedAt = entry.CreatedAt
 		movements[i].ExternalID = entry.ExternalID
 	}
-	return insertLinesTx(ctx, tx, entry, input.Postings, movements)
+	if err := insertLinesTx(ctx, tx, entry, input.Postings, movements); err != nil {
+		return err
+	}
+	return SetTagsTx(ctx, tx, entry.ID, input.TagIDs)
 }

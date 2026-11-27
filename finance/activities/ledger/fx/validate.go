@@ -3,7 +3,7 @@ package fx
 import (
 	"fmt"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	fxt "github.com/logicorg/ivfs/finance/common/types/fxtypes"
 	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/logicorg/ivfs/pkg/model"
 )
@@ -21,7 +21,7 @@ type accountRole struct {
 // account exists, the two sides use different currencies, and each account
 // plays a role that matches its kind and currency. Posting rejects closed
 // accounts, so that is not checked here.
-func validateAccounts(input lt.RegisterFXConversionInput, accounts map[int64]*model.LedgerAccount) error {
+func validateAccounts(input fxt.RegisterFXConversionInput, accounts map[int64]*model.LedgerAccount) error {
 	for _, id := range input.AccountIDs() {
 		if _, ok := accounts[id]; !ok {
 			return internalerrors.ErrNotFound{ResourceType: "LedgerAccount", ID: id}

@@ -17,14 +17,16 @@ import (
 // entry's id is returned, that a refusal keeps its status, and that a form
 // Huma rejects runs no workflow.
 func TestRecordExpense(t *testing.T) {
-	const form = `{"idempotencyKey":"9c1e","balanceLedgerAccountId":100,"categoryLedgerAccountId":200,` +
+	const form = `{"idempotencyKey":"9c1e","balanceLedgerAccountId":100,"categoryId":200,` +
 		`"amount":"12.50","occurredAt":"2026-10-03T10:00:00Z"`
 	groceries := tt.RecordExpenseInput{
-		IdempotencyKey: "9c1e", BalanceLedgerAccountID: 100, CategoryLedgerAccountID: 200,
+		IdempotencyKey: "9c1e", BalanceLedgerAccountID: 100, CategoryID: 200,
 		Amount: decimal.RequireFromString("12.5"), OccurredAt: time.Date(2026, 10, 3, 10, 0, 0, 0, time.UTC),
 	}
 	withNote := groceries
 	withNote.Description = "weekly shop"
+	withTags := groceries
+	withTags.TagIDs = []int64{3, 4}
 	record := func(params tt.RecordExpenseInput, err error) *apitest.WorkflowCall {
 		call := &apitest.WorkflowCall{Workflow: transactionswf.RecordExpense, Params: params, Err: err}
 		if err == nil {
@@ -42,6 +44,11 @@ func TestRecordExpense(t *testing.T) {
 		"with a note": {
 			Method: http.MethodPost, Path: "/api/transactions/expenses", Body: form + `,"description":"weekly shop"}`,
 			Call:       record(withNote, nil),
+			WantStatus: http.StatusOK, WantBody: `{"journalEntryId":42}`,
+		},
+		"with tags": {
+			Method: http.MethodPost, Path: "/api/transactions/expenses", Body: form + `,"tagIds":[3,4]}`,
+			Call:       record(withTags, nil),
 			WantStatus: http.StatusOK, WantBody: `{"journalEntryId":42}`,
 		},
 		"a category of the wrong kind": {
@@ -65,27 +72,27 @@ func TestRecordExpense(t *testing.T) {
 		},
 		"no idempotency key": {
 			Method: http.MethodPost, Path: "/api/transactions/expenses",
-			Body:       `{"idempotencyKey":"","balanceLedgerAccountId":100,"categoryLedgerAccountId":200,"amount":"12.50","occurredAt":"2026-10-03T10:00:00Z"}`,
+			Body:       `{"idempotencyKey":"","balanceLedgerAccountId":100,"categoryId":200,"amount":"12.50","occurredAt":"2026-10-03T10:00:00Z"}`,
 			WantStatus: http.StatusUnprocessableEntity,
 		},
 		"balance 0": {
 			Method: http.MethodPost, Path: "/api/transactions/expenses",
-			Body:       `{"idempotencyKey":"9c1e","balanceLedgerAccountId":0,"categoryLedgerAccountId":200,"amount":"12.50","occurredAt":"2026-10-03T10:00:00Z"}`,
+			Body:       `{"idempotencyKey":"9c1e","balanceLedgerAccountId":0,"categoryId":200,"amount":"12.50","occurredAt":"2026-10-03T10:00:00Z"}`,
 			WantStatus: http.StatusUnprocessableEntity,
 		},
 		"category 0": {
 			Method: http.MethodPost, Path: "/api/transactions/expenses",
-			Body:       `{"idempotencyKey":"9c1e","balanceLedgerAccountId":100,"categoryLedgerAccountId":0,"amount":"12.50","occurredAt":"2026-10-03T10:00:00Z"}`,
+			Body:       `{"idempotencyKey":"9c1e","balanceLedgerAccountId":100,"categoryId":0,"amount":"12.50","occurredAt":"2026-10-03T10:00:00Z"}`,
 			WantStatus: http.StatusUnprocessableEntity,
 		},
 		"an amount that is not a decimal": {
 			Method: http.MethodPost, Path: "/api/transactions/expenses",
-			Body:       `{"idempotencyKey":"9c1e","balanceLedgerAccountId":100,"categoryLedgerAccountId":200,"amount":"1,200","occurredAt":"2026-10-03T10:00:00Z"}`,
+			Body:       `{"idempotencyKey":"9c1e","balanceLedgerAccountId":100,"categoryId":200,"amount":"1,200","occurredAt":"2026-10-03T10:00:00Z"}`,
 			WantStatus: http.StatusUnprocessableEntity,
 		},
 		"no occurrence date": {
 			Method: http.MethodPost, Path: "/api/transactions/expenses",
-			Body:       `{"idempotencyKey":"9c1e","balanceLedgerAccountId":100,"categoryLedgerAccountId":200,"amount":"12.50"}`,
+			Body:       `{"idempotencyKey":"9c1e","balanceLedgerAccountId":100,"categoryId":200,"amount":"12.50"}`,
 			WantStatus: http.StatusUnprocessableEntity,
 		},
 	})

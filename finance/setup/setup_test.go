@@ -5,13 +5,13 @@ package setup
 import (
 	"testing"
 
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	ct "github.com/logicorg/ivfs/finance/common/types/categorytypes"
 	it "github.com/logicorg/ivfs/finance/common/types/institutiontypes"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	"github.com/logicorg/ivfs/finance/registration"
-	"github.com/logicorg/ivfs/finance/workflows/facade/categories"
 	institutionwf "github.com/logicorg/ivfs/finance/workflows/institution"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
+	"github.com/logicorg/ivfs/finance/workflows/ledger/categories"
 	"github.com/logicorg/ivfs/internal/pkg/temporaltesting"
 	"github.com/logicorg/ivfs/internal/pkg/tenancy"
 	"github.com/logicorg/ivfs/pkg/model"
@@ -58,41 +58,33 @@ func (s *UnitTestSuite) Test_PersonalSetup() {
 
 	// Passing a cash currency also creates the account's first cash ledger
 	// account, in the same transaction.
-	params = lt.CreateFinancialAccountInput{
+	params = act.CreateFinancialAccountInput{
 		InstitutionID:  institution.ID,
 		Name:           "Revolut EUR",
 		CashCurrencyID: ptr.Int64(s.eur.ID),
 	}
-	var account lt.CreateFinancialAccountResult
+	var account act.CreateFinancialAccountResult
 	s.runWorkflow(ledgeraccountswf.CreateFinancialAccount, params, &account)
 	require.NotNil(s.T(), account.CashLedgerAccountID)
 
 	// Create Ledger accounts and categories
 
-	// The category facade covers income and expense only, so equity goes
-	// through the generic ledger account workflow.
+	// A category is not a ledger account and has no currency, so only the
+	// equity account goes through the ledger account workflow.
 
-	params = lt.CreateLedgerAccountInput{
+	params = act.CreateLedgerAccountInput{
 		CurrencyID: s.eur.ID,
 		Name:       "Opening Balances",
 		Kind:       model.LedgerAccountEquity,
 	}
-	var openingBalances lt.CreateLedgerAccountResult
+	var openingBalances act.CreateLedgerAccountResult
 	s.runWorkflow(ledgeraccountswf.CreateLedgerAccount, params, &openingBalances)
 
-	params = ct.CreateCategoryInput{
-		CurrencyID: s.eur.ID,
-		Name:       "Salary",
-		Kind:       model.LedgerAccountIncome,
-	}
+	params = ct.CreateCategoryInput{Name: "Salary", Kind: model.LedgerAccountIncome}
 	var salary ct.CategoryResult
 	s.runWorkflow(categories.CreateCategory, params, &salary)
 
-	params = ct.CreateCategoryInput{
-		CurrencyID: s.eur.ID,
-		Name:       "Groceries",
-		Kind:       model.LedgerAccountExpense,
-	}
+	params = ct.CreateCategoryInput{Name: "Groceries", Kind: model.LedgerAccountExpense}
 	var groceries ct.CategoryResult
 	s.runWorkflow(categories.CreateCategory, params, &groceries)
 
@@ -103,22 +95,23 @@ func (s *UnitTestSuite) Test_PersonalSetup() {
 	s.runWorkflow(institutionwf.RetrieveInstitution, params, &retrieved)
 	require.Equal(s.T(), "Revolut", retrieved.Institution.Name)
 
-	params = lt.ListFinancialAccountsParams{InstitutionID: ptr.Int64(institution.ID)}
-	var financialAccounts lt.ListFinancialAccountsResult
+	params = act.ListFinancialAccountsParams{InstitutionID: ptr.Int64(institution.ID)}
+	var financialAccounts act.ListFinancialAccountsResult
 	s.runWorkflow(ledgeraccountswf.ListFinancialAccounts, params, &financialAccounts)
 	require.Len(s.T(), financialAccounts.FinancialAccounts, 1)
 	require.Equal(s.T(), account.FinancialAccountID, financialAccounts.FinancialAccounts[0].ID)
 
-	params = lt.ListLedgerAccountsParams{FinancialAccountID: ptr.Int64(account.FinancialAccountID)}
-	var cashAccounts lt.ListLedgerAccountsResult
+	params = act.ListLedgerAccountsParams{FinancialAccountID: ptr.Int64(account.FinancialAccountID)}
+	var cashAccounts act.ListLedgerAccountsResult
 	s.runWorkflow(ledgeraccountswf.ListLedgerAccounts, params, &cashAccounts)
 	require.Len(s.T(), cashAccounts.LedgerAccounts, 1)
 	require.Equal(s.T(), *account.CashLedgerAccountID, cashAccounts.LedgerAccounts[0].ID)
 
-	// Equity and category accounts are not linked to a financial account, so
-	// they only show up in the unfiltered chart of accounts.
-	var chartOfAccounts lt.ListLedgerAccountsResult
-	s.runWorkflow(ledgeraccountswf.ListLedgerAccounts, lt.ListLedgerAccountsParams{}, &chartOfAccounts)
+	// The equity account is not linked to a financial account, so it only
+	// shows up in the unfiltered chart of accounts. The categories are not in
+	// it.
+	var chartOfAccounts act.ListLedgerAccountsResult
+	s.runWorkflow(ledgeraccountswf.ListLedgerAccounts, act.ListLedgerAccountsParams{}, &chartOfAccounts)
 
 	chartIDs := make([]int64, 0, len(chartOfAccounts.LedgerAccounts))
 	for _, ledgerAccount := range chartOfAccounts.LedgerAccounts {
@@ -127,9 +120,15 @@ func (s *UnitTestSuite) Test_PersonalSetup() {
 	require.ElementsMatch(s.T(), []int64{
 		*account.CashLedgerAccountID,
 		openingBalances.LedgerAccountID,
-		salary.LedgerAccountID,
-		groceries.LedgerAccountID,
 	}, chartIDs)
+
+	var listed ct.ListCategoriesResult
+	s.runWorkflow(categories.ListCategories, ct.ListCategoriesParams{}, &listed)
+	categoryIDs := make([]int64, 0, len(listed.Categories))
+	for _, category := range listed.Categories {
+		categoryIDs = append(categoryIDs, category.ID)
+	}
+	require.ElementsMatch(s.T(), []int64{salary.CategoryID, groceries.CategoryID}, categoryIDs)
 }
 
 // runWorkflow executes wf on a fresh environment wired to the real activities

@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	rpt "github.com/logicorg/ivfs/finance/common/types/reportingtypes"
 	reportingwf "github.com/logicorg/ivfs/finance/workflows/ledger/reporting"
 	"github.com/logicorg/ivfs/web/api/gateway"
 	"go.temporal.io/sdk/client"
@@ -21,7 +21,7 @@ func registerList(api huma.API, c client.Client) {
 			"is listed with no units.",
 		Tags: tags,
 	}, func(ctx context.Context, in *ListHoldingsInput) (*ListHoldingsOutput, error) {
-		result, err := gateway.RunWorkflow[lt.PositionsAtResult](ctx, c, reportingwf.ListPositionsAt, lt.PositionsAtParams{
+		result, err := gateway.RunWorkflow[rpt.PositionsAtResult](ctx, c, reportingwf.ListPositionsAt, rpt.PositionsAtParams{
 			FinancialAccountID: in.FinancialAccountID, AssetID: in.AssetID, At: in.At,
 		})
 		if err != nil {

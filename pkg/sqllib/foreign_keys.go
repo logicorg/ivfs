@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 
 	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
@@ -53,12 +54,13 @@ var foreignKeys = []foreignKey{
 	{"currency.conversion", "from_currency_id", "currency.currency", "Currency"},
 	{"currency.conversion", "to_currency_id", "currency.currency", "Currency"},
 	{"account.financial_account", "institution_id", "institution.institution", "Institution"},
-	{"ledger.ledger_account", "parent_id", "ledger.ledger_account", "LedgerAccount"},
 	{"ledger.ledger_account", "financial_account_id", "account.financial_account", "FinancialAccount"},
 	{"ledger.ledger_account", "currency_id", "currency.currency", "Currency"},
+	{"ledger.category", "parent_id", "ledger.category", "Category"},
 	{"ledger.journal_entry", "counterparty_id", "ledger.counterparty", "Counterparty"},
 	{"ledger.posting", "journal_entry_id", "ledger.journal_entry", "JournalEntry"},
 	{"ledger.posting", "ledger_account_id", "ledger.ledger_account", "LedgerAccount"},
+	{"ledger.posting", "category_id", "ledger.category", "Category"},
 	{"asset.position_movement", "journal_entry_id", "ledger.journal_entry", "JournalEntry"},
 	{"asset.position_movement", "financial_account_id", "account.financial_account", "FinancialAccount"},
 	{"asset.position_movement", "asset_id", "asset.asset", "Asset"},
@@ -66,14 +68,28 @@ var foreignKeys = []foreignKey{
 	{"settings.user_settings", "default_currency_id", "currency.currency", "Currency"},
 }
 
+// cascadingForeignKeys are the references deleted with their parent: the links
+// of a tag to an entry, which record nothing of their own.
+var cascadingForeignKeys = []foreignKey{
+	{"ledger.journal_entry_tag", "journal_entry_id", "ledger.journal_entry", "JournalEntry"},
+	{"ledger.journal_entry_tag", "tag_id", "tag.tag", "Tag"},
+}
+
 // ensureForeignKeys declares the foreign keys once every table exists. They
 // are added afterwards rather than with the tables because the tables refer to
 // each other, and because bun only declares them when it creates a table, which
 // an existing database would skip. It is safe to call repeatedly.
 func ensureForeignKeys(ctx context.Context, db *bun.DB) error {
-	for _, fk := range foreignKeys {
-		statement := fmt.Sprintf("ALTER TABLE %s ADD CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s (id) ON DELETE RESTRICT",
-			fk.table, fk.name(), fk.column, fk.parent)
+	if err := installForeignKeys(ctx, db, foreignKeys, "RESTRICT"); err != nil {
+		return err
+	}
+	return installForeignKeys(ctx, db, cascadingForeignKeys, "CASCADE")
+}
+
+func installForeignKeys(ctx context.Context, db *bun.DB, keys []foreignKey, onDelete string) error {
+	for _, fk := range keys {
+		statement := fmt.Sprintf("ALTER TABLE %s ADD CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s (id) ON DELETE %s",
+			fk.table, fk.name(), fk.column, fk.parent, onDelete)
 		if _, err := db.ExecContext(ctx, statement); err != nil && !isDuplicateConstraintError(err) {
 			return fmt.Errorf("install foreign key %s: %w", fk.name(), err)
 		}
@@ -90,7 +106,7 @@ func violatedForeignKey(err error) (foreignKey, pgdriver.Error, bool) {
 	}
 
 	constraint := pgErr.Field('n')
-	for _, fk := range foreignKeys {
+	for _, fk := range slices.Concat(foreignKeys, cascadingForeignKeys) {
 		if fk.name() == constraint {
 			return fk, pgErr, true
 		}

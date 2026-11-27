@@ -1,5 +1,4 @@
-// Package categories is the web API's category endpoints, over the
-// categories facade.
+// Package categories is the web API's category endpoints.
 package categories
 
 import (
