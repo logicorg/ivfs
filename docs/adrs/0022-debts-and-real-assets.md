@@ -1,6 +1,6 @@
 # ADR 0022: Debts and real assets
 
-- Status: Proposed
+- Status: Implemented
 - Date: 2026-11-27
 - Depends on: [ADR 0006](0006-intent-level-account-setup.md) (account types),
   [ADR 0008](0008-intent-level-transactions.md) (transactions),

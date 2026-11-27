@@ -290,6 +290,62 @@ RegisterInvestmentTrade (an hour later)
 - These stories run end to end in
   `finance/scenarios/equity_compensation_test.go`.
 
+## Example 7 — one payment, several categories
+
+A EUR60 supermarket receipt: 45 of groceries and 15 of household goods.
+
+```text
+JournalEntry
+  Debit  Expenses:EUR             45.00   (category = Groceries)
+  Debit  Expenses:EUR             15.00   (category = Household)
+  Credit Assets:Revolut:EUR       60.00
+```
+
+- Still one entry and one `PostJournalEntry` call. `RecordExpense` takes
+  `lines: [{categoryId, amount}]` in place of `categoryId`, and the lines add
+  up to `amount`. Each line is a debit on the same "Expenses" account, with its
+  own category, so category totals see the split and the balance sees one
+  payment.
+
+## Example 8 — a mortgage instalment
+
+EUR1,200 paid from the bank, of which 400 reduces the debt and 800 is
+interest (ADR 0022).
+
+```text
+JournalEntry
+  Debit  Liabilities:Intesa:Mortgage:Principal:EUR   400.00
+  Debit  Expenses:EUR                                800.00   (category = Mortgage interest)
+  Credit Assets:Bank:Cash:EUR                       1200.00
+```
+
+- `RecordTransfer` with `charges: [{categoryId, amount}]`: `amount` is still
+  what leaves the bank, each charge is a debit on "Expenses" under an expense
+  category, and the balance reached is debited the rest. A `toAmount`, if
+  given, must equal that rest.
+- Between currencies the transfer is an FX conversion (example 4), and its one
+  allowed charge is the conversion's fee.
+- A prepayment is the same transfer without charges. A balance transfer
+  between two cards is a transfer with the card's fee as a charge.
+
+## Example 9 — debts and real assets
+
+No new entity or table: they are account types (ADR 0006) and asset kinds.
+
+- A credit card (`card`) and a loan (`loan`) each have one liability per
+  currency: "Card balance" and "Principal". Spending, interest and fees are
+  expenses paid from the liability, which grows; a payment is a transfer into
+  it. A loan's institution is the lender.
+- A margin loan is a negative brokerage "Cash": a buy for more than the cash
+  held, with margin interest an expense paid from that "Cash".
+- A house or a car is an `Asset` of kind `real_estate` or `vehicle`, held in a
+  `real_asset` account, which has a brokerage's "Cash" and "Investments" and
+  is bought into with `RecordInvestment`. A share of a house is 0.5 units; its
+  value is units × an `AssetValue` entered over time.
+- Switching a mortgage is a transfer from the new loan's "Principal" to the
+  old one's, with the accrued interest and fees as charges, and then closing
+  the old financial account. The ADR walks through it step by step.
+
 ## Reading entries back
 
 `ListJournalEntries` returns a page of entries, each with its postings. Filter
@@ -311,6 +367,10 @@ use `ListPostings`, and for what an account holds, `LedgerAccountBalance` or
 | I want to... | Entity/ies involved | Command |
 | --- | --- | --- |
 | Record any plain expense/income/transfer movement | `LedgerAccount`(s), optional `Counterparty` | `PostJournalEntry` |
+| Split one payment across expense categories | "Expenses" postings, one `Category` each | `RecordExpense` with `lines` |
+| Pay an instalment, or a transfer with fees | the two balances + "Expenses" postings for the charges | `RecordTransfer` with `charges` |
+| Track a credit card, loan or mortgage | `FinancialAccount` of type `card` or `loan`, a liability `LedgerAccount` | `OpenAccount` |
+| Hold a house or a car | `FinancialAccount` of type `real_asset`, an `Asset` of kind `real_estate` or `vehicle`, `AssetValue` | `OpenAccount`, then `RecordInvestment` |
 | Convert money between two currencies | source/destination/clearing `LedgerAccount`s, a fee `Category` | `RegisterFXConversion` |
 | Buy or sell an asset | `LedgerAccount`(s) + `PositionMovement` | `RegisterInvestmentTrade` |
 | Receive units from an RSU vest | `LedgerAccount`(s) + `PositionMovement` of kind `vest` | `RegisterVest` |
