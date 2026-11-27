@@ -10,15 +10,15 @@ ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 
 WORKDIR /build/web/ui
 
+RUN npm install --global pnpm@10.34.9
+
 # The lockfile alone first, so a source change reuses the installed
 # dependencies.
 COPY web/ui/package.json web/ui/pnpm-lock.yaml ./
 
-RUN corepack pnpm install --frozen-lockfile
-
 COPY web/ui ./
 
-RUN corepack pnpm build
+RUN pnpm build
 
 FROM --platform=$BUILDPLATFORM golang:1.27.4-trixie@sha256:f18c3d73a184fb0582828510722e723b63a93f7188d11dd223d9be6f6880e65d AS builder
 
