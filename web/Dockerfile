@@ -4,21 +4,23 @@
 # The builders run on the build machine's platform: the JavaScript build is
 # the same on every platform, and Go cross-compiles, which is faster than
 # emulating the target's.
-FROM --platform=$BUILDPLATFORM node:24.22-trixie-slim@sha256:af02d57b57719b9657a45199a79264a9437940cd55b3c7b3fc99615654f124a0 AS ui
+FROM --platform=$BUILDPLATFORM node:26.13-trixie-slim@sha256:e6bedef217677b276c591795e169840edd9096dbf13f29df8ef8d1856b8820bc AS ui
 
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 
 WORKDIR /build/web/ui
 
+RUN npm install --global pnpm@10.34.9
+
 # The lockfile alone first, so a source change reuses the installed
 # dependencies.
 COPY web/ui/package.json web/ui/pnpm-lock.yaml ./
 
-RUN corepack pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile
 
 COPY web/ui ./
 
-RUN corepack pnpm build
+RUN pnpm build
 
 FROM --platform=$BUILDPLATFORM golang:1.27.4-trixie@sha256:f18c3d73a184fb0582828510722e723b63a93f7188d11dd223d9be6f6880e65d AS builder
 
