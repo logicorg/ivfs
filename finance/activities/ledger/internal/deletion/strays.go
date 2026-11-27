@@ -1,7 +1,6 @@
 package deletion
 
 import (
-	"cmp"
 	"context"
 	"database/sql"
 	"errors"
@@ -26,19 +25,17 @@ const untrackedInstitutionKind = "untracked"
 // Waiting on another transaction's insert deadlocks when that transaction
 // waits on one of ours, so a transaction creates the strays it needs in one
 // order: the stray financial account first, then all the stray ledger accounts
-// in one call to StrayLedgerAccountsTx, which goes by currency and kind.
+// in one call to StrayLedgerAccountsTx, which goes by currency.
 
 // StrayLedgerAccountTx returns the stray ledger account that receives the
-// postings, in currencyID, of a deleted ledger account of kind (ADR 0012): a
-// balance's or an equity account's go to "Untracked accounts", a category's to
-// "Uncategorized" of its kind. It is created top-level, with no financial
-// account, the first time it is needed, and returned closed or not, since the
-// person cannot close it.
-func StrayLedgerAccountTx(ctx context.Context, tx bun.Tx, kind model.LedgerAccountKind, currencyID int64) (int64, error) {
-	stray := StrayLedgerAccount(kind, currencyID)
+// postings, in currencyID, of a deleted ledger account (ADR 0012): "Untracked
+// accounts". It is created with no financial account the first time it is
+// needed, and returned closed or not, since the person cannot close it.
+func StrayLedgerAccountTx(ctx context.Context, tx bun.Tx, currencyID int64) (int64, error) {
+	stray := &model.LedgerAccount{CurrencyID: currencyID, Name: lt.UntrackedAccountsName, Kind: model.LedgerAccountEquity}
 	find := func() (bool, error) {
 		err := tx.NewSelect().Model(stray).
-			Where("la.parent_id IS NULL AND la.financial_account_id IS NULL").
+			Where("la.financial_account_id IS NULL").
 			Where("la.kind = ? AND la.currency_id = ?", stray.Kind, stray.CurrencyID).
 			Where("lower(la.name) = lower(?)", stray.Name).
 			Scan(ctx)
@@ -57,48 +54,28 @@ func StrayLedgerAccountTx(ctx context.Context, tx bun.Tx, kind model.LedgerAccou
 }
 
 // StrayLedgerAccountsTx returns the stray of each account, by the account's
-// id, as StrayLedgerAccountTx does, creating them by currency and kind.
+// id, as StrayLedgerAccountTx does, creating them by currency.
 func StrayLedgerAccountsTx(ctx context.Context, tx bun.Tx, accounts []*model.LedgerAccount) (map[int64]int64, error) {
-	type key struct {
-		currencyID int64
-		kind       model.LedgerAccountKind
-	}
-	keyOf := func(account *model.LedgerAccount) key {
-		stray := StrayLedgerAccount(account.Kind, account.CurrencyID)
-		return key{stray.CurrencyID, stray.Kind}
-	}
-
-	keys := make([]key, 0, len(accounts))
+	currencyIDs := make([]int64, 0, len(accounts))
 	for _, account := range accounts {
-		keys = append(keys, keyOf(account))
+		currencyIDs = append(currencyIDs, account.CurrencyID)
 	}
-	slices.SortFunc(keys, func(a, b key) int {
-		return cmp.Or(cmp.Compare(a.currencyID, b.currencyID), cmp.Compare(a.kind, b.kind))
-	})
+	slices.Sort(currencyIDs)
 
-	strayIDs := make(map[key]int64, len(keys))
-	for _, k := range slices.Compact(keys) {
-		id, err := StrayLedgerAccountTx(ctx, tx, k.kind, k.currencyID)
+	strayIDs := make(map[int64]int64, len(currencyIDs))
+	for _, currencyID := range slices.Compact(currencyIDs) {
+		id, err := StrayLedgerAccountTx(ctx, tx, currencyID)
 		if err != nil {
 			return nil, err
 		}
-		strayIDs[k] = id
+		strayIDs[currencyID] = id
 	}
 
 	byAccount := make(map[int64]int64, len(accounts))
 	for _, account := range accounts {
-		byAccount[account.ID] = strayIDs[keyOf(account)]
+		byAccount[account.ID] = strayIDs[account.CurrencyID]
 	}
 	return byAccount, nil
-}
-
-// StrayLedgerAccount is the stray that receives the postings of an account of
-// kind in currencyID, before it is retrieved or inserted.
-func StrayLedgerAccount(kind model.LedgerAccountKind, currencyID int64) *model.LedgerAccount {
-	if kind == model.LedgerAccountExpense || kind == model.LedgerAccountIncome {
-		return &model.LedgerAccount{CurrencyID: currencyID, Name: lt.UncategorizedAccountName, Kind: kind}
-	}
-	return &model.LedgerAccount{CurrencyID: currencyID, Name: lt.UntrackedAccountsName, Kind: model.LedgerAccountEquity}
 }
 
 // StrayFinancialAccountTx returns the stray financial account, "Untracked

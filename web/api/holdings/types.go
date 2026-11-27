@@ -3,7 +3,7 @@ package holdings
 import (
 	"time"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	rpt "github.com/logicorg/ivfs/finance/common/types/reportingtypes"
 	"github.com/logicorg/ivfs/web/api/gateway"
 )
 
@@ -83,6 +83,6 @@ type ListMovementsOutput struct {
 }
 
 // newCostBasis is amount as the API returns it.
-func newCostBasis(amount lt.CostBasisAmount) CostBasis {
+func newCostBasis(amount rpt.CostBasisAmount) CostBasis {
 	return CostBasis{CurrencyID: amount.CurrencyID, Amount: gateway.NewAmount(amount.Amount)}
 }

@@ -35,6 +35,7 @@ func registerBuy(api huma.API, c client.Client) {
 				CurrencyCode:       in.Body.CurrencyCode,
 				OccurredAt:         in.Body.OccurredAt,
 				Description:        in.Body.Description,
+				TagIDs:             in.Body.TagIDs,
 			},
 		})
 		if err != nil {

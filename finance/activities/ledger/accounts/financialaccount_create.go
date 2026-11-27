@@ -4,12 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"strings"
-
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/logicorg/ivfs/pkg/sqllib"
 	"github.com/uptrace/bun"
+	"strings"
 )
 
 // cashLedgerAccountName is the name of the cash ledger account created with a
@@ -27,7 +26,7 @@ const cashLedgerAccountName = "Cash"
 // "Cash" ledger account in that currency. For an existing account, the result
 // carries its "Cash" ledger account in that currency if it has one, so that a
 // retry returns exactly what the first call did; none is created.
-func (a *Activities) CreateFinancialAccount(ctx context.Context, input lt.CreateFinancialAccountInput) (*lt.CreateFinancialAccountResult, error) {
+func (a *Activities) CreateFinancialAccount(ctx context.Context, input act.CreateFinancialAccountInput) (*act.CreateFinancialAccountResult, error) {
 	db, err := a.Pools.For(ctx)
 	if err != nil {
 		return nil, err
@@ -44,7 +43,7 @@ func (a *Activities) CreateFinancialAccount(ctx context.Context, input lt.Create
 		return existing, err
 	}
 
-	result := &lt.CreateFinancialAccountResult{}
+	result := &act.CreateFinancialAccountResult{}
 	err = db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
 		account := &model.FinancialAccount{InstitutionID: input.InstitutionID, Name: name, ExternalID: input.ExternalID}
 		if _, err := tx.NewInsert().Model(account).Returning("id").Exec(ctx); err != nil {
@@ -99,7 +98,7 @@ func (a *Activities) CreateFinancialAccount(ctx context.Context, input lt.Create
 // already exists, together with its "Cash" ledger account in cashCurrencyID
 // when one is asked for and exists. It returns nil when there is no such
 // account.
-func findFinancialAccount(ctx context.Context, db bun.IDB, institutionID int64, name string, cashCurrencyID *int64) (*lt.CreateFinancialAccountResult, error) {
+func findFinancialAccount(ctx context.Context, db bun.IDB, institutionID int64, name string, cashCurrencyID *int64) (*act.CreateFinancialAccountResult, error) {
 	account := new(model.FinancialAccount)
 	err := db.NewSelect().Model(account).
 		Where("fa.institution_id = ?", institutionID).
@@ -112,7 +111,7 @@ func findFinancialAccount(ctx context.Context, db bun.IDB, institutionID int64, 
 		return nil, fmt.Errorf("find financial account: %w", err)
 	}
 
-	result := &lt.CreateFinancialAccountResult{FinancialAccountID: account.ID}
+	result := &act.CreateFinancialAccountResult{FinancialAccountID: account.ID}
 	if cashCurrencyID == nil {
 		return result, nil
 	}

@@ -4,7 +4,9 @@
 - Date: 2026-09-27
 - Depends on: [ADR 0002](0002-ledger-domain-and-application-api.md) and [ADR 0003](0003-categories-and-tags.md)
 - Amends: ADR 0002 (persistence invariants and creation semantics) and ADR 0003 (category names)
-- Amended by: [ADR 0016](0016-deleting-counterparties.md)
+- Amended by: [ADR 0016](0016-deleting-counterparties.md) and
+  [ADR 0019](0019-currency-neutral-categories.md) (the unique keys of a
+  category and of a ledger account with no financial account)
 
 ## Context
 

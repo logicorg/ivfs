@@ -3,7 +3,7 @@ package accounts
 import (
 	"time"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	"github.com/logicorg/ivfs/web/api/gateway"
 )
 
@@ -82,7 +82,7 @@ type LedgerAccountBalanceOutput struct {
 }
 
 // newBalance is balance as the API returns it.
-func newBalance(balance lt.LedgerAccountBalanceResult) Balance {
+func newBalance(balance jt.LedgerAccountBalanceResult) Balance {
 	return Balance{
 		LedgerAccountID: balance.LedgerAccountID, LedgerAccountName: balance.LedgerAccountName,
 		Kind: string(balance.Kind), CurrencyID: balance.CurrencyID, CurrencyCode: balance.CurrencyCode,
@@ -90,8 +90,8 @@ func newBalance(balance lt.LedgerAccountBalanceResult) Balance {
 	}
 }
 
-// CloseInput is the request of closing an institution, a financial account,
-// or a ledger account.
+// CloseInput is the request of closing a financial account or a ledger
+// account.
 type CloseInput struct {
 	ID int64 `path:"id" minimum:"1"`
 }
@@ -183,10 +183,5 @@ type DeleteAccountInput struct {
 
 // DeletionPreviewInput is the request of GET .../{id}/deletion-preview.
 type DeletionPreviewInput struct {
-	ID int64 `path:"id" minimum:"1"`
-}
-
-// DeleteInstitutionInput is the request of DELETE /api/institutions/{id}.
-type DeleteInstitutionInput struct {
 	ID int64 `path:"id" minimum:"1"`
 }

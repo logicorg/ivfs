@@ -103,8 +103,6 @@ type LedgerAccount struct {
 	bun.BaseModel `bun:"table:ledger.ledger_account,alias:la"`
 
 	ID int64 `bun:"id,pk,autoincrement" json:"id"`
-	// ParentID is the parent ledger account, if any. It is used to create a hierarchy of ledger accounts.
-	ParentID *int64 `bun:"parent_id" json:"parentId,omitempty"`
 	// FinancialAccountID is the financial account that owns this ledger account, if any.
 	//
 	// Examples:
@@ -118,8 +116,6 @@ type LedgerAccount struct {
 	CreatedAt          time.Time         `bun:"created_at,nullzero,notnull,default:current_timestamp" json:"createdAt"`
 	UpdatedAt          time.Time         `bun:"updated_at,nullzero,notnull,default:current_timestamp" json:"updatedAt"`
 
-	Parent           *LedgerAccount    `bun:"rel:belongs-to,join:parent_id=id,on_delete:restrict" json:"parent,omitempty"`
-	Children         []LedgerAccount   `bun:"rel:has-many,join:id=parent_id" json:"children,omitempty"`
 	FinancialAccount *FinancialAccount `bun:"rel:belongs-to,join:financial_account_id=id,on_delete:restrict" json:"financialAccount,omitempty"`
 	Currency         *Currency         `bun:"rel:belongs-to,join:currency_id=id,on_delete:restrict" json:"currency,omitempty"`
 }
@@ -196,6 +192,7 @@ type JournalEntry struct {
 	Counterparty      *Counterparty      `bun:"rel:belongs-to,join:counterparty_id=id,on_delete:restrict" json:"counterparty,omitempty"`
 	Postings          []Posting          `bun:"rel:has-many,join:id=journal_entry_id" json:"postings,omitempty"`
 	PositionMovements []PositionMovement `bun:"rel:has-many,join:id=journal_entry_id" json:"positionMovements,omitempty"`
+	Tags              []Tag              `bun:"m2m:ledger.journal_entry_tag,join:JournalEntry=Tag" json:"tags,omitempty"`
 }
 
 // Posting is one accounting line. Its currency is determined by
@@ -203,16 +200,20 @@ type JournalEntry struct {
 type Posting struct {
 	bun.BaseModel `bun:"table:ledger.posting,alias:p"`
 
-	ID              int64           `bun:"id,pk,autoincrement" json:"id"`
-	JournalEntryID  int64           `bun:"journal_entry_id,notnull" json:"journalEntryId"`
-	LineNumber      int             `bun:"line_number,notnull" json:"lineNumber"`
-	LedgerAccountID int64           `bun:"ledger_account_id,notnull" json:"ledgerAccountId"`
-	Amount          decimal.Decimal `bun:"amount,type:numeric(36,18),notnull" json:"amount"`
-	Side            PostingSide     `bun:"side,notnull" json:"side"`
-	CreatedAt       time.Time       `bun:"created_at,nullzero,notnull,default:current_timestamp" json:"createdAt"`
+	ID              int64 `bun:"id,pk,autoincrement" json:"id"`
+	JournalEntryID  int64 `bun:"journal_entry_id,notnull" json:"journalEntryId"`
+	LineNumber      int   `bun:"line_number,notnull" json:"lineNumber"`
+	LedgerAccountID int64 `bun:"ledger_account_id,notnull" json:"ledgerAccountId"`
+	// CategoryID classifies a posting to an income or expense account. A
+	// posting to one with none is uncategorized.
+	CategoryID *int64          `bun:"category_id" json:"categoryId,omitempty"`
+	Amount     decimal.Decimal `bun:"amount,type:numeric(36,18),notnull" json:"amount"`
+	Side       PostingSide     `bun:"side,notnull" json:"side"`
+	CreatedAt  time.Time       `bun:"created_at,nullzero,notnull,default:current_timestamp" json:"createdAt"`
 
 	JournalEntry  *JournalEntry  `bun:"rel:belongs-to,join:journal_entry_id=id,on_delete:restrict" json:"journalEntry,omitempty"`
 	LedgerAccount *LedgerAccount `bun:"rel:belongs-to,join:ledger_account_id=id,on_delete:restrict" json:"ledgerAccount,omitempty"`
+	Category      *Category      `bun:"rel:belongs-to,join:category_id=id,on_delete:restrict" json:"category,omitempty"`
 }
 
 // PositionMovementKind says what a movement is, which decides who may write it

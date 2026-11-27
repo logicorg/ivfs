@@ -13,13 +13,13 @@ func TestVestInput_Validate(t *testing.T) {
 		return VestInput{
 			IdempotencyKey: "a71f", FinancialAccountID: 1, AssetID: 2,
 			UnitsVested: decimal.NewFromInt(100), FairMarketValue: decimal.RequireFromString("10.00"), CurrencyCode: "USD",
-			IncomeCategoryLedgerAccountID: 3, OccurredAt: time.Date(2026, 10, 3, 10, 0, 0, 0, time.UTC),
+			IncomeCategoryID: 3, OccurredAt: time.Date(2026, 10, 3, 10, 0, 0, 0, time.UTC),
 		}
 	}
 	withheld := func(units string) func(*VestInput) {
 		return func(i *VestInput) {
 			i.UnitsWithheld = decimal.RequireFromString(units)
-			i.TaxCategoryLedgerAccountID = 4
+			i.TaxCategoryID = 4
 		}
 	}
 
@@ -30,8 +30,10 @@ func TestVestInput_Validate(t *testing.T) {
 		"a vest":                            {mutate: func(*VestInput) {}},
 		"a vest with units withheld":        {mutate: withheld("40")},
 		"a vest of a fraction":              {mutate: func(i *VestInput) { i.UnitsVested = decimal.RequireFromString("12.5") }},
-		"a vest with a tax category unused": {mutate: func(i *VestInput) { i.TaxCategoryLedgerAccountID = 4 }},
+		"a vest with a tax category unused": {mutate: func(i *VestInput) { i.TaxCategoryID = 4 }},
 		"a vest with a note":                {mutate: func(i *VestInput) { i.Description = "Q3 vest" }},
+		"with tags":                         {mutate: func(i *VestInput) { i.TagIDs = []int64{3, 4} }},
+		"a tag id of zero":                  {mutate: func(i *VestInput) { i.TagIDs = []int64{3, 0} }, wantError: "tag id 0"},
 		"a blank idempotency key":           {mutate: func(i *VestInput) { i.IdempotencyKey = " " }, wantError: "validation error"},
 		"no financial account":              {mutate: func(i *VestInput) { i.FinancialAccountID = 0 }, wantError: "validation error"},
 		"no asset":                          {mutate: func(i *VestInput) { i.AssetID = 0 }, wantError: "validation error"},
@@ -41,12 +43,12 @@ func TestVestInput_Validate(t *testing.T) {
 		"a zero fair market value":          {mutate: func(i *VestInput) { i.FairMarketValue = decimal.Zero }, wantError: "validation error"},
 		"a negative fair market value":      {mutate: func(i *VestInput) { i.FairMarketValue = decimal.NewFromInt(-10) }, wantError: "validation error"},
 		"no currency":                       {mutate: func(i *VestInput) { i.CurrencyCode = "" }, wantError: "validation error"},
-		"no income category":                {mutate: func(i *VestInput) { i.IncomeCategoryLedgerAccountID = 0 }, wantError: "validation error"},
-		"a negative tax category":           {mutate: func(i *VestInput) { i.TaxCategoryLedgerAccountID = -4 }, wantError: "validation error"},
+		"no income category":                {mutate: func(i *VestInput) { i.IncomeCategoryID = 0 }, wantError: "validation error"},
+		"a negative tax category":           {mutate: func(i *VestInput) { i.TaxCategoryID = -4 }, wantError: "validation error"},
 		"no occurrence date":                {mutate: func(i *VestInput) { i.OccurredAt = time.Time{} }, wantError: "missing required parameters: OccurredAt"},
 		"units withheld without a category": {
 			mutate:    func(i *VestInput) { i.UnitsWithheld = decimal.NewFromInt(40) },
-			wantError: "missing required parameters: TaxCategoryLedgerAccountID",
+			wantError: "missing required parameters: TaxCategoryID",
 		},
 		"every unit withheld": {
 			mutate:    withheld("100"),

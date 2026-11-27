@@ -4,14 +4,14 @@ import (
 	"context"
 
 	"github.com/logicorg/ivfs/finance/activities/ledger/internal/posting"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/uptrace/bun"
 )
 
 // PostJournalEntry validates and atomically posts a balanced journal entry.
 // Retrying with the same idempotency key returns the original entry.
-func (a *Activities) PostJournalEntry(ctx context.Context, input lt.PostJournalEntryInput) (*lt.PostJournalEntryResult, error) {
+func (a *Activities) PostJournalEntry(ctx context.Context, input jt.PostJournalEntryInput) (*jt.PostJournalEntryResult, error) {
 	db, err := a.Pools.For(ctx)
 	if err != nil {
 		return nil, err
@@ -24,7 +24,7 @@ func (a *Activities) PostJournalEntry(ctx context.Context, input lt.PostJournalE
 		return nil, internalerrors.ErrInvalidParameter{Description: "journal entry requires at least two postings"}
 	}
 
-	result := &lt.PostJournalEntryResult{}
+	result := &jt.PostJournalEntryResult{}
 	err = db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
 		existing, err := posting.FindEntryByIdempotencyKeyTx(ctx, tx, input.IdempotencyKey)
 		if err != nil {

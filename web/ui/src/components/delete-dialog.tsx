@@ -37,7 +37,7 @@ type DeleteDialogProps<TError, TVariables, TKey extends QueryKey> = {
   onDeleted?: () => void
 }
 
-// DeleteDialog deletes an account, a category or an institution once
+// DeleteDialog deletes an account or an institution once
 // confirmed, after showing what the deletion would do (ADR 0012). It refuses
 // to start while the preview lists a conflict. A deletion that outlasts the
 // request goes on by itself, and the dialog says so instead of closing.

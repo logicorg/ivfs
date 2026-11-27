@@ -7,7 +7,7 @@ import (
 
 	"github.com/logicorg/ivfs/finance/activities/ledger/internal/positions"
 	"github.com/logicorg/ivfs/finance/activities/ledger/internal/posting"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	pft "github.com/logicorg/ivfs/finance/common/types/portfoliotypes"
 	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/logicorg/ivfs/internal/pkg/tenancy"
 	"github.com/logicorg/ivfs/pkg/model"
@@ -20,7 +20,7 @@ type Activities struct{ Pools tenancy.Pools }
 // signed units movement. The entry must contain the cash-side postings. A
 // holding that is negative afterwards does not refuse the trade and is returned
 // as a warning.
-func (a *Activities) RegisterInvestmentTrade(ctx context.Context, input lt.RegisterInvestmentTradeInput) (*lt.RegisterInvestmentTradeResult, error) {
+func (a *Activities) RegisterInvestmentTrade(ctx context.Context, input pft.RegisterInvestmentTradeInput) (*pft.RegisterInvestmentTradeResult, error) {
 	db, err := a.Pools.For(ctx)
 	if err != nil {
 		return nil, err
@@ -30,7 +30,7 @@ func (a *Activities) RegisterInvestmentTrade(ctx context.Context, input lt.Regis
 		return nil, err
 	}
 
-	result := &lt.RegisterInvestmentTradeResult{}
+	result := &pft.RegisterInvestmentTradeResult{}
 	err = db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
 		// The lock comes first so that a concurrent identical request waits and
 		// then finds the entry, instead of racing to insert it.

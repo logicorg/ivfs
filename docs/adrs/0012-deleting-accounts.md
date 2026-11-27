@@ -7,7 +7,9 @@
 - Amends: ADR 0001 (a posting's account never changes), ADR 0003 (used
   accounts are closed, never deleted), ADR 0004 (movements are append-only),
   ADR 0005 (names are reserved forever), ADR 0006 (the shared accounts)
-- Amended by: [ADR 0017](0017-editing-journal-entries.md)
+- Amended by: [ADR 0017](0017-editing-journal-entries.md) and
+  [ADR 0019](0019-currency-neutral-categories.md) (deleting a category moves
+  no posting, and "Uncategorized" is removed)
 - Related: [RFC 0004](../rfcs/0004-deleting-accounts.md) (the discussion this
   ADR decides), [ADR 0005](0005-uniqueness-and-idempotent-creation.md)
   (uniqueness keys), [ADR 0006](0006-intent-level-account-setup.md) (account
@@ -331,7 +333,7 @@ endpoints only, until a confirmation step exists for MCP.
 | `PreviewAccountDeletion` | New, read-only. | `GET` on `/deletion-preview` under each of the four |
 
 A replacement is passed as `replacementId`. The deletion workflows share three
-new activities, in `finance/activities/ledger/accounts`: closing without the
+new activities, in `finance/activities/ledger/accounts/deletion`: closing without the
 checks, handling a batch of entries, and handling a batch of movement groups.
 Deleting an account that does not exist succeeds. `DeleteOrCloseLedgerAccount`
 and `DeleteOrCloseCategory` no longer have a purpose and are removed.
