@@ -19,7 +19,7 @@ export function startOfDay(day: string): string | undefined {
 // an empty string, and the date is a day, not an instant.
 export const openAccountForm = z
   .object({
-    type: z.enum(["bank", "card", "brokerage", "cash"]),
+    type: z.enum(["bank", "card", "brokerage", "cash", "loan", "real_asset"]),
     institutionName: z.string().trim(),
     accountName: z.string().trim(),
     currencies: z
@@ -32,7 +32,7 @@ export const openAccountForm = z
       .min(1, "Add a currency"),
     openingBalancesAt: z.string(),
   })
-  .refine((form) => form.type === "cash" || form.institutionName !== "", {
+  .refine((form) => form.type === "cash" || form.type === "real_asset" || form.institutionName !== "", {
     message: "The institution that holds the account",
     path: ["institutionName"],
   })
@@ -40,11 +40,12 @@ export const openAccountForm = z
 export type OpenAccountFormValues = z.infer<typeof openAccountForm>
 
 // newAccountForm is values as the gateway takes them. The opening balances
-// hold from the start of the chosen day, in the browser's time zone.
+// hold from the start of the chosen day, in the browser's time zone. A real
+// asset with no institution belongs to "Real assets", which the gateway picks.
 export function newAccountForm(values: OpenAccountFormValues): AccountForm {
   return {
     type: values.type,
-    institutionName: values.type === "cash" ? undefined : values.institutionName,
+    institutionName: values.type === "cash" ? undefined : values.institutionName || undefined,
     accountName: values.accountName || undefined,
     currencies: values.currencies.map((currency) => ({
       code: currency.code,

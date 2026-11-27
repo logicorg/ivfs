@@ -16,6 +16,8 @@ describe("openAccountForm", () => {
   const cases: { name: string; values: OpenAccountFormValues; wantErrors: string[] }[] = [
     { name: "a bank account", values: revolut, wantErrors: [] },
     { name: "a wallet, with no institution", values: { ...revolut, type: "cash", institutionName: "" }, wantErrors: [] },
+    { name: "a real asset, with no institution", values: { ...revolut, type: "real_asset", institutionName: "" }, wantErrors: [] },
+    { name: "a loan with no institution", values: { ...revolut, type: "loan", institutionName: "" }, wantErrors: ["institutionName"] },
     { name: "an overdraft", values: { ...revolut, currencies: [{ code: "EUR", openingBalance: "-30" }] }, wantErrors: [] },
     { name: "no opening balance", values: { ...revolut, currencies: [{ code: "EUR", openingBalance: "" }] }, wantErrors: [] },
     { name: "a bank account with no institution", values: { ...revolut, institutionName: " " }, wantErrors: ["institutionName"] },
@@ -47,6 +49,11 @@ describe("newAccountForm", () => {
       name: "a wallet drops the institution it hid",
       values: { ...revolut, type: "cash", accountName: "Pocket", currencies: [{ code: "EUR", openingBalance: "" }] },
       want: { type: "cash", accountName: "Pocket", currencies: [{ code: "EUR" }] },
+    },
+    {
+      name: "a real asset with no institution leaves it to the gateway",
+      values: { ...revolut, type: "real_asset", institutionName: "", accountName: "Home" },
+      want: { type: "real_asset", accountName: "Home", currencies: [{ code: "EUR", openingBalance: "1200.50" }] },
     },
     {
       name: "the day as its start in the browser's time zone",
