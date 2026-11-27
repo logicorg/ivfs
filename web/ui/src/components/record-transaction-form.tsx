@@ -1,7 +1,7 @@
 import { useState, type ComponentType, type ReactNode } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query"
-import { Controller, useForm } from "react-hook-form"
+import { Controller, useFieldArray, useForm } from "react-hook-form"
 
 import {
   getAccountBalancesOptions,
@@ -14,9 +14,10 @@ import {
 import { ProblemMessages, SelectField, TextField, type SelectOption } from "@/components/form-fields"
 import { TagsField } from "@/components/tag-picker"
 import { Button } from "@/components/ui/button"
-import { FieldGroup } from "@/components/ui/field"
+import { FieldDescription, FieldGroup, FieldLegend, FieldSet } from "@/components/ui/field"
 import {
   balanceChoices,
+  categoryChoices,
   crossesCurrencies,
   newTransaction,
   offers,
@@ -59,8 +60,9 @@ export function RecordTransactionForm({ type, onRecorded, Footer }: RecordTransa
   const categories = useQuery(listCategoriesOptions())
   const form = useForm<RecordTransactionFormValues>({
     resolver: zodResolver(recordTransactionForm),
-    defaultValues: { type: type ?? "expense", fromId: "", toId: "", amount: "", toAmount: "", occurredOn: "", description: "", tagIds: [] },
+    defaultValues: { type: type ?? "expense", fromId: "", toId: "", amount: "", toAmount: "", occurredOn: "", description: "", tagIds: [], splits: [] },
   })
+  const splits = useFieldArray({ control: form.control, name: "splits" })
 
   const onSuccess = () => {
     for (const _id of ["getAccountBalances", "getLedgerAccountBalance", "listJournalEntries", "getCategoryTotals"]) {
@@ -81,6 +83,7 @@ export function RecordTransactionForm({ type, onRecorded, Footer }: RecordTransa
   const values = form.watch()
   const sides = pickers(values.type, balances, allCategories, values.fromId)
   const crossing = crossesCurrencies(values, balances)
+  const expenseCategories = categoryChoices(allCategories, "expense")
   const mutation = recording[values.type]
 
   const submit = form.handleSubmit((submitted) => {
@@ -116,6 +119,7 @@ export function RecordTransactionForm({ type, onRecorded, Footer }: RecordTransa
                   form.resetField("fromId")
                   form.resetField("toId")
                   form.resetField("toAmount")
+                  splits.replace([])
                 }}
                 options={typeOptions}
               />
@@ -169,12 +173,66 @@ export function RecordTransactionForm({ type, onRecorded, Footer }: RecordTransa
         {crossing && (
           <TextField
             label="Amount that arrives"
-            description="What the destination receives, in its currency. The exchange has no fee."
+            description="What the destination receives, in its currency. A charge is the exchange's fee."
             placeholder="13.60"
             inputMode="decimal"
             error={form.formState.errors.toAmount}
             {...form.register("toAmount")}
           />
+        )}
+        {values.type !== "income" && (
+          <FieldSet>
+            <FieldLegend variant="label">{values.type === "expense" ? "Split" : "Charges"}</FieldLegend>
+            <FieldDescription>
+              {values.type === "expense"
+                ? "Parts spent on other categories. The category above gets the rest."
+                : "What moving the money cost, such as an instalment's interest, out of the amount that leaves. The destination gets the rest."}
+            </FieldDescription>
+            {splits.fields.map((row, index) => (
+              <div key={row.id} className="flex items-start gap-2">
+                <div className="flex-1">
+                  <Controller
+                    control={form.control}
+                    name={`splits.${index}.categoryId`}
+                    render={({ field, fieldState }) => (
+                      <SelectField
+                        id={`splits.${index}.categoryId`}
+                        label="Category"
+                        value={field.value}
+                        onChange={field.onChange}
+                        options={choiceOptions(expenseCategories)}
+                        placeholder="Choose…"
+                        error={fieldState.error}
+                      />
+                    )}
+                  />
+                </div>
+                <div className="flex-1">
+                  <TextField
+                    label="Amount"
+                    placeholder={values.type === "expense" ? "4.50" : "800"}
+                    inputMode="decimal"
+                    error={form.formState.errors.splits?.[index]?.amount}
+                    {...form.register(`splits.${index}.amount`)}
+                  />
+                </div>
+                <Button type="button" variant="ghost" size="sm" className="mt-7" onClick={() => splits.remove(index)}>
+                  Remove
+                </Button>
+              </div>
+            ))}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="self-start"
+              // Between currencies the one charge is the exchange's fee.
+              disabled={crossing && splits.fields.length > 0}
+              onClick={() => splits.append({ categoryId: "", amount: "" })}
+            >
+              {values.type === "expense" ? "Split off a part" : "Add a charge"}
+            </Button>
+          </FieldSet>
         )}
         <TextField
           label="Date"
@@ -206,12 +264,12 @@ export function RecordTransactionForm({ type, onRecorded, Footer }: RecordTransa
   )
 }
 
-// choiceOptions shows each choice with its currency, which decides what the
-// other side may be.
+// choiceOptions shows each balance with its currency, which decides what the
+// other side may be. A category has none.
 function choiceOptions(choices: Choice[]): SelectOption[] {
   return choices.map((choice) => ({
     value: String(choice.id),
-    label: `${choice.label} · ${choice.currencyCode}`,
+    label: choice.currencyCode ? `${choice.label} · ${choice.currencyCode}` : choice.label,
     depth: choice.depth,
   }))
 }

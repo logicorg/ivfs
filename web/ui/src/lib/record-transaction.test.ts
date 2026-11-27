@@ -45,6 +45,7 @@ const groceries: RecordTransactionFormValues = {
   occurredOn: "",
   description: "",
   tagIds: [],
+  splits: [],
 }
 
 describe("recordTransactionForm", () => {
@@ -54,6 +55,26 @@ describe("recordTransactionForm", () => {
     { name: "no destination chosen", values: { ...groceries, toId: "" }, wantErrors: ["toId"] },
     { name: "no amount", values: { ...groceries, amount: " " }, wantErrors: ["amount"] },
     { name: "an amount with a thousands separator", values: { ...groceries, amount: "1,200" }, wantErrors: ["amount"] },
+    {
+      name: "an expense split in two",
+      values: { ...groceries, splits: [{ categoryId: "201", amount: "4.50" }] },
+      wantErrors: [],
+    },
+    {
+      name: "splits that take the whole amount",
+      values: { ...groceries, splits: [{ categoryId: "201", amount: "4.50" }, { categoryId: "202", amount: "8" }] },
+      wantErrors: ["amount"],
+    },
+    {
+      name: "a split with no category or amount",
+      values: { ...groceries, splits: [{ categoryId: "", amount: "" }] },
+      wantErrors: ["splits.0.categoryId", "splits.0.amount"],
+    },
+    {
+      name: "a split of zero",
+      values: { ...groceries, splits: [{ categoryId: "201", amount: "0" }] },
+      wantErrors: ["splits.0.amount"],
+    },
     {
       name: "an amount that arrives with a decimal comma",
       values: { ...groceries, type: "transfer", toAmount: "324,15" },
@@ -328,6 +349,41 @@ describe("newTransaction", () => {
           amount: "300.50",
           toAmount: "324.15",
           occurredAt: "2026-10-04T08:30:00.000Z",
+        },
+      },
+    },
+    {
+      name: "an expense split in two, its category taking the rest",
+      values: { ...groceries, splits: [{ categoryId: "201", amount: "4.5" }, { categoryId: "202", amount: "1.25" }] },
+      crossing: false,
+      want: {
+        type: "expense",
+        body: {
+          idempotencyKey: "3f2a",
+          balanceLedgerAccountId: 100,
+          amount: "12.50",
+          occurredAt: "2026-10-04T08:30:00.000Z",
+          lines: [
+            { categoryId: 200, amount: "6.75" },
+            { categoryId: 201, amount: "4.5" },
+            { categoryId: 202, amount: "1.25" },
+          ],
+        },
+      },
+    },
+    {
+      name: "a mortgage instalment, its interest a charge",
+      values: { ...groceries, type: "transfer", fromId: "100", toId: "104", amount: "1200", splits: [{ categoryId: "220", amount: "800" }] },
+      crossing: false,
+      want: {
+        type: "transfer",
+        body: {
+          idempotencyKey: "3f2a",
+          fromLedgerAccountId: 100,
+          toLedgerAccountId: 104,
+          amount: "1200",
+          occurredAt: "2026-10-04T08:30:00.000Z",
+          charges: [{ categoryId: 220, amount: "800" }],
         },
       },
     },
