@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	cpt "github.com/logicorg/ivfs/finance/common/types/counterpartytypes"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/logicorg/ivfs/pkg/sqllib"
 )
@@ -13,7 +13,7 @@ import (
 // Deleting one that does not exist succeeds, so retries remain idempotent. A
 // counterparty that a journal entry still refers to is not deleted: the caller
 // gets an ErrResourceConflict and clears the references first.
-func (a *Activities) DeleteCounterparty(ctx context.Context, input lt.DeleteCounterpartyInput) error {
+func (a *Activities) DeleteCounterparty(ctx context.Context, input cpt.DeleteCounterpartyInput) error {
 	db, err := a.Pools.For(ctx)
 	if err != nil {
 		return err

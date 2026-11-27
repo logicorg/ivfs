@@ -1,6 +1,7 @@
 package accounts
 
 import (
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	"testing"
 	"time"
 
@@ -98,7 +99,7 @@ func (s *UnitTestSuite) TestCloseLedgerAccountRefusesStrandedBalance() {
 
 	for name, tc := range tests {
 		s.Run(name, func() {
-			_, err := s.Env.ExecuteActivity(s.aa.CloseLedgerAccount, lt.CloseLedgerAccountInput{LedgerAccountID: tc.account.ID, ClosedAt: closedAt})
+			_, err := s.Env.ExecuteActivity(s.aa.CloseLedgerAccount, act.CloseLedgerAccountInput{LedgerAccountID: tc.account.ID, ClosedAt: closedAt})
 
 			var stored model.LedgerAccount
 			temporaltesting.Retrieve(s.T(), s.DB, &stored, tc.account.ID)

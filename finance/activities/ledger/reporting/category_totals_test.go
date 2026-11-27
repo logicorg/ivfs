@@ -4,6 +4,7 @@ import (
 	"time"
 
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	rpt "github.com/logicorg/ivfs/finance/common/types/reportingtypes"
 	"github.com/logicorg/ivfs/internal/pkg/temporaltesting"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/shopspring/decimal"
@@ -103,16 +104,16 @@ func (s *UnitTestSuite) Test_CategoryTotals() {
 
 	for name, tc := range tests {
 		s.Run(name, func() {
-			activityResult, err := s.Env.ExecuteActivity(s.ra.CategoryTotals, lt.CategoryTotalsParams{From: tc.from, To: tc.to})
+			activityResult, err := s.Env.ExecuteActivity(s.ra.CategoryTotals, rpt.CategoryTotalsParams{From: tc.from, To: tc.to})
 			require.NoError(s.T(), err)
 
-			var got lt.CategoryTotalsResult
+			var got rpt.CategoryTotalsResult
 			require.NoError(s.T(), activityResult.Get(&got))
 			require.Len(s.T(), got.Totals, len(tc.want))
 			for i, want := range tc.want {
 				require.Truef(s.T(), got.Totals[i].Total.Equal(decimal.NewFromInt(want.amount)), "total %d is %s, want %d", i, got.Totals[i].Total, want.amount)
 				got.Totals[i].Total = decimal.Decimal{}
-				wantTotal := lt.CategoryTotal{Kind: model.LedgerAccountExpense, CurrencyID: euroID, CurrencyCode: "EUR"}
+				wantTotal := rpt.CategoryTotal{Kind: model.LedgerAccountExpense, CurrencyID: euroID, CurrencyCode: "EUR"}
 				if want.category != nil {
 					wantTotal.CategoryID, wantTotal.Kind = &want.category.ID, want.category.Kind
 				}
@@ -129,12 +130,12 @@ func (s *UnitTestSuite) Test_CategoryTotals_Errors() {
 	january := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 
 	tests := map[string]struct {
-		params    lt.CategoryTotalsParams
+		params    rpt.CategoryTotalsParams
 		wantError string
 	}{
-		"no period":     {params: lt.CategoryTotalsParams{}, wantError: "missing required parameter"},
-		"an empty one":  {params: lt.CategoryTotalsParams{From: january, To: january}, wantError: "invalid parameter"},
-		"one backwards": {params: lt.CategoryTotalsParams{From: january, To: january.AddDate(0, 0, -1)}, wantError: "invalid parameter"},
+		"no period":     {params: rpt.CategoryTotalsParams{}, wantError: "missing required parameter"},
+		"an empty one":  {params: rpt.CategoryTotalsParams{From: january, To: january}, wantError: "invalid parameter"},
+		"one backwards": {params: rpt.CategoryTotalsParams{From: january, To: january.AddDate(0, 0, -1)}, wantError: "invalid parameter"},
 	}
 
 	for name, tc := range tests {

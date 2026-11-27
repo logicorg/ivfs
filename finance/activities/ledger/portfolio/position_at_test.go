@@ -3,7 +3,7 @@ package portfolio
 import (
 	"time"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	pft "github.com/logicorg/ivfs/finance/common/types/portfoliotypes"
 	"github.com/logicorg/ivfs/internal/pkg/temporaltesting"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/shopspring/decimal"
@@ -56,14 +56,14 @@ func (s *UnitTestSuite) Test_PositionAt() {
 
 	for name, tc := range tests {
 		s.Run(name, func() {
-			activityResult, err := s.Env.ExecuteActivity(s.pa.PositionAt, lt.PositionAtParams{
+			activityResult, err := s.Env.ExecuteActivity(s.pa.PositionAt, pft.PositionAtParams{
 				FinancialAccountID: s.financialAccount.ID,
 				AssetID:            s.asset.ID,
 				At:                 tc.at,
 			})
 			require.NoError(s.T(), err)
 
-			var position lt.PositionAtResult
+			var position pft.PositionAtResult
 			require.NoError(s.T(), activityResult.Get(&position))
 			require.True(s.T(), position.Units.Equal(decimal.NewFromInt(tc.expected)), "got %s units", position.Units)
 		})
@@ -71,13 +71,13 @@ func (s *UnitTestSuite) Test_PositionAt() {
 }
 
 func (s *UnitTestSuite) Test_PositionAt_NoMovements() {
-	activityResult, err := s.Env.ExecuteActivity(s.pa.PositionAt, lt.PositionAtParams{
+	activityResult, err := s.Env.ExecuteActivity(s.pa.PositionAt, pft.PositionAtParams{
 		FinancialAccountID: s.financialAccount.ID,
 		AssetID:            s.asset.ID,
 	})
 	require.NoError(s.T(), err)
 
-	var position lt.PositionAtResult
+	var position pft.PositionAtResult
 	require.NoError(s.T(), activityResult.Get(&position))
 	require.True(s.T(), position.Units.IsZero())
 	require.Equal(s.T(), s.financialAccount.ID, position.FinancialAccountID)
@@ -85,7 +85,7 @@ func (s *UnitTestSuite) Test_PositionAt_NoMovements() {
 }
 
 func (s *UnitTestSuite) Test_PositionAt_InvalidParams() {
-	tests := map[string]lt.PositionAtParams{
+	tests := map[string]pft.PositionAtParams{
 		"missing financial account": {AssetID: 1},
 		"missing asset":             {FinancialAccountID: 1},
 	}

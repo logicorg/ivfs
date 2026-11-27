@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"testing"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	cpt "github.com/logicorg/ivfs/finance/common/types/counterpartytypes"
 	counterpartieswf "github.com/logicorg/ivfs/finance/workflows/ledger/counterparties"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/logicorg/ivfs/pkg/ptr"
@@ -19,8 +19,8 @@ func TestList(t *testing.T) {
 			Method: http.MethodGet, Path: "/api/counterparties",
 			Call: &apitest.WorkflowCall{
 				Workflow: counterpartieswf.ListCounterparties,
-				Params:   lt.ListCounterpartiesParams{},
-				Result: lt.ListCounterpartiesResult{Counterparties: []model.Counterparty{
+				Params:   cpt.ListCounterpartiesParams{},
+				Result: cpt.ListCounterpartiesResult{Counterparties: []model.Counterparty{
 					{ID: 1, Name: "Acme", ExternalID: ptr.NewPtr("payroll-7")},
 					{ID: 2, Name: "Tesco"},
 				}},
@@ -32,8 +32,8 @@ func TestList(t *testing.T) {
 			Method: http.MethodGet, Path: "/api/counterparties?nameContains=tes",
 			Call: &apitest.WorkflowCall{
 				Workflow: counterpartieswf.ListCounterparties,
-				Params:   lt.ListCounterpartiesParams{NameContains: "tes"},
-				Result:   lt.ListCounterpartiesResult{},
+				Params:   cpt.ListCounterpartiesParams{NameContains: "tes"},
+				Result:   cpt.ListCounterpartiesResult{},
 			},
 			WantStatus: http.StatusOK, WantBody: `{"counterparties":[]}`,
 		},

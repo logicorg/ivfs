@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	rpt "github.com/logicorg/ivfs/finance/common/types/reportingtypes"
 	reportingwf "github.com/logicorg/ivfs/finance/workflows/ledger/reporting"
 	"github.com/logicorg/ivfs/web/api/gateway"
 	"go.temporal.io/sdk/client"
@@ -20,8 +20,8 @@ func registerBalances(api huma.API, c client.Client) {
 		Tags:        tags,
 		Errors:      []int{http.StatusNotFound},
 	}, func(ctx context.Context, in *AccountBalancesInput) (*AccountBalancesOutput, error) {
-		result, err := gateway.RunWorkflow[lt.FinancialAccountBalancesResult](ctx, c, reportingwf.FinancialAccountBalances,
-			lt.FinancialAccountBalancesParams{FinancialAccountID: in.ID, At: in.At})
+		result, err := gateway.RunWorkflow[rpt.FinancialAccountBalancesResult](ctx, c, reportingwf.FinancialAccountBalances,
+			rpt.FinancialAccountBalancesParams{FinancialAccountID: in.ID, At: in.At})
 		if err != nil {
 			return nil, err
 		}

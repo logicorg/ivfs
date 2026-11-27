@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	rpt "github.com/logicorg/ivfs/finance/common/types/reportingtypes"
 	"github.com/logicorg/ivfs/internal/pkg/temporaltesting"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/shopspring/decimal"
@@ -139,10 +139,10 @@ func (s *UnitTestSuite) Test_NetWorthSeries() {
 
 	for name, tc := range tests {
 		s.Run(name, func() {
-			activityResult, err := s.Env.ExecuteActivity(s.ra.NetWorthSeries, lt.NetWorthSeriesParams{From: tc.from, To: tc.to})
+			activityResult, err := s.Env.ExecuteActivity(s.ra.NetWorthSeries, rpt.NetWorthSeriesParams{From: tc.from, To: tc.to})
 			require.NoError(s.T(), err)
 
-			var got lt.NetWorthSeriesResult
+			var got rpt.NetWorthSeriesResult
 			require.NoError(s.T(), activityResult.Get(&got))
 			gotBalances := make([]netWorthRow, len(got.Balances))
 			for n, row := range got.Balances {
@@ -163,12 +163,12 @@ func (s *UnitTestSuite) Test_NetWorthSeries_Errors() {
 	january := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 
 	tests := map[string]struct {
-		params    lt.NetWorthSeriesParams
+		params    rpt.NetWorthSeriesParams
 		wantError string
 	}{
-		"no range":        {params: lt.NetWorthSeriesParams{}, wantError: "missing required parameter"},
-		"no end":          {params: lt.NetWorthSeriesParams{From: january}, wantError: "missing required parameter"},
-		"a backwards one": {params: lt.NetWorthSeriesParams{From: january, To: january.AddDate(0, 0, -1)}, wantError: "invalid parameter"},
+		"no range":        {params: rpt.NetWorthSeriesParams{}, wantError: "missing required parameter"},
+		"no end":          {params: rpt.NetWorthSeriesParams{From: january}, wantError: "missing required parameter"},
+		"a backwards one": {params: rpt.NetWorthSeriesParams{From: january, To: january.AddDate(0, 0, -1)}, wantError: "invalid parameter"},
 	}
 
 	for name, tc := range tests {
@@ -191,9 +191,9 @@ func (s *UnitTestSuite) Test_NetWorthSeries_TooManyChanges() {
 	start := time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
 	_, err := s.DB.NewRaw(`INSERT INTO asset.position_movement (kind, financial_account_id, asset_id, units_delta, occurred_at, idempotency_key, line_number)
 		SELECT ?, ?, ?, 1, ?::timestamptz + make_interval(days => n), 'too-many-' || n, 1 FROM generate_series(0, ?) AS n`,
-		model.PositionMovementAdjustment, fixture.BrokerFinancialAccount.ID, asset.ID, start, lt.NetWorthSeriesMaxRows).Exec(s.T().Context())
+		model.PositionMovementAdjustment, fixture.BrokerFinancialAccount.ID, asset.ID, start, rpt.NetWorthSeriesMaxRows).Exec(s.T().Context())
 	require.NoError(s.T(), err)
 
-	_, err = s.Env.ExecuteActivity(s.ra.NetWorthSeries, lt.NetWorthSeriesParams{From: start, To: start.AddDate(30, 0, 0)})
+	_, err = s.Env.ExecuteActivity(s.ra.NetWorthSeries, rpt.NetWorthSeriesParams{From: start, To: start.AddDate(30, 0, 0)})
 	require.ErrorContains(s.T(), err, "the range holds 10001 changes")
 }

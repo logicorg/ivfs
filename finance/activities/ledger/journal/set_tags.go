@@ -8,7 +8,7 @@ import (
 	"slices"
 
 	"github.com/logicorg/ivfs/finance/activities/ledger/internal/posting"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/uptrace/bun"
@@ -18,7 +18,7 @@ import (
 // tag records nothing the ledger balances, so the entry is locked against a
 // concurrent replace of its tags but its accounts are not. The same input
 // leaves the same tags, so a retry needs no key.
-func (a *Activities) SetJournalEntryTags(ctx context.Context, input lt.SetJournalEntryTagsInput) (*lt.SetJournalEntryTagsResult, error) {
+func (a *Activities) SetJournalEntryTags(ctx context.Context, input jt.SetJournalEntryTagsInput) (*jt.SetJournalEntryTagsResult, error) {
 	db, err := a.Pools.For(ctx)
 	if err != nil {
 		return nil, err
@@ -41,5 +41,5 @@ func (a *Activities) SetJournalEntryTags(ctx context.Context, input lt.SetJourna
 	if err != nil {
 		return nil, err
 	}
-	return &lt.SetJournalEntryTagsResult{TagIDs: slices.Compact(slices.Sorted(slices.Values(input.TagIDs)))}, nil
+	return &jt.SetJournalEntryTagsResult{TagIDs: slices.Compact(slices.Sorted(slices.Values(input.TagIDs)))}, nil
 }

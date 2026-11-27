@@ -3,7 +3,7 @@ package journal
 import (
 	"time"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	"github.com/logicorg/ivfs/internal/pkg/temporaltesting"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/logicorg/ivfs/pkg/model/testhelpers"
@@ -24,20 +24,20 @@ func (s *UnitTestSuite) TestRetrieveJournalEntryWithRelationships() {
 	temporaltesting.Insert(s.T(), s.DB, vacation)
 	temporaltesting.Insert(s.T(), s.DB, reimbursable)
 
-	posted, err := s.Env.ExecuteActivity(s.ja.PostJournalEntry, lt.PostJournalEntryInput{
+	posted, err := s.Env.ExecuteActivity(s.ja.PostJournalEntry, jt.PostJournalEntryInput{
 		IdempotencyKey: "retrieve-entry", OccurredAt: time.Now().UTC(), TagIDs: []int64{vacation.ID, reimbursable.ID},
-		Postings: []lt.PostingInput{
+		Postings: []jt.PostingInput{
 			{LedgerAccountID: debit.ID, Amount: decimal.NewFromInt(12), Side: model.PostingDebit},
 			{LedgerAccountID: credit.ID, Amount: decimal.NewFromInt(12), Side: model.PostingCredit, CategoryID: &refunds.ID},
 		},
 	})
 	require.NoError(s.T(), err)
-	var postedResult lt.PostJournalEntryResult
+	var postedResult jt.PostJournalEntryResult
 	require.NoError(s.T(), posted.Get(&postedResult))
 
-	activityResult, err := s.Env.ExecuteActivity(s.ja.RetrieveJournalEntry, lt.RetrieveJournalEntryParams{ID: postedResult.JournalEntryID})
+	activityResult, err := s.Env.ExecuteActivity(s.ja.RetrieveJournalEntry, jt.RetrieveJournalEntryParams{ID: postedResult.JournalEntryID})
 	require.NoError(s.T(), err)
-	var result lt.RetrieveJournalEntryResult
+	var result jt.RetrieveJournalEntryResult
 	require.NoError(s.T(), activityResult.Get(&result))
 	require.Equal(s.T(), postedResult.JournalEntryID, result.JournalEntry.ID)
 	require.Equal(s.T(), model.JournalEntryPosted, result.JournalEntry.Status)

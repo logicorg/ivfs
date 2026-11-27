@@ -3,8 +3,8 @@ package accounts
 import (
 	institutionactivity "github.com/logicorg/ivfs/finance/activities/institution"
 	activity "github.com/logicorg/ivfs/finance/activities/ledger/accounts"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	it "github.com/logicorg/ivfs/finance/common/types/institutiontypes"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/logicorg/ivfs/pkg/ptr"
 	"github.com/stretchr/testify/assert"
@@ -61,17 +61,17 @@ func (s *WorkflowUnitTestSuite) TestUpdateFinancialAccountMetadata() {
 			env := s.NewTestWorkflowEnvironment()
 			aa := activity.Activities{}
 			ia := institutionactivity.Institution{}
-			input := lt.UpdateFinancialAccountMetadataInput{FinancialAccountID: tc.account.ID, Name: tc.newName, ExternalID: ptr.NewPtr("IBAN")}
+			input := act.UpdateFinancialAccountMetadataInput{FinancialAccountID: tc.account.ID, Name: tc.newName, ExternalID: ptr.NewPtr("IBAN")}
 
-			env.OnActivity(aa.RetrieveFinancialAccount, mock.Anything, lt.RetrieveFinancialAccountParams{ID: tc.account.ID}).
-				Return(&lt.RetrieveFinancialAccountResult{FinancialAccount: &tc.account}, nil)
+			env.OnActivity(aa.RetrieveFinancialAccount, mock.Anything, act.RetrieveFinancialAccountParams{ID: tc.account.ID}).
+				Return(&act.RetrieveFinancialAccountResult{FinancialAccount: &tc.account}, nil)
 			if tc.institution != nil {
 				env.OnActivity(ia.Retrieve, mock.Anything, it.RetrieveInstitutionParams{ID: tc.account.InstitutionID}).
 					Return(&it.RetrieveInstitutionResult{Institution: tc.institution}, nil).Once()
 			}
 			if tc.updates {
 				env.OnActivity(aa.UpdateFinancialAccountMetadata, mock.Anything, input).
-					Return(&lt.FinancialAccountMutationResult{FinancialAccountID: tc.account.ID}, nil).Once()
+					Return(&act.FinancialAccountMutationResult{FinancialAccountID: tc.account.ID}, nil).Once()
 			}
 
 			env.ExecuteWorkflow(UpdateFinancialAccountMetadata, input)
@@ -87,12 +87,12 @@ func (s *WorkflowUnitTestSuite) TestUpdateFinancialAccountMetadata() {
 }
 
 func (s *WorkflowUnitTestSuite) TestUpdateFinancialAccountMetadataPropagatesRetrieveError() {
-	input := lt.UpdateFinancialAccountMetadataInput{FinancialAccountID: 7, Name: ptr.NewPtr("Revolut euro")}
+	input := act.UpdateFinancialAccountMetadataInput{FinancialAccountID: 7, Name: ptr.NewPtr("Revolut euro")}
 
 	env := s.NewTestWorkflowEnvironment()
 	aa := activity.Activities{}
 
-	env.OnActivity(aa.RetrieveFinancialAccount, mock.Anything, lt.RetrieveFinancialAccountParams{ID: 7}).Return(nil, assert.AnError)
+	env.OnActivity(aa.RetrieveFinancialAccount, mock.Anything, act.RetrieveFinancialAccountParams{ID: 7}).Return(nil, assert.AnError)
 
 	env.ExecuteWorkflow(UpdateFinancialAccountMetadata, input)
 

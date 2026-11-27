@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	ledgerdeletion "github.com/logicorg/ivfs/finance/activities/ledger/internal/deletion"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/logicorg/ivfs/pkg/sqllib"
@@ -14,7 +14,7 @@ import (
 
 // DeleteLedgerAccount is an activity that deletes a ledger account.
 // If the account has postings, it will return an error indicating that the account cannot be deleted.
-func (a *Activities) DeleteLedgerAccount(ctx context.Context, input lt.DeleteLedgerAccountInput) error {
+func (a *Activities) DeleteLedgerAccount(ctx context.Context, input act.DeleteLedgerAccountInput) error {
 	db, err := a.Pools.For(ctx)
 	if err != nil {
 		return err

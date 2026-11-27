@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	journalwf "github.com/logicorg/ivfs/finance/workflows/ledger/journal"
 	"github.com/logicorg/ivfs/web/api/gateway"
 	"go.temporal.io/sdk/client"
@@ -22,8 +22,8 @@ func registerSetTags(api huma.API, c client.Client) {
 		Tags:   tags,
 		Errors: []int{http.StatusUnprocessableEntity, http.StatusNotFound},
 	}, func(ctx context.Context, in *SetJournalEntryTagsInput) (*SetJournalEntryTagsOutput, error) {
-		result, err := gateway.RunWorkflow[lt.SetJournalEntryTagsResult](ctx, c, journalwf.SetJournalEntryTags,
-			lt.SetJournalEntryTagsInput{JournalEntryID: in.ID, TagIDs: in.Body.TagIDs})
+		result, err := gateway.RunWorkflow[jt.SetJournalEntryTagsResult](ctx, c, journalwf.SetJournalEntryTags,
+			jt.SetJournalEntryTagsInput{JournalEntryID: in.ID, TagIDs: in.Body.TagIDs})
 		if err != nil {
 			return nil, err
 		}

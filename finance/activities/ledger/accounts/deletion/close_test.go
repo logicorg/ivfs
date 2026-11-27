@@ -1,6 +1,7 @@
 package deletion
 
 import (
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	"testing"
 	"time"
 
@@ -68,7 +69,7 @@ func (f *closeForDeletionFixture) hold(t *testing.T, account *model.FinancialAcc
 
 // closedAt returns the ClosedAt of the target's rows: the ledger account, or
 // the financial account followed by its ledger accounts.
-func (f *closeForDeletionFixture) closedAt(t *testing.T, target lt.DeletionTarget) []*time.Time {
+func (f *closeForDeletionFixture) closedAt(t *testing.T, target act.DeletionTarget) []*time.Time {
 	if target.LedgerAccountID != nil {
 		var account model.LedgerAccount
 		require.NoError(t, f.s.DB.NewSelect().Model(&account).Where("la.id = ?", *target.LedgerAccountID).Scan(t.Context()))
@@ -91,74 +92,74 @@ func (s *UnitTestSuite) TestCloseAccountForDeletion() {
 
 	tests := map[string]struct {
 		// target inserts the case's accounts and returns what to close.
-		target func(t *testing.T) lt.DeletionTarget
+		target func(t *testing.T) act.DeletionTarget
 		gone   bool
 		errStr string
 	}{
 		"a ledger account with a balance": {
-			target: func(t *testing.T) lt.DeletionTarget {
+			target: func(t *testing.T) act.DeletionTarget {
 				cash := f.ledgerAccount(t, "Cash", model.LedgerAccountAsset, nil)
 				f.post(t, cash)
-				return lt.DeletionTarget{LedgerAccountID: &cash.ID}
+				return act.DeletionTarget{LedgerAccountID: &cash.ID}
 			},
 		},
 		"a shared ledger account with postings": {
-			target: func(t *testing.T) lt.DeletionTarget {
+			target: func(t *testing.T) act.DeletionTarget {
 				clearing := f.ledgerAccount(t, lt.FXClearingAccountName, model.LedgerAccountAsset, nil)
 				f.post(t, clearing)
-				return lt.DeletionTarget{LedgerAccountID: &clearing.ID}
+				return act.DeletionTarget{LedgerAccountID: &clearing.ID}
 			},
 			errStr: `"FX clearing" is shared by the ledger and cannot be deleted while it has postings`,
 		},
 		"a shared ledger account without postings": {
-			target: func(t *testing.T) lt.DeletionTarget {
+			target: func(t *testing.T) act.DeletionTarget {
 				openings := f.ledgerAccount(t, lt.OpeningBalancesAccountName, model.LedgerAccountEquity, nil)
-				return lt.DeletionTarget{LedgerAccountID: &openings.ID}
+				return act.DeletionTarget{LedgerAccountID: &openings.ID}
 			},
 		},
 		"a ledger account that does not exist": {
-			target: func(*testing.T) lt.DeletionTarget { return lt.DeletionTarget{LedgerAccountID: &missing} },
+			target: func(*testing.T) act.DeletionTarget { return act.DeletionTarget{LedgerAccountID: &missing} },
 			gone:   true,
 		},
 		"a financial account with units and a balance": {
-			target: func(t *testing.T) lt.DeletionTarget {
+			target: func(t *testing.T) act.DeletionTarget {
 				account := f.financialAccount(t, f.institution.ID, "Revolut EUR")
 				cash := f.ledgerAccount(t, "Revolut cash", model.LedgerAccountAsset, &account.ID)
 				f.ledgerAccount(t, "Revolut pot", model.LedgerAccountAsset, &account.ID)
 				f.post(t, cash)
 				f.hold(t, account)
-				return lt.DeletionTarget{FinancialAccountID: &account.ID}
+				return act.DeletionTarget{FinancialAccountID: &account.ID}
 			},
 		},
 		"the stray financial account with movements": {
-			target: func(t *testing.T) lt.DeletionTarget {
+			target: func(t *testing.T) act.DeletionTarget {
 				untracked := &model.Institution{Name: lt.UntrackedInstitutionName, Kind: "untracked"}
 				temporaltesting.Insert(t, s.DB, untracked)
 				stray := f.financialAccount(t, untracked.ID, lt.UntrackedAccountsName)
 				f.hold(t, stray)
-				return lt.DeletionTarget{FinancialAccountID: &stray.ID}
+				return act.DeletionTarget{FinancialAccountID: &stray.ID}
 			},
 			errStr: `"Untracked accounts" holds the lines of deleted accounts and cannot be deleted while it has postings or movements`,
 		},
 		"an account of the stray's name at another institution": {
-			target: func(t *testing.T) lt.DeletionTarget {
+			target: func(t *testing.T) act.DeletionTarget {
 				account := f.financialAccount(t, f.institution.ID, lt.UntrackedAccountsName)
 				f.hold(t, account)
-				return lt.DeletionTarget{FinancialAccountID: &account.ID}
+				return act.DeletionTarget{FinancialAccountID: &account.ID}
 			},
 		},
 		"a financial account that does not exist": {
-			target: func(*testing.T) lt.DeletionTarget { return lt.DeletionTarget{FinancialAccountID: &missing} },
+			target: func(*testing.T) act.DeletionTarget { return act.DeletionTarget{FinancialAccountID: &missing} },
 			gone:   true,
 		},
 		"both a ledger and a financial account": {
-			target: func(*testing.T) lt.DeletionTarget {
-				return lt.DeletionTarget{LedgerAccountID: &missing, FinancialAccountID: &missing}
+			target: func(*testing.T) act.DeletionTarget {
+				return act.DeletionTarget{LedgerAccountID: &missing, FinancialAccountID: &missing}
 			},
 			errStr: "a deletion target is either a ledger account or a financial account",
 		},
 		"neither a ledger nor a financial account": {
-			target: func(*testing.T) lt.DeletionTarget { return lt.DeletionTarget{} },
+			target: func(*testing.T) act.DeletionTarget { return act.DeletionTarget{} },
 			errStr: "a deletion target is either a ledger account or a financial account",
 		},
 	}
@@ -180,7 +181,7 @@ func (s *UnitTestSuite) TestCloseAccountForDeletion() {
 				return
 			}
 			require.NoError(t, err)
-			var got lt.CloseAccountForDeletionResult
+			var got act.CloseAccountForDeletionResult
 			require.NoError(t, result.Get(&got))
 			require.Equal(t, tc.gone, got.Gone)
 			if tc.gone {
@@ -204,7 +205,7 @@ func (s *UnitTestSuite) TestCloseAccountForDeletion_Idempotency() {
 	earlier := time.Date(2025, 6, 1, 0, 0, 0, 0, time.UTC)
 	pot := &model.LedgerAccount{Name: "Revolut pot", CurrencyID: f.currency.ID, Kind: model.LedgerAccountAsset, FinancialAccountID: &account.ID, ClosedAt: &earlier}
 	temporaltesting.Insert(t, s.DB, pot)
-	target := lt.DeletionTarget{FinancialAccountID: &account.ID}
+	target := act.DeletionTarget{FinancialAccountID: &account.ID}
 
 	_, err := s.Env.ExecuteActivity(s.aa.CloseAccountForDeletion, target)
 	require.NoError(t, err)
@@ -212,7 +213,7 @@ func (s *UnitTestSuite) TestCloseAccountForDeletion_Idempotency() {
 
 	result, err := s.Env.ExecuteActivity(s.aa.CloseAccountForDeletion, target)
 	require.NoError(t, err)
-	var got lt.CloseAccountForDeletionResult
+	var got act.CloseAccountForDeletionResult
 	require.NoError(t, result.Get(&got))
 	require.False(t, got.Gone)
 

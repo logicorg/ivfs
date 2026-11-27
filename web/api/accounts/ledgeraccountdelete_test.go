@@ -1,6 +1,7 @@
 package accounts
 
 import (
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	"net/http"
 	"testing"
 	"time"
@@ -18,7 +19,7 @@ import (
 // the account's deletion ID, with the replacement if one is asked for, and
 // returns its warnings and its refusals' statuses.
 func TestDeleteLedgerAccount(t *testing.T) {
-	remove := func(params lt.DeleteLedgerAccountInput, result lt.DeleteAccountResult, err error) *apitest.WorkflowCall {
+	remove := func(params act.DeleteLedgerAccountInput, result act.DeleteAccountResult, err error) *apitest.WorkflowCall {
 		return &apitest.WorkflowCall{
 			Workflow: ledgeraccountswf.DeleteLedgerAccount, Params: params, Result: result, Err: err,
 			WorkflowID: workflows.DeleteLedgerAccountWorkflowID(params.LedgerAccountID),
@@ -28,12 +29,12 @@ func TestDeleteLedgerAccount(t *testing.T) {
 	apitest.RunCases(t, Register, map[string]apitest.Case{
 		"delete it": {
 			Method: http.MethodDelete, Path: "/api/ledger-accounts/7",
-			Call:       remove(lt.DeleteLedgerAccountInput{LedgerAccountID: 7}, lt.DeleteAccountResult{}, nil),
+			Call:       remove(act.DeleteLedgerAccountInput{LedgerAccountID: 7}, act.DeleteAccountResult{}, nil),
 			WantStatus: http.StatusOK, WantBody: `{}`,
 		},
 		"delete it leaving a holding negative": {
 			Method: http.MethodDelete, Path: "/api/ledger-accounts/7",
-			Call: remove(lt.DeleteLedgerAccountInput{LedgerAccountID: 7}, lt.DeleteAccountResult{Warnings: []lt.NegativeHolding{{
+			Call: remove(act.DeleteLedgerAccountInput{LedgerAccountID: 7}, act.DeleteAccountResult{Warnings: []lt.NegativeHolding{{
 				FinancialAccountID: 3, FinancialAccountName: "IBKR", AssetID: 12, AssetName: "ACME",
 				At: time.Date(2026, 3, 3, 0, 0, 0, 0, time.UTC), Units: decimal.NewFromInt(-10),
 			}}}, nil),
@@ -43,7 +44,7 @@ func TestDeleteLedgerAccount(t *testing.T) {
 		},
 		"merge it into a replacement": {
 			Method: http.MethodDelete, Path: "/api/ledger-accounts/7?replacementId=8",
-			Call: remove(lt.DeleteLedgerAccountInput{LedgerAccountID: 7, ReplacementID: ptr.Int64(8)}, lt.DeleteAccountResult{},
+			Call: remove(act.DeleteLedgerAccountInput{LedgerAccountID: 7, ReplacementID: ptr.Int64(8)}, act.DeleteAccountResult{},
 				temporal.NewApplicationError("merging an account into a replacement is not supported yet; delete it without a replacement", "ErrInvalidParameter")),
 			WantStatus: http.StatusUnprocessableEntity,
 			WantBody: apitest.Problem(http.StatusUnprocessableEntity,
@@ -51,7 +52,7 @@ func TestDeleteLedgerAccount(t *testing.T) {
 		},
 		"a ledger account with children": {
 			Method: http.MethodDelete, Path: "/api/ledger-accounts/7",
-			Call: remove(lt.DeleteLedgerAccountInput{LedgerAccountID: 7}, lt.DeleteAccountResult{},
+			Call: remove(act.DeleteLedgerAccountInput{LedgerAccountID: 7}, act.DeleteAccountResult{},
 				temporal.NewApplicationError("resource LedgerAccount conflict: ledger account 7 has child accounts; delete or move them first", "ErrResourceConflict")),
 			WantStatus: http.StatusConflict,
 			WantBody: apitest.Problem(http.StatusConflict,

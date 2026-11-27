@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	"github.com/logicorg/ivfs/internal/pkg/temporaltesting"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/logicorg/ivfs/pkg/model/testhelpers"
@@ -46,11 +46,11 @@ func (s *UnitTestSuite) AfterTest(_, _ string) { s.DropAllTables() }
 
 func Test_UnitTestSuite(t *testing.T) { suite.Run(t, new(UnitTestSuite)) }
 
-func (s *UnitTestSuite) entry() lt.PostJournalEntryInput {
-	return lt.PostJournalEntryInput{
+func (s *UnitTestSuite) entry() jt.PostJournalEntryInput {
+	return jt.PostJournalEntryInput{
 		IdempotencyKey: "entry-with-movements",
 		OccurredAt:     time.Date(2026, 3, 1, 12, 0, 0, 0, time.UTC),
-		Postings: []lt.PostingInput{
+		Postings: []jt.PostingInput{
 			{LedgerAccountID: s.debit.ID, Amount: decimal.NewFromInt(10), Side: model.PostingDebit},
 			{LedgerAccountID: s.credit.ID, Amount: decimal.NewFromInt(10), Side: model.PostingCredit},
 		},
@@ -149,10 +149,10 @@ func (s *UnitTestSuite) Test_PostEntryCategories() {
 				categoryID = &category.ID
 			}
 
-			input := lt.PostJournalEntryInput{
+			input := jt.PostJournalEntryInput{
 				IdempotencyKey: tt.name,
 				OccurredAt:     time.Date(2026, 3, 1, 12, 0, 0, 0, time.UTC),
-				Postings: []lt.PostingInput{
+				Postings: []jt.PostingInput{
 					{LedgerAccountID: expenses.ID, Amount: decimal.NewFromInt(10), Side: model.PostingDebit},
 					{LedgerAccountID: s.debit.ID, Amount: decimal.NewFromInt(10), Side: model.PostingCredit},
 				},

@@ -4,7 +4,7 @@
 # The builders run on the build machine's platform: the JavaScript build is
 # the same on every platform, and Go cross-compiles, which is faster than
 # emulating the target's.
-FROM --platform=$BUILDPLATFORM node:24.11-trixie-slim@sha256:4623e8ac1eb5f35b0a91b85424283c1b97a416a77375dfa6a2e9bfb0b2c351c9 AS ui
+FROM --platform=$BUILDPLATFORM node:24.22-trixie-slim@sha256:af02d57b57719b9657a45199a79264a9437940cd55b3c7b3fc99615654f124a0 AS ui
 
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 
@@ -38,7 +38,7 @@ RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH \
 
 # Static, so no libc or shell; the CA certificates are for the identity
 # provider's TLS.
-FROM gcr.io/distroless/static-debian13:nonroot@sha256:aafe993665bf6200db38a02c11a9351e782a84b6a45e7f33b6695638c88e3931
+FROM gcr.io/distroless/static-debian13:nonroot@sha256:8ce6dd87e9823c5b48dcfb2c8604714ccb351ce59607327bcc4957448da279b5
 
 LABEL org.opencontainers.image.source=https://github.com/logicorg/ivfs
 

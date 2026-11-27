@@ -7,6 +7,7 @@ import (
 	"time"
 
 	ledgerdeletion "github.com/logicorg/ivfs/finance/activities/ledger/internal/deletion"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	"github.com/logicorg/ivfs/internal/pkg/temporaltesting"
 	"github.com/logicorg/ivfs/pkg/model"
@@ -114,21 +115,21 @@ func (f *movementGroupsForDeletionFixture) requireOutcome(t *testing.T, want gro
 func (s *UnitTestSuite) TestHandleMovementGroupsForDeletion() {
 	f := newMovementGroupsForDeletionFixture(s)
 	missing := int64(999999)
-	financialTarget := func(account *model.FinancialAccount) lt.DeletionTarget {
-		return lt.DeletionTarget{FinancialAccountID: &account.ID}
+	financialTarget := func(account *model.FinancialAccount) act.DeletionTarget {
+		return act.DeletionTarget{FinancialAccountID: &account.ID}
 	}
 
 	tests := map[string]struct {
 		// setup inserts the case's accounts and groups, and returns what to empty
 		// and what should be left of the groups.
-		setup func(t *testing.T) (lt.DeletionTarget, []groupOutcome)
+		setup func(t *testing.T) (act.DeletionTarget, []groupOutcome)
 		// limit is 100 unless set.
 		limit   int
 		handled int
 		errStr  string
 	}{
 		"a transfer to a surviving account is kept, with its leg on the stray": {
-			setup: func(t *testing.T) (lt.DeletionTarget, []groupOutcome) {
+			setup: func(t *testing.T) (act.DeletionTarget, []groupOutcome) {
 				account := f.financialAccount(t, "Schwab")
 				transfer := f.group(t, model.PositionMovementTransfer, leg{account, -5}, leg{f.broker, 5})
 				return financialTarget(account), []groupOutcome{{group: transfer, legs: []string{lt.UntrackedAccountsName, "Movement groups broker"}}}
@@ -136,7 +137,7 @@ func (s *UnitTestSuite) TestHandleMovementGroupsForDeletion() {
 			handled: 1,
 		},
 		"a transfer within the account is deleted": {
-			setup: func(t *testing.T) (lt.DeletionTarget, []groupOutcome) {
+			setup: func(t *testing.T) (act.DeletionTarget, []groupOutcome) {
 				account := f.financialAccount(t, "Degiro")
 				transfer := f.group(t, model.PositionMovementTransfer, leg{account, -5}, leg{account, 5})
 				return financialTarget(account), []groupOutcome{{group: transfer, deleted: true}}
@@ -144,7 +145,7 @@ func (s *UnitTestSuite) TestHandleMovementGroupsForDeletion() {
 			handled: 1,
 		},
 		"a transfer to the stray is deleted": {
-			setup: func(t *testing.T) (lt.DeletionTarget, []groupOutcome) {
+			setup: func(t *testing.T) (act.DeletionTarget, []groupOutcome) {
 				account := f.financialAccount(t, "Trade Republic")
 				transfer := f.group(t, model.PositionMovementTransfer, leg{account, -5}, leg{f.strayFinancialAccount(t), 5})
 				return financialTarget(account), []groupOutcome{{group: transfer, deleted: true}}
@@ -152,7 +153,7 @@ func (s *UnitTestSuite) TestHandleMovementGroupsForDeletion() {
 			handled: 1,
 		},
 		"an adjustment in the account is deleted": {
-			setup: func(t *testing.T) (lt.DeletionTarget, []groupOutcome) {
+			setup: func(t *testing.T) (act.DeletionTarget, []groupOutcome) {
 				account := f.financialAccount(t, "Fineco")
 				adjustment := f.group(t, model.PositionMovementAdjustment, leg{account, 5})
 				return financialTarget(account), []groupOutcome{{group: adjustment, deleted: true}}
@@ -160,7 +161,7 @@ func (s *UnitTestSuite) TestHandleMovementGroupsForDeletion() {
 			handled: 1,
 		},
 		"a split across a surviving account is kept, without its leg in the account": {
-			setup: func(t *testing.T) (lt.DeletionTarget, []groupOutcome) {
+			setup: func(t *testing.T) (act.DeletionTarget, []groupOutcome) {
 				account := f.financialAccount(t, "IBKR")
 				split := f.group(t, model.PositionMovementSplit, leg{account, 5}, leg{f.broker, 10})
 				return financialTarget(account), []groupOutcome{{group: split, legs: []string{"Movement groups broker"}}}
@@ -168,7 +169,7 @@ func (s *UnitTestSuite) TestHandleMovementGroupsForDeletion() {
 			handled: 1,
 		},
 		"an adjustment across a surviving account is kept, without its leg in the account": {
-			setup: func(t *testing.T) (lt.DeletionTarget, []groupOutcome) {
+			setup: func(t *testing.T) (act.DeletionTarget, []groupOutcome) {
 				account := f.financialAccount(t, "Etoro")
 				adjustment := f.group(t, model.PositionMovementAdjustment, leg{f.broker, 2}, leg{account, 3})
 				return financialTarget(account), []groupOutcome{{group: adjustment, legs: []string{"Movement groups broker"}}}
@@ -176,7 +177,7 @@ func (s *UnitTestSuite) TestHandleMovementGroupsForDeletion() {
 			handled: 1,
 		},
 		"a batch handles up to its limit, in the order the groups were written": {
-			setup: func(t *testing.T) (lt.DeletionTarget, []groupOutcome) {
+			setup: func(t *testing.T) (act.DeletionTarget, []groupOutcome) {
 				account := f.financialAccount(t, "Bux")
 				first := f.group(t, model.PositionMovementAdjustment, leg{account, 5})
 				second := f.group(t, model.PositionMovementAdjustment, leg{account, 3})
@@ -186,14 +187,14 @@ func (s *UnitTestSuite) TestHandleMovementGroupsForDeletion() {
 			handled: 1,
 		},
 		"a group in another account is left alone": {
-			setup: func(t *testing.T) (lt.DeletionTarget, []groupOutcome) {
+			setup: func(t *testing.T) (act.DeletionTarget, []groupOutcome) {
 				account := f.financialAccount(t, "Moneyfarm")
 				adjustment := f.group(t, model.PositionMovementAdjustment, leg{f.broker, 5})
 				return financialTarget(account), []groupOutcome{{group: adjustment, legs: []string{"Movement groups broker"}}}
 			},
 		},
 		"a trade is left to the entries": {
-			setup: func(t *testing.T) (lt.DeletionTarget, []groupOutcome) {
+			setup: func(t *testing.T) (act.DeletionTarget, []groupOutcome) {
 				account := f.financialAccount(t, "Revolut trading")
 				investments := &model.LedgerAccount{Name: "Revolut trading investments", CurrencyID: f.currency.ID, Kind: model.LedgerAccountAsset, FinancialAccountID: &account.ID}
 				salary := &model.LedgerAccount{Name: "Revolut trading salary", CurrencyID: f.currency.ID, Kind: model.LedgerAccountIncome}
@@ -207,14 +208,14 @@ func (s *UnitTestSuite) TestHandleMovementGroupsForDeletion() {
 			},
 		},
 		"a ledger account has no groups": {
-			setup: func(t *testing.T) (lt.DeletionTarget, []groupOutcome) {
+			setup: func(t *testing.T) (act.DeletionTarget, []groupOutcome) {
 				cash := &model.LedgerAccount{Name: "Movement groups cash", CurrencyID: f.currency.ID, Kind: model.LedgerAccountAsset}
 				temporaltesting.Insert(t, s.DB, cash)
-				return lt.DeletionTarget{LedgerAccountID: &cash.ID}, nil
+				return act.DeletionTarget{LedgerAccountID: &cash.ID}, nil
 			},
 		},
 		"the stray financial account with groups": {
-			setup: func(t *testing.T) (lt.DeletionTarget, []groupOutcome) {
+			setup: func(t *testing.T) (act.DeletionTarget, []groupOutcome) {
 				stray := f.strayFinancialAccount(t)
 				adjustment := f.group(t, model.PositionMovementAdjustment, leg{stray, 5})
 				return financialTarget(stray), []groupOutcome{{group: adjustment, legs: []string{lt.UntrackedAccountsName}}}
@@ -222,20 +223,20 @@ func (s *UnitTestSuite) TestHandleMovementGroupsForDeletion() {
 			errStr: `"Untracked accounts" holds the lines of deleted accounts and cannot be deleted while it has postings or movements`,
 		},
 		"a financial account that does not exist": {
-			setup: func(*testing.T) (lt.DeletionTarget, []groupOutcome) {
-				return lt.DeletionTarget{FinancialAccountID: &missing}, nil
+			setup: func(*testing.T) (act.DeletionTarget, []groupOutcome) {
+				return act.DeletionTarget{FinancialAccountID: &missing}, nil
 			},
 		},
 		"a limit that is not positive": {
-			setup: func(*testing.T) (lt.DeletionTarget, []groupOutcome) {
-				return lt.DeletionTarget{FinancialAccountID: &missing}, nil
+			setup: func(*testing.T) (act.DeletionTarget, []groupOutcome) {
+				return act.DeletionTarget{FinancialAccountID: &missing}, nil
 			},
 			limit:  -1,
 			errStr: "a deletion batch limit must be positive",
 		},
 		"both a ledger and a financial account": {
-			setup: func(*testing.T) (lt.DeletionTarget, []groupOutcome) {
-				return lt.DeletionTarget{LedgerAccountID: &missing, FinancialAccountID: &missing}, nil
+			setup: func(*testing.T) (act.DeletionTarget, []groupOutcome) {
+				return act.DeletionTarget{LedgerAccountID: &missing, FinancialAccountID: &missing}, nil
 			},
 			errStr: "a deletion target is either a ledger account or a financial account",
 		},
@@ -250,13 +251,13 @@ func (s *UnitTestSuite) TestHandleMovementGroupsForDeletion() {
 				limit = 100
 			}
 
-			result, err := s.Env.ExecuteActivity(s.aa.HandleMovementGroupsForDeletion, lt.DeletionBatchInput{Target: target, Limit: limit})
+			result, err := s.Env.ExecuteActivity(s.aa.HandleMovementGroupsForDeletion, act.DeletionBatchInput{Target: target, Limit: limit})
 
 			if tc.errStr != "" {
 				require.ErrorContains(t, err, tc.errStr)
 			} else {
 				require.NoError(t, err)
-				var got lt.DeletionBatchResult
+				var got act.DeletionBatchResult
 				require.NoError(t, result.Get(&got))
 				require.Equal(t, tc.handled, got.Handled)
 			}
@@ -278,12 +279,12 @@ func (s *UnitTestSuite) TestHandleMovementGroupsForDeletion_Idempotency() {
 		{group: f.group(t, model.PositionMovementTransfer, leg{account, -5}, leg{f.broker, 5}), legs: []string{lt.UntrackedAccountsName, "Movement groups broker"}},
 		{group: f.group(t, model.PositionMovementSplit, leg{account, 5}, leg{f.broker, 10}), legs: []string{"Movement groups broker"}},
 	}
-	input := lt.DeletionBatchInput{Target: lt.DeletionTarget{FinancialAccountID: &account.ID}, Limit: 100}
+	input := act.DeletionBatchInput{Target: act.DeletionTarget{FinancialAccountID: &account.ID}, Limit: 100}
 
 	for run, handled := range []int{3, 0} {
 		result, err := s.Env.ExecuteActivity(s.aa.HandleMovementGroupsForDeletion, input)
 		require.NoError(t, err)
-		var got lt.DeletionBatchResult
+		var got act.DeletionBatchResult
 		require.NoError(t, result.Get(&got))
 		require.Equal(t, handled, got.Handled, "run %d", run+1)
 		for _, outcome := range outcomes {

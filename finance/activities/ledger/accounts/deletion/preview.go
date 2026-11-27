@@ -10,6 +10,7 @@ import (
 
 	ledgerdeletion "github.com/logicorg/ivfs/finance/activities/ledger/internal/deletion"
 	"github.com/logicorg/ivfs/finance/activities/ledger/internal/positions"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/logicorg/ivfs/pkg/model"
@@ -29,7 +30,7 @@ const previewPageSize = 500
 // one deletion, which ends where deleting them in turn does.
 //
 // A target that does not exist is ErrNotFound.
-func (a *Activities) PreviewAccountDeletion(ctx context.Context, input lt.PreviewAccountDeletionInput) (*lt.AccountDeletionPreview, error) {
+func (a *Activities) PreviewAccountDeletion(ctx context.Context, input act.PreviewAccountDeletionInput) (*act.AccountDeletionPreview, error) {
 	db, err := a.Pools.For(ctx)
 	if err != nil {
 		return nil, err
@@ -39,7 +40,7 @@ func (a *Activities) PreviewAccountDeletion(ctx context.Context, input lt.Previe
 		return nil, err
 	}
 
-	preview := &lt.AccountDeletionPreview{}
+	preview := &act.AccountDeletionPreview{}
 	opts := &sql.TxOptions{Isolation: sql.LevelRepeatableRead, ReadOnly: true}
 	err = db.RunInTx(ctx, opts, func(ctx context.Context, tx bun.Tx) error {
 		target, conflicts, err := loadPreviewTargetTx(ctx, tx, input)
@@ -70,10 +71,10 @@ func (a *Activities) PreviewAccountDeletion(ctx context.Context, input lt.Previe
 
 // loadPreviewTargetTx loads what the deletion would empty, with the conflicts
 // the close before the batches would refuse it with.
-func loadPreviewTargetTx(ctx context.Context, tx bun.Tx, input lt.PreviewAccountDeletionInput) (*deletionTarget, []string, error) {
+func loadPreviewTargetTx(ctx context.Context, tx bun.Tx, input act.PreviewAccountDeletionInput) (*deletionTarget, []string, error) {
 	switch {
 	case input.LedgerAccountID != nil:
-		target, err := loadDeletionTargetTx(ctx, tx, lt.DeletionTarget{LedgerAccountID: input.LedgerAccountID})
+		target, err := loadDeletionTargetTx(ctx, tx, act.DeletionTarget{LedgerAccountID: input.LedgerAccountID})
 		if err != nil {
 			return nil, nil, err
 		}
@@ -83,7 +84,7 @@ func loadPreviewTargetTx(ctx context.Context, tx bun.Tx, input lt.PreviewAccount
 		return target, nil, nil
 
 	case input.FinancialAccountID != nil:
-		target, err := loadDeletionTargetTx(ctx, tx, lt.DeletionTarget{FinancialAccountID: input.FinancialAccountID})
+		target, err := loadDeletionTargetTx(ctx, tx, act.DeletionTarget{FinancialAccountID: input.FinancialAccountID})
 		if err != nil {
 			return nil, nil, err
 		}
@@ -116,7 +117,7 @@ func loadPreviewTargetTx(ctx context.Context, tx bun.Tx, input lt.PreviewAccount
 		conflicts = append(conflicts, fmt.Sprintf("%q is managed by the ledger and cannot be deleted while it holds financial accounts", institution.Name))
 	}
 	for _, id := range accountIDs {
-		account, err := loadDeletionTargetTx(ctx, tx, lt.DeletionTarget{FinancialAccountID: &id})
+		account, err := loadDeletionTargetTx(ctx, tx, act.DeletionTarget{FinancialAccountID: &id})
 		if err != nil {
 			return nil, nil, err
 		}
@@ -140,7 +141,7 @@ func appendConflict(conflicts []string, err error) ([]string, error) {
 // deletionTally adds up what the deletion would do to each entry and group.
 type deletionTally struct {
 	target  *deletionTarget
-	preview *lt.AccountDeletionPreview
+	preview *act.AccountDeletionPreview
 	// amounts is what lands on the stray ledger account of each currency,
 	// debits minus credits. The stray may not exist yet.
 	amounts map[int64]decimal.Decimal
@@ -278,9 +279,9 @@ func (d *deletionTally) strays(ctx context.Context, tx bun.Tx) error {
 			return fmt.Errorf("load currencies: %w", err)
 		}
 		for _, currency := range currencies {
-			d.preview.StrayAmounts = append(d.preview.StrayAmounts, lt.StrayAmount{CurrencyCode: currency.Code, Amount: d.amounts[currency.ID]})
+			d.preview.StrayAmounts = append(d.preview.StrayAmounts, act.StrayAmount{CurrencyCode: currency.Code, Amount: d.amounts[currency.ID]})
 		}
-		slices.SortFunc(d.preview.StrayAmounts, func(a, b lt.StrayAmount) int {
+		slices.SortFunc(d.preview.StrayAmounts, func(a, b act.StrayAmount) int {
 			return cmp.Compare(a.CurrencyCode, b.CurrencyCode)
 		})
 	}
@@ -291,9 +292,9 @@ func (d *deletionTally) strays(ctx context.Context, tx bun.Tx) error {
 			return fmt.Errorf("load assets: %w", err)
 		}
 		for _, asset := range assets {
-			d.preview.StrayUnits = append(d.preview.StrayUnits, lt.StrayUnits{AssetID: asset.ID, AssetName: asset.Name, Units: d.units[asset.ID]})
+			d.preview.StrayUnits = append(d.preview.StrayUnits, act.StrayUnits{AssetID: asset.ID, AssetName: asset.Name, Units: d.units[asset.ID]})
 		}
-		slices.SortFunc(d.preview.StrayUnits, func(a, b lt.StrayUnits) int {
+		slices.SortFunc(d.preview.StrayUnits, func(a, b act.StrayUnits) int {
 			return cmp.Or(cmp.Compare(a.AssetName, b.AssetName), cmp.Compare(a.AssetID, b.AssetID))
 		})
 	}

@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	ast "github.com/logicorg/ivfs/finance/common/types/accountsetuptypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/shopspring/decimal"
@@ -95,7 +96,7 @@ func openingBalanceKey(ledgerAccountID int64) string {
 // The amount is in the balance's natural direction, money held for an asset
 // and money owed for a liability, so a negative one swaps the sides. Zero
 // books nothing, and nil is returned.
-func openingBalancePostings(balance int64, kind model.LedgerAccountKind, opening int64, amount decimal.Decimal) []lt.PostingInput {
+func openingBalancePostings(balance int64, kind model.LedgerAccountKind, opening int64, amount decimal.Decimal) []jt.PostingInput {
 	if amount.IsZero() {
 		return nil
 	}
@@ -107,7 +108,7 @@ func openingBalancePostings(balance int64, kind model.LedgerAccountKind, opening
 	if amount.IsNegative() {
 		balanceSide, openingSide = openingSide, balanceSide
 	}
-	return []lt.PostingInput{
+	return []jt.PostingInput{
 		{LedgerAccountID: balance, Amount: amount.Abs(), Side: balanceSide},
 		{LedgerAccountID: opening, Amount: amount.Abs(), Side: openingSide},
 	}

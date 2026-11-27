@@ -1,13 +1,12 @@
 package accounts
 
 import (
-	"time"
-
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	"github.com/logicorg/ivfs/internal/pkg/temporaltesting"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/logicorg/ivfs/pkg/ptr"
 	"github.com/stretchr/testify/require"
+	"time"
 )
 
 // Test_ListFinancialAccounts covers filtering (institution id, account name
@@ -33,44 +32,44 @@ func (s *UnitTestSuite) Test_ListFinancialAccounts() {
 	temporaltesting.Insert(s.T(), s.DB, other)
 
 	tests := map[string]struct {
-		params lt.ListFinancialAccountsParams
+		params act.ListFinancialAccountsParams
 		expIDs []int64
 		expErr bool
 	}{
 		"all open, no filter": {
-			params: lt.ListFinancialAccountsParams{},
+			params: act.ListFinancialAccountsParams{},
 			expIDs: []int64{open.ID, other.ID},
 		},
 		"include closed": {
-			params: lt.ListFinancialAccountsParams{IncludeClosed: true},
+			params: act.ListFinancialAccountsParams{IncludeClosed: true},
 			expIDs: []int64{open.ID, closed.ID, other.ID},
 		},
 		"filter by institution id": {
-			params: lt.ListFinancialAccountsParams{InstitutionID: &institutionA.ID},
+			params: act.ListFinancialAccountsParams{InstitutionID: &institutionA.ID},
 			expIDs: []int64{open.ID},
 		},
 		"filter by name substring, case-insensitive": {
-			params: lt.ListFinancialAccountsParams{NameContains: "revolut"},
+			params: act.ListFinancialAccountsParams{NameContains: "revolut"},
 			expIDs: []int64{open.ID},
 		},
 		"name substring with no match returns empty": {
-			params: lt.ListFinancialAccountsParams{NameContains: "nonexistent"},
+			params: act.ListFinancialAccountsParams{NameContains: "nonexistent"},
 			expIDs: []int64{},
 		},
 		"filter by institution name substring": {
-			params: lt.ListFinancialAccountsParams{InstitutionNameContains: "revo"},
+			params: act.ListFinancialAccountsParams{InstitutionNameContains: "revo"},
 			expIDs: []int64{open.ID},
 		},
 		"institution name substring includes closed when asked": {
-			params: lt.ListFinancialAccountsParams{InstitutionNameContains: "revo", IncludeClosed: true},
+			params: act.ListFinancialAccountsParams{InstitutionNameContains: "revo", IncludeClosed: true},
 			expIDs: []int64{open.ID, closed.ID},
 		},
 		"name and institution filters are ANDed": {
-			params: lt.ListFinancialAccountsParams{NameContains: "cash", InstitutionNameContains: "ibkr"},
+			params: act.ListFinancialAccountsParams{NameContains: "cash", InstitutionNameContains: "ibkr"},
 			expIDs: []int64{other.ID},
 		},
 		"invalid institution id": {
-			params: lt.ListFinancialAccountsParams{InstitutionID: ptr.Int64(0)},
+			params: act.ListFinancialAccountsParams{InstitutionID: ptr.Int64(0)},
 			expErr: true,
 		},
 	}
@@ -84,7 +83,7 @@ func (s *UnitTestSuite) Test_ListFinancialAccounts() {
 			}
 			require.NoError(s.T(), err)
 
-			var result lt.ListFinancialAccountsResult
+			var result act.ListFinancialAccountsResult
 			require.NoError(s.T(), activityResult.Get(&result))
 			gotIDs := make([]int64, 0, len(result.FinancialAccounts))
 			for _, a := range result.FinancialAccounts {
@@ -108,10 +107,10 @@ func (s *UnitTestSuite) Test_ListFinancialAccounts_LoadsDisambiguatingRelations(
 	cash := &model.LedgerAccount{FinancialAccountID: &account.ID, CurrencyID: eur.ID, Name: "Revolut EUR Cash", Kind: model.LedgerAccountAsset}
 	temporaltesting.Insert(s.T(), s.DB, cash)
 
-	activityResult, err := s.Env.ExecuteActivity(s.aa.ListFinancialAccounts, lt.ListFinancialAccountsParams{})
+	activityResult, err := s.Env.ExecuteActivity(s.aa.ListFinancialAccounts, act.ListFinancialAccountsParams{})
 	require.NoError(s.T(), err)
 
-	var result lt.ListFinancialAccountsResult
+	var result act.ListFinancialAccountsResult
 	require.NoError(s.T(), activityResult.Get(&result))
 	require.Len(s.T(), result.FinancialAccounts, 1)
 

@@ -2,8 +2,7 @@ package gateway
 
 import (
 	"context"
-
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	"go.temporal.io/sdk/client"
 )
 
@@ -44,7 +43,7 @@ type AccountDeletionPreviewOutput struct {
 // PreviewDeletion runs the preview workflow wf with in and returns its
 // preview as the API answers it.
 func PreviewDeletion(ctx context.Context, c client.Client, wf, in any) (*AccountDeletionPreviewOutput, error) {
-	preview, err := RunWorkflow[lt.AccountDeletionPreview](ctx, c, wf, in)
+	preview, err := RunWorkflow[act.AccountDeletionPreview](ctx, c, wf, in)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +51,7 @@ func PreviewDeletion(ctx context.Context, c client.Client, wf, in any) (*Account
 }
 
 // NewAccountDeletionPreview is preview as the API returns it.
-func NewAccountDeletionPreview(preview *lt.AccountDeletionPreview) AccountDeletionPreview {
+func NewAccountDeletionPreview(preview *act.AccountDeletionPreview) AccountDeletionPreview {
 	out := AccountDeletionPreview{
 		DeletedEntries: preview.DeletedEntries, KeptEntries: preview.KeptEntries,
 		DeletedMovementGroups: preview.DeletedMovementGroups, KeptMovementGroups: preview.KeptMovementGroups,
