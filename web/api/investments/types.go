@@ -18,6 +18,7 @@ type BuyForm struct {
 	CurrencyCode       string         `json:"currencyCode" minLength:"1" doc:"the currency paid in, such as EUR, in which the account has its Cash and Investments balances"`
 	OccurredAt         time.Time      `json:"occurredAt" doc:"the instant of the buy"`
 	Description        string         `json:"description" required:"false" doc:"a note on the entry"`
+	TagIDs             []int64        `json:"tagIds" required:"false" doc:"the tags of the entry; a repeated id counts once"`
 }
 
 // SellForm is the answers to the form that records units of an asset sold for
@@ -32,22 +33,24 @@ type SellForm struct {
 	CurrencyCode       string         `json:"currencyCode" minLength:"1" doc:"the currency received, such as EUR, in which the account has its Cash and Investments balances"`
 	OccurredAt         time.Time      `json:"occurredAt" doc:"the instant of the sale"`
 	Description        string         `json:"description" required:"false" doc:"a note on the entry"`
+	TagIDs             []int64        `json:"tagIds" required:"false" doc:"the tags of the entry; a repeated id counts once"`
 }
 
 // VestForm is the answers to the form that records units of an asset received
 // as compensation, such as RSUs, in a brokerage account.
 type VestForm struct {
-	IdempotencyKey                string         `json:"idempotencyKey" minLength:"1" doc:"one per vest meant, such as one per opening of the form; a repeated key returns the vest first recorded with it"`
-	FinancialAccountID            int64          `json:"financialAccountId" minimum:"1" doc:"the brokerage account the units are delivered to"`
-	AssetID                       int64          `json:"assetId" minimum:"1" doc:"the asset vested"`
-	UnitsVested                   gateway.Amount `json:"unitsVested" doc:"every unit vested, those withheld included, greater than zero"`
-	UnitsWithheld                 gateway.Amount `json:"unitsWithheld" required:"false" doc:"the units the employer kept for tax, fewer than those vested; zero if omitted"`
-	FairMarketValue               gateway.Amount `json:"fairMarketValue" doc:"the value of one unit at the vest, greater than zero"`
-	CurrencyCode                  string         `json:"currencyCode" minLength:"1" doc:"the currency of the value, such as EUR, in which the account has its Cash and Investments balances and the categories are"`
-	IncomeCategoryLedgerAccountID int64          `json:"incomeCategoryLedgerAccountId" minimum:"1" doc:"the income category credited with the value of the units vested"`
-	TaxCategoryLedgerAccountID    int64          `json:"taxCategoryLedgerAccountId" required:"false" minimum:"1" doc:"the expense category debited with the value of the units withheld; required when units are withheld"`
-	OccurredAt                    time.Time      `json:"occurredAt" doc:"the instant of the vest"`
-	Description                   string         `json:"description" required:"false" doc:"a note on the entry"`
+	IdempotencyKey     string         `json:"idempotencyKey" minLength:"1" doc:"one per vest meant, such as one per opening of the form; a repeated key returns the vest first recorded with it"`
+	FinancialAccountID int64          `json:"financialAccountId" minimum:"1" doc:"the brokerage account the units are delivered to"`
+	AssetID            int64          `json:"assetId" minimum:"1" doc:"the asset vested"`
+	UnitsVested        gateway.Amount `json:"unitsVested" doc:"every unit vested, those withheld included, greater than zero"`
+	UnitsWithheld      gateway.Amount `json:"unitsWithheld" required:"false" doc:"the units the employer kept for tax, fewer than those vested; zero if omitted"`
+	FairMarketValue    gateway.Amount `json:"fairMarketValue" doc:"the value of one unit at the vest, greater than zero"`
+	CurrencyCode       string         `json:"currencyCode" minLength:"1" doc:"the currency of the value, such as EUR, in which the account has its Cash and Investments balances"`
+	IncomeCategoryID   int64          `json:"incomeCategoryId" minimum:"1" doc:"the income category of the value of the units vested"`
+	TaxCategoryID      int64          `json:"taxCategoryId" required:"false" minimum:"1" doc:"the expense category of the value of the units withheld; required when units are withheld"`
+	OccurredAt         time.Time      `json:"occurredAt" doc:"the instant of the vest"`
+	Description        string         `json:"description" required:"false" doc:"a note on the entry"`
+	TagIDs             []int64        `json:"tagIds" required:"false" doc:"the tags of the entry; a repeated id counts once"`
 }
 
 // RecordedTrade is the journal entry and the position movement a buy, a sale or

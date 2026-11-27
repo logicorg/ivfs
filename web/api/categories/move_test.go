@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	ct "github.com/logicorg/ivfs/finance/common/types/categorytypes"
-	categorieswf "github.com/logicorg/ivfs/finance/workflows/facade/categories"
+	categorieswf "github.com/logicorg/ivfs/finance/workflows/ledger/categories"
 	"github.com/logicorg/ivfs/pkg/ptr"
 	"github.com/logicorg/ivfs/web/api/apitest"
 )
@@ -18,8 +18,8 @@ func TestMove(t *testing.T) {
 			Method: http.MethodPost, Path: "/api/categories/11/move", Body: `{"parentId":10}`,
 			Call: &apitest.WorkflowCall{
 				Workflow: categorieswf.MoveCategory,
-				Params:   ct.MoveCategoryInput{LedgerAccountID: 11, ParentID: ptr.Int64(10)},
-				Result:   ct.CategoryResult{LedgerAccountID: 11},
+				Params:   ct.MoveCategoryInput{CategoryID: 11, ParentID: ptr.Int64(10)},
+				Result:   ct.CategoryResult{CategoryID: 11},
 			},
 			WantStatus: http.StatusNoContent,
 		},
@@ -27,8 +27,8 @@ func TestMove(t *testing.T) {
 			Method: http.MethodPost, Path: "/api/categories/11/move", Body: `{}`,
 			Call: &apitest.WorkflowCall{
 				Workflow: categorieswf.MoveCategory,
-				Params:   ct.MoveCategoryInput{LedgerAccountID: 11},
-				Result:   ct.CategoryResult{LedgerAccountID: 11},
+				Params:   ct.MoveCategoryInput{CategoryID: 11},
+				Result:   ct.CategoryResult{CategoryID: 11},
 			},
 			WantStatus: http.StatusNoContent,
 		},

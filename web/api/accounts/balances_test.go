@@ -5,7 +5,8 @@ import (
 	"testing"
 	"time"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
+	rpt "github.com/logicorg/ivfs/finance/common/types/reportingtypes"
 	reportingwf "github.com/logicorg/ivfs/finance/workflows/ledger/reporting"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/logicorg/ivfs/web/api/apitest"
@@ -17,7 +18,7 @@ import (
 // that the instant reaches FinancialAccountBalances, now when omitted, and
 // that an account that does not exist is a 404.
 func TestBalances(t *testing.T) {
-	balances := lt.FinancialAccountBalancesResult{FinancialAccountID: 10, Balances: []lt.LedgerAccountBalanceResult{
+	balances := rpt.FinancialAccountBalancesResult{FinancialAccountID: 10, Balances: []jt.LedgerAccountBalanceResult{
 		{
 			LedgerAccountID: 100, LedgerAccountName: "Cash", Kind: model.LedgerAccountAsset,
 			CurrencyID: 1, CurrencyCode: "EUR", Balance: decimal.RequireFromString("1200.50"),
@@ -36,7 +37,7 @@ func TestBalances(t *testing.T) {
 			Method: http.MethodGet, Path: "/api/financial-accounts/10/balances",
 			Call: &apitest.WorkflowCall{
 				Workflow: reportingwf.FinancialAccountBalances,
-				Params:   lt.FinancialAccountBalancesParams{FinancialAccountID: 10},
+				Params:   rpt.FinancialAccountBalancesParams{FinancialAccountID: 10},
 				Result:   balances,
 			},
 			WantStatus: http.StatusOK, WantBody: wantBalances,
@@ -45,7 +46,7 @@ func TestBalances(t *testing.T) {
 			Method: http.MethodGet, Path: "/api/financial-accounts/10/balances?at=2026-01-31T23:59:59Z",
 			Call: &apitest.WorkflowCall{
 				Workflow: reportingwf.FinancialAccountBalances,
-				Params: lt.FinancialAccountBalancesParams{
+				Params: rpt.FinancialAccountBalancesParams{
 					FinancialAccountID: 10, At: time.Date(2026, 1, 31, 23, 59, 59, 0, time.UTC),
 				},
 				Result: balances,
@@ -56,8 +57,8 @@ func TestBalances(t *testing.T) {
 			Method: http.MethodGet, Path: "/api/financial-accounts/10/balances",
 			Call: &apitest.WorkflowCall{
 				Workflow: reportingwf.FinancialAccountBalances,
-				Params:   lt.FinancialAccountBalancesParams{FinancialAccountID: 10},
-				Result:   lt.FinancialAccountBalancesResult{FinancialAccountID: 10},
+				Params:   rpt.FinancialAccountBalancesParams{FinancialAccountID: 10},
+				Result:   rpt.FinancialAccountBalancesResult{FinancialAccountID: 10},
 			},
 			WantStatus: http.StatusOK, WantBody: `{"financialAccountId":10,"balances":[]}`,
 		},
@@ -65,7 +66,7 @@ func TestBalances(t *testing.T) {
 			Method: http.MethodGet, Path: "/api/financial-accounts/99/balances",
 			Call: &apitest.WorkflowCall{
 				Workflow: reportingwf.FinancialAccountBalances,
-				Params:   lt.FinancialAccountBalancesParams{FinancialAccountID: 99},
+				Params:   rpt.FinancialAccountBalancesParams{FinancialAccountID: 99},
 				Err:      temporal.NewApplicationError("resource FinancialAccount 99 not found", "ErrNotFound"),
 			},
 			WantStatus: http.StatusNotFound,

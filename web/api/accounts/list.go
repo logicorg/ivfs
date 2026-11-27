@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
 	"github.com/logicorg/ivfs/web/api/gateway"
 	"go.temporal.io/sdk/client"
@@ -19,8 +19,8 @@ func registerList(api huma.API, c client.Client) {
 		Summary:     "List the financial accounts, with their institutions",
 		Tags:        tags,
 	}, func(ctx context.Context, in *ListFinancialAccountsInput) (*ListFinancialAccountsOutput, error) {
-		result, err := gateway.RunWorkflow[lt.ListFinancialAccountsResult](ctx, c, ledgeraccountswf.ListFinancialAccounts,
-			lt.ListFinancialAccountsParams{IncludeClosed: in.IncludeClosed})
+		result, err := gateway.RunWorkflow[act.ListFinancialAccountsResult](ctx, c, ledgeraccountswf.ListFinancialAccounts,
+			act.ListFinancialAccountsParams{IncludeClosed: in.IncludeClosed})
 		if err != nil {
 			return nil, err
 		}

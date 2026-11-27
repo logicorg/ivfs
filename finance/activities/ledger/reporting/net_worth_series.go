@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/logicorg/ivfs/finance/activities/ledger/internal/positions"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	rpt "github.com/logicorg/ivfs/finance/common/types/reportingtypes"
 	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/logicorg/ivfs/pkg/assetvalue"
 	"github.com/logicorg/ivfs/pkg/model"
@@ -34,7 +34,7 @@ type netWorthUnits struct {
 // liability balances per currency and the units held per asset, as a sparse
 // series (ADR 0015). Both lists come from one snapshot, so a trade cannot show
 // its cash without its units.
-func (a *Activities) NetWorthSeries(ctx context.Context, params lt.NetWorthSeriesParams) (*lt.NetWorthSeriesResult, error) {
+func (a *Activities) NetWorthSeries(ctx context.Context, params rpt.NetWorthSeriesParams) (*rpt.NetWorthSeriesResult, error) {
 	db, err := a.Pools.For(ctx)
 	if err != nil {
 		return nil, err
@@ -64,20 +64,20 @@ func (a *Activities) NetWorthSeries(ctx context.Context, params lt.NetWorthSerie
 		return nil, err
 	}
 
-	if rows := len(balances) + len(units); rows > lt.NetWorthSeriesMaxRows {
+	if rows := len(balances) + len(units); rows > rpt.NetWorthSeriesMaxRows {
 		return nil, internalerrors.ErrInvalidParameter{Description: fmt.Sprintf(
-			"the range holds %d changes, more than the %d a series carries; shorten it", rows, lt.NetWorthSeriesMaxRows)}
+			"the range holds %d changes, more than the %d a series carries; shorten it", rows, rpt.NetWorthSeriesMaxRows)}
 	}
 
-	result := &lt.NetWorthSeriesResult{
-		Balances: make([]lt.NetWorthBalance, len(balances)),
-		Units:    make([]lt.NetWorthUnits, len(units)),
+	result := &rpt.NetWorthSeriesResult{
+		Balances: make([]rpt.NetWorthBalance, len(balances)),
+		Units:    make([]rpt.NetWorthUnits, len(units)),
 	}
 	for n, row := range balances {
-		result.Balances[n] = lt.NetWorthBalance{Date: row.Date.UTC(), CurrencyID: row.CurrencyID, Assets: row.Assets, Liabilities: row.Liabilities}
+		result.Balances[n] = rpt.NetWorthBalance{Date: row.Date.UTC(), CurrencyID: row.CurrencyID, Assets: row.Assets, Liabilities: row.Liabilities}
 	}
 	for n, row := range units {
-		result.Units[n] = lt.NetWorthUnits{Date: row.Date.UTC(), AssetID: row.AssetID, Units: row.Units}
+		result.Units[n] = rpt.NetWorthUnits{Date: row.Date.UTC(), AssetID: row.AssetID, Units: row.Units}
 	}
 	return result, nil
 }

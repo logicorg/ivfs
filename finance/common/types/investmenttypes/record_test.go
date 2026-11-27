@@ -29,7 +29,7 @@ func TestRecordInvestmentInput_Validate(t *testing.T) {
 		return &VestInput{
 			IdempotencyKey: "a71f", FinancialAccountID: 1, AssetID: 2,
 			UnitsVested: decimal.NewFromInt(100), FairMarketValue: decimal.RequireFromString("10.00"), CurrencyCode: "USD",
-			IncomeCategoryLedgerAccountID: 3, OccurredAt: occurredAt,
+			IncomeCategoryID: 3, OccurredAt: occurredAt,
 		}
 	}
 

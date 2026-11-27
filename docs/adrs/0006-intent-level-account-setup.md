@@ -4,6 +4,8 @@
 - Date: 2026-10-03
 - Depends on: [ADR 0002](0002-ledger-domain-and-application-api.md), [ADR 0003](0003-categories-and-tags.md), [ADR 0004](0004-position-subledger.md), and [ADR 0005](0005-uniqueness-and-idempotent-creation.md)
 - Amends: ADR 0003 (where the category facade lives and how it is built) and ADR 0005 (a create that matches a closed row)
+- Amended by: [ADR 0019](0019-currency-neutral-categories.md) ("Expenses" and "Income"
+  are shared accounts)
 - Related: [RFC 0001](../rfcs/0001-financial-account-identifiers.md) (recording account identifiers)
 
 ## Context

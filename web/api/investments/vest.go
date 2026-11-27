@@ -17,8 +17,9 @@ func registerVest(api huma.API, c client.Client) {
 		Method:      http.MethodPost,
 		Path:        "/api/investments/vests",
 		Summary:     "Record units of an asset received as compensation in a brokerage account",
-		Description: "The income category is credited with the value of every unit vested, Investments with that of the units " +
-			"delivered, and the tax category with that of the units withheld; the delivered units are added at their value. " +
+		Description: "Income is credited with the value of every unit vested, under the income category; Investments is " +
+			"debited with that of the units delivered, and Expenses with that of the units withheld, under the tax category. " +
+			"The delivered units are added at their value. " +
 			"Shares sold to cover the tax are a separate sale. A repeated idempotency key returns the vest first recorded " +
 			"with it, recording nothing.",
 		Tags:   tags,
@@ -27,17 +28,18 @@ func registerVest(api huma.API, c client.Client) {
 		result, err := gateway.RunWorkflow[it.TradeResult](ctx, c, investmentswf.RecordInvestment, it.RecordInvestmentInput{
 			Kind: it.KindVest,
 			Vest: &it.VestInput{
-				IdempotencyKey:                in.Body.IdempotencyKey,
-				FinancialAccountID:            in.Body.FinancialAccountID,
-				AssetID:                       in.Body.AssetID,
-				UnitsVested:                   in.Body.UnitsVested.Decimal,
-				UnitsWithheld:                 in.Body.UnitsWithheld.Decimal,
-				FairMarketValue:               in.Body.FairMarketValue.Decimal,
-				CurrencyCode:                  in.Body.CurrencyCode,
-				IncomeCategoryLedgerAccountID: in.Body.IncomeCategoryLedgerAccountID,
-				TaxCategoryLedgerAccountID:    in.Body.TaxCategoryLedgerAccountID,
-				OccurredAt:                    in.Body.OccurredAt,
-				Description:                   in.Body.Description,
+				IdempotencyKey:     in.Body.IdempotencyKey,
+				FinancialAccountID: in.Body.FinancialAccountID,
+				AssetID:            in.Body.AssetID,
+				UnitsVested:        in.Body.UnitsVested.Decimal,
+				UnitsWithheld:      in.Body.UnitsWithheld.Decimal,
+				FairMarketValue:    in.Body.FairMarketValue.Decimal,
+				CurrencyCode:       in.Body.CurrencyCode,
+				IncomeCategoryID:   in.Body.IncomeCategoryID,
+				TaxCategoryID:      in.Body.TaxCategoryID,
+				OccurredAt:         in.Body.OccurredAt,
+				Description:        in.Body.Description,
+				TagIDs:             in.Body.TagIDs,
 			},
 		})
 		if err != nil {

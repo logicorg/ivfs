@@ -28,6 +28,7 @@ const buy: TradeFormValues = {
   fee: "",
   occurredOn: "",
   description: "",
+  tagIds: [],
 }
 
 const buyNew: TradeFormValues = { ...buy, assetId: newAsset, assetName: "Vanguard FTSE All-World", assetKind: "etf" }
@@ -246,6 +247,21 @@ describe("newBuy", () => {
         description: "Monthly buy",
       },
     },
+    {
+      name: "with tags",
+      values: { ...buy, tagIds: [5] },
+      assetId: 7,
+      want: {
+        idempotencyKey: "key",
+        financialAccountId: 3,
+        assetId: 7,
+        currencyCode: "EUR",
+        units: "12.5",
+        amount: "1250.25",
+        occurredAt: "2026-02-01T09:30:00.000Z",
+        tagIds: [5],
+      },
+    },
   ]
 
   for (const { name, values, assetId, want } of cases) {
@@ -286,6 +302,20 @@ describe("newSell", () => {
         fee: "1.50",
         occurredAt: new Date("2026-01-31T00:00").toISOString(),
         description: "Rebalance",
+      },
+    },
+    {
+      name: "with tags",
+      values: { ...buy, tagIds: [5, 3] },
+      want: {
+        idempotencyKey: "key",
+        financialAccountId: 3,
+        assetId: 7,
+        currencyCode: "EUR",
+        units: "12.5",
+        amount: "1250.25",
+        occurredAt: "2026-02-01T09:30:00.000Z",
+        tagIds: [5, 3],
       },
     },
   ]

@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/uuid"
 	activity "github.com/logicorg/ivfs/finance/activities/ledger/portfolio"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	pft "github.com/logicorg/ivfs/finance/common/types/portfoliotypes"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
@@ -21,7 +21,7 @@ func (s *WorkflowUnitTestSuite) TestRegisterPositionMovement() {
 	}{
 		{
 			name:   "success",
-			result: []any{&lt.RegisterPositionMovementResult{PositionMovementIDs: []int64{10, 11}}, nil},
+			result: []any{&pft.RegisterPositionMovementResult{PositionMovementIDs: []int64{10, 11}}, nil},
 		},
 		{
 			name:    "activity failure",
@@ -30,12 +30,12 @@ func (s *WorkflowUnitTestSuite) TestRegisterPositionMovement() {
 		},
 	}
 
-	input := lt.RegisterPositionMovementInput{
+	input := pft.RegisterPositionMovementInput{
 		IdempotencyKey: "transfer-1",
 		Kind:           model.PositionMovementTransfer,
 		AssetID:        2,
 		OccurredAt:     time.Date(2026, 3, 1, 12, 0, 0, 0, time.UTC),
-		Legs: []lt.PositionMovementLeg{
+		Legs: []pft.PositionMovementLeg{
 			{FinancialAccountID: 1, UnitsDelta: decimal.NewFromInt(-1)},
 			{FinancialAccountID: 3, UnitsDelta: decimal.NewFromInt(1)},
 		},
@@ -46,7 +46,7 @@ func (s *WorkflowUnitTestSuite) TestRegisterPositionMovement() {
 			env := s.NewTestWorkflowEnvironment()
 			pa := activity.Activities{}
 
-			env.OnActivity(pa.RegisterPositionMovement, mock.Anything, mock.MatchedBy(func(got lt.RegisterPositionMovementInput) bool {
+			env.OnActivity(pa.RegisterPositionMovement, mock.Anything, mock.MatchedBy(func(got pft.RegisterPositionMovementInput) bool {
 				return got.IdempotencyKey == input.IdempotencyKey && len(got.Legs) == len(input.Legs)
 			})).Return(tc.result...)
 
@@ -57,7 +57,7 @@ func (s *WorkflowUnitTestSuite) TestRegisterPositionMovement() {
 				return
 			}
 			require.NoError(s.T(), env.GetWorkflowError())
-			var result *lt.RegisterPositionMovementResult
+			var result *pft.RegisterPositionMovementResult
 			require.NoError(s.T(), env.GetWorkflowResult(&result))
 			assert.Equal(s.T(), tc.result[0], result)
 		})
@@ -69,11 +69,11 @@ func (s *WorkflowUnitTestSuite) TestRegisterPositionMovement() {
 // activity is called, and that two independent executions produce two
 // different generated keys.
 func (s *WorkflowUnitTestSuite) TestRegisterPositionMovementDefaultsIdempotencyKey() {
-	input := lt.RegisterPositionMovementInput{
+	input := pft.RegisterPositionMovementInput{
 		Kind:       model.PositionMovementTransfer,
 		AssetID:    2,
 		OccurredAt: time.Date(2026, 3, 1, 12, 0, 0, 0, time.UTC),
-		Legs: []lt.PositionMovementLeg{
+		Legs: []pft.PositionMovementLeg{
 			{FinancialAccountID: 1, UnitsDelta: decimal.NewFromInt(-1)},
 			{FinancialAccountID: 3, UnitsDelta: decimal.NewFromInt(1)},
 		},
@@ -84,10 +84,10 @@ func (s *WorkflowUnitTestSuite) TestRegisterPositionMovementDefaultsIdempotencyK
 		env := s.NewTestWorkflowEnvironment()
 		pa := activity.Activities{}
 
-		env.OnActivity(pa.RegisterPositionMovement, mock.Anything, mock.MatchedBy(func(got lt.RegisterPositionMovementInput) bool {
+		env.OnActivity(pa.RegisterPositionMovement, mock.Anything, mock.MatchedBy(func(got pft.RegisterPositionMovementInput) bool {
 			generated[i] = got.IdempotencyKey
 			return true
-		})).Return(&lt.RegisterPositionMovementResult{PositionMovementIDs: []int64{1, 2}}, nil)
+		})).Return(&pft.RegisterPositionMovementResult{PositionMovementIDs: []int64{1, 2}}, nil)
 
 		env.ExecuteWorkflow(RegisterPositionMovement, input)
 		require.NoError(s.T(), env.GetWorkflowError())

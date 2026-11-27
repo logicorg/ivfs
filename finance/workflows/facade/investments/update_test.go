@@ -2,9 +2,11 @@ package investments
 
 import (
 	"errors"
+	"slices"
 	"time"
 
 	it "github.com/logicorg/ivfs/finance/common/types/investmenttypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	journalwf "github.com/logicorg/ivfs/finance/workflows/ledger/journal"
 	"github.com/logicorg/ivfs/pkg/model"
@@ -17,20 +19,21 @@ import (
 // replacement matches the replace want by what it records rather than by its
 // representation, as tradeInput does: a decimal such as 1053.00 arrives as
 // 1053, equal in value but not in its fields.
-func replacement(want lt.ReplaceJournalEntryInput) any {
+func replacement(want jt.ReplaceJournalEntryInput) any {
 	sameDecimal := func(a, b *decimal.Decimal) bool { return (a == nil) == (b == nil) && (a == nil || a.Equal(*b)) }
 	sameID := func(a, b *int64) bool { return (a == nil) == (b == nil) && (a == nil || *a == *b) }
 	sameString := func(a, b *string) bool { return (a == nil) == (b == nil) && (a == nil || *a == *b) }
 
-	return mock.MatchedBy(func(got lt.ReplaceJournalEntryInput) bool {
+	return mock.MatchedBy(func(got jt.ReplaceJournalEntryInput) bool {
 		if got.JournalEntryID != want.JournalEntryID || !got.OccurredAt.Equal(want.OccurredAt) ||
 			!sameString(got.Description, want.Description) || len(got.Metadata) != 0 ||
-			len(got.Postings) != len(want.Postings) || len(got.Movements) != len(want.Movements) {
+			len(got.Postings) != len(want.Postings) || len(got.Movements) != len(want.Movements) ||
+			!slices.Equal(got.TagIDs, want.TagIDs) {
 			return false
 		}
 		for i, posting := range want.Postings {
 			if got.Postings[i].LedgerAccountID != posting.LedgerAccountID || got.Postings[i].Side != posting.Side ||
-				!got.Postings[i].Amount.Equal(posting.Amount) {
+				!got.Postings[i].Amount.Equal(posting.Amount) || !sameID(got.Postings[i].CategoryID, posting.CategoryID) {
 				return false
 			}
 		}
@@ -55,23 +58,23 @@ func (s *WorkflowUnitTestSuite) TestUpdateInvestment() {
 	tests := []struct {
 		name     string
 		input    it.UpdateInvestmentInput
-		want     lt.ReplaceJournalEntryInput
+		want     jt.ReplaceJournalEntryInput
 		warnings []lt.NegativeHolding
 	}{
 		{
-			name: "a buy, in a currency code typed in lower case",
+			name: "a buy with a tag, in a currency code typed in lower case",
 			input: it.UpdateInvestmentInput{JournalEntryID: 41, Kind: it.KindBuy, Buy: &it.UpdateBuyInput{
 				FinancialAccountID: ibkr, AssetID: 7, Units: decimal.NewFromInt(10),
 				Amount: decimal.RequireFromString("1050.00"), Fee: decimal.RequireFromString("3.00"), CurrencyCode: " eur",
-				OccurredAt: occurredAt, Description: "monthly plan",
+				OccurredAt: occurredAt, Description: "monthly plan", TagIDs: []int64{5},
 			}},
-			want: lt.ReplaceJournalEntryInput{
-				JournalEntryID: 41, OccurredAt: occurredAt, Description: ptr.NewPtr("monthly plan"),
-				Postings: []lt.PostingInput{
+			want: jt.ReplaceJournalEntryInput{
+				JournalEntryID: 41, OccurredAt: occurredAt, Description: ptr.NewPtr("monthly plan"), TagIDs: []int64{5},
+				Postings: []jt.PostingInput{
 					{LedgerAccountID: investments.ID, Amount: decimal.NewFromInt(1053), Side: model.PostingDebit},
 					{LedgerAccountID: cash.ID, Amount: decimal.NewFromInt(1053), Side: model.PostingCredit},
 				},
-				Movements: []lt.ReplaceMovementInput{{
+				Movements: []jt.ReplaceMovementInput{{
 					Kind: model.PositionMovementTrade, FinancialAccountID: ibkr, AssetID: 7, UnitsDelta: decimal.NewFromInt(10),
 					CostBasisAmount: ptr.NewPtr(decimal.NewFromInt(1053)), CostBasisCurrencyID: ptr.NewPtr(euro.ID),
 				}},
@@ -83,34 +86,34 @@ func (s *WorkflowUnitTestSuite) TestUpdateInvestment() {
 				FinancialAccountID: ibkr, AssetID: 7, Units: decimal.NewFromInt(100),
 				Amount: decimal.NewFromInt(12000), Fee: decimal.NewFromInt(3), CurrencyCode: "EUR", OccurredAt: occurredAt,
 			}},
-			want: lt.ReplaceJournalEntryInput{
+			want: jt.ReplaceJournalEntryInput{
 				JournalEntryID: 41, OccurredAt: occurredAt,
-				Postings: []lt.PostingInput{
+				Postings: []jt.PostingInput{
 					{LedgerAccountID: cash.ID, Amount: decimal.NewFromInt(11997), Side: model.PostingDebit},
 					{LedgerAccountID: investments.ID, Amount: decimal.NewFromInt(11997), Side: model.PostingCredit},
 				},
-				Movements: []lt.ReplaceMovementInput{{
+				Movements: []jt.ReplaceMovementInput{{
 					Kind: model.PositionMovementTrade, FinancialAccountID: ibkr, AssetID: 7, UnitsDelta: decimal.NewFromInt(-100),
 				}},
 			},
 			warnings: []lt.NegativeHolding{{FinancialAccountID: ibkr, AssetID: 7, At: occurredAt, Units: decimal.NewFromInt(-90)}},
 		},
 		{
-			name: "a vest with units withheld, lowered below what was sold since",
+			name: "a vest with a tag and units withheld, lowered below what was sold since",
 			input: it.UpdateInvestmentInput{JournalEntryID: 41, Kind: it.KindVest, Vest: &it.UpdateVestInput{
 				FinancialAccountID: ibkr, AssetID: 7,
 				UnitsVested: decimal.NewFromInt(100), UnitsWithheld: decimal.NewFromInt(40), FairMarketValue: decimal.RequireFromString("10.00"),
-				CurrencyCode: "eur", IncomeCategoryLedgerAccountID: compensation.ID, TaxCategoryLedgerAccountID: taxWithheld.ID,
-				OccurredAt: occurredAt,
+				CurrencyCode: "eur", IncomeCategoryID: compensation.ID, TaxCategoryID: taxWithheld.ID,
+				OccurredAt: occurredAt, TagIDs: []int64{5},
 			}},
-			want: lt.ReplaceJournalEntryInput{
-				JournalEntryID: 41, OccurredAt: occurredAt,
-				Postings: []lt.PostingInput{
+			want: jt.ReplaceJournalEntryInput{
+				JournalEntryID: 41, OccurredAt: occurredAt, TagIDs: []int64{5},
+				Postings: []jt.PostingInput{
 					{LedgerAccountID: investments.ID, Amount: decimal.NewFromInt(600), Side: model.PostingDebit},
-					{LedgerAccountID: taxWithheld.ID, Amount: decimal.NewFromInt(400), Side: model.PostingDebit},
-					{LedgerAccountID: compensation.ID, Amount: decimal.NewFromInt(1000), Side: model.PostingCredit},
+					{LedgerAccountID: expenses.ID, Amount: decimal.NewFromInt(400), Side: model.PostingDebit, CategoryID: ptr.NewPtr(taxWithheld.ID)},
+					{LedgerAccountID: income.ID, Amount: decimal.NewFromInt(1000), Side: model.PostingCredit, CategoryID: ptr.NewPtr(compensation.ID)},
 				},
-				Movements: []lt.ReplaceMovementInput{{
+				Movements: []jt.ReplaceMovementInput{{
 					Kind: model.PositionMovementVest, FinancialAccountID: ibkr, AssetID: 7, UnitsDelta: decimal.NewFromInt(60),
 					CostBasisAmount: ptr.NewPtr(decimal.NewFromInt(600)), CostBasisCurrencyID: ptr.NewPtr(euro.ID),
 				}},
@@ -123,16 +126,16 @@ func (s *WorkflowUnitTestSuite) TestUpdateInvestment() {
 			input: it.UpdateInvestmentInput{JournalEntryID: 41, Kind: it.KindVest, Vest: &it.UpdateVestInput{
 				FinancialAccountID: ibkr, AssetID: 7,
 				UnitsVested: decimal.NewFromInt(100), FairMarketValue: decimal.RequireFromString("10.00"),
-				CurrencyCode: "EUR", IncomeCategoryLedgerAccountID: compensation.ID, TaxCategoryLedgerAccountID: unknownCategory,
+				CurrencyCode: "EUR", IncomeCategoryID: compensation.ID, TaxCategoryID: unknownCategory,
 				OccurredAt: occurredAt,
 			}},
-			want: lt.ReplaceJournalEntryInput{
+			want: jt.ReplaceJournalEntryInput{
 				JournalEntryID: 41, OccurredAt: occurredAt,
-				Postings: []lt.PostingInput{
+				Postings: []jt.PostingInput{
 					{LedgerAccountID: investments.ID, Amount: decimal.NewFromInt(1000), Side: model.PostingDebit},
-					{LedgerAccountID: compensation.ID, Amount: decimal.NewFromInt(1000), Side: model.PostingCredit},
+					{LedgerAccountID: income.ID, Amount: decimal.NewFromInt(1000), Side: model.PostingCredit, CategoryID: ptr.NewPtr(compensation.ID)},
 				},
-				Movements: []lt.ReplaceMovementInput{{
+				Movements: []jt.ReplaceMovementInput{{
 					Kind: model.PositionMovementVest, FinancialAccountID: ibkr, AssetID: 7, UnitsDelta: decimal.NewFromInt(100),
 					CostBasisAmount: ptr.NewPtr(decimal.NewFromInt(1000)), CostBasisCurrencyID: ptr.NewPtr(euro.ID),
 				}},
@@ -146,7 +149,7 @@ func (s *WorkflowUnitTestSuite) TestUpdateInvestment() {
 			mockBrokerage(env)
 			mockCategories(env)
 			env.OnWorkflow(journalwf.ReplaceJournalEntry, mock.Anything, replacement(tc.want)).
-				Return(&lt.ReplaceJournalEntryResult{JournalEntryID: 41, PositionMovementIDs: []int64{43}, Warnings: tc.warnings}, nil).Once()
+				Return(&jt.ReplaceJournalEntryResult{JournalEntryID: 41, PositionMovementIDs: []int64{43}, Warnings: tc.warnings}, nil).Once()
 
 			env.ExecuteWorkflow(UpdateInvestment, tc.input)
 
@@ -166,8 +169,8 @@ func (s *WorkflowUnitTestSuite) TestUpdateInvestment() {
 }
 
 // TestUpdateInvestment_Errors checks that an invalid request, an unknown
-// currency, an account without the two balances in it, or a vest's category of
-// the wrong kind or currency fail before anything is replaced, since
+// currency, an account without the two balances in it, or a vest's category
+// that is unknown or of the wrong kind fail before anything is replaced, since
 // ReplaceJournalEntry is mocked only where a case reaches it, and that a
 // failing replace's error is returned.
 func (s *WorkflowUnitTestSuite) TestUpdateInvestment_Errors() {
@@ -178,13 +181,12 @@ func (s *WorkflowUnitTestSuite) TestUpdateInvestment_Errors() {
 	vest := it.UpdateVestInput{
 		FinancialAccountID: ibkr, AssetID: 7,
 		UnitsVested: decimal.NewFromInt(100), UnitsWithheld: decimal.NewFromInt(40), FairMarketValue: decimal.NewFromInt(10),
-		CurrencyCode: "EUR", IncomeCategoryLedgerAccountID: compensation.ID, TaxCategoryLedgerAccountID: taxWithheld.ID, OccurredAt: occurredAt,
+		CurrencyCode: "EUR", IncomeCategoryID: compensation.ID, TaxCategoryID: taxWithheld.ID, OccurredAt: occurredAt,
 	}
-	vestIncomeUSD, vestIncomeExpense, vestTaxBalance, vestTaxUnknown := vest, vest, vest, vest
-	vestIncomeUSD.IncomeCategoryLedgerAccountID = compensationUSD.ID
-	vestIncomeExpense.IncomeCategoryLedgerAccountID = taxWithheld.ID
-	vestTaxBalance.TaxCategoryLedgerAccountID = cash.ID
-	vestTaxUnknown.TaxCategoryLedgerAccountID = unknownCategory
+	vestIncomeExpense, vestTaxIncome, vestTaxUnknown := vest, vest, vest
+	vestIncomeExpense.IncomeCategoryID = taxWithheld.ID
+	vestTaxIncome.TaxCategoryID = compensation.ID
+	vestTaxUnknown.TaxCategoryID = unknownCategory
 
 	tests := []struct {
 		name  string
@@ -198,10 +200,9 @@ func (s *WorkflowUnitTestSuite) TestUpdateInvestment_Errors() {
 		{name: "a buy with invalid facts", input: it.UpdateInvestmentInput{JournalEntryID: 41, Kind: it.KindBuy, Buy: &it.UpdateBuyInput{FinancialAccountID: ibkr, AssetID: 7, CurrencyCode: "EUR"}}, wantError: "validation error"},
 		{name: "a buy in an unknown currency", input: it.UpdateInvestmentInput{JournalEntryID: 41, Kind: it.KindBuy, Buy: &buyXYZ}, wantError: "retrieve currency XYZ"},
 		{name: "a sale in a currency the account holds no investments in", input: it.UpdateInvestmentInput{JournalEntryID: 41, Kind: it.KindSell, Sell: &sellUSD}, wantError: `invalid parameter: financial account 20 has no "Cash" and "Investments" balances in USD`},
-		{name: "a vest whose income category is in another currency", input: it.UpdateInvestmentInput{JournalEntryID: 41, Kind: it.KindVest, Vest: &vestIncomeUSD}, wantError: `invalid parameter: "RSU compensation (USD)" is not in EUR, the currency of the vest`},
 		{name: "a vest whose income category is an expense one", input: it.UpdateInvestmentInput{JournalEntryID: 41, Kind: it.KindVest, Vest: &vestIncomeExpense}, wantError: `invalid parameter: "Tax withheld" is an expense category, not an income one`},
-		{name: "a vest whose tax category is a balance", input: it.UpdateInvestmentInput{JournalEntryID: 41, Kind: it.KindVest, Vest: &vestTaxBalance}, wantError: `invalid parameter: "Cash" is not an expense category: its kind is asset`},
-		{name: "a vest whose tax category is unknown", input: it.UpdateInvestmentInput{JournalEntryID: 41, Kind: it.KindVest, Vest: &vestTaxUnknown}, wantError: "retrieve ledger account 999: "},
+		{name: "a vest whose tax category is an income one", input: it.UpdateInvestmentInput{JournalEntryID: 41, Kind: it.KindVest, Vest: &vestTaxIncome}, wantError: `invalid parameter: "RSU compensation" is an income category, not an expense one`},
+		{name: "a vest whose tax category is unknown", input: it.UpdateInvestmentInput{JournalEntryID: 41, Kind: it.KindVest, Vest: &vestTaxUnknown}, wantError: "retrieve category 999: "},
 		{name: "an unknown entry", input: it.UpdateInvestmentInput{JournalEntryID: 41, Kind: it.KindBuy, Buy: &buy}, replaceErr: "resource JournalEntry not found with ID: 41", wantError: "update buy: "},
 		{name: "a vest onto a closed account", input: it.UpdateInvestmentInput{JournalEntryID: 41, Kind: it.KindVest, Vest: &vest}, replaceErr: "resource FinancialAccount with ID: 20 is closed", wantError: "resource FinancialAccount with ID: 20 is closed"},
 	}

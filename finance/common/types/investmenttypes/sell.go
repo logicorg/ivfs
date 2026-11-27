@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"cuelang.org/go/cuego"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	errs "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/shopspring/decimal"
 )
@@ -22,6 +23,7 @@ type SellAssetInput struct {
 	CurrencyCode string          `json:"currencyCode" cue:"!~\"^[[:space:]]*$\"" jsonschema:"the currency received, an ISO 4217 code such as EUR"`
 	OccurredAt   time.Time       `json:"occurredAt" jsonschema:"the instant of the sale, such as 2026-10-03T10:00:00Z"`
 	Description  string          `json:"description,omitempty" jsonschema:"a note"`
+	TagIDs       []int64         `json:"tagIds,omitempty" jsonschema:"the tags of the entry, each taken once"`
 }
 
 // Validate checks the input against its CUE constraints, its date, and that
@@ -41,5 +43,5 @@ func (i *SellAssetInput) rules() error {
 	if i.Fee.GreaterThanOrEqual(i.Amount) {
 		return errs.ErrInvalidParameter{Description: "the fee of a sale must be less than its amount, so the sale leaves some proceeds"}
 	}
-	return nil
+	return jt.ValidateTagIDs(i.TagIDs)
 }

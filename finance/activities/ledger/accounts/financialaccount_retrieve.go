@@ -4,14 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/uptrace/bun"
 )
 
-func (a *Activities) RetrieveFinancialAccount(ctx context.Context, params lt.RetrieveFinancialAccountParams) (*lt.RetrieveFinancialAccountResult, error) {
+func (a *Activities) RetrieveFinancialAccount(ctx context.Context, params act.RetrieveFinancialAccountParams) (*act.RetrieveFinancialAccountResult, error) {
 	db, err := a.Pools.For(ctx)
 	if err != nil {
 		return nil, err
@@ -25,7 +24,7 @@ func (a *Activities) RetrieveFinancialAccount(ctx context.Context, params lt.Ret
 	if err != nil {
 		return nil, err
 	}
-	return &lt.RetrieveFinancialAccountResult{FinancialAccount: account}, nil
+	return &act.RetrieveFinancialAccountResult{FinancialAccount: account}, nil
 }
 
 // loadFinancialAccount retrieves a FinancialAccount by ID or returns

@@ -3,6 +3,8 @@
 - Status: Implemented
 - Date: 2026-10-03
 - Depends on: [ADR 0001](0001-double-entry-ledger.md), [ADR 0003](0003-categories-and-tags.md), [ADR 0006](0006-intent-level-account-setup.md), and [ADR 0007](0007-web-ui-and-http-gateway.md)
+- Amended by: [ADR 0019](0019-currency-neutral-categories.md) (a transaction names its
+  category by `categoryId`, with no currency check)
 
 ## Context
 

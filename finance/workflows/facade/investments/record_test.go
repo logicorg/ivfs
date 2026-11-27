@@ -5,7 +5,9 @@ import (
 	"time"
 
 	it "github.com/logicorg/ivfs/finance/common/types/investmenttypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	pft "github.com/logicorg/ivfs/finance/common/types/portfoliotypes"
 	portfoliowf "github.com/logicorg/ivfs/finance/workflows/ledger/portfolio"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/logicorg/ivfs/pkg/ptr"
@@ -24,21 +26,22 @@ func (s *WorkflowUnitTestSuite) TestRecordInvestment() {
 
 	tests := map[string]struct {
 		input    it.RecordInvestmentInput
-		want     lt.RegisterInvestmentTradeInput
+		want     pft.RegisterInvestmentTradeInput
 		warnings []lt.NegativeHolding
 	}{
-		"a buy, in a currency code typed in lower case": {
+		"a buy with a tag, in a currency code typed in lower case": {
 			input: it.RecordInvestmentInput{Kind: it.KindBuy, Buy: &it.BuyAssetInput{
 				IdempotencyKey: "5d0c", FinancialAccountID: ibkr, AssetID: 7, Units: decimal.NewFromInt(10),
 				Amount: decimal.RequireFromString("1050.00"), Fee: decimal.RequireFromString("3.00"), CurrencyCode: " eur",
-				OccurredAt: occurredAt, Description: "monthly plan",
+				OccurredAt: occurredAt, Description: "monthly plan", TagIDs: []int64{5},
 			}},
-			want: lt.RegisterInvestmentTradeInput{
-				Entry: lt.PostJournalEntryInput{
+			want: pft.RegisterInvestmentTradeInput{
+				Entry: jt.PostJournalEntryInput{
 					IdempotencyKey: "buy:5d0c",
 					OccurredAt:     occurredAt,
 					Description:    ptr.NewPtr("monthly plan"),
-					Postings: []lt.PostingInput{
+					TagIDs:         []int64{5},
+					Postings: []jt.PostingInput{
 						{LedgerAccountID: investments.ID, Amount: decimal.NewFromInt(1053), Side: model.PostingDebit},
 						{LedgerAccountID: cash.ID, Amount: decimal.NewFromInt(1053), Side: model.PostingCredit},
 					},
@@ -50,16 +53,17 @@ func (s *WorkflowUnitTestSuite) TestRecordInvestment() {
 				CostBasisCurrencyID: ptr.NewPtr(euro.ID),
 			},
 		},
-		"a sale of more units than are held": {
+		"a sale with tags, of more units than are held": {
 			input: it.RecordInvestmentInput{Kind: it.KindSell, Sell: &it.SellAssetInput{
 				IdempotencyKey: "8e41", FinancialAccountID: ibkr, AssetID: 7, Units: decimal.NewFromInt(100),
-				Amount: decimal.NewFromInt(12000), CurrencyCode: "EUR", OccurredAt: occurredAt,
+				Amount: decimal.NewFromInt(12000), CurrencyCode: "EUR", OccurredAt: occurredAt, TagIDs: []int64{5, 6},
 			}},
-			want: lt.RegisterInvestmentTradeInput{
-				Entry: lt.PostJournalEntryInput{
+			want: pft.RegisterInvestmentTradeInput{
+				Entry: jt.PostJournalEntryInput{
 					IdempotencyKey: "sell:8e41",
 					OccurredAt:     occurredAt,
-					Postings: []lt.PostingInput{
+					TagIDs:         []int64{5, 6},
+					Postings: []jt.PostingInput{
 						{LedgerAccountID: cash.ID, Amount: decimal.NewFromInt(12000), Side: model.PostingDebit},
 						{LedgerAccountID: investments.ID, Amount: decimal.NewFromInt(12000), Side: model.PostingCredit},
 					},
@@ -77,7 +81,7 @@ func (s *WorkflowUnitTestSuite) TestRecordInvestment() {
 			env := s.NewTestWorkflowEnvironment()
 			mockBrokerage(env)
 			env.OnWorkflow(portfoliowf.RegisterInvestmentTrade, mock.Anything, tradeInput(tc.want)).
-				Return(&lt.RegisterInvestmentTradeResult{JournalEntryID: 41, PositionMovementID: 42, Warnings: tc.warnings}, nil).Once()
+				Return(&pft.RegisterInvestmentTradeResult{JournalEntryID: 41, PositionMovementID: 42, Warnings: tc.warnings}, nil).Once()
 
 			env.ExecuteWorkflow(RecordInvestment, tc.input)
 
@@ -104,34 +108,47 @@ func (s *WorkflowUnitTestSuite) TestRecordInvestment_Vest() {
 
 	tests := map[string]struct {
 		input    it.VestInput
-		postings []lt.PostingInput
+		postings []jt.PostingInput
 		units    decimal.Decimal
 	}{
-		"with units withheld for tax": {
+		"with a tag and units withheld for tax": {
 			input: it.VestInput{
 				IdempotencyKey: "a71f", FinancialAccountID: ibkr, AssetID: 7,
 				UnitsVested: decimal.NewFromInt(100), UnitsWithheld: decimal.NewFromInt(40), FairMarketValue: decimal.RequireFromString("10.00"),
-				CurrencyCode: "eur", IncomeCategoryLedgerAccountID: compensation.ID, TaxCategoryLedgerAccountID: taxWithheld.ID,
-				OccurredAt: occurredAt,
+				CurrencyCode: "eur", IncomeCategoryID: compensation.ID, TaxCategoryID: taxWithheld.ID,
+				OccurredAt: occurredAt, TagIDs: []int64{5},
 			},
-			postings: []lt.PostingInput{
+			postings: []jt.PostingInput{
 				{LedgerAccountID: investments.ID, Amount: decimal.NewFromInt(600), Side: model.PostingDebit},
-				{LedgerAccountID: taxWithheld.ID, Amount: decimal.NewFromInt(400), Side: model.PostingDebit},
-				{LedgerAccountID: compensation.ID, Amount: decimal.NewFromInt(1000), Side: model.PostingCredit},
+				{LedgerAccountID: expenses.ID, Amount: decimal.NewFromInt(400), Side: model.PostingDebit, CategoryID: ptr.NewPtr(taxWithheld.ID)},
+				{LedgerAccountID: income.ID, Amount: decimal.NewFromInt(1000), Side: model.PostingCredit, CategoryID: ptr.NewPtr(compensation.ID)},
 			},
 			units: decimal.NewFromInt(60),
+		},
+		"with a closed income category": {
+			input: it.VestInput{
+				IdempotencyKey: "a71f", FinancialAccountID: ibkr, AssetID: 7,
+				UnitsVested: decimal.NewFromInt(100), FairMarketValue: decimal.RequireFromString("10.00"),
+				CurrencyCode: "EUR", IncomeCategoryID: oldPlan.ID,
+				OccurredAt: occurredAt,
+			},
+			postings: []jt.PostingInput{
+				{LedgerAccountID: investments.ID, Amount: decimal.NewFromInt(1000), Side: model.PostingDebit},
+				{LedgerAccountID: income.ID, Amount: decimal.NewFromInt(1000), Side: model.PostingCredit, CategoryID: ptr.NewPtr(oldPlan.ID)},
+			},
+			units: decimal.NewFromInt(100),
 		},
 		// The unknown tax category would fail the vest if it were retrieved.
 		"without withholding, leaving the tax category unused": {
 			input: it.VestInput{
 				IdempotencyKey: "a71f", FinancialAccountID: ibkr, AssetID: 7,
 				UnitsVested: decimal.NewFromInt(100), FairMarketValue: decimal.RequireFromString("10.00"),
-				CurrencyCode: "EUR", IncomeCategoryLedgerAccountID: compensation.ID, TaxCategoryLedgerAccountID: unknownCategory,
+				CurrencyCode: "EUR", IncomeCategoryID: compensation.ID, TaxCategoryID: unknownCategory,
 				OccurredAt: occurredAt,
 			},
-			postings: []lt.PostingInput{
+			postings: []jt.PostingInput{
 				{LedgerAccountID: investments.ID, Amount: decimal.NewFromInt(1000), Side: model.PostingDebit},
-				{LedgerAccountID: compensation.ID, Amount: decimal.NewFromInt(1000), Side: model.PostingCredit},
+				{LedgerAccountID: income.ID, Amount: decimal.NewFromInt(1000), Side: model.PostingCredit, CategoryID: ptr.NewPtr(compensation.ID)},
 			},
 			units: decimal.NewFromInt(100),
 		},
@@ -139,8 +156,8 @@ func (s *WorkflowUnitTestSuite) TestRecordInvestment_Vest() {
 
 	for name, tc := range tests {
 		s.Run(name, func() {
-			want := normalizeVest(lt.RegisterVestInput{
-				Entry:               lt.PostJournalEntryInput{IdempotencyKey: "vest:a71f", OccurredAt: occurredAt, Postings: tc.postings},
+			want := normalizeVest(pft.RegisterVestInput{
+				Entry:               jt.PostJournalEntryInput{IdempotencyKey: "vest:a71f", OccurredAt: occurredAt, Postings: tc.postings, TagIDs: tc.input.TagIDs},
 				FinancialAccountID:  ibkr,
 				AssetID:             7,
 				Units:               tc.units,
@@ -150,9 +167,9 @@ func (s *WorkflowUnitTestSuite) TestRecordInvestment_Vest() {
 			env := s.NewTestWorkflowEnvironment()
 			mockBrokerage(env)
 			mockCategories(env)
-			env.OnWorkflow(portfoliowf.RegisterVest, mock.Anything, mock.MatchedBy(func(got lt.RegisterVestInput) bool {
+			env.OnWorkflow(portfoliowf.RegisterVest, mock.Anything, mock.MatchedBy(func(got pft.RegisterVestInput) bool {
 				return assert.ObjectsAreEqual(want, normalizeVest(got))
-			})).Return(&lt.RegisterVestResult{JournalEntryID: 61, PositionMovementID: 62}, nil).Once()
+			})).Return(&pft.RegisterVestResult{JournalEntryID: 61, PositionMovementID: 62}, nil).Once()
 
 			env.ExecuteWorkflow(RecordInvestment, it.RecordInvestmentInput{Kind: it.KindVest, Vest: &tc.input})
 
@@ -166,8 +183,8 @@ func (s *WorkflowUnitTestSuite) TestRecordInvestment_Vest() {
 }
 
 // TestRecordInvestment_Errors checks that an invalid request, an unknown
-// currency, an account without the two balances in it, or a vest's category of
-// the wrong kind or currency fail before anything is written, since neither
+// currency, an account without the two balances in it, or a vest's category
+// that is unknown or of the wrong kind fail before anything is written, since neither
 // register workflow is mocked where a case does not reach it, and that a
 // failing write's error is returned.
 func (s *WorkflowUnitTestSuite) TestRecordInvestment_Errors() {
@@ -188,7 +205,7 @@ func (s *WorkflowUnitTestSuite) TestRecordInvestment_Errors() {
 		return it.RecordInvestmentInput{Kind: it.KindVest, Vest: &it.VestInput{
 			IdempotencyKey: "a71f", FinancialAccountID: ibkr, AssetID: 7,
 			UnitsVested: decimal.NewFromInt(100), UnitsWithheld: decimal.NewFromInt(40), FairMarketValue: decimal.NewFromInt(10),
-			CurrencyCode: "EUR", IncomeCategoryLedgerAccountID: income, TaxCategoryLedgerAccountID: tax, OccurredAt: occurredAt,
+			CurrencyCode: "EUR", IncomeCategoryID: income, TaxCategoryID: tax, OccurredAt: occurredAt,
 		}}
 	}
 	failedTrade := func(err error) func(env *testsuite.TestWorkflowEnvironment) {
@@ -223,21 +240,17 @@ func (s *WorkflowUnitTestSuite) TestRecordInvestment_Errors() {
 			mock:      failedTrade(errors.New("resource FinancialAccount with ID: 20 is closed")),
 			wantError: "register buy: ",
 		},
-		"a vest whose income category is in another currency": {
-			input:     vest(compensationUSD.ID, taxWithheld.ID),
-			wantError: `invalid parameter: "RSU compensation (USD)" is not in EUR, the currency of the vest: pick a category in EUR`,
-		},
 		"a vest whose income category is an expense one": {
 			input:     vest(taxWithheld.ID, taxWithheld.ID),
 			wantError: `invalid parameter: "Tax withheld" is an expense category, not an income one`,
 		},
-		"a vest whose tax category is a balance": {
-			input:     vest(compensation.ID, cash.ID),
-			wantError: `invalid parameter: "Cash" is not an expense category: its kind is asset`,
+		"a vest whose tax category is an income one": {
+			input:     vest(compensation.ID, compensation.ID),
+			wantError: `invalid parameter: "RSU compensation" is an income category, not an expense one`,
 		},
 		"a vest whose tax category is unknown": {
 			input:     vest(compensation.ID, unknownCategory),
-			wantError: "retrieve ledger account 999: ",
+			wantError: "retrieve category 999: ",
 		},
 		"a failed vest": {
 			input: vest(compensation.ID, taxWithheld.ID),
