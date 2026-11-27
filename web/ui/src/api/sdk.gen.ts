@@ -549,7 +549,7 @@ export const recordIncome = <ThrowOnError extends boolean = false>(options: Opti
 /**
  * Record money moved from one balance to another, possibly into another currency
  *
- * Between currencies, toAmount is the amount that arrives, and the transfer is an exchange with no fee. A repeated idempotency key returns the entry first recorded with it, posting nothing.
+ * Charges are booked as expenses out of the amount that leaves. Between currencies, toAmount is the amount that arrives, and the transfer is an exchange whose fee is the one charge allowed. A repeated idempotency key returns the entry first recorded with it, posting nothing.
  */
 export const recordTransfer = <ThrowOnError extends boolean = false>(options: Options<RecordTransferData, ThrowOnError>): RequestResult<RecordTransferResponses, RecordTransferErrors, ThrowOnError> => (options.client ?? client).post<RecordTransferResponses, RecordTransferErrors, ThrowOnError>({
     url: '/api/transactions/transfers',

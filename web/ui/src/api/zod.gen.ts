@@ -240,16 +240,6 @@ export const zErrorModel = z.object({
     type: z.url().optional().default('about:blank')
 });
 
-export const zExpenseForm = z.object({
-    amount: z.string().regex(/^-?[0-9]+(\.[0-9]+)?$/),
-    balanceLedgerAccountId: z.int().gte(1),
-    categoryId: z.int().gte(1),
-    description: z.string().optional(),
-    idempotencyKey: z.string().min(1),
-    occurredAt: z.iso.datetime(),
-    tagIds: z.array(z.int()).optional()
-});
-
 export const zFinancialAccount = z.object({
     closed: z.boolean(),
     id: z.int(),
@@ -518,6 +508,22 @@ export const zSellForm = z.object({
     units: z.string().regex(/^-?[0-9]+(\.[0-9]+)?$/)
 });
 
+export const zSplitForm = z.object({
+    amount: z.string().regex(/^-?[0-9]+(\.[0-9]+)?$/),
+    categoryId: z.int().gte(1)
+});
+
+export const zExpenseForm = z.object({
+    amount: z.string().regex(/^-?[0-9]+(\.[0-9]+)?$/),
+    balanceLedgerAccountId: z.int().gte(1),
+    categoryId: z.int().gte(1).optional(),
+    description: z.string().optional(),
+    idempotencyKey: z.string().min(1),
+    lines: z.array(zSplitForm).optional(),
+    occurredAt: z.iso.datetime(),
+    tagIds: z.array(z.int()).optional()
+});
+
 export const zStrayAmount = z.object({
     amount: z.string().regex(/^-?[0-9]+(\.[0-9]+)?$/),
     currencyCode: z.string()
@@ -556,6 +562,7 @@ export const zTagList = z.object({
 
 export const zTransferForm = z.object({
     amount: z.string().regex(/^-?[0-9]+(\.[0-9]+)?$/),
+    charges: z.array(zSplitForm).optional(),
     description: z.string().optional(),
     fromLedgerAccountId: z.int().gte(1),
     idempotencyKey: z.string().min(1),

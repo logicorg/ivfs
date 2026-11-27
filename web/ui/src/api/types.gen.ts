@@ -459,9 +459,9 @@ export type ExpenseForm = {
      */
     balanceLedgerAccountId: number;
     /**
-     * the expense category it is spent on
+     * the expense category it is spent on; omitted when lines are given
      */
-    categoryId: number;
+    categoryId?: number;
     /**
      * a note on the entry
      */
@@ -470,6 +470,10 @@ export type ExpenseForm = {
      * one per transaction meant, such as one per opening of the form; a repeated key returns the entry first recorded with it
      */
     idempotencyKey: string;
+    /**
+     * what a payment spent on several things went on, adding up to amount, in place of categoryId
+     */
+    lines?: Array<SplitForm>;
     /**
      * the instant the money was spent
      */
@@ -792,6 +796,17 @@ export type SellForm = {
     units: string;
 };
 
+export type SplitForm = {
+    /**
+     * the part of the amount it takes, greater than zero
+     */
+    amount: string;
+    /**
+     * the expense category it is booked under
+     */
+    categoryId: number;
+};
+
 export type StrayAmount = {
     /**
      * debits minus credits
@@ -833,6 +848,10 @@ export type TransferForm = {
      */
     amount: string;
     /**
+     * what moving the money cost, such as an instalment's interest, taken out of amount; at most one, the exchange fee, between currencies
+     */
+    charges?: Array<SplitForm>;
+    /**
      * a note on the entry
      */
     description?: string;
@@ -853,7 +872,7 @@ export type TransferForm = {
      */
     tagIds?: Array<number>;
     /**
-     * the amount that arrives: required between currencies, else omitted or equal to amount
+     * the amount that arrives: required between currencies, else omitted or equal to amount less the charges
      */
     toAmount?: string;
     /**
