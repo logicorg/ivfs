@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"testing"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
-	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
+	cpt "github.com/logicorg/ivfs/finance/common/types/counterpartytypes"
+	counterpartieswf "github.com/logicorg/ivfs/finance/workflows/ledger/counterparties"
 	"github.com/logicorg/ivfs/pkg/ptr"
 	"github.com/logicorg/ivfs/web/api/apitest"
 	"go.temporal.io/sdk/temporal"
@@ -19,26 +19,26 @@ func TestCreate(t *testing.T) {
 		"create a counterparty": {
 			Method: http.MethodPost, Path: "/api/counterparties", Body: `{"name":"Tesco"}`,
 			Call: &apitest.WorkflowCall{
-				Workflow: ledgeraccountswf.CreateCounterparty,
-				Params:   lt.CreateCounterpartyInput{Name: "Tesco"},
-				Result:   lt.CreateCounterpartyResult{CounterpartyID: 3},
+				Workflow: counterpartieswf.CreateCounterparty,
+				Params:   cpt.CreateCounterpartyInput{Name: "Tesco"},
+				Result:   cpt.CreateCounterpartyResult{CounterpartyID: 3},
 			},
 			WantStatus: http.StatusOK, WantBody: `{"id":3}`,
 		},
 		"create a counterparty with an external id": {
 			Method: http.MethodPost, Path: "/api/counterparties", Body: `{"name":"Acme","externalId":"payroll-7"}`,
 			Call: &apitest.WorkflowCall{
-				Workflow: ledgeraccountswf.CreateCounterparty,
-				Params:   lt.CreateCounterpartyInput{Name: "Acme", ExternalID: ptr.NewPtr("payroll-7")},
-				Result:   lt.CreateCounterpartyResult{CounterpartyID: 1},
+				Workflow: counterpartieswf.CreateCounterparty,
+				Params:   cpt.CreateCounterpartyInput{Name: "Acme", ExternalID: ptr.NewPtr("payroll-7")},
+				Result:   cpt.CreateCounterpartyResult{CounterpartyID: 1},
 			},
 			WantStatus: http.StatusOK, WantBody: `{"id":1}`,
 		},
 		"create a counterparty with a blank name": {
 			Method: http.MethodPost, Path: "/api/counterparties", Body: `{"name":"  "}`,
 			Call: &apitest.WorkflowCall{
-				Workflow: ledgeraccountswf.CreateCounterparty,
-				Params:   lt.CreateCounterpartyInput{Name: "  "},
+				Workflow: counterpartieswf.CreateCounterparty,
+				Params:   cpt.CreateCounterpartyInput{Name: "  "},
 				Err:      temporal.NewApplicationError("missing required parameters: Name", "ErrMissingRequiredParameter"),
 			},
 			WantStatus: http.StatusUnprocessableEntity,

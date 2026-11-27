@@ -3,8 +3,7 @@ package accounts
 import (
 	"context"
 	"fmt"
-
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	"github.com/logicorg/ivfs/pkg/model"
 )
 
@@ -14,7 +13,7 @@ import (
 // would. Each result carries its Institution and its LedgerAccounts (with
 // their Currency) so the caller can disambiguate between candidates without
 // a further round trip.
-func (a *Activities) ListFinancialAccounts(ctx context.Context, params lt.ListFinancialAccountsParams) (*lt.ListFinancialAccountsResult, error) {
+func (a *Activities) ListFinancialAccounts(ctx context.Context, params act.ListFinancialAccountsParams) (*act.ListFinancialAccountsResult, error) {
 	db, err := a.Pools.For(ctx)
 	if err != nil {
 		return nil, err
@@ -30,7 +29,7 @@ func (a *Activities) ListFinancialAccounts(ctx context.Context, params lt.ListFi
 		Relation("LedgerAccounts").
 		Relation("LedgerAccounts.Currency").
 		OrderExpr("fa.name ASC").
-		Limit(lt.MaxFinancialAccountsResult)
+		Limit(act.MaxFinancialAccountsResult)
 	if params.InstitutionID != nil {
 		query = query.Where("fa.institution_id = ?", *params.InstitutionID)
 	}
@@ -50,5 +49,5 @@ func (a *Activities) ListFinancialAccounts(ctx context.Context, params lt.ListFi
 	if err := query.Scan(ctx); err != nil {
 		return nil, fmt.Errorf("list financial accounts: %w", err)
 	}
-	return &lt.ListFinancialAccountsResult{FinancialAccounts: accounts}, nil
+	return &act.ListFinancialAccountsResult{FinancialAccounts: accounts}, nil
 }

@@ -1,7 +1,7 @@
 package portfolio
 
 import (
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	pft "github.com/logicorg/ivfs/finance/common/types/portfoliotypes"
 	portfoliowf "github.com/logicorg/ivfs/finance/workflows/ledger/portfolio"
 	"github.com/logicorg/ivfs/mcp/mcptypes"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -16,7 +16,7 @@ func registerRegisterVest(server *mcp.Server, c client.Client) {
 			"tax withheld in shares or cash. Sell-to-cover and an ESPP purchase are ordinary register_investment_trade calls, not this tool. " +
 			"Look the ledger and financial account ids up first with list_accounts, and asset ids with list_assets, rather than guessing them.",
 	}, mcptypes.WorkflowWithResult[
-		func(workflow.Context, lt.RegisterVestInput) (*lt.RegisterVestResult, error),
-		RegisterVestToolInput, lt.RegisterVestResult,
+		func(workflow.Context, pft.RegisterVestInput) (*pft.RegisterVestResult, error),
+		RegisterVestToolInput, pft.RegisterVestResult,
 	](c, portfoliowf.RegisterVest))
 }

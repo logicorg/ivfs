@@ -4,6 +4,7 @@ import (
 	"time"
 
 	activity "github.com/logicorg/ivfs/finance/activities/ledger/journal"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
@@ -19,11 +20,11 @@ func (s *WorkflowUnitTestSuite) TestDeleteJournalEntry() {
 	}{
 		{
 			name:   "success",
-			result: []any{&lt.DeleteJournalEntryResult{}, nil},
+			result: []any{&jt.DeleteJournalEntryResult{}, nil},
 		},
 		{
 			name:   "success with warnings",
-			result: []any{&lt.DeleteJournalEntryResult{Warnings: []lt.NegativeHolding{{FinancialAccountID: 1, FinancialAccountName: "Broker", AssetID: 2, AssetName: "ACME", At: time.Date(2026, 3, 1, 12, 0, 0, 0, time.UTC), Units: decimal.NewFromInt(-1)}}}, nil},
+			result: []any{&jt.DeleteJournalEntryResult{Warnings: []lt.NegativeHolding{{FinancialAccountID: 1, FinancialAccountName: "Broker", AssetID: 2, AssetName: "ACME", At: time.Date(2026, 3, 1, 12, 0, 0, 0, time.UTC), Units: decimal.NewFromInt(-1)}}}, nil},
 		},
 		{
 			name:    "activity failure",
@@ -32,7 +33,7 @@ func (s *WorkflowUnitTestSuite) TestDeleteJournalEntry() {
 		},
 	}
 
-	input := lt.DeleteJournalEntryInput{JournalEntryID: 10}
+	input := jt.DeleteJournalEntryInput{JournalEntryID: 10}
 
 	for _, tc := range tests {
 		s.Run(tc.name, func() {
@@ -48,7 +49,7 @@ func (s *WorkflowUnitTestSuite) TestDeleteJournalEntry() {
 				return
 			}
 			require.NoError(s.T(), env.GetWorkflowError())
-			var result *lt.DeleteJournalEntryResult
+			var result *jt.DeleteJournalEntryResult
 			require.NoError(s.T(), env.GetWorkflowResult(&result))
 			assert.Equal(s.T(), tc.result[0], result)
 		})

@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	ast "github.com/logicorg/ivfs/finance/common/types/accountsetuptypes"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/require"
@@ -99,12 +99,12 @@ func TestOpeningBalancePostings(t *testing.T) {
 	tests := map[string]struct {
 		kind   model.LedgerAccountKind
 		amount string
-		want   []lt.PostingInput
+		want   []jt.PostingInput
 	}{
 		"money held in an asset": {
 			kind:   model.LedgerAccountAsset,
 			amount: "1200.50",
-			want: []lt.PostingInput{
+			want: []jt.PostingInput{
 				{LedgerAccountID: balance, Amount: decimal.RequireFromString("1200.50"), Side: model.PostingDebit},
 				{LedgerAccountID: opening, Amount: decimal.RequireFromString("1200.50"), Side: model.PostingCredit},
 			},
@@ -112,7 +112,7 @@ func TestOpeningBalancePostings(t *testing.T) {
 		"an overdrawn asset": {
 			kind:   model.LedgerAccountAsset,
 			amount: "-75",
-			want: []lt.PostingInput{
+			want: []jt.PostingInput{
 				{LedgerAccountID: balance, Amount: decimal.NewFromInt(75), Side: model.PostingCredit},
 				{LedgerAccountID: opening, Amount: decimal.NewFromInt(75), Side: model.PostingDebit},
 			},
@@ -120,7 +120,7 @@ func TestOpeningBalancePostings(t *testing.T) {
 		"money owed on a card": {
 			kind:   model.LedgerAccountLiability,
 			amount: "300",
-			want: []lt.PostingInput{
+			want: []jt.PostingInput{
 				{LedgerAccountID: balance, Amount: decimal.NewFromInt(300), Side: model.PostingCredit},
 				{LedgerAccountID: opening, Amount: decimal.NewFromInt(300), Side: model.PostingDebit},
 			},
@@ -128,7 +128,7 @@ func TestOpeningBalancePostings(t *testing.T) {
 		"a card in credit": {
 			kind:   model.LedgerAccountLiability,
 			amount: "-20",
-			want: []lt.PostingInput{
+			want: []jt.PostingInput{
 				{LedgerAccountID: balance, Amount: decimal.NewFromInt(20), Side: model.PostingDebit},
 				{LedgerAccountID: opening, Amount: decimal.NewFromInt(20), Side: model.PostingCredit},
 			},

@@ -1,14 +1,13 @@
 package accounts
 
 import (
-	"net/http"
-	"testing"
-	"time"
-
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/logicorg/ivfs/web/api/apitest"
+	"net/http"
+	"testing"
+	"time"
 )
 
 // TestList checks that financial accounts are listed with their
@@ -24,8 +23,8 @@ func TestList(t *testing.T) {
 		"list the open accounts": {
 			Method: http.MethodGet, Path: "/api/financial-accounts",
 			Call: &apitest.WorkflowCall{
-				Workflow: ledgeraccountswf.ListFinancialAccounts, Params: lt.ListFinancialAccountsParams{},
-				Result: lt.ListFinancialAccountsResult{FinancialAccounts: []model.FinancialAccount{personal}},
+				Workflow: ledgeraccountswf.ListFinancialAccounts, Params: act.ListFinancialAccountsParams{},
+				Result: act.ListFinancialAccountsResult{FinancialAccounts: []model.FinancialAccount{personal}},
 			},
 			WantStatus: http.StatusOK,
 			WantBody: `{"financialAccounts":[` +
@@ -34,8 +33,8 @@ func TestList(t *testing.T) {
 		"list the closed accounts too": {
 			Method: http.MethodGet, Path: "/api/financial-accounts?includeClosed=true",
 			Call: &apitest.WorkflowCall{
-				Workflow: ledgeraccountswf.ListFinancialAccounts, Params: lt.ListFinancialAccountsParams{IncludeClosed: true},
-				Result: lt.ListFinancialAccountsResult{FinancialAccounts: []model.FinancialAccount{personal, old}},
+				Workflow: ledgeraccountswf.ListFinancialAccounts, Params: act.ListFinancialAccountsParams{IncludeClosed: true},
+				Result: act.ListFinancialAccountsResult{FinancialAccounts: []model.FinancialAccount{personal, old}},
 			},
 			WantStatus: http.StatusOK,
 			WantBody: `{"financialAccounts":[` +
@@ -45,8 +44,8 @@ func TestList(t *testing.T) {
 		"list no accounts": {
 			Method: http.MethodGet, Path: "/api/financial-accounts",
 			Call: &apitest.WorkflowCall{
-				Workflow: ledgeraccountswf.ListFinancialAccounts, Params: lt.ListFinancialAccountsParams{},
-				Result: lt.ListFinancialAccountsResult{},
+				Workflow: ledgeraccountswf.ListFinancialAccounts, Params: act.ListFinancialAccountsParams{},
+				Result: act.ListFinancialAccountsResult{},
 			},
 			WantStatus: http.StatusOK, WantBody: `{"financialAccounts":[]}`,
 		},

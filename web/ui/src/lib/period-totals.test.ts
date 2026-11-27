@@ -8,8 +8,6 @@ const category = (id: number, name: string, fields: Partial<Category> = {}): Cat
   id,
   name,
   kind: "expense",
-  currencyId: 1,
-  currencyCode: "EUR",
   closed: false,
   ...fields,
 })
@@ -20,14 +18,14 @@ const bakery = category(3, "Bakery", { parentId: 2 })
 const travel = category(4, "Travel")
 const salary = category(5, "Salary", { kind: "income" })
 const gifts = category(6, "Gifts", { kind: "income" })
-const dollarTravel = category(7, "Travel", { currencyId: 2, currencyCode: "USD" })
-const categories = [food, groceries, bakery, travel, salary, gifts, dollarTravel]
+const categories = [food, groceries, bakery, travel, salary, gifts]
 
-const total = ({ id, kind, currencyId, currencyCode }: Category, amount: string): CategoryTotal => ({
-  id,
+// total is what a category took in a currency, the euro unless dollars is set.
+const total = ({ id, kind }: Category, amount: string, dollars = false): CategoryTotal => ({
+  categoryId: id,
   kind,
-  currencyId,
-  currencyCode,
+  currencyId: dollars ? 2 : 1,
+  currencyCode: dollars ? "USD" : "EUR",
   total: amount,
 })
 
@@ -85,12 +83,34 @@ describe("periodTotals", () => {
       ],
     },
     {
-      name: "currencies kept apart, sorted by code",
-      totals: [total(dollarTravel, "30"), total(travel, "10")],
+      name: "a category's currencies kept apart, sorted by code",
+      totals: [total(travel, "30", true), total(travel, "10")],
       categories,
       want: [
         { currencyCode: "EUR", income: "0", expenses: "10", net: "-10", rows: [{ id: 4, name: "Travel", kind: "expense", total: "10" }] },
-        { currencyCode: "USD", income: "0", expenses: "30", net: "-30", rows: [{ id: 7, name: "Travel", kind: "expense", total: "30" }] },
+        { currencyCode: "USD", income: "0", expenses: "30", net: "-30", rows: [{ id: 4, name: "Travel", kind: "expense", total: "30" }] },
+      ],
+    },
+    {
+      name: "what has no category as a row of its own in each kind",
+      totals: [
+        total(travel, "10"),
+        { kind: "expense", currencyId: 1, currencyCode: "EUR", total: "15" },
+        { kind: "income", currencyId: 1, currencyCode: "EUR", total: "7" },
+      ],
+      categories,
+      want: [
+        {
+          currencyCode: "EUR",
+          income: "7",
+          expenses: "25",
+          net: "-18",
+          rows: [
+            { id: undefined, name: "Uncategorized", kind: "income", total: "7" },
+            { id: undefined, name: "Uncategorized", kind: "expense", total: "15" },
+            { id: 4, name: "Travel", kind: "expense", total: "10" },
+          ],
+        },
       ],
     },
     {

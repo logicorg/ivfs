@@ -1,8 +1,9 @@
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useState } from "react"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Controller, useForm } from "react-hook-form"
 
-import type { Category, Currency } from "@/api"
+import type { Category } from "@/api"
 import {
   closeCategoryMutation,
   createCategoryMutation,
@@ -13,7 +14,6 @@ import {
   renameCategoryMutation,
 } from "@/api/@tanstack/react-query.gen"
 import { zCategoryName, zCategoryParent, zNewCategory } from "@/api/zod.gen"
-import { DeleteDialog } from "@/components/delete-dialog"
 import { ProblemMessages, SelectField, TextField, type SelectOption } from "@/components/form-fields"
 import {
   AlertDialog,
@@ -35,7 +35,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { FieldGroup } from "@/components/ui/field"
-import { parentChoices, type CategoryRow } from "@/lib/category-tree"
+import { describeCategoryDeletion, parentChoices, replacementChoices, type CategoryRow } from "@/lib/category-tree"
 
 // topLevel is the parent choice for no parent: Radix selects cannot hold an
 // empty value.
@@ -70,41 +70,32 @@ type CreateCategoryDialogProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   categories: Category[]
-  currencies: Currency[]
 }
 
 // CreateCategoryDialog adds a category. Adding one whose name exists under
 // the same parent finds that category instead (ADR 0005).
-export function CreateCategoryDialog({ open, onOpenChange, categories, currencies }: CreateCategoryDialogProps) {
+export function CreateCategoryDialog({ open, onOpenChange, categories }: CreateCategoryDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Add a category</DialogTitle>
-          <DialogDescription>Its kind and currency cannot change once it is used.</DialogDescription>
+          <DialogDescription>Its kind cannot change. It takes entries in any currency.</DialogDescription>
         </DialogHeader>
-        <CreateCategoryForm categories={categories} currencies={currencies} onDone={() => onOpenChange(false)} />
+        <CreateCategoryForm categories={categories} onDone={() => onOpenChange(false)} />
       </DialogContent>
     </Dialog>
   )
 }
 
-function CreateCategoryForm({
-  categories,
-  currencies,
-  onDone,
-}: Omit<CreateCategoryDialogProps, "open" | "onOpenChange"> & { onDone: () => void }) {
+function CreateCategoryForm({ categories, onDone }: { categories: Category[]; onDone: () => void }) {
   const form = useForm({
     resolver: zodResolver(zNewCategory),
-    defaultValues: { kind: "expense", currencyId: currencies.length === 1 ? currencies[0]?.id : undefined },
+    defaultValues: { kind: "expense" },
   })
   const create = useMutation({ ...createCategoryMutation(), onSuccess: useCategoriesChanged(onDone) })
 
-  const [kind, currencyId] = form.watch(["kind", "currencyId"])
-  const parents = currencyId === undefined ? [] : parentChoices(categories, kind, currencyId)
-  const currencyOptions = [...currencies]
-    .sort((a, b) => a.code.localeCompare(b.code))
-    .map((currency) => ({ value: String(currency.id), label: `${currency.code} · ${currency.name}` }))
+  const parents = parentChoices(categories, form.watch("kind"))
 
   return (
     <form onSubmit={form.handleSubmit((body) => create.mutate({ body }))}>
@@ -129,24 +120,6 @@ function CreateCategoryForm({
         />
         <Controller
           control={form.control}
-          name="currencyId"
-          render={({ field, fieldState }) => (
-            <SelectField
-              id="currencyId"
-              label="Currency"
-              value={field.value === undefined ? undefined : String(field.value)}
-              onChange={(value) => {
-                field.onChange(Number(value))
-                form.setValue("parentId", undefined)
-              }}
-              options={currencyOptions}
-              placeholder="Choose a currency"
-              error={fieldState.error}
-            />
-          )}
-        />
-        <Controller
-          control={form.control}
           name="parentId"
           render={({ field, fieldState }) => (
             <SelectField
@@ -155,7 +128,7 @@ function CreateCategoryForm({
               value={parentValue(field.value)}
               onChange={(value) => field.onChange(parentFromValue(value))}
               options={parentOptions(parents)}
-              description="Only open categories of the same kind and currency can hold it."
+              description="Only open categories of the same kind can hold it."
               error={fieldState.error}
             />
           )}
@@ -222,7 +195,7 @@ export function MoveCategoryDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Move {category?.name}</DialogTitle>
-          <DialogDescription>A category can move only while it and the ones under it have no postings.</DialogDescription>
+          <DialogDescription>A category can move only while it and the ones under it have no entries.</DialogDescription>
         </DialogHeader>
         {category && (
           <MoveCategoryForm category={category} categories={categories} onDone={() => onOpenChange(false)} />
@@ -243,7 +216,7 @@ function MoveCategoryForm({
 }) {
   const form = useForm({ resolver: zodResolver(zCategoryParent), defaultValues: { parentId: category.parentId } })
   const move = useMutation({ ...moveCategoryMutation(), onSuccess: useCategoriesChanged(onDone) })
-  const parents = parentChoices(categories, category.kind, category.currencyId, category)
+  const parents = parentChoices(categories, category.kind, category)
 
   return (
     <form onSubmit={form.handleSubmit((body) => move.mutate({ path: { id: category.id }, body }))}>
@@ -291,7 +264,7 @@ export function CloseCategoryDialog({ category, onOpenChange }: CategoryDialogPr
         <AlertDialogHeader>
           <AlertDialogTitle>Close {category?.name}?</AlertDialogTitle>
           <AlertDialogDescription>
-            It keeps its history but takes no new postings.
+            It keeps its entries, and is no longer offered for new ones.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <ProblemMessages error={close.error} />
@@ -316,19 +289,102 @@ export function CloseCategoryDialog({ category, onOpenChange }: CategoryDialogPr
   )
 }
 
-// DeleteCategoryDialog deletes a category, once its preview shows what that
-// does to the entries booked to it.
-export function DeleteCategoryDialog({ category, onOpenChange }: CategoryDialogProps) {
-  const path = { id: category?.id ?? 0 }
+// noReplacement is the choice for merging into no category: Radix selects
+// cannot hold an empty value.
+const noReplacement = "none"
+
+// DeleteCategoryDialog deletes a category, or merges it into another, after
+// showing how many entries that touches. No entry is deleted, so there is
+// nothing else to preview.
+export function DeleteCategoryDialog({
+  category,
+  categories,
+  onOpenChange,
+}: CategoryDialogProps & { categories: Category[] }) {
+  return (
+    <AlertDialog open={category !== null} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        {/* Keyed so a replacement chosen for one category is not kept for the next. */}
+        {category && (
+          <DeleteCategoryContent
+            key={category.id}
+            category={category}
+            categories={categories}
+            onDone={() => onOpenChange(false)}
+          />
+        )}
+      </AlertDialogContent>
+    </AlertDialog>
+  )
+}
+
+function DeleteCategoryContent({
+  category,
+  categories,
+  onDone,
+}: {
+  category: Category
+  categories: Category[]
+  onDone: () => void
+}) {
+  const queryClient = useQueryClient()
+  const [replacementId, setReplacementId] = useState<number>()
+  const path = { id: category.id }
+  const preview = useQuery(previewCategoryDeletionOptions({ path }))
+  const remove = useMutation({
+    ...deleteCategoryMutation(),
+    onSuccess: () => {
+      // Entries and totals show the category, so they changed too.
+      void queryClient.invalidateQueries()
+      onDone()
+    },
+  })
+  const replacements = replacementChoices(categories, category)
+  const replacement = replacements.find((choice) => choice.id === replacementId)
 
   return (
-    <DeleteDialog
-      open={category !== null}
-      onOpenChange={onOpenChange}
-      title={`Delete ${category?.name ?? ""}?`}
-      preview={previewCategoryDeletionOptions({ path })}
-      mutation={deleteCategoryMutation()}
-      variables={{ path }}
-    />
+    <>
+      <AlertDialogHeader>
+        <AlertDialogTitle>Delete {category.name}?</AlertDialogTitle>
+        <AlertDialogDescription>This cannot be undone. No journal entry is deleted, and no balance changes.</AlertDialogDescription>
+      </AlertDialogHeader>
+      {preview.isPending ? (
+        <p className="text-sm text-muted-foreground">Reading what it would change…</p>
+      ) : preview.isError ? (
+        <ProblemMessages error={preview.error} />
+      ) : (
+        <FieldGroup>
+          <p className="text-sm">{describeCategoryDeletion(preview.data.entries, replacement?.label)}</p>
+          {preview.data.entries > 0 && replacements.length > 0 && (
+            <SelectField
+              id="replacementId"
+              label="Move its entries to"
+              value={replacementId === undefined ? noReplacement : String(replacementId)}
+              onChange={(value) => setReplacementId(value === noReplacement ? undefined : Number(value))}
+              options={[
+                { value: noReplacement, label: "No category" },
+                ...replacements.map((choice) => ({ value: String(choice.id), label: choice.label })),
+              ]}
+            />
+          )}
+        </FieldGroup>
+      )}
+      <ProblemMessages error={remove.error} />
+      <AlertDialogFooter>
+        <AlertDialogCancel>Cancel</AlertDialogCancel>
+        <AlertDialogAction
+          variant="destructive"
+          disabled={!preview.isSuccess || remove.isPending}
+          onClick={(event) => {
+            // Keep the dialog open until the gateway answers, to show why it
+            // refused.
+            event.preventDefault()
+            remove.mutate({ path, query: { replacementId } })
+          }}
+        >
+          Delete
+        </AlertDialogAction>
+      </AlertDialogFooter>
+    </>
   )
 }

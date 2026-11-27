@@ -29,6 +29,9 @@ var errorStatuses = []struct {
 	{"ErrNotFound", http.StatusNotFound},
 	{"ErrResourceConflict", http.StatusConflict},
 	{"ErrResourceClosed", http.StatusConflict},
+	// A 401 also signs the browser out (auth.Require), as it should for a
+	// session whose user is gone.
+	{"ErrUnauthenticated", http.StatusUnauthorized},
 }
 
 // RunWorkflow runs the workflow wf with in, waits at most WorkflowTimeout, or

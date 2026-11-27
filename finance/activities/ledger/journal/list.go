@@ -4,16 +4,16 @@ import (
 	"context"
 	"fmt"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/uptrace/bun"
 )
 
 // ListJournalEntries returns one page of journal entries, each with its
-// postings in line order. Entries of the same instant are ordered by id, in the
+// postings in line order and its tags by name. Entries of the same instant are ordered by id, in the
 // same direction as the dates, so a page boundary can fall between them without
 // skipping or repeating any.
-func (a *Activities) ListJournalEntries(ctx context.Context, params lt.ListJournalEntriesParams) (*lt.ListJournalEntriesResult, error) {
+func (a *Activities) ListJournalEntries(ctx context.Context, params jt.ListJournalEntriesParams) (*jt.ListJournalEntriesResult, error) {
 	db, err := a.Pools.For(ctx)
 	if err != nil {
 		return nil, err
@@ -24,9 +24,19 @@ func (a *Activities) ListJournalEntries(ctx context.Context, params lt.ListJourn
 	}
 
 	var entries []model.JournalEntry
-	query := db.NewSelect().Model(&entries)
+	query := db.NewSelect().Model(&entries).Relation("Tags", model.OrderTagsByName)
 	if params.LedgerAccountID > 0 {
 		query = query.Where("EXISTS (SELECT 1 FROM ledger.posting AS p WHERE p.journal_entry_id = je.id AND p.ledger_account_id = ?)", params.LedgerAccountID)
+	}
+	if len(params.CategoryIDs) > 0 {
+		// A parent has no postings of its own, so naming it means the leaves
+		// under it.
+		query = query.Where(`EXISTS (SELECT 1 FROM ledger.posting AS p WHERE p.journal_entry_id = je.id AND p.category_id IN (
+			WITH RECURSIVE subtree AS (
+				SELECT cat.id FROM ledger.category AS cat WHERE cat.id IN (?)
+				UNION
+				SELECT child.id FROM ledger.category AS child JOIN subtree ON child.parent_id = subtree.id
+			) SELECT id FROM subtree))`, bun.List(params.CategoryIDs))
 	}
 	if params.CounterpartyID > 0 {
 		query = query.Where("je.counterparty_id = ?", params.CounterpartyID)
@@ -58,11 +68,11 @@ func (a *Activities) ListJournalEntries(ctx context.Context, params lt.ListJourn
 		return nil, fmt.Errorf("list journal entries: %w", err)
 	}
 
-	result := &lt.ListJournalEntriesResult{Entries: entries}
+	result := &jt.ListJournalEntriesResult{Entries: entries}
 	if len(entries) > pageSize {
 		result.Entries = entries[:pageSize]
 		last := result.Entries[pageSize-1]
-		result.Next = &lt.JournalEntryCursor{OccurredAt: last.OccurredAt, ID: last.ID}
+		result.Next = &jt.JournalEntryCursor{OccurredAt: last.OccurredAt, ID: last.ID}
 	}
 
 	if err := loadPostings(ctx, db, result.Entries); err != nil {
@@ -84,6 +94,7 @@ func loadPostings(ctx context.Context, db bun.IDB, entries []model.JournalEntry)
 	var postings []model.Posting
 	err := db.NewSelect().Model(&postings).
 		Relation("LedgerAccount").
+		Relation("Category").
 		Where("p.journal_entry_id IN (?)", bun.List(ids)).
 		OrderExpr("p.journal_entry_id, p.line_number").
 		Scan(ctx)

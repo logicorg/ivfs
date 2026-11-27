@@ -29,12 +29,6 @@ func DeleteInstitutionWorkflowID(id int64) string {
 	return "delete-institution-" + strconv.FormatInt(id, 10)
 }
 
-// DeleteCategoryWorkflowID is the ID a category's deletion runs under. Its
-// child runs under DeleteLedgerAccountWorkflowID.
-func DeleteCategoryWorkflowID(id int64) string {
-	return "delete-category-" + strconv.FormatInt(id, 10)
-}
-
 // ExecuteDeletionChild runs a deletion as a child workflow under workflowID,
 // behind the prefix of the user the workflow runs as, which is the ID the
 // gateway starts the same deletion under, and decodes its result into
@@ -45,6 +39,7 @@ func DeleteCategoryWorkflowID(id int64) string {
 // started". It then sleeps a minute and starts the child again: once the
 // other run is done the account is gone, and the new child succeeds at once.
 // Any other error is returned as is.
+// TODO: check if it can be refactored or removed
 func ExecuteDeletionChild(ctx workflow.Context, workflowID string, wf, input, valuePtr any) error {
 	uid, ok := tenancy.WorkflowUser(ctx)
 	if !ok {

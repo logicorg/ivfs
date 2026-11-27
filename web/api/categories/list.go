@@ -2,12 +2,11 @@ package categories
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
 	ct "github.com/logicorg/ivfs/finance/common/types/categorytypes"
-	categorieswf "github.com/logicorg/ivfs/finance/workflows/facade/categories"
+	categorieswf "github.com/logicorg/ivfs/finance/workflows/ledger/categories"
 	"github.com/logicorg/ivfs/web/api/gateway"
 	"go.temporal.io/sdk/client"
 )
@@ -25,16 +24,11 @@ func registerList(api huma.API, c client.Client) {
 		if err != nil {
 			return nil, err
 		}
-		out := &ListCategoriesOutput{Body: CategoryList{Categories: make([]Category, 0, len(result.LedgerAccounts))}}
-		for _, account := range result.LedgerAccounts {
-			if account.Currency == nil {
-				// ListLedgerAccounts always loads it, so this is a bug.
-				return nil, gateway.WorkflowError(fmt.Errorf("ledger account %d has no currency loaded", account.ID))
-			}
+		out := &ListCategoriesOutput{Body: CategoryList{Categories: make([]Category, 0, len(result.Categories))}}
+		for _, category := range result.Categories {
 			out.Body.Categories = append(out.Body.Categories, Category{
-				ID: account.ID, Name: account.Name, Kind: string(account.Kind),
-				CurrencyID: account.CurrencyID, CurrencyCode: account.Currency.Code,
-				ParentID: account.ParentID, Closed: account.ClosedAt != nil,
+				ID: category.ID, Name: category.Name, Kind: string(category.Kind),
+				ParentID: category.ParentID, Closed: category.ClosedAt != nil,
 			})
 		}
 		return out, nil

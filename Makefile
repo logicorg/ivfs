@@ -16,7 +16,7 @@ coverage: test
 # serves make ui-dev. The session key is new on every run, so a restart signs everyone
 # out, and Authelia's own session signs them straight back in.
 .PHONY: web
-web: export IVFS_PUBLIC_URL ?= http://localhost:8080
+web: export IVFS_PUBLIC_URL ?= http://localhost:5173
 web: export IVFS_SESSION_KEYS ?= $(shell openssl rand -base64 32)
 web: export OIDC_ISSUER ?= https://127.0.0.1:9091
 web: export OIDC_CLIENT_ID ?= ivfs

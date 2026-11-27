@@ -22,12 +22,13 @@ func registerIncome(api huma.API, c client.Client) {
 		Errors:      []int{http.StatusUnprocessableEntity, http.StatusNotFound, http.StatusConflict},
 	}, func(ctx context.Context, in *RecordIncomeInput) (*RecordTransactionOutput, error) {
 		result, err := gateway.RunWorkflow[tt.RecordResult](ctx, c, transactionswf.RecordIncome, tt.RecordIncomeInput{
-			IdempotencyKey:          in.Body.IdempotencyKey,
-			BalanceLedgerAccountID:  in.Body.BalanceLedgerAccountID,
-			CategoryLedgerAccountID: in.Body.CategoryLedgerAccountID,
-			Amount:                  in.Body.Amount.Decimal,
-			OccurredAt:              in.Body.OccurredAt,
-			Description:             in.Body.Description,
+			IdempotencyKey:         in.Body.IdempotencyKey,
+			BalanceLedgerAccountID: in.Body.BalanceLedgerAccountID,
+			CategoryID:             in.Body.CategoryID,
+			Amount:                 in.Body.Amount.Decimal,
+			OccurredAt:             in.Body.OccurredAt,
+			Description:            in.Body.Description,
+			TagIDs:                 in.Body.TagIDs,
 		})
 		if err != nil {
 			return nil, err

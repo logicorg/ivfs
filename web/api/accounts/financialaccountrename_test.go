@@ -1,14 +1,13 @@
 package accounts
 
 import (
-	"net/http"
-	"testing"
-
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
 	"github.com/logicorg/ivfs/pkg/ptr"
 	"github.com/logicorg/ivfs/web/api/apitest"
 	"go.temporal.io/sdk/temporal"
+	"net/http"
+	"testing"
 )
 
 // TestRenameFinancialAccount checks that renaming runs
@@ -20,8 +19,8 @@ func TestRenameFinancialAccount(t *testing.T) {
 			Method: http.MethodPost, Path: "/api/financial-accounts/3/rename", Body: `{"name":"Joint account"}`,
 			Call: &apitest.WorkflowCall{
 				Workflow: ledgeraccountswf.UpdateFinancialAccountMetadata,
-				Params:   lt.UpdateFinancialAccountMetadataInput{FinancialAccountID: 3, Name: ptr.NewPtr("Joint account")},
-				Result:   lt.FinancialAccountMutationResult{FinancialAccountID: 3},
+				Params:   act.UpdateFinancialAccountMetadataInput{FinancialAccountID: 3, Name: ptr.NewPtr("Joint account")},
+				Result:   act.FinancialAccountMutationResult{FinancialAccountID: 3},
 			},
 			WantStatus: http.StatusNoContent,
 		},
@@ -29,7 +28,7 @@ func TestRenameFinancialAccount(t *testing.T) {
 			Method: http.MethodPost, Path: "/api/financial-accounts/3/rename", Body: `{"name":"Revolut"}`,
 			Call: &apitest.WorkflowCall{
 				Workflow: ledgeraccountswf.UpdateFinancialAccountMetadata,
-				Params:   lt.UpdateFinancialAccountMetadataInput{FinancialAccountID: 3, Name: ptr.NewPtr("Revolut")},
+				Params:   act.UpdateFinancialAccountMetadataInput{FinancialAccountID: 3, Name: ptr.NewPtr("Revolut")},
 				Err:      temporal.NewApplicationError("a FinancialAccount with this name already exists", "ErrResourceConflict"),
 			},
 			WantStatus: http.StatusConflict,
@@ -39,7 +38,7 @@ func TestRenameFinancialAccount(t *testing.T) {
 			Method: http.MethodPost, Path: "/api/financial-accounts/3/rename", Body: `{"name":"  "}`,
 			Call: &apitest.WorkflowCall{
 				Workflow: ledgeraccountswf.UpdateFinancialAccountMetadata,
-				Params:   lt.UpdateFinancialAccountMetadataInput{FinancialAccountID: 3, Name: ptr.NewPtr("  ")},
+				Params:   act.UpdateFinancialAccountMetadataInput{FinancialAccountID: 3, Name: ptr.NewPtr("  ")},
 				Err:      temporal.NewApplicationError("invalid parameter: name must not be blank", "ErrInvalidParameter"),
 			},
 			WantStatus: http.StatusUnprocessableEntity,
@@ -49,7 +48,7 @@ func TestRenameFinancialAccount(t *testing.T) {
 			Method: http.MethodPost, Path: "/api/financial-accounts/99/rename", Body: `{"name":"Revolut"}`,
 			Call: &apitest.WorkflowCall{
 				Workflow: ledgeraccountswf.UpdateFinancialAccountMetadata,
-				Params:   lt.UpdateFinancialAccountMetadataInput{FinancialAccountID: 99, Name: ptr.NewPtr("Revolut")},
+				Params:   act.UpdateFinancialAccountMetadataInput{FinancialAccountID: 99, Name: ptr.NewPtr("Revolut")},
 				Err:      temporal.NewApplicationError("resource FinancialAccount not found with ID: 99", "ErrNotFound"),
 			},
 			WantStatus: http.StatusNotFound,

@@ -3,19 +3,16 @@ package accounts
 import (
 	"context"
 	"fmt"
-	"time"
-
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
-	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
-	"github.com/logicorg/ivfs/pkg/model"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	"github.com/uptrace/bun"
+	"time"
 )
 
 // CloseLedgerAccount closes a LedgerAccount, at ClosedAt or now if it is zero.
 // It is idempotent: closing a closed account succeeds without changing
 // ClosedAt. It refuses to close an account with open children, or an asset or
 // liability that still has a balance.
-func (a *Activities) CloseLedgerAccount(ctx context.Context, input lt.CloseLedgerAccountInput) error {
+func (a *Activities) CloseLedgerAccount(ctx context.Context, input act.CloseLedgerAccountInput) error {
 	db, err := a.Pools.For(ctx)
 	if err != nil {
 		return err
@@ -40,14 +37,6 @@ func (a *Activities) CloseLedgerAccount(ctx context.Context, input lt.CloseLedge
 			return nil // already closed
 		}
 
-		activeChildren, err := tx.NewSelect().Model((*model.LedgerAccount)(nil)).Where("la.parent_id = ?", account.ID).Where("la.closed_at IS NULL").Exists(ctx)
-		if err != nil {
-			return fmt.Errorf("failed to check active child ledger accounts: %w", err)
-		}
-
-		if activeChildren {
-			return internalerrors.ErrResourceConflict{ResourceType: "LedgerAccount", Reason: "ledger account has active children"}
-		}
 		if err := refuseStrandedBalance(ctx, tx, account); err != nil {
 			return err
 		}

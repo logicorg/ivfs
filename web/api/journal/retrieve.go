@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	journalwf "github.com/logicorg/ivfs/finance/workflows/ledger/journal"
 	"github.com/logicorg/ivfs/web/api/gateway"
 	"go.temporal.io/sdk/client"
@@ -21,8 +21,8 @@ func registerRetrieve(api huma.API, c client.Client) {
 		Tags:        tags,
 		Errors:      []int{http.StatusNotFound},
 	}, func(ctx context.Context, in *RetrieveJournalEntryInput) (*RetrieveJournalEntryOutput, error) {
-		result, err := gateway.RunWorkflow[lt.RetrieveJournalEntryResult](ctx, c, journalwf.RetrieveJournalEntry,
-			lt.RetrieveJournalEntryParams{ID: in.ID})
+		result, err := gateway.RunWorkflow[jt.RetrieveJournalEntryResult](ctx, c, journalwf.RetrieveJournalEntry,
+			jt.RetrieveJournalEntryParams{ID: in.ID})
 		if err != nil {
 			return nil, err
 		}

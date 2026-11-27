@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 
 import type { Balance, Entry, Posting } from "@/api"
 
-import { signedAmount, statementLines, type StatementLine } from "./statement"
+import { postingName, signedAmount, statementLines, type StatementLine } from "./statement"
 
 // posting is a posting of amount on the ledger account id, named after it.
 function posting(lineNumber: number, id: number, name: string, side: Posting["side"], amount: string): Posting {
@@ -16,12 +16,14 @@ describe("statementLines", () => {
     description: "Supermarket",
     status: "posted",
     postings: [posting(1, 200, "Groceries", "debit", "12.50"), posting(2, 100, "Cash", "credit", "12.50")],
+    tags: [],
   }
   const refund: Entry = {
     id: 8,
     occurredAt: "2026-01-31T11:00:00Z",
     status: "posted",
     postings: [posting(1, 200, "Groceries", "credit", "12.50"), posting(2, 100, "Cash", "debit", "12.50")],
+    tags: [],
   }
   const split: Entry = {
     id: 9,
@@ -33,6 +35,7 @@ describe("statementLines", () => {
       posting(2, 100, "Cash", "credit", "10"),
       posting(3, 100, "Cash", "credit", "20"),
     ],
+    tags: [],
   }
 
   const cases: { name: string; entries: Entry[]; id: number; kind: Balance["kind"]; want: StatementLine[] }[] = [
@@ -106,6 +109,20 @@ describe("statementLines", () => {
   for (const { name, entries, id, kind, want } of cases) {
     it(name, () => {
       expect(statementLines(entries, id, kind)).toEqual(want)
+    })
+  }
+})
+
+describe("postingName", () => {
+  const cases: { name: string; posting: Pick<Posting, "ledgerAccountName" | "categoryName">; want: string }[] = [
+    { name: "a posting with a category", posting: { ledgerAccountName: "Expenses", categoryName: "Groceries" }, want: "Groceries" },
+    { name: "a posting without one", posting: { ledgerAccountName: "Expenses" }, want: "Expenses" },
+    { name: "a posting to a balance", posting: { ledgerAccountName: "Cash" }, want: "Cash" },
+  ]
+
+  for (const { name, posting, want } of cases) {
+    it(name, () => {
+      expect(postingName(posting)).toBe(want)
     })
   }
 })

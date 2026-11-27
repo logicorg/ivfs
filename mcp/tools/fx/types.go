@@ -3,7 +3,6 @@ package fx
 import (
 	"time"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	"github.com/shopspring/decimal"
 )
 
@@ -28,7 +27,13 @@ type RegisterFXConversionToolInput struct {
 	DestinationClearingLedgerAccountID int64           `json:"destinationClearingLedgerAccountId"`
 	DestinationAmount                  decimal.Decimal `json:"destinationAmount"`
 
-	// Fee is the FX fee charged at source. FXFee itself has no relation
-	// fields, so it is reused as-is rather than mirrored.
-	Fee *lt.FXFee `json:"fee,omitempty"`
+	// Fee is the FX fee charged at source.
+	Fee *FXFeeToolInput `json:"fee,omitempty"`
+}
+
+// FXFeeToolInput mirrors FXFee without the "Expenses" account, which the
+// workflow finds.
+type FXFeeToolInput struct {
+	CategoryID int64           `json:"categoryId" jsonschema:"the expense category the fee is booked under, such as Bank fees"`
+	Amount     decimal.Decimal `json:"amount" jsonschema:"the fee, in the source currency and part of the source amount"`
 }

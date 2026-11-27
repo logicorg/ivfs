@@ -4,7 +4,7 @@ import (
 	"time"
 
 	activity "github.com/logicorg/ivfs/finance/activities/ledger/portfolio"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	pft "github.com/logicorg/ivfs/finance/common/types/portfoliotypes"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
@@ -13,9 +13,9 @@ import (
 )
 
 func (s *WorkflowUnitTestSuite) TestListPositionMovements() {
-	page := &lt.ListPositionMovementsResult{
+	page := &pft.ListPositionMovementsResult{
 		Movements: []model.PositionMovement{{ID: 10, FinancialAccountID: 1, AssetID: 2, UnitsDelta: decimal.NewFromInt(3)}},
-		Next: &lt.PositionMovementCursor{
+		Next: &pft.PositionMovementCursor{
 			OccurredAt: time.Date(2026, 3, 1, 12, 0, 0, 0, time.UTC), CreatedAt: time.Date(2026, 3, 2, 9, 0, 0, 0, time.UTC), ID: 10,
 		},
 	}
@@ -29,7 +29,7 @@ func (s *WorkflowUnitTestSuite) TestListPositionMovements() {
 		{name: "activity failure", result: []any{nil, assert.AnError}, wantErr: true},
 	}
 
-	params := lt.ListPositionMovementsParams{FinancialAccountID: 1, AssetID: 2, Limit: 1}
+	params := pft.ListPositionMovementsParams{FinancialAccountID: 1, AssetID: 2, Limit: 1}
 
 	for _, tc := range tests {
 		s.Run(tc.name, func() {
@@ -45,7 +45,7 @@ func (s *WorkflowUnitTestSuite) TestListPositionMovements() {
 				return
 			}
 			require.NoError(s.T(), env.GetWorkflowError())
-			var result *lt.ListPositionMovementsResult
+			var result *pft.ListPositionMovementsResult
 			require.NoError(s.T(), env.GetWorkflowResult(&result))
 			require.Len(s.T(), result.Movements, 1)
 			assert.Equal(s.T(), page.Movements[0].ID, result.Movements[0].ID)

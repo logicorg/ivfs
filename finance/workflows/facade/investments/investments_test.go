@@ -2,12 +2,18 @@ package investments
 
 import (
 	"errors"
+	"slices"
 	"testing"
+	"time"
 
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
+	catt "github.com/logicorg/ivfs/finance/common/types/categorytypes"
 	ct "github.com/logicorg/ivfs/finance/common/types/currencytypes"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
+	pft "github.com/logicorg/ivfs/finance/common/types/portfoliotypes"
 	currencieswf "github.com/logicorg/ivfs/finance/workflows/currencies"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
+	categorieswf "github.com/logicorg/ivfs/finance/workflows/ledger/categories"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/logicorg/ivfs/pkg/ptr"
 	"github.com/shopspring/decimal"
@@ -36,26 +42,37 @@ var (
 	investments = model.LedgerAccount{ID: 501, FinancialAccountID: ptr.Int64(ibkr), CurrencyID: 1, Name: "investments", Kind: model.LedgerAccountAsset}
 	cashUSD     = model.LedgerAccount{ID: 502, FinancialAccountID: ptr.Int64(ibkr), CurrencyID: 2, Name: "Cash", Kind: model.LedgerAccountAsset}
 
-	// The categories a vest books to: in EUR, as ibkr's investments are, and
-	// one in USD.
-	compensation    = model.LedgerAccount{ID: 600, CurrencyID: 1, Name: "RSU compensation", Kind: model.LedgerAccountIncome}
-	taxWithheld     = model.LedgerAccount{ID: 601, CurrencyID: 1, Name: "Tax withheld", Kind: model.LedgerAccountExpense}
-	compensationUSD = model.LedgerAccount{ID: 602, CurrencyID: 2, Name: "RSU compensation (USD)", Kind: model.LedgerAccountIncome}
+	// The shared accounts a vest's categories are booked on, in EUR as ibkr's
+	// investments are.
+	income   = model.LedgerAccount{ID: 600, CurrencyID: 1, Name: "Income", Kind: model.LedgerAccountIncome}
+	expenses = model.LedgerAccount{ID: 601, CurrencyID: 1, Name: "Expenses", Kind: model.LedgerAccountExpense}
+
+	// The categories a vest names, which have no currency. A closed one is
+	// still a category of an entry.
+	compensation = model.Category{ID: 30, Name: "RSU compensation", Kind: model.LedgerAccountIncome}
+	taxWithheld  = model.Category{ID: 31, Name: "Tax withheld", Kind: model.LedgerAccountExpense}
+	oldPlan      = model.Category{ID: 32, Name: "Old plan", Kind: model.LedgerAccountIncome, ClosedAt: ptr.NewPtr(time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC))}
 )
 
-// unknownCategory is a ledger account ID no account has.
+// unknownCategory is an ID no category has.
 const unknownCategory int64 = 999
 
-// mockCategories lets a vest retrieve its categories, or cash, by ID, and fail
-// on unknownCategory as RetrieveLedgerAccount does. The mocks are optional, as
-// a vest reads one category or two.
+// mockCategories lets a vest retrieve its categories by ID, failing on
+// unknownCategory as RetrieveCategory does, and find the "Income" and
+// "Expenses" accounts in EUR. The mocks are optional, as a vest reads one
+// category or two.
 func mockCategories(env *testsuite.TestWorkflowEnvironment) {
-	for _, account := range []model.LedgerAccount{compensation, taxWithheld, compensationUSD, cash} {
-		env.OnWorkflow(ledgeraccountswf.RetrieveLedgerAccount, mock.Anything, lt.RetrieveLedgerAccountParams{ID: account.ID}).
-			Return(&lt.RetrieveLedgerAccountResult{LedgerAccount: &account}, nil).Maybe()
+	for _, category := range []model.Category{compensation, taxWithheld, oldPlan} {
+		env.OnWorkflow(categorieswf.RetrieveCategory, mock.Anything, catt.RetrieveCategoryParams{ID: category.ID}).
+			Return(&catt.RetrieveCategoryResult{Category: &category}, nil).Maybe()
 	}
-	env.OnWorkflow(ledgeraccountswf.RetrieveLedgerAccount, mock.Anything, lt.RetrieveLedgerAccountParams{ID: unknownCategory}).
-		Return(nil, errors.New("resource LedgerAccount not found with ID: 999")).Maybe()
+	env.OnWorkflow(categorieswf.RetrieveCategory, mock.Anything, catt.RetrieveCategoryParams{ID: unknownCategory}).
+		Return(nil, errors.New("resource Category not found with ID: 999")).Maybe()
+	for _, account := range []model.LedgerAccount{income, expenses} {
+		env.OnWorkflow(ledgeraccountswf.CreateLedgerAccount, mock.Anything, act.CreateLedgerAccountInput{
+			CurrencyID: account.CurrencyID, Name: account.Name, Kind: account.Kind,
+		}).Return(&act.CreateLedgerAccountResult{LedgerAccountID: account.ID}, nil).Maybe()
+	}
 }
 
 // mockBrokerage lets the trades find the currencies, an unknown code failing
@@ -70,12 +87,12 @@ func mockBrokerage(env *testsuite.TestWorkflowEnvironment) {
 		Return(nil, errors.New("resource Currency not found with code: XYZ")).Maybe()
 
 	for currencyID, balances := range map[int64][]model.LedgerAccount{euro.ID: {cash, investments}, dollar.ID: {cashUSD}} {
-		env.OnWorkflow(ledgeraccountswf.ListLedgerAccounts, mock.Anything, lt.ListLedgerAccountsParams{
+		env.OnWorkflow(ledgeraccountswf.ListLedgerAccounts, mock.Anything, act.ListLedgerAccountsParams{
 			FinancialAccountID: ptr.Int64(ibkr),
 			CurrencyID:         ptr.Int64(currencyID),
 			Kinds:              []model.LedgerAccountKind{model.LedgerAccountAsset},
 			IncludeClosed:      true,
-		}).Return(&lt.ListLedgerAccountsResult{LedgerAccounts: balances}, nil).Maybe()
+		}).Return(&act.ListLedgerAccountsResult{LedgerAccounts: balances}, nil).Maybe()
 	}
 }
 
@@ -96,10 +113,10 @@ func requireTrade(t *testing.T, want, got trade) {
 // normalizeVest rewrites the decimals of a vest from their strings, so two
 // vests recording the same values compare equal whatever their scale: 600.00
 // and 600 both become 600.
-func normalizeVest(v lt.RegisterVestInput) lt.RegisterVestInput {
+func normalizeVest(v pft.RegisterVestInput) pft.RegisterVestInput {
 	normalize := func(d decimal.Decimal) decimal.Decimal { return decimal.RequireFromString(d.String()) }
 	v.Units, v.CostBasisAmount = normalize(v.Units), normalize(v.CostBasisAmount)
-	postings := make([]lt.PostingInput, len(v.Entry.Postings))
+	postings := make([]jt.PostingInput, len(v.Entry.Postings))
 	for i, posting := range v.Entry.Postings {
 		posting.Amount = normalize(posting.Amount)
 		postings[i] = posting
@@ -111,12 +128,12 @@ func normalizeVest(v lt.RegisterVestInput) lt.RegisterVestInput {
 // tradeInput matches the trade want by what it records rather than by its
 // representation: a decimal such as 1053.00 arrives as 1053, equal in value
 // but not in its fields.
-func tradeInput(want lt.RegisterInvestmentTradeInput) any {
+func tradeInput(want pft.RegisterInvestmentTradeInput) any {
 	sameDecimal := func(a, b *decimal.Decimal) bool { return (a == nil) == (b == nil) && (a == nil || a.Equal(*b)) }
 	sameID := func(a, b *int64) bool { return (a == nil) == (b == nil) && (a == nil || *a == *b) }
 	sameString := func(a, b *string) bool { return (a == nil) == (b == nil) && (a == nil || *a == *b) }
 
-	return mock.MatchedBy(func(got lt.RegisterInvestmentTradeInput) bool {
+	return mock.MatchedBy(func(got pft.RegisterInvestmentTradeInput) bool {
 		if got.FinancialAccountID != want.FinancialAccountID || got.AssetID != want.AssetID ||
 			!got.UnitsDelta.Equal(want.UnitsDelta) || !sameDecimal(got.CostBasisAmount, want.CostBasisAmount) ||
 			!sameID(got.CostBasisCurrencyID, want.CostBasisCurrencyID) {
@@ -125,7 +142,8 @@ func tradeInput(want lt.RegisterInvestmentTradeInput) any {
 		gotEntry, wantEntry := got.Entry, want.Entry
 		if gotEntry.IdempotencyKey != wantEntry.IdempotencyKey || !gotEntry.OccurredAt.Equal(wantEntry.OccurredAt) ||
 			!sameString(gotEntry.Description, wantEntry.Description) ||
-			gotEntry.CounterpartyID != nil || len(gotEntry.Metadata) != 0 || len(gotEntry.Postings) != len(wantEntry.Postings) {
+			gotEntry.CounterpartyID != nil || len(gotEntry.Metadata) != 0 || len(gotEntry.Postings) != len(wantEntry.Postings) ||
+			!slices.Equal(gotEntry.TagIDs, wantEntry.TagIDs) {
 			return false
 		}
 		for i, posting := range wantEntry.Postings {

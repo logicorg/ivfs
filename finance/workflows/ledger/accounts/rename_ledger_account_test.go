@@ -2,7 +2,7 @@ package accounts
 
 import (
 	activity "github.com/logicorg/ivfs/finance/activities/ledger/accounts"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/logicorg/ivfs/pkg/ptr"
 	"github.com/stretchr/testify/assert"
@@ -38,28 +38,34 @@ func (s *WorkflowUnitTestSuite) TestRenameLedgerAccount() {
 		},
 		{
 			name:    "a stray account",
-			account: model.LedgerAccount{ID: 7, Name: "Uncategorized", Kind: model.LedgerAccountIncome},
+			account: model.LedgerAccount{ID: 7, Name: "Income", Kind: model.LedgerAccountIncome},
 			newName: "Other income",
-			wantErr: `"Uncategorized" (income) is managed by the ledger and cannot be renamed`,
+			wantErr: `"Income" (income) is managed by the ledger and cannot be renamed`,
 		},
 		{
-			name:    "a top-level account onto a shared name",
+			name:    "an account of no financial account onto a shared name",
 			account: model.LedgerAccount{ID: 7, Name: "Starting point", Kind: model.LedgerAccountEquity},
 			newName: "opening balances",
-			wantErr: `"Starting point" cannot be renamed: a top-level equity account named "opening balances" is managed by the ledger`,
+			wantErr: `"Starting point" cannot be renamed: the account named "opening balances", of no financial account, is managed by the ledger`,
+		},
+		{
+			name:    "an account of no financial account onto a shared name of another kind",
+			account: model.LedgerAccount{ID: 7, Name: "Starting point", Kind: model.LedgerAccountEquity},
+			newName: "FX clearing",
+			wantErr: `"Starting point" cannot be renamed: the account named "FX clearing", of no financial account, is managed by the ledger`,
 		},
 	}
 	for _, tc := range tests {
 		s.Run(tc.name, func() {
 			env := s.NewTestWorkflowEnvironment()
 			aa := activity.Activities{}
-			input := lt.RenameLedgerAccountInput{LedgerAccountID: tc.account.ID, Name: tc.newName}
+			input := act.RenameLedgerAccountInput{LedgerAccountID: tc.account.ID, Name: tc.newName}
 
-			env.OnActivity(aa.RetrieveLedgerAccount, mock.Anything, lt.RetrieveLedgerAccountParams{ID: tc.account.ID}).
-				Return(&lt.RetrieveLedgerAccountResult{LedgerAccount: &tc.account}, nil)
+			env.OnActivity(aa.RetrieveLedgerAccount, mock.Anything, act.RetrieveLedgerAccountParams{ID: tc.account.ID}).
+				Return(&act.RetrieveLedgerAccountResult{LedgerAccount: &tc.account}, nil)
 			if tc.renames {
 				env.OnActivity(aa.RenameLedgerAccount, mock.Anything, input).
-					Return(&lt.LedgerAccountMutationResult{LedgerAccountID: tc.account.ID}, nil).Once()
+					Return(&act.LedgerAccountMutationResult{LedgerAccountID: tc.account.ID}, nil).Once()
 			}
 
 			env.ExecuteWorkflow(RenameLedgerAccount, input)
@@ -75,12 +81,12 @@ func (s *WorkflowUnitTestSuite) TestRenameLedgerAccount() {
 }
 
 func (s *WorkflowUnitTestSuite) TestRenameLedgerAccountPropagatesRetrieveError() {
-	input := lt.RenameLedgerAccountInput{LedgerAccountID: 7, Name: "Food"}
+	input := act.RenameLedgerAccountInput{LedgerAccountID: 7, Name: "Food"}
 
 	env := s.NewTestWorkflowEnvironment()
 	aa := activity.Activities{}
 
-	env.OnActivity(aa.RetrieveLedgerAccount, mock.Anything, lt.RetrieveLedgerAccountParams{ID: 7}).Return(nil, assert.AnError)
+	env.OnActivity(aa.RetrieveLedgerAccount, mock.Anything, act.RetrieveLedgerAccountParams{ID: 7}).Return(nil, assert.AnError)
 
 	env.ExecuteWorkflow(RenameLedgerAccount, input)
 

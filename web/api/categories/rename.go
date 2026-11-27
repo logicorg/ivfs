@@ -6,7 +6,7 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 	ct "github.com/logicorg/ivfs/finance/common/types/categorytypes"
-	categorieswf "github.com/logicorg/ivfs/finance/workflows/facade/categories"
+	categorieswf "github.com/logicorg/ivfs/finance/workflows/ledger/categories"
 	"github.com/logicorg/ivfs/web/api/gateway"
 	"go.temporal.io/sdk/client"
 )
@@ -21,7 +21,7 @@ func registerRename(api huma.API, c client.Client) {
 		Errors:      []int{http.StatusNotFound, http.StatusUnprocessableEntity, http.StatusConflict},
 	}, func(ctx context.Context, in *RenameCategoryInput) (*struct{}, error) {
 		_, err := gateway.RunWorkflow[ct.CategoryResult](ctx, c, categorieswf.RenameCategory,
-			ct.RenameCategoryInput{LedgerAccountID: in.ID, Name: in.Body.Name})
+			ct.RenameCategoryInput{CategoryID: in.ID, Name: in.Body.Name})
 		return nil, err
 	})
 }

@@ -1,3 +1,5 @@
+// Package ledgertypes holds the ledger primitives shared across the types
+// packages: reserved account names and the negative-holding policy.
 package ledgertypes
 
 import (
@@ -6,17 +8,27 @@ import (
 	"github.com/logicorg/ivfs/pkg/model"
 )
 
-//TODO: should we simplify, be stricter, and just reserve those names (regardless of kind)?
-// we can get rid of the map and just use a simple array + slices.Contains()
-
 // OpeningBalancesAccountName is the name of the shared equity account, one per
 // currency and of no financial account, that opening balances are booked
 // against (ADR 0006).
 const OpeningBalancesAccountName = "Opening balances"
 
+// ExpensesAccountName and IncomeAccountName are the names of the shared
+// accounts, one per currency and of no financial account, that every expense
+// and income is booked on. What the money was for is the category of the
+// posting, not an account.
+const (
+	ExpensesAccountName = "Expenses"
+	IncomeAccountName   = "Income"
+)
+
+// FXClearingAccountName is the name of the shared asset account, one per
+// currency and of no financial account, that a conversion balances through.
+const FXClearingAccountName = "FX clearing"
+
 // UntrackedAccountsName is the name of the stray equity account, one per
-// currency, that receives the postings of a deleted balance or equity account,
-// and of the stray financial account that receives a deleted financial
+// currency, that receives the postings of a deleted ledger account, and of
+// the stray financial account that receives a deleted financial
 // account's units (ADR 0012).
 const UntrackedAccountsName = "Untracked accounts"
 
@@ -24,33 +36,43 @@ const UntrackedAccountsName = "Untracked accounts"
 // stray financial account, "Untracked accounts" (ADR 0012).
 const UntrackedInstitutionName = "Untracked"
 
-// UncategorizedAccountName is the name of the stray category, one per kind and
-// currency, that receives the postings of a deleted category (ADR 0012).
-const UncategorizedAccountName = "Uncategorized"
+// reservedLedgerAccounts are the shared and stray ledger accounts, by name,
+// with the kind each has. Among the accounts of no financial account the name
+// is theirs whatever the kind, so that a name says which account it is.
+var reservedLedgerAccounts = map[string]model.LedgerAccountKind{
+	strings.ToLower(OpeningBalancesAccountName): model.LedgerAccountEquity,
+	strings.ToLower(FXClearingAccountName):      model.LedgerAccountAsset,
+	strings.ToLower(ExpensesAccountName):        model.LedgerAccountExpense,
+	strings.ToLower(IncomeAccountName):          model.LedgerAccountIncome,
+	strings.ToLower(UntrackedAccountsName):      model.LedgerAccountEquity,
+}
 
-// reservedLedgerAccounts are the kinds each shared or stray ledger account's
-// name is reserved for.
-var reservedLedgerAccounts = map[string][]model.LedgerAccountKind{
-	strings.ToLower(OpeningBalancesAccountName): {model.LedgerAccountEquity},
-	strings.ToLower(FXClearingAccountName):      {model.LedgerAccountAsset},
-	strings.ToLower(UntrackedAccountsName):      {model.LedgerAccountEquity},
-	strings.ToLower(UncategorizedAccountName):   {model.LedgerAccountExpense, model.LedgerAccountIncome},
+// ReservedLedgerAccountKind returns the kind of the shared or stray account
+// of this name, and whether there is one. Names compare as the unique keys
+// do, trimmed and case-insensitively (ADR 0005), so "fx clearing" is the one
+// creation finds.
+func ReservedLedgerAccountKind(name string) (model.LedgerAccountKind, bool) {
+	kind, reserved := reservedLedgerAccounts[normalizeName(name)]
+	return kind, reserved
 }
 
 // IsReservedLedgerAccount reports whether the account is one of the shared or
-// stray accounts, which the ledger finds by name, kind, and being top-level
-// with no financial account. Names compare as the unique keys do, trimmed and
-// case-insensitively (ADR 0005), so "fx clearing" is the one creation finds.
+// stray accounts: it has no financial account and one of their names.
 func IsReservedLedgerAccount(account *model.LedgerAccount) bool {
-	if account.ParentID != nil || account.FinancialAccountID != nil {
+	if account.FinancialAccountID != nil {
 		return false
 	}
-	for _, kind := range reservedLedgerAccounts[normalizeName(account.Name)] {
-		if account.Kind == kind {
-			return true
-		}
+	_, reserved := ReservedLedgerAccountKind(account.Name)
+	return reserved
+}
+
+// CategoryAccountName returns the name of the shared account that the
+// postings of a category of this kind are booked on.
+func CategoryAccountName(kind model.LedgerAccountKind) string {
+	if kind == model.LedgerAccountIncome {
+		return IncomeAccountName
 	}
-	return false
+	return ExpensesAccountName
 }
 
 // IsUntrackedInstitution reports whether an institution of this name is the

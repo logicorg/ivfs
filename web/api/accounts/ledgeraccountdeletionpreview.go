@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
 	"github.com/logicorg/ivfs/web/api/gateway"
 	"go.temporal.io/sdk/client"
@@ -21,6 +21,6 @@ func registerPreviewLedgerAccountDeletion(api huma.API, c client.Client) {
 		Tags:        tags,
 		Errors:      []int{http.StatusNotFound},
 	}, func(ctx context.Context, in *DeletionPreviewInput) (*gateway.AccountDeletionPreviewOutput, error) {
-		return gateway.PreviewDeletion(ctx, c, ledgeraccountswf.PreviewAccountDeletion, lt.PreviewAccountDeletionInput{LedgerAccountID: &in.ID})
+		return gateway.PreviewDeletion(ctx, c, ledgeraccountswf.PreviewAccountDeletion, act.PreviewAccountDeletionInput{LedgerAccountID: &in.ID})
 	})
 }
