@@ -8,7 +8,6 @@ import (
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	tt "github.com/logicorg/ivfs/finance/common/types/transactiontypes"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
-	categorieswf "github.com/logicorg/ivfs/finance/workflows/ledger/categories"
 	ledgerfxwf "github.com/logicorg/ivfs/finance/workflows/ledger/fx"
 	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/logicorg/ivfs/pkg/model"
@@ -71,13 +70,13 @@ func transferOf(ctx workflow.Context, input tt.RecordTransferInput) (*movement, 
 	}
 
 	if from.CurrencyID == to.CurrencyID {
-		reaching := input.Amount.Sub(tt.ChargesTotal(input.Charges))
+		reaching := input.Amount.Sub(tt.SplitsTotal(input.Charges))
 		if !input.ToAmount.IsZero() && !input.ToAmount.Equal(reaching) {
 			return nil, nil, internalerrors.ErrInvalidParameter{
 				Description: fmt.Sprintf("%q and %q are in the same currency, so the amount that arrives is the amount that leaves less the charges, %s", from.Name, to.Name, reaching),
 			}
 		}
-		charges, err := chargesOf(ctx, input.Charges, from.CurrencyID)
+		charges, err := expenseSplits(ctx, input.Charges, from.CurrencyID)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -142,7 +141,7 @@ func conversionOf(ctx workflow.Context, input tt.RecordTransferInput, from, to *
 	if len(input.Charges) == 1 {
 		// RegisterFXConversion finds the fee's account itself, but an update
 		// posts the conversion's entry without it.
-		charges, err := chargesOf(ctx, input.Charges, from.CurrencyID)
+		charges, err := expenseSplits(ctx, input.Charges, from.CurrencyID)
 		if err != nil {
 			return nil, err
 		}
@@ -150,20 +149,6 @@ func conversionOf(ctx workflow.Context, input tt.RecordTransferInput, from, to *
 	}
 
 	return &conversion, nil
-}
-
-// chargesOf returns the charges as splits on "Expenses" in the currency the
-// money leaves in, each checked to be an expense category.
-func chargesOf(ctx workflow.Context, charges []tt.Charge, currencyID int64) ([]split, error) {
-	splits := make([]split, len(charges))
-	for i, charge := range charges {
-		account, err := categorieswf.CategoryAccount(ctx, charge.CategoryID, model.LedgerAccountExpense, currencyID)
-		if err != nil {
-			return nil, err
-		}
-		splits[i] = split{account: account, category: charge.CategoryID, amount: charge.Amount}
-	}
-	return splits, nil
 }
 
 // ensureFXClearing returns the id of the "FX clearing" account of a currency.

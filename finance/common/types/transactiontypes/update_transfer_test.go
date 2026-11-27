@@ -24,24 +24,24 @@ func TestUpdateTransferInput_Validate(t *testing.T) {
 		"with tags":  {mutate: func(i *UpdateTransferInput) { i.TagIDs = []int64{3, 4} }},
 		"with charges": {
 			mutate: func(i *UpdateTransferInput) {
-				i.Charges = []Charge{{CategoryID: 7, Amount: decimal.NewFromInt(100)}, {CategoryID: 8, Amount: decimal.RequireFromString("199.99")}}
+				i.Charges = []Split{{CategoryID: 7, Amount: decimal.NewFromInt(100)}, {CategoryID: 8, Amount: decimal.RequireFromString("199.99")}}
 			},
 		},
 		"a charge with no category": {
-			mutate:    func(i *UpdateTransferInput) { i.Charges = []Charge{{Amount: decimal.NewFromInt(100)}} },
+			mutate:    func(i *UpdateTransferInput) { i.Charges = []Split{{Amount: decimal.NewFromInt(100)}} },
 			wantError: "invalid parameter: a charge names the expense category it is booked under",
 		},
 		"a charge of zero": {
-			mutate:    func(i *UpdateTransferInput) { i.Charges = []Charge{{CategoryID: 7}} },
+			mutate:    func(i *UpdateTransferInput) { i.Charges = []Split{{CategoryID: 7}} },
 			wantError: "invalid parameter: a charge is a positive part of the amount, not 0",
 		},
 		"a negative charge": {
-			mutate:    func(i *UpdateTransferInput) { i.Charges = []Charge{{CategoryID: 7, Amount: decimal.NewFromInt(-1)}} },
+			mutate:    func(i *UpdateTransferInput) { i.Charges = []Split{{CategoryID: 7, Amount: decimal.NewFromInt(-1)}} },
 			wantError: "invalid parameter: a charge is a positive part of the amount, not -1",
 		},
 		"charges taking the whole amount": {
 			mutate: func(i *UpdateTransferInput) {
-				i.Charges = []Charge{{CategoryID: 7, Amount: decimal.NewFromInt(100)}, {CategoryID: 8, Amount: decimal.NewFromInt(200)}}
+				i.Charges = []Split{{CategoryID: 7, Amount: decimal.NewFromInt(100)}, {CategoryID: 8, Amount: decimal.NewFromInt(200)}}
 			},
 			wantError: "invalid parameter: the charges add up to 300 of the 300 that leaves, so nothing reaches the other balance; record it as an expense",
 		},

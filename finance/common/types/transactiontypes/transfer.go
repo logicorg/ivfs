@@ -23,7 +23,7 @@ type RecordTransferInput struct {
 	OccurredAt  time.Time       `json:"occurredAt" jsonschema:"the instant it was moved, such as 2026-10-03T10:00:00Z"`
 	Description string          `json:"description,omitempty" jsonschema:"a note"`
 	TagIDs      []int64         `json:"tagIds,omitempty" jsonschema:"the tags of the entry, each taken once"`
-	Charges     []Charge        `json:"charges,omitempty" jsonschema:"what moving the money cost, such as an instalment's interest or a fee, taken out of the amount that leaves; at most one between currencies"`
+	Charges     []Split         `json:"charges,omitempty" jsonschema:"what moving the money cost, such as an instalment's interest or a fee, taken out of the amount that leaves; at most one between currencies"`
 }
 
 // Validate checks the input against its CUE constraints, its date, its tag

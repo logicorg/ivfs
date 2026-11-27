@@ -84,7 +84,7 @@ func (s *WorkflowUnitTestSuite) TestUpdateTransfer() {
 			input: tt.UpdateTransferInput{
 				JournalEntryID: 42, FromLedgerAccountID: cash.ID, ToLedgerAccountID: principal.ID,
 				Amount: decimal.NewFromInt(1200), OccurredAt: occurredAt,
-				Charges: []tt.Charge{{CategoryID: interest.ID, Amount: decimal.NewFromInt(800)}},
+				Charges: []tt.Split{{CategoryID: interest.ID, Amount: decimal.NewFromInt(800)}},
 			},
 			want: jt.ReplaceJournalEntryInput{
 				JournalEntryID: 42, OccurredAt: occurredAt,
@@ -100,7 +100,7 @@ func (s *WorkflowUnitTestSuite) TestUpdateTransfer() {
 			input: tt.UpdateTransferInput{
 				JournalEntryID: 42, FromLedgerAccountID: cash.ID, ToLedgerAccountID: cashUSD.ID,
 				Amount: amount, ToAmount: arrives, OccurredAt: occurredAt,
-				Charges: []tt.Charge{{CategoryID: groceries.ID, Amount: decimal.RequireFromString("1.50")}},
+				Charges: []tt.Split{{CategoryID: groceries.ID, Amount: decimal.RequireFromString("1.50")}},
 			},
 			want: jt.ReplaceJournalEntryInput{
 				JournalEntryID: 42, OccurredAt: occurredAt,
@@ -163,7 +163,7 @@ func (s *WorkflowUnitTestSuite) TestUpdateTransfer_Errors() {
 		// entry, from, and to are the ids the request names.
 		entry, from, to int64
 		toAmount        string
-		charges         []tt.Charge
+		charges         []tt.Split
 		// unknownAccount makes the retrieval of that account fail.
 		unknownAccount int64
 		// clearingErr is what finding an "FX clearing" account fails with.
@@ -180,12 +180,12 @@ func (s *WorkflowUnitTestSuite) TestUpdateTransfer_Errors() {
 		{name: "no amount arriving in another currency", entry: 42, from: cash.ID, to: cashUSD.ID, toAmount: "0", wantError: `are in different currencies; give the amount that arrives as toAmount`},
 		{
 			name: "two charges between currencies", entry: 42, from: cash.ID, to: cashUSD.ID, toAmount: "324.15",
-			charges:   []tt.Charge{{CategoryID: interest.ID, Amount: decimal.NewFromInt(1)}, {CategoryID: groceries.ID, Amount: decimal.NewFromInt(1)}},
+			charges:   []tt.Split{{CategoryID: interest.ID, Amount: decimal.NewFromInt(1)}, {CategoryID: groceries.ID, Amount: decimal.NewFromInt(1)}},
 			wantError: "so the transfer takes at most one charge, its exchange fee",
 		},
 		{
 			name: "a charge under an income category", entry: 42, from: cash.ID, to: principal.ID, toAmount: "0",
-			charges:   []tt.Charge{{CategoryID: salary.ID, Amount: decimal.NewFromInt(1)}},
+			charges:   []tt.Split{{CategoryID: salary.ID, Amount: decimal.NewFromInt(1)}},
 			wantError: `"Salary" is an income category, not an expense one`,
 		},
 		{name: "an unknown account", entry: 42, from: cash.ID, to: 999, toAmount: "0", unknownAccount: 999, wantError: "retrieve ledger account 999"},

@@ -125,7 +125,7 @@ func (s *WorkflowUnitTestSuite) TestRecordTransfer() {
 			input: tt.RecordTransferInput{
 				IdempotencyKey: "9c1e", FromLedgerAccountID: cash.ID, ToLedgerAccountID: principal.ID,
 				Amount: decimal.RequireFromString("1200.00"), OccurredAt: occurredAt,
-				Charges: []tt.Charge{{CategoryID: interest.ID, Amount: decimal.RequireFromString("800.00")}},
+				Charges: []tt.Split{{CategoryID: interest.ID, Amount: decimal.RequireFromString("800.00")}},
 			},
 			mock: func(env *testsuite.TestWorkflowEnvironment) {
 				env.OnWorkflow(journalwf.PostJournalEntry, mock.Anything, entry(jt.PostJournalEntryInput{
@@ -143,7 +143,7 @@ func (s *WorkflowUnitTestSuite) TestRecordTransfer() {
 			input: tt.RecordTransferInput{
 				IdempotencyKey: "9c1e", FromLedgerAccountID: cash.ID, ToLedgerAccountID: principal.ID,
 				Amount: decimal.NewFromInt(1200), ToAmount: decimal.RequireFromString("350.50"), OccurredAt: occurredAt,
-				Charges: []tt.Charge{
+				Charges: []tt.Split{
 					{CategoryID: interest.ID, Amount: decimal.NewFromInt(800)},
 					{CategoryID: groceries.ID, Amount: decimal.RequireFromString("49.50")},
 				},
@@ -165,7 +165,7 @@ func (s *WorkflowUnitTestSuite) TestRecordTransfer() {
 			input: tt.RecordTransferInput{
 				IdempotencyKey: "9c1e", FromLedgerAccountID: cash.ID, ToLedgerAccountID: cashUSD.ID,
 				Amount: decimal.RequireFromString("300.50"), ToAmount: decimal.RequireFromString("324.15"), OccurredAt: occurredAt,
-				Charges: []tt.Charge{{CategoryID: groceries.ID, Amount: decimal.RequireFromString("1.50")}},
+				Charges: []tt.Split{{CategoryID: groceries.ID, Amount: decimal.RequireFromString("1.50")}},
 			},
 			mock: func(env *testsuite.TestWorkflowEnvironment) {
 				env.OnWorkflow(ledgerfxwf.RegisterFXConversion, mock.Anything, conversion(fxt.RegisterFXConversionInput{
@@ -263,7 +263,7 @@ func (s *WorkflowUnitTestSuite) TestRecordTransfer_Errors() {
 		"what arrives not less the charges": {
 			input: func() tt.RecordTransferInput {
 				i := input(cash, principal, "300")
-				i.Charges = []tt.Charge{{CategoryID: interest.ID, Amount: decimal.NewFromInt(100)}}
+				i.Charges = []tt.Split{{CategoryID: interest.ID, Amount: decimal.NewFromInt(100)}}
 				return i
 			}(),
 			wantError: `invalid parameter: "Cash" and "Principal" are in the same currency, so the amount that arrives is the amount that leaves less the charges, 200`,
@@ -271,7 +271,7 @@ func (s *WorkflowUnitTestSuite) TestRecordTransfer_Errors() {
 		"a charge under an income category": {
 			input: func() tt.RecordTransferInput {
 				i := input(cash, principal, "0")
-				i.Charges = []tt.Charge{{CategoryID: salary.ID, Amount: decimal.NewFromInt(100)}}
+				i.Charges = []tt.Split{{CategoryID: salary.ID, Amount: decimal.NewFromInt(100)}}
 				return i
 			}(),
 			wantError: `invalid parameter: "Salary" is an income category, not an expense one`,
@@ -279,7 +279,7 @@ func (s *WorkflowUnitTestSuite) TestRecordTransfer_Errors() {
 		"two charges between currencies": {
 			input: func() tt.RecordTransferInput {
 				i := input(cash, cashUSD, "324.15")
-				i.Charges = []tt.Charge{{CategoryID: interest.ID, Amount: decimal.NewFromInt(1)}, {CategoryID: groceries.ID, Amount: decimal.NewFromInt(1)}}
+				i.Charges = []tt.Split{{CategoryID: interest.ID, Amount: decimal.NewFromInt(1)}, {CategoryID: groceries.ID, Amount: decimal.NewFromInt(1)}}
 				return i
 			}(),
 			wantError: `invalid parameter: "Cash" and "Cash (USD)" are in different currencies, so the transfer takes at most one charge, its exchange fee`,

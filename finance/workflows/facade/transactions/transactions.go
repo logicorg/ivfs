@@ -161,3 +161,17 @@ func replace(ctx workflow.Context, journalEntryID int64, kind string, entry jt.P
 	}
 	return &tt.UpdateResult{JournalEntryID: result.JournalEntryID, Warnings: result.Warnings}, nil
 }
+
+// expenseSplits returns the lines or the charges as splits on "Expenses" in the
+// currency the money leaves in, each checked to be an expense category.
+func expenseSplits(ctx workflow.Context, splits []tt.Split, currencyID int64) ([]split, error) {
+	resolved := make([]split, len(splits))
+	for i, s := range splits {
+		account, err := categorieswf.CategoryAccount(ctx, s.CategoryID, model.LedgerAccountExpense, currencyID)
+		if err != nil {
+			return nil, err
+		}
+		resolved[i] = split{account: account, category: s.CategoryID, amount: s.Amount}
+	}
+	return resolved, nil
+}
