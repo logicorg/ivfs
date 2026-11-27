@@ -10,7 +10,7 @@ import (
 	"github.com/logicorg/ivfs/finance/activities/ledger/internal/deletion"
 	"github.com/logicorg/ivfs/finance/activities/ledger/internal/positions"
 	"github.com/logicorg/ivfs/finance/activities/ledger/internal/posting"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/uptrace/bun"
@@ -27,7 +27,7 @@ import (
 // The holdings that are negative afterwards, among the positions of the old
 // and the new movements, are returned as warnings. A retry writes the same
 // state again, so it needs no idempotency key.
-func (a *Activities) ReplaceJournalEntry(ctx context.Context, input lt.ReplaceJournalEntryInput) (*lt.ReplaceJournalEntryResult, error) {
+func (a *Activities) ReplaceJournalEntry(ctx context.Context, input jt.ReplaceJournalEntryInput) (*jt.ReplaceJournalEntryResult, error) {
 	db, err := a.Pools.For(ctx)
 	if err != nil {
 		return nil, err
@@ -43,7 +43,7 @@ func (a *Activities) ReplaceJournalEntry(ctx context.Context, input lt.ReplaceJo
 		newFinancialIDs = append(newFinancialIDs, m.FinancialAccountID)
 	}
 
-	result := &lt.ReplaceJournalEntryResult{JournalEntryID: input.JournalEntryID}
+	result := &jt.ReplaceJournalEntryResult{JournalEntryID: input.JournalEntryID}
 	err = db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
 		// The accounts are locked before the entry, as every writer does, so
 		// they are read once without a lock and again under it.

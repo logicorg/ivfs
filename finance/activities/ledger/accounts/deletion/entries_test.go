@@ -7,6 +7,7 @@ import (
 	"time"
 
 	ledgerdeletion "github.com/logicorg/ivfs/finance/activities/ledger/internal/deletion"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	"github.com/logicorg/ivfs/internal/pkg/temporaltesting"
 	"github.com/logicorg/ivfs/pkg/model"
@@ -157,45 +158,45 @@ func (f *entriesForDeletionFixture) requireOutcome(t *testing.T, want entryOutco
 func (s *UnitTestSuite) TestHandleEntriesForDeletion() {
 	f := newEntriesForDeletionFixture(s)
 	missing := int64(999999)
-	ledgerTarget := func(account *model.LedgerAccount) lt.DeletionTarget {
-		return lt.DeletionTarget{LedgerAccountID: &account.ID}
+	ledgerTarget := func(account *model.LedgerAccount) act.DeletionTarget {
+		return act.DeletionTarget{LedgerAccountID: &account.ID}
 	}
-	financialTarget := func(account *model.FinancialAccount) lt.DeletionTarget {
-		return lt.DeletionTarget{FinancialAccountID: &account.ID}
+	financialTarget := func(account *model.FinancialAccount) act.DeletionTarget {
+		return act.DeletionTarget{FinancialAccountID: &account.ID}
 	}
 
 	tests := map[string]struct {
 		// setup inserts the case's accounts and entries, and returns what to empty
 		// and what should be left of the entries.
-		setup func(t *testing.T) (lt.DeletionTarget, []entryOutcome)
+		setup func(t *testing.T) (act.DeletionTarget, []entryOutcome)
 		// limit is 100 unless set.
 		limit   int
 		handled int
 		errStr  string
 	}{
 		"an expense paid from the account is deleted": {
-			setup: func(t *testing.T) (lt.DeletionTarget, []entryOutcome) {
+			setup: func(t *testing.T) (act.DeletionTarget, []entryOutcome) {
 				wallet := f.ledgerAccount(t, "Wallet", model.LedgerAccountAsset, nil)
 				return ledgerTarget(wallet), []entryOutcome{{entry: f.entry(t, f.expenses, wallet), deleted: true}}
 			},
 			handled: 1,
 		},
 		"an opening balance is deleted": {
-			setup: func(t *testing.T) (lt.DeletionTarget, []entryOutcome) {
+			setup: func(t *testing.T) (act.DeletionTarget, []entryOutcome) {
 				piggy := f.ledgerAccount(t, "Piggy bank", model.LedgerAccountAsset, nil)
 				return ledgerTarget(piggy), []entryOutcome{{entry: f.entry(t, piggy, f.openings), deleted: true}}
 			},
 			handled: 1,
 		},
 		"a conversion through FX clearing is deleted": {
-			setup: func(t *testing.T) (lt.DeletionTarget, []entryOutcome) {
+			setup: func(t *testing.T) (act.DeletionTarget, []entryOutcome) {
 				travel := f.ledgerAccount(t, "Travel cash", model.LedgerAccountAsset, nil)
 				return ledgerTarget(travel), []entryOutcome{{entry: f.entry(t, travel, f.clearing), deleted: true}}
 			},
 			handled: 1,
 		},
 		"an entry against a stray is deleted": {
-			setup: func(t *testing.T) (lt.DeletionTarget, []entryOutcome) {
+			setup: func(t *testing.T) (act.DeletionTarget, []entryOutcome) {
 				old := f.ledgerAccount(t, "Old cash", model.LedgerAccountAsset, nil)
 				untracked := f.strayLedgerAccount(t)
 				return ledgerTarget(old), []entryOutcome{{entry: f.entry(t, old, untracked), deleted: true}}
@@ -203,7 +204,7 @@ func (s *UnitTestSuite) TestHandleEntriesForDeletion() {
 			handled: 1,
 		},
 		"a transfer from a surviving balance is kept, on untracked accounts": {
-			setup: func(t *testing.T) (lt.DeletionTarget, []entryOutcome) {
+			setup: func(t *testing.T) (act.DeletionTarget, []entryOutcome) {
 				revolut := f.ledgerAccount(t, "Revolut cash", model.LedgerAccountAsset, nil)
 				return ledgerTarget(revolut), []entryOutcome{
 					{entry: f.entry(t, revolut, f.bank), postings: []string{lt.UntrackedAccountsName, "Bank cash"}},
@@ -212,7 +213,7 @@ func (s *UnitTestSuite) TestHandleEntriesForDeletion() {
 			handled: 1,
 		},
 		"an equity account's entry with a surviving balance is kept, on untracked accounts": {
-			setup: func(t *testing.T) (lt.DeletionTarget, []entryOutcome) {
+			setup: func(t *testing.T) (act.DeletionTarget, []entryOutcome) {
 				adjustments := f.ledgerAccount(t, "Adjustments", model.LedgerAccountEquity, nil)
 				return ledgerTarget(adjustments), []entryOutcome{
 					{entry: f.entry(t, adjustments, f.bank), postings: []string{lt.UntrackedAccountsName, "Bank cash"}},
@@ -221,14 +222,14 @@ func (s *UnitTestSuite) TestHandleEntriesForDeletion() {
 			handled: 1,
 		},
 		"a draft is deleted even when it touches a surviving balance": {
-			setup: func(t *testing.T) (lt.DeletionTarget, []entryOutcome) {
+			setup: func(t *testing.T) (act.DeletionTarget, []entryOutcome) {
 				pending := f.ledgerAccount(t, "Pending cash", model.LedgerAccountAsset, nil)
 				return ledgerTarget(pending), []entryOutcome{{entry: f.draft(t, pending, f.bank), deleted: true}}
 			},
 			handled: 1,
 		},
 		"two kept entries both move their lines": {
-			setup: func(t *testing.T) (lt.DeletionTarget, []entryOutcome) {
+			setup: func(t *testing.T) (act.DeletionTarget, []entryOutcome) {
 				loan := f.ledgerAccount(t, "Loan cash", model.LedgerAccountAsset, nil)
 				return ledgerTarget(loan), []entryOutcome{
 					{entry: f.entry(t, loan, f.bank), postings: []string{lt.UntrackedAccountsName, "Bank cash"}},
@@ -238,7 +239,7 @@ func (s *UnitTestSuite) TestHandleEntriesForDeletion() {
 			handled: 2,
 		},
 		"an entry with units on a surviving financial account is kept, with its units": {
-			setup: func(t *testing.T) (lt.DeletionTarget, []entryOutcome) {
+			setup: func(t *testing.T) (act.DeletionTarget, []entryOutcome) {
 				espp := f.ledgerAccount(t, "ESPP", model.LedgerAccountAsset, nil)
 				return ledgerTarget(espp), []entryOutcome{
 					{entry: f.entry(t, espp, f.income, f.units(f.broker)), postings: []string{lt.UntrackedAccountsName, lt.IncomeAccountName}, movements: []string{"Broker"}},
@@ -247,7 +248,7 @@ func (s *UnitTestSuite) TestHandleEntriesForDeletion() {
 			handled: 1,
 		},
 		"a batch handles at most its limit, in id order": {
-			setup: func(t *testing.T) (lt.DeletionTarget, []entryOutcome) {
+			setup: func(t *testing.T) (act.DeletionTarget, []entryOutcome) {
 				card := f.ledgerAccount(t, "Card cash", model.LedgerAccountAsset, nil)
 				return ledgerTarget(card), []entryOutcome{
 					{entry: f.entry(t, f.expenses, card), deleted: true},
@@ -258,17 +259,17 @@ func (s *UnitTestSuite) TestHandleEntriesForDeletion() {
 			handled: 1,
 		},
 		"a ledger account without entries": {
-			setup: func(t *testing.T) (lt.DeletionTarget, []entryOutcome) {
+			setup: func(t *testing.T) (act.DeletionTarget, []entryOutcome) {
 				return ledgerTarget(f.ledgerAccount(t, "Unused cash", model.LedgerAccountAsset, nil)), nil
 			},
 		},
 		"a ledger account that does not exist": {
-			setup: func(*testing.T) (lt.DeletionTarget, []entryOutcome) {
-				return lt.DeletionTarget{LedgerAccountID: &missing}, nil
+			setup: func(*testing.T) (act.DeletionTarget, []entryOutcome) {
+				return act.DeletionTarget{LedgerAccountID: &missing}, nil
 			},
 		},
 		"a shared ledger account with entries": {
-			setup: func(t *testing.T) (lt.DeletionTarget, []entryOutcome) {
+			setup: func(t *testing.T) (act.DeletionTarget, []entryOutcome) {
 				return ledgerTarget(f.clearing), []entryOutcome{
 					{entry: f.entry(t, f.bank, f.clearing), postings: []string{"Bank cash", lt.FXClearingAccountName}},
 				}
@@ -276,7 +277,7 @@ func (s *UnitTestSuite) TestHandleEntriesForDeletion() {
 			errStr: `"FX clearing" is shared by the ledger and cannot be deleted while it has postings`,
 		},
 		"a transfer between two of a financial account's ledger accounts is deleted": {
-			setup: func(t *testing.T) (lt.DeletionTarget, []entryOutcome) {
+			setup: func(t *testing.T) (act.DeletionTarget, []entryOutcome) {
 				account := f.financialAccount(t, "Revolut EUR")
 				cash := f.ledgerAccount(t, "Revolut EUR cash", model.LedgerAccountAsset, &account.ID)
 				savings := f.ledgerAccount(t, "Revolut EUR savings", model.LedgerAccountAsset, &account.ID)
@@ -285,7 +286,7 @@ func (s *UnitTestSuite) TestHandleEntriesForDeletion() {
 			handled: 1,
 		},
 		"a trade inside a financial account is deleted": {
-			setup: func(t *testing.T) (lt.DeletionTarget, []entryOutcome) {
+			setup: func(t *testing.T) (act.DeletionTarget, []entryOutcome) {
 				account := f.financialAccount(t, "IBKR")
 				investments := f.ledgerAccount(t, "IBKR investments", model.LedgerAccountAsset, &account.ID)
 				cash := f.ledgerAccount(t, "IBKR cash", model.LedgerAccountAsset, &account.ID)
@@ -294,14 +295,14 @@ func (s *UnitTestSuite) TestHandleEntriesForDeletion() {
 			handled: 1,
 		},
 		"an entry that reaches a financial account only through units is deleted": {
-			setup: func(t *testing.T) (lt.DeletionTarget, []entryOutcome) {
+			setup: func(t *testing.T) (act.DeletionTarget, []entryOutcome) {
 				account := f.financialAccount(t, "Schwab")
 				return financialTarget(account), []entryOutcome{{entry: f.entry(t, f.expenses, f.income, f.units(account)), deleted: true}}
 			},
 			handled: 1,
 		},
 		"a trade paid from a surviving balance is kept, with its units on the stray": {
-			setup: func(t *testing.T) (lt.DeletionTarget, []entryOutcome) {
+			setup: func(t *testing.T) (act.DeletionTarget, []entryOutcome) {
 				account := f.financialAccount(t, "Degiro")
 				investments := f.ledgerAccount(t, "Degiro investments", model.LedgerAccountAsset, &account.ID)
 				return financialTarget(account), []entryOutcome{{
@@ -313,7 +314,7 @@ func (s *UnitTestSuite) TestHandleEntriesForDeletion() {
 			handled: 1,
 		},
 		"the stray financial account with entries": {
-			setup: func(t *testing.T) (lt.DeletionTarget, []entryOutcome) {
+			setup: func(t *testing.T) (act.DeletionTarget, []entryOutcome) {
 				stray := f.strayFinancialAccount(t)
 				return financialTarget(stray), []entryOutcome{{
 					entry:     f.entry(t, f.expenses, f.income, f.units(stray)),
@@ -324,20 +325,20 @@ func (s *UnitTestSuite) TestHandleEntriesForDeletion() {
 			errStr: `"Untracked accounts" holds the lines of deleted accounts and cannot be deleted while it has postings or movements`,
 		},
 		"a financial account that does not exist": {
-			setup: func(*testing.T) (lt.DeletionTarget, []entryOutcome) {
-				return lt.DeletionTarget{FinancialAccountID: &missing}, nil
+			setup: func(*testing.T) (act.DeletionTarget, []entryOutcome) {
+				return act.DeletionTarget{FinancialAccountID: &missing}, nil
 			},
 		},
 		"a limit that is not positive": {
-			setup: func(*testing.T) (lt.DeletionTarget, []entryOutcome) {
-				return lt.DeletionTarget{LedgerAccountID: &missing}, nil
+			setup: func(*testing.T) (act.DeletionTarget, []entryOutcome) {
+				return act.DeletionTarget{LedgerAccountID: &missing}, nil
 			},
 			limit:  -1,
 			errStr: "a deletion batch limit must be positive",
 		},
 		"both a ledger and a financial account": {
-			setup: func(*testing.T) (lt.DeletionTarget, []entryOutcome) {
-				return lt.DeletionTarget{LedgerAccountID: &missing, FinancialAccountID: &missing}, nil
+			setup: func(*testing.T) (act.DeletionTarget, []entryOutcome) {
+				return act.DeletionTarget{LedgerAccountID: &missing, FinancialAccountID: &missing}, nil
 			},
 			errStr: "a deletion target is either a ledger account or a financial account",
 		},
@@ -352,13 +353,13 @@ func (s *UnitTestSuite) TestHandleEntriesForDeletion() {
 				limit = 100
 			}
 
-			result, err := s.Env.ExecuteActivity(s.aa.HandleEntriesForDeletion, lt.DeletionBatchInput{Target: target, Limit: limit})
+			result, err := s.Env.ExecuteActivity(s.aa.HandleEntriesForDeletion, act.DeletionBatchInput{Target: target, Limit: limit})
 
 			if tc.errStr != "" {
 				require.ErrorContains(t, err, tc.errStr)
 			} else {
 				require.NoError(t, err)
-				var got lt.DeletionBatchResult
+				var got act.DeletionBatchResult
 				require.NoError(t, result.Get(&got))
 				require.Equal(t, tc.handled, got.Handled)
 			}
@@ -382,12 +383,12 @@ func (s *UnitTestSuite) TestHandleEntriesForDeletion_Idempotency() {
 		{entry: f.entry(t, cash, f.bank, f.units(account)), postings: []string{lt.UntrackedAccountsName, "Bank cash"}, movements: []string{lt.UntrackedAccountsName}},
 		{entry: f.entry(t, pot, f.bank), postings: []string{lt.UntrackedAccountsName, "Bank cash"}},
 	}
-	input := lt.DeletionBatchInput{Target: lt.DeletionTarget{FinancialAccountID: &account.ID}, Limit: 100}
+	input := act.DeletionBatchInput{Target: act.DeletionTarget{FinancialAccountID: &account.ID}, Limit: 100}
 
 	for run, handled := range []int{3, 0} {
 		result, err := s.Env.ExecuteActivity(s.aa.HandleEntriesForDeletion, input)
 		require.NoError(t, err)
-		var got lt.DeletionBatchResult
+		var got act.DeletionBatchResult
 		require.NoError(t, result.Get(&got))
 		require.Equal(t, handled, got.Handled, "run %d", run+1)
 		for _, outcome := range outcomes {

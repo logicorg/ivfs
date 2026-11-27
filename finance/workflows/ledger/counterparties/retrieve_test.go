@@ -2,7 +2,7 @@ package counterparties
 
 import (
 	activity "github.com/logicorg/ivfs/finance/activities/ledger/counterparties"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	cpt "github.com/logicorg/ivfs/finance/common/types/counterpartytypes"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -11,16 +11,16 @@ import (
 
 func (s *WorkflowUnitTestSuite) TestRetrieveCounterparty() {
 	counterparty := &model.Counterparty{ID: 4, Name: "Tesco"}
-	params := lt.RetrieveCounterpartyParams{ID: counterparty.ID}
+	params := cpt.RetrieveCounterpartyParams{ID: counterparty.ID}
 
 	tests := []struct {
 		name    string
-		result  *lt.RetrieveCounterpartyResult
+		result  *cpt.RetrieveCounterpartyResult
 		err     error
 		want    *model.Counterparty
 		wantErr string
 	}{
-		{name: "success", result: &lt.RetrieveCounterpartyResult{Counterparty: counterparty}, want: counterparty},
+		{name: "success", result: &cpt.RetrieveCounterpartyResult{Counterparty: counterparty}, want: counterparty},
 		{name: "activity error", err: assert.AnError, wantErr: assert.AnError.Error()},
 	}
 	for _, tt := range tests {
@@ -36,7 +36,7 @@ func (s *WorkflowUnitTestSuite) TestRetrieveCounterparty() {
 				return
 			}
 			require.NoError(s.T(), env.GetWorkflowError())
-			var retrieved *lt.RetrieveCounterpartyResult
+			var retrieved *cpt.RetrieveCounterpartyResult
 			require.NoError(s.T(), env.GetWorkflowResult(&retrieved))
 			assert.Equal(s.T(), tt.want, retrieved.Counterparty)
 		})

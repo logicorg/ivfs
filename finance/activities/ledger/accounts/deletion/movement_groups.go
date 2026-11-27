@@ -6,7 +6,7 @@ import (
 
 	ledgerdeletion "github.com/logicorg/ivfs/finance/activities/ledger/internal/deletion"
 	"github.com/logicorg/ivfs/finance/activities/ledger/internal/positions"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/uptrace/bun"
 )
@@ -23,7 +23,7 @@ import (
 // A ledger account has no movements, and neither has a target that does not
 // exist. It refuses the stray financial account with ErrResourceConflict when
 // it has groups.
-func (a *Activities) HandleMovementGroupsForDeletion(ctx context.Context, input lt.DeletionBatchInput) (*lt.DeletionBatchResult, error) {
+func (a *Activities) HandleMovementGroupsForDeletion(ctx context.Context, input act.DeletionBatchInput) (*act.DeletionBatchResult, error) {
 	db, err := a.Pools.For(ctx)
 	if err != nil {
 		return nil, err
@@ -33,7 +33,7 @@ func (a *Activities) HandleMovementGroupsForDeletion(ctx context.Context, input 
 		return nil, err
 	}
 
-	result := &lt.DeletionBatchResult{}
+	result := &act.DeletionBatchResult{}
 	err = db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
 		target, err := loadDeletionTargetTx(ctx, tx, input.Target)
 		if err != nil || target == nil || target.financialAccount == nil {

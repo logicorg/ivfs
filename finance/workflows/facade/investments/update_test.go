@@ -6,6 +6,7 @@ import (
 	"time"
 
 	it "github.com/logicorg/ivfs/finance/common/types/investmenttypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	journalwf "github.com/logicorg/ivfs/finance/workflows/ledger/journal"
 	"github.com/logicorg/ivfs/pkg/model"
@@ -18,12 +19,12 @@ import (
 // replacement matches the replace want by what it records rather than by its
 // representation, as tradeInput does: a decimal such as 1053.00 arrives as
 // 1053, equal in value but not in its fields.
-func replacement(want lt.ReplaceJournalEntryInput) any {
+func replacement(want jt.ReplaceJournalEntryInput) any {
 	sameDecimal := func(a, b *decimal.Decimal) bool { return (a == nil) == (b == nil) && (a == nil || a.Equal(*b)) }
 	sameID := func(a, b *int64) bool { return (a == nil) == (b == nil) && (a == nil || *a == *b) }
 	sameString := func(a, b *string) bool { return (a == nil) == (b == nil) && (a == nil || *a == *b) }
 
-	return mock.MatchedBy(func(got lt.ReplaceJournalEntryInput) bool {
+	return mock.MatchedBy(func(got jt.ReplaceJournalEntryInput) bool {
 		if got.JournalEntryID != want.JournalEntryID || !got.OccurredAt.Equal(want.OccurredAt) ||
 			!sameString(got.Description, want.Description) || len(got.Metadata) != 0 ||
 			len(got.Postings) != len(want.Postings) || len(got.Movements) != len(want.Movements) ||
@@ -57,7 +58,7 @@ func (s *WorkflowUnitTestSuite) TestUpdateInvestment() {
 	tests := []struct {
 		name     string
 		input    it.UpdateInvestmentInput
-		want     lt.ReplaceJournalEntryInput
+		want     jt.ReplaceJournalEntryInput
 		warnings []lt.NegativeHolding
 	}{
 		{
@@ -67,13 +68,13 @@ func (s *WorkflowUnitTestSuite) TestUpdateInvestment() {
 				Amount: decimal.RequireFromString("1050.00"), Fee: decimal.RequireFromString("3.00"), CurrencyCode: " eur",
 				OccurredAt: occurredAt, Description: "monthly plan", TagIDs: []int64{5},
 			}},
-			want: lt.ReplaceJournalEntryInput{
+			want: jt.ReplaceJournalEntryInput{
 				JournalEntryID: 41, OccurredAt: occurredAt, Description: ptr.NewPtr("monthly plan"), TagIDs: []int64{5},
-				Postings: []lt.PostingInput{
+				Postings: []jt.PostingInput{
 					{LedgerAccountID: investments.ID, Amount: decimal.NewFromInt(1053), Side: model.PostingDebit},
 					{LedgerAccountID: cash.ID, Amount: decimal.NewFromInt(1053), Side: model.PostingCredit},
 				},
-				Movements: []lt.ReplaceMovementInput{{
+				Movements: []jt.ReplaceMovementInput{{
 					Kind: model.PositionMovementTrade, FinancialAccountID: ibkr, AssetID: 7, UnitsDelta: decimal.NewFromInt(10),
 					CostBasisAmount: ptr.NewPtr(decimal.NewFromInt(1053)), CostBasisCurrencyID: ptr.NewPtr(euro.ID),
 				}},
@@ -85,13 +86,13 @@ func (s *WorkflowUnitTestSuite) TestUpdateInvestment() {
 				FinancialAccountID: ibkr, AssetID: 7, Units: decimal.NewFromInt(100),
 				Amount: decimal.NewFromInt(12000), Fee: decimal.NewFromInt(3), CurrencyCode: "EUR", OccurredAt: occurredAt,
 			}},
-			want: lt.ReplaceJournalEntryInput{
+			want: jt.ReplaceJournalEntryInput{
 				JournalEntryID: 41, OccurredAt: occurredAt,
-				Postings: []lt.PostingInput{
+				Postings: []jt.PostingInput{
 					{LedgerAccountID: cash.ID, Amount: decimal.NewFromInt(11997), Side: model.PostingDebit},
 					{LedgerAccountID: investments.ID, Amount: decimal.NewFromInt(11997), Side: model.PostingCredit},
 				},
-				Movements: []lt.ReplaceMovementInput{{
+				Movements: []jt.ReplaceMovementInput{{
 					Kind: model.PositionMovementTrade, FinancialAccountID: ibkr, AssetID: 7, UnitsDelta: decimal.NewFromInt(-100),
 				}},
 			},
@@ -105,14 +106,14 @@ func (s *WorkflowUnitTestSuite) TestUpdateInvestment() {
 				CurrencyCode: "eur", IncomeCategoryID: compensation.ID, TaxCategoryID: taxWithheld.ID,
 				OccurredAt: occurredAt, TagIDs: []int64{5},
 			}},
-			want: lt.ReplaceJournalEntryInput{
+			want: jt.ReplaceJournalEntryInput{
 				JournalEntryID: 41, OccurredAt: occurredAt, TagIDs: []int64{5},
-				Postings: []lt.PostingInput{
+				Postings: []jt.PostingInput{
 					{LedgerAccountID: investments.ID, Amount: decimal.NewFromInt(600), Side: model.PostingDebit},
 					{LedgerAccountID: expenses.ID, Amount: decimal.NewFromInt(400), Side: model.PostingDebit, CategoryID: ptr.NewPtr(taxWithheld.ID)},
 					{LedgerAccountID: income.ID, Amount: decimal.NewFromInt(1000), Side: model.PostingCredit, CategoryID: ptr.NewPtr(compensation.ID)},
 				},
-				Movements: []lt.ReplaceMovementInput{{
+				Movements: []jt.ReplaceMovementInput{{
 					Kind: model.PositionMovementVest, FinancialAccountID: ibkr, AssetID: 7, UnitsDelta: decimal.NewFromInt(60),
 					CostBasisAmount: ptr.NewPtr(decimal.NewFromInt(600)), CostBasisCurrencyID: ptr.NewPtr(euro.ID),
 				}},
@@ -128,13 +129,13 @@ func (s *WorkflowUnitTestSuite) TestUpdateInvestment() {
 				CurrencyCode: "EUR", IncomeCategoryID: compensation.ID, TaxCategoryID: unknownCategory,
 				OccurredAt: occurredAt,
 			}},
-			want: lt.ReplaceJournalEntryInput{
+			want: jt.ReplaceJournalEntryInput{
 				JournalEntryID: 41, OccurredAt: occurredAt,
-				Postings: []lt.PostingInput{
+				Postings: []jt.PostingInput{
 					{LedgerAccountID: investments.ID, Amount: decimal.NewFromInt(1000), Side: model.PostingDebit},
 					{LedgerAccountID: income.ID, Amount: decimal.NewFromInt(1000), Side: model.PostingCredit, CategoryID: ptr.NewPtr(compensation.ID)},
 				},
-				Movements: []lt.ReplaceMovementInput{{
+				Movements: []jt.ReplaceMovementInput{{
 					Kind: model.PositionMovementVest, FinancialAccountID: ibkr, AssetID: 7, UnitsDelta: decimal.NewFromInt(100),
 					CostBasisAmount: ptr.NewPtr(decimal.NewFromInt(1000)), CostBasisCurrencyID: ptr.NewPtr(euro.ID),
 				}},
@@ -148,7 +149,7 @@ func (s *WorkflowUnitTestSuite) TestUpdateInvestment() {
 			mockBrokerage(env)
 			mockCategories(env)
 			env.OnWorkflow(journalwf.ReplaceJournalEntry, mock.Anything, replacement(tc.want)).
-				Return(&lt.ReplaceJournalEntryResult{JournalEntryID: 41, PositionMovementIDs: []int64{43}, Warnings: tc.warnings}, nil).Once()
+				Return(&jt.ReplaceJournalEntryResult{JournalEntryID: 41, PositionMovementIDs: []int64{43}, Warnings: tc.warnings}, nil).Once()
 
 			env.ExecuteWorkflow(UpdateInvestment, tc.input)
 

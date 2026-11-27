@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	reportingwf "github.com/logicorg/ivfs/finance/workflows/ledger/reporting"
 	"github.com/logicorg/ivfs/web/api/gateway"
 	"go.temporal.io/sdk/client"
@@ -20,8 +20,8 @@ func registerLedgerBalance(api huma.API, c client.Client) {
 		Tags:        tags,
 		Errors:      []int{http.StatusNotFound},
 	}, func(ctx context.Context, in *LedgerAccountBalanceInput) (*LedgerAccountBalanceOutput, error) {
-		result, err := gateway.RunWorkflow[lt.LedgerAccountBalanceResult](ctx, c, reportingwf.LedgerAccountBalance,
-			lt.LedgerAccountBalanceParams{LedgerAccountID: in.ID, At: in.At})
+		result, err := gateway.RunWorkflow[jt.LedgerAccountBalanceResult](ctx, c, reportingwf.LedgerAccountBalance,
+			jt.LedgerAccountBalanceParams{LedgerAccountID: in.ID, At: in.At})
 		if err != nil {
 			return nil, err
 		}

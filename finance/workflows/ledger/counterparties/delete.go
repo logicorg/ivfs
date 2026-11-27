@@ -3,7 +3,7 @@ package counterparties
 import (
 	"fmt"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	cpt "github.com/logicorg/ivfs/finance/common/types/counterpartytypes"
 	"github.com/logicorg/ivfs/finance/workflows"
 	"go.temporal.io/sdk/workflow"
 )
@@ -18,18 +18,18 @@ const deleteCounterpartyRounds = 2
 // lose it, keeping their postings, and then it is deleted. The two steps share no transaction, so an entry recorded between
 // them makes the delete conflict, and the workflow runs both again. Deleting a
 // counterparty that does not exist succeeds.
-func DeleteCounterparty(ctx workflow.Context, input lt.DeleteCounterpartyInput) (*lt.DeleteCounterpartyResult, error) {
+func DeleteCounterparty(ctx workflow.Context, input cpt.DeleteCounterpartyInput) (*cpt.DeleteCounterpartyResult, error) {
 	if err := input.Validate(); err != nil {
 		return nil, err
 	}
 	ctx = workflow.WithActivityOptions(ctx, workflows.GetDefaultActivityOptions())
 
-	result := &lt.DeleteCounterpartyResult{}
+	result := &cpt.DeleteCounterpartyResult{}
 	var err error
 	for range deleteCounterpartyRounds {
-		var cleared lt.ClearCounterpartyReferencesResult
+		var cleared cpt.ClearCounterpartyReferencesResult
 		if err = workflow.ExecuteActivity(ctx, ca.ClearCounterpartyReferences,
-			lt.ClearCounterpartyReferencesInput{CounterpartyID: input.CounterpartyID}).Get(ctx, &cleared); err != nil {
+			cpt.ClearCounterpartyReferencesInput{CounterpartyID: input.CounterpartyID}).Get(ctx, &cleared); err != nil {
 			return nil, fmt.Errorf("clear counterparty references: %w", err)
 		}
 		result.Cleared += cleared.Cleared

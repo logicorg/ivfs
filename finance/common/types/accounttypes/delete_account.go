@@ -1,7 +1,8 @@
-package ledgertypes
+package accounttypes
 
 import (
 	"cuelang.org/go/cuego"
+	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	errs "github.com/logicorg/ivfs/internal/pkg/errors"
 )
 
@@ -89,5 +90,5 @@ type DeletionBatchResult struct {
 // was made regardless. A deletion changes no surviving holding, and the stray
 // financial account's are never reported, so it carries none.
 type DeleteAccountResult struct {
-	Warnings []NegativeHolding `json:"warnings,omitempty"`
+	Warnings []lt.NegativeHolding `json:"warnings,omitempty"`
 }

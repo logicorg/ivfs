@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	"github.com/logicorg/ivfs/finance/workflows"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
@@ -26,7 +27,7 @@ func registerDeleteFinancialAccount(api huma.API, c client.Client) {
 		Responses: gateway.AccountDeletionResponses(api),
 	}, func(ctx context.Context, in *DeleteAccountInput) (*gateway.AccountDeletionOutput, error) {
 		return gateway.DeleteAccount(ctx, c, workflows.DeleteFinancialAccountWorkflowID(in.ID), ledgeraccountswf.DeleteFinancialAccount,
-			lt.DeleteFinancialAccountInput{FinancialAccountID: in.ID, ReplacementID: gateway.Replacement(in.ReplacementID)},
-			func(result *lt.DeleteAccountResult) []lt.NegativeHolding { return result.Warnings })
+			act.DeleteFinancialAccountInput{FinancialAccountID: in.ID, ReplacementID: gateway.Replacement(in.ReplacementID)},
+			func(result *act.DeleteAccountResult) []lt.NegativeHolding { return result.Warnings })
 	})
 }

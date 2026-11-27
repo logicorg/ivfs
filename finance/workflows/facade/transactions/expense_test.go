@@ -4,8 +4,9 @@ import (
 	"errors"
 	"time"
 
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	ct "github.com/logicorg/ivfs/finance/common/types/categorytypes"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	tt "github.com/logicorg/ivfs/finance/common/types/transactiontypes"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
 	categorieswf "github.com/logicorg/ivfs/finance/workflows/ledger/categories"
@@ -45,10 +46,10 @@ func (s *WorkflowUnitTestSuite) TestRecordExpense() {
 			env := s.NewTestWorkflowEnvironment()
 			mockLedgerAccounts(env)
 			mockCategories(env)
-			want := lt.PostJournalEntryInput{
+			want := jt.PostJournalEntryInput{
 				IdempotencyKey: "expense:3f2a",
 				OccurredAt:     occurredAt,
-				Postings: []lt.PostingInput{
+				Postings: []jt.PostingInput{
 					{LedgerAccountID: tc.account.ID, Amount: amount, Side: model.PostingDebit, CategoryID: ptr.Int64(tc.category.ID)},
 					{LedgerAccountID: tc.balance.ID, Amount: amount, Side: model.PostingCredit},
 				},
@@ -58,7 +59,7 @@ func (s *WorkflowUnitTestSuite) TestRecordExpense() {
 			}
 			want.TagIDs = tc.tags
 			env.OnWorkflow(journalwf.PostJournalEntry, mock.Anything, entry(want)).
-				Return(&lt.PostJournalEntryResult{JournalEntryID: 41}, nil).Once()
+				Return(&jt.PostJournalEntryResult{JournalEntryID: 41}, nil).Once()
 
 			env.ExecuteWorkflow(RecordExpense, tt.RecordExpenseInput{
 				IdempotencyKey: "3f2a", BalanceLedgerAccountID: tc.balance.ID, CategoryID: tc.category.ID,
@@ -106,7 +107,7 @@ func (s *WorkflowUnitTestSuite) TestRecordExpense_Errors() {
 		s.Run(tc.name, func() {
 			env := s.NewTestWorkflowEnvironment()
 			if tc.unknownAccount != 0 {
-				env.OnWorkflow(ledgeraccountswf.RetrieveLedgerAccount, mock.Anything, lt.RetrieveLedgerAccountParams{ID: tc.unknownAccount}).
+				env.OnWorkflow(ledgeraccountswf.RetrieveLedgerAccount, mock.Anything, act.RetrieveLedgerAccountParams{ID: tc.unknownAccount}).
 					Return(nil, errors.New("resource LedgerAccount not found"))
 			}
 			if tc.unknownCategory != 0 {

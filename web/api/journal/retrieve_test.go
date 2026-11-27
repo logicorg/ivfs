@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	journalwf "github.com/logicorg/ivfs/finance/workflows/ledger/journal"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/logicorg/ivfs/pkg/ptr"
@@ -38,8 +38,8 @@ func TestRetrieve(t *testing.T) {
 			Method: http.MethodGet, Path: "/api/journal-entries/7",
 			Call: &apitest.WorkflowCall{
 				Workflow: journalwf.RetrieveJournalEntry,
-				Params:   lt.RetrieveJournalEntryParams{ID: 7},
-				Result: lt.RetrieveJournalEntryResult{JournalEntry: &model.JournalEntry{
+				Params:   jt.RetrieveJournalEntryParams{ID: 7},
+				Result: jt.RetrieveJournalEntryResult{JournalEntry: &model.JournalEntry{
 					ID: 7, OccurredAt: day, Description: ptr.NewPtr("January salary"), Status: model.JournalEntryPosted,
 					CounterpartyID: ptr.Int64(5), Counterparty: &model.Counterparty{ID: 5, Name: "Acme"},
 					PostedAt: ptr.NewPtr(day.Add(time.Hour)), CreatedAt: day.Add(time.Hour), Postings: postings,
@@ -54,8 +54,8 @@ func TestRetrieve(t *testing.T) {
 			Method: http.MethodGet, Path: "/api/journal-entries/8",
 			Call: &apitest.WorkflowCall{
 				Workflow: journalwf.RetrieveJournalEntry,
-				Params:   lt.RetrieveJournalEntryParams{ID: 8},
-				Result: lt.RetrieveJournalEntryResult{JournalEntry: &model.JournalEntry{
+				Params:   jt.RetrieveJournalEntryParams{ID: 8},
+				Result: jt.RetrieveJournalEntryResult{JournalEntry: &model.JournalEntry{
 					ID: 8, OccurredAt: day, Status: model.JournalEntryDraft, CreatedAt: day, Postings: postings,
 				}},
 			},
@@ -66,7 +66,7 @@ func TestRetrieve(t *testing.T) {
 			Method: http.MethodGet, Path: "/api/journal-entries/99",
 			Call: &apitest.WorkflowCall{
 				Workflow: journalwf.RetrieveJournalEntry,
-				Params:   lt.RetrieveJournalEntryParams{ID: 99},
+				Params:   jt.RetrieveJournalEntryParams{ID: 99},
 				Err:      temporal.NewApplicationError("resource JournalEntry not found with ID: 99", "ErrNotFound"),
 			},
 			WantStatus: http.StatusNotFound,

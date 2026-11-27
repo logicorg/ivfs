@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	"strings"
 
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
@@ -21,7 +22,7 @@ import (
 // they were first given. An account that already
 // exists is returned unchanged, closed or not, whatever the rest of the input
 // says, so a retry or a second create of the same account is harmless.
-func (a *Activities) CreateLedgerAccount(ctx context.Context, input lt.CreateLedgerAccountInput) (*lt.CreateLedgerAccountResult, error) {
+func (a *Activities) CreateLedgerAccount(ctx context.Context, input act.CreateLedgerAccountInput) (*act.CreateLedgerAccountResult, error) {
 	db, err := a.Pools.For(ctx)
 	if err != nil {
 		return nil, err
@@ -49,10 +50,10 @@ func (a *Activities) CreateLedgerAccount(ctx context.Context, input lt.CreateLed
 		return nil, err
 	}
 	if existing != nil {
-		return &lt.CreateLedgerAccountResult{LedgerAccountID: existing.ID}, nil
+		return &act.CreateLedgerAccountResult{LedgerAccountID: existing.ID}, nil
 	}
 
-	result := &lt.CreateLedgerAccountResult{}
+	result := &act.CreateLedgerAccountResult{}
 	err = db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
 		if err := ensureCurrencyExists(ctx, tx, input.CurrencyID); err != nil {
 			return err
@@ -84,7 +85,7 @@ func (a *Activities) CreateLedgerAccount(ctx context.Context, input lt.CreateLed
 		if existing == nil {
 			return nil, conflict
 		}
-		return &lt.CreateLedgerAccountResult{LedgerAccountID: existing.ID}, nil
+		return &act.CreateLedgerAccountResult{LedgerAccountID: existing.ID}, nil
 	}
 	if err != nil {
 		return nil, err
@@ -95,7 +96,7 @@ func (a *Activities) CreateLedgerAccount(ctx context.Context, input lt.CreateLed
 // refuseOtherCategoryAccount fails for an income or expense account that is
 // not the shared one of its kind. What the money was for is the category of a
 // posting, and a second way to say it would split the totals.
-func refuseOtherCategoryAccount(input lt.CreateLedgerAccountInput) error {
+func refuseOtherCategoryAccount(input act.CreateLedgerAccountInput) error {
 	if !model.IsCategoryKind(input.Kind) {
 		return nil
 	}
@@ -112,7 +113,7 @@ func refuseOtherCategoryAccount(input lt.CreateLedgerAccountInput) error {
 // the name of a shared or stray account with another kind. The ledger knows
 // those accounts by name, and would refuse to rename or close this one as if
 // it were its own.
-func refuseReservedName(input lt.CreateLedgerAccountInput) error {
+func refuseReservedName(input act.CreateLedgerAccountInput) error {
 	kind, reserved := lt.ReservedLedgerAccountKind(input.Name)
 	if !reserved || input.FinancialAccountID != nil || input.Kind == kind {
 		return nil
@@ -125,7 +126,7 @@ func refuseReservedName(input lt.CreateLedgerAccountInput) error {
 
 // findLedgerAccount returns the ledger account with the input's key, or nil
 // when there is none.
-func findLedgerAccount(ctx context.Context, db bun.IDB, input lt.CreateLedgerAccountInput) (*model.LedgerAccount, error) {
+func findLedgerAccount(ctx context.Context, db bun.IDB, input act.CreateLedgerAccountInput) (*model.LedgerAccount, error) {
 	account := new(model.LedgerAccount)
 	query := db.NewSelect().Model(account).
 		Where("la.currency_id = ?", input.CurrencyID).

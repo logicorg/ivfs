@@ -2,7 +2,7 @@ package accounts
 
 import (
 	activity "github.com/logicorg/ivfs/finance/activities/ledger/accounts"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/logicorg/ivfs/pkg/ptr"
 	"github.com/stretchr/testify/assert"
@@ -59,13 +59,13 @@ func (s *WorkflowUnitTestSuite) TestRenameLedgerAccount() {
 		s.Run(tc.name, func() {
 			env := s.NewTestWorkflowEnvironment()
 			aa := activity.Activities{}
-			input := lt.RenameLedgerAccountInput{LedgerAccountID: tc.account.ID, Name: tc.newName}
+			input := act.RenameLedgerAccountInput{LedgerAccountID: tc.account.ID, Name: tc.newName}
 
-			env.OnActivity(aa.RetrieveLedgerAccount, mock.Anything, lt.RetrieveLedgerAccountParams{ID: tc.account.ID}).
-				Return(&lt.RetrieveLedgerAccountResult{LedgerAccount: &tc.account}, nil)
+			env.OnActivity(aa.RetrieveLedgerAccount, mock.Anything, act.RetrieveLedgerAccountParams{ID: tc.account.ID}).
+				Return(&act.RetrieveLedgerAccountResult{LedgerAccount: &tc.account}, nil)
 			if tc.renames {
 				env.OnActivity(aa.RenameLedgerAccount, mock.Anything, input).
-					Return(&lt.LedgerAccountMutationResult{LedgerAccountID: tc.account.ID}, nil).Once()
+					Return(&act.LedgerAccountMutationResult{LedgerAccountID: tc.account.ID}, nil).Once()
 			}
 
 			env.ExecuteWorkflow(RenameLedgerAccount, input)
@@ -81,12 +81,12 @@ func (s *WorkflowUnitTestSuite) TestRenameLedgerAccount() {
 }
 
 func (s *WorkflowUnitTestSuite) TestRenameLedgerAccountPropagatesRetrieveError() {
-	input := lt.RenameLedgerAccountInput{LedgerAccountID: 7, Name: "Food"}
+	input := act.RenameLedgerAccountInput{LedgerAccountID: 7, Name: "Food"}
 
 	env := s.NewTestWorkflowEnvironment()
 	aa := activity.Activities{}
 
-	env.OnActivity(aa.RetrieveLedgerAccount, mock.Anything, lt.RetrieveLedgerAccountParams{ID: 7}).Return(nil, assert.AnError)
+	env.OnActivity(aa.RetrieveLedgerAccount, mock.Anything, act.RetrieveLedgerAccountParams{ID: 7}).Return(nil, assert.AnError)
 
 	env.ExecuteWorkflow(RenameLedgerAccount, input)
 

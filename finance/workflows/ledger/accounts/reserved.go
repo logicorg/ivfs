@@ -3,6 +3,7 @@ package accounts
 import (
 	"fmt"
 
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	it "github.com/logicorg/ivfs/finance/common/types/institutiontypes"
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	errs "github.com/logicorg/ivfs/internal/pkg/errors"
@@ -12,8 +13,8 @@ import (
 
 // retrieveLedgerAccount returns the account a guarded change is about.
 func retrieveLedgerAccount(ctx workflow.Context, id int64) (*model.LedgerAccount, error) {
-	var result lt.RetrieveLedgerAccountResult
-	if err := workflow.ExecuteActivity(ctx, la.RetrieveLedgerAccount, lt.RetrieveLedgerAccountParams{ID: id}).Get(ctx, &result); err != nil {
+	var result act.RetrieveLedgerAccountResult
+	if err := workflow.ExecuteActivity(ctx, la.RetrieveLedgerAccount, act.RetrieveLedgerAccountParams{ID: id}).Get(ctx, &result); err != nil {
 		return nil, err
 	}
 	return result.LedgerAccount, nil
@@ -46,8 +47,8 @@ func refuseBecomingReserved(account, changed *model.LedgerAccount, action string
 // retrieveFinancialAccount returns the financial account a guarded change is
 // about.
 func retrieveFinancialAccount(ctx workflow.Context, id int64) (*model.FinancialAccount, error) {
-	var result lt.RetrieveFinancialAccountResult
-	if err := workflow.ExecuteActivity(ctx, la.RetrieveFinancialAccount, lt.RetrieveFinancialAccountParams{ID: id}).Get(ctx, &result); err != nil {
+	var result act.RetrieveFinancialAccountResult
+	if err := workflow.ExecuteActivity(ctx, la.RetrieveFinancialAccount, act.RetrieveFinancialAccountParams{ID: id}).Get(ctx, &result); err != nil {
 		return nil, err
 	}
 	return result.FinancialAccount, nil

@@ -3,7 +3,7 @@ package journal
 import (
 	"time"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	"github.com/shopspring/decimal"
 )
 
@@ -19,7 +19,7 @@ type PostJournalEntryToolInput struct {
 	CounterpartyID *int64            `json:"counterpartyId,omitempty"`
 	ExternalID     *string           `json:"externalId,omitempty"`
 	Metadata       map[string]string `json:"metadata,omitempty"`
-	Postings       []lt.PostingInput `json:"postings"`
+	Postings       []jt.PostingInput `json:"postings"`
 }
 
 // PostingSummary and JournalEntrySummary are flat projections of
@@ -52,5 +52,5 @@ type JournalEntrySummary struct {
 // pagination rather than mirrored.
 type ListJournalEntriesToolResult struct {
 	Entries []JournalEntrySummary  `json:"entries"`
-	Next    *lt.JournalEntryCursor `json:"next,omitempty"`
+	Next    *jt.JournalEntryCursor `json:"next,omitempty"`
 }

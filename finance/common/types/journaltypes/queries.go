@@ -1,4 +1,4 @@
-package ledgertypes
+package journaltypes
 
 import (
 	"time"

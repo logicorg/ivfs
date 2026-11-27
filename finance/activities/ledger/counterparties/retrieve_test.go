@@ -1,7 +1,7 @@
 package counterparties
 
 import (
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	cpt "github.com/logicorg/ivfs/finance/common/types/counterpartytypes"
 	"github.com/logicorg/ivfs/internal/pkg/temporaltesting"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/stretchr/testify/require"
@@ -12,28 +12,28 @@ func (s *UnitTestSuite) Test_RetrieveCounterparty() {
 	temporaltesting.Insert(s.T(), s.DB, counterparty)
 
 	tests := map[string]struct {
-		params  lt.RetrieveCounterpartyParams
+		params  cpt.RetrieveCounterpartyParams
 		expErr  bool
 		expName string
 	}{
 		"found": {
-			params:  lt.RetrieveCounterpartyParams{ID: counterparty.ID},
+			params:  cpt.RetrieveCounterpartyParams{ID: counterparty.ID},
 			expName: "Tesco",
 		},
 		"found by name": {
-			params:  lt.RetrieveCounterpartyParams{Name: "Tesco"},
+			params:  cpt.RetrieveCounterpartyParams{Name: "Tesco"},
 			expName: "Tesco",
 		},
 		"found by name in another casing": {
-			params:  lt.RetrieveCounterpartyParams{Name: "TESCO"},
+			params:  cpt.RetrieveCounterpartyParams{Name: "TESCO"},
 			expName: "Tesco",
 		},
 		"invalid id": {
-			params: lt.RetrieveCounterpartyParams{ID: 0},
+			params: cpt.RetrieveCounterpartyParams{ID: 0},
 			expErr: true,
 		},
 		"not found": {
-			params: lt.RetrieveCounterpartyParams{ID: 999999},
+			params: cpt.RetrieveCounterpartyParams{ID: 999999},
 			expErr: true,
 		},
 	}
@@ -47,7 +47,7 @@ func (s *UnitTestSuite) Test_RetrieveCounterparty() {
 			}
 			require.NoError(s.T(), err)
 
-			var result lt.RetrieveCounterpartyResult
+			var result cpt.RetrieveCounterpartyResult
 			require.NoError(s.T(), activityResult.Get(&result))
 			require.NotNil(s.T(), result.Counterparty)
 			require.Equal(s.T(), tc.expName, result.Counterparty.Name)
@@ -64,19 +64,19 @@ func (s *UnitTestSuite) Test_ListCounterparties() {
 	temporaltesting.Insert(s.T(), s.DB, acme)
 
 	tests := map[string]struct {
-		params lt.ListCounterpartiesParams
+		params cpt.ListCounterpartiesParams
 		expIDs []int64
 	}{
 		"no filter lists all": {
-			params: lt.ListCounterpartiesParams{},
+			params: cpt.ListCounterpartiesParams{},
 			expIDs: []int64{tesco.ID, waitrose.ID, acme.ID},
 		},
 		"search matches substring case-insensitively": {
-			params: lt.ListCounterpartiesParams{NameContains: "tesc"},
+			params: cpt.ListCounterpartiesParams{NameContains: "tesc"},
 			expIDs: []int64{tesco.ID},
 		},
 		"search with no match returns empty": {
-			params: lt.ListCounterpartiesParams{NameContains: "nonexistent"},
+			params: cpt.ListCounterpartiesParams{NameContains: "nonexistent"},
 			expIDs: []int64{},
 		},
 	}
@@ -86,7 +86,7 @@ func (s *UnitTestSuite) Test_ListCounterparties() {
 			activityResult, err := s.Env.ExecuteActivity(s.aa.ListCounterparties, tc.params)
 			require.NoError(s.T(), err)
 
-			var result lt.ListCounterpartiesResult
+			var result cpt.ListCounterpartiesResult
 			require.NoError(s.T(), activityResult.Get(&result))
 			gotIDs := make([]int64, 0, len(result.Counterparties))
 			for _, cp := range result.Counterparties {

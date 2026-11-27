@@ -3,7 +3,7 @@ package journal
 import (
 	"time"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	"github.com/logicorg/ivfs/internal/pkg/temporaltesting"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/logicorg/ivfs/pkg/model/testhelpers"
@@ -19,12 +19,12 @@ func (s *UnitTestSuite) TestPostJournalEntry() {
 	debitAccount := testLedgerAccount(s.T(), s.DB, eur.ID, "cash", model.LedgerAccountAsset)
 	creditAccount := testLedgerAccount(s.T(), s.DB, eur.ID, "expense", model.LedgerAccountExpense)
 
-	input := lt.PostJournalEntryInput{
+	input := jt.PostJournalEntryInput{
 		IdempotencyKey: "post-groceries-1",
 		OccurredAt:     time.Now().UTC(),
 		Description:    ptr.NewPtr("groceries"),
 		Metadata:       map[string]string{"source": "test"},
-		Postings: []lt.PostingInput{
+		Postings: []jt.PostingInput{
 			{LedgerAccountID: debitAccount.ID, Amount: decimal.NewFromInt(45), Side: model.PostingDebit},
 			{LedgerAccountID: creditAccount.ID, Amount: decimal.NewFromInt(45), Side: model.PostingCredit},
 		},
@@ -32,7 +32,7 @@ func (s *UnitTestSuite) TestPostJournalEntry() {
 
 	activityResult, err := s.Env.ExecuteActivity(s.ja.PostJournalEntry, input)
 	require.NoError(s.T(), err)
-	var result lt.PostJournalEntryResult
+	var result jt.PostJournalEntryResult
 	require.NoError(s.T(), activityResult.Get(&result))
 	require.NotZero(s.T(), result.JournalEntryID)
 
@@ -77,7 +77,7 @@ func (s *UnitTestSuite) TestPostJournalEntry_AmountPrecision() {
 			amount := decimal.RequireFromString(tc.amount)
 			debitAccount := testLedgerAccount(s.T(), s.DB, tc.currency.ID, "debit "+name, model.LedgerAccountAsset)
 			creditAccount := testLedgerAccount(s.T(), s.DB, tc.currency.ID, "credit "+name, model.LedgerAccountExpense)
-			input := lt.PostJournalEntryInput{IdempotencyKey: name, OccurredAt: time.Now().UTC(), Postings: []lt.PostingInput{
+			input := jt.PostJournalEntryInput{IdempotencyKey: name, OccurredAt: time.Now().UTC(), Postings: []jt.PostingInput{
 				{LedgerAccountID: debitAccount.ID, Amount: amount, Side: model.PostingDebit},
 				{LedgerAccountID: creditAccount.ID, Amount: amount, Side: model.PostingCredit},
 			}}
@@ -105,7 +105,7 @@ func (s *UnitTestSuite) TestPostJournalEntry_ClosedLedgerAccount() {
 	closed := &model.LedgerAccount{CurrencyID: euro.ID, Name: "closed", Kind: model.LedgerAccountExpense, ClosedAt: &closedAt}
 	temporaltesting.Insert(s.T(), s.DB, closed)
 
-	_, err := s.Env.ExecuteActivity(s.ja.PostJournalEntry, lt.PostJournalEntryInput{IdempotencyKey: "into-closed", OccurredAt: time.Now().UTC(), Postings: []lt.PostingInput{
+	_, err := s.Env.ExecuteActivity(s.ja.PostJournalEntry, jt.PostJournalEntryInput{IdempotencyKey: "into-closed", OccurredAt: time.Now().UTC(), Postings: []jt.PostingInput{
 		{LedgerAccountID: open.ID, Amount: decimal.NewFromInt(10), Side: model.PostingCredit},
 		{LedgerAccountID: closed.ID, Amount: decimal.NewFromInt(10), Side: model.PostingDebit},
 	}})
@@ -122,10 +122,10 @@ func (s *UnitTestSuite) TestPostJournalEntry_WaitsForConcurrentClose() {
 	temporaltesting.Insert(s.T(), s.DB, euro)
 	debit := testLedgerAccount(s.T(), s.DB, euro.ID, "cash", model.LedgerAccountAsset)
 	credit := testLedgerAccount(s.T(), s.DB, euro.ID, "expense", model.LedgerAccountExpense)
-	journalEntryInput := lt.PostJournalEntryInput{
+	journalEntryInput := jt.PostJournalEntryInput{
 		IdempotencyKey: "racing-post",
 		OccurredAt:     time.Now().UTC(),
-		Postings: []lt.PostingInput{
+		Postings: []jt.PostingInput{
 			{LedgerAccountID: debit.ID, Amount: decimal.NewFromInt(10), Side: model.PostingDebit},
 			{LedgerAccountID: credit.ID, Amount: decimal.NewFromInt(10), Side: model.PostingCredit},
 		},
@@ -162,19 +162,19 @@ func (s *UnitTestSuite) TestPostJournalEntry_Idempotency() {
 	tagged, other := &model.Tag{Name: "vacation"}, &model.Tag{Name: "reimbursable"}
 	temporaltesting.Insert(s.T(), s.DB, tagged)
 	temporaltesting.Insert(s.T(), s.DB, other)
-	input := lt.PostJournalEntryInput{IdempotencyKey: "same-entry", OccurredAt: time.Now().UTC(), TagIDs: []int64{tagged.ID}, Postings: []lt.PostingInput{
+	input := jt.PostJournalEntryInput{IdempotencyKey: "same-entry", OccurredAt: time.Now().UTC(), TagIDs: []int64{tagged.ID}, Postings: []jt.PostingInput{
 		{LedgerAccountID: debitAccount.ID, Amount: decimal.NewFromInt(10), Side: model.PostingDebit},
 		{LedgerAccountID: creditAccount.ID, Amount: decimal.NewFromInt(10), Side: model.PostingCredit},
 	}}
 	first, err := s.Env.ExecuteActivity(s.ja.PostJournalEntry, input)
 	require.NoError(s.T(), err)
-	var firstResult lt.PostJournalEntryResult
+	var firstResult jt.PostJournalEntryResult
 	require.NoError(s.T(), first.Get(&firstResult))
 	// A retry returns the entry as it was posted, so other tags are ignored.
 	input.TagIDs = []int64{other.ID}
 	second, err := s.Env.ExecuteActivity(s.ja.PostJournalEntry, input)
 	require.NoError(s.T(), err)
-	var secondResult lt.PostJournalEntryResult
+	var secondResult jt.PostJournalEntryResult
 	require.NoError(s.T(), second.Get(&secondResult))
 	require.Equal(s.T(), firstResult.JournalEntryID, secondResult.JournalEntryID)
 
@@ -196,11 +196,11 @@ func (s *UnitTestSuite) TestPostJournalEntry_CurrencyBalancing() {
 	usdCredit := testLedgerAccount(s.T(), s.DB, dollar.ID, "usd credit", model.LedgerAccountExpense)
 
 	tests := map[string]struct {
-		postings []lt.PostingInput
+		postings []jt.PostingInput
 		wantErr  bool
 	}{
 		"balanced per currency": {
-			postings: []lt.PostingInput{
+			postings: []jt.PostingInput{
 				{LedgerAccountID: eurDebit.ID, Amount: decimal.NewFromInt(90), Side: model.PostingDebit},
 				{LedgerAccountID: eurCredit.ID, Amount: decimal.NewFromInt(90), Side: model.PostingCredit},
 				{LedgerAccountID: usdDebit.ID, Amount: decimal.NewFromInt(100), Side: model.PostingDebit},
@@ -208,7 +208,7 @@ func (s *UnitTestSuite) TestPostJournalEntry_CurrencyBalancing() {
 			},
 		},
 		"unbalanced per currency": {
-			postings: []lt.PostingInput{
+			postings: []jt.PostingInput{
 				{LedgerAccountID: eurDebit.ID, Amount: decimal.NewFromInt(90), Side: model.PostingDebit},
 				{LedgerAccountID: eurCredit.ID, Amount: decimal.NewFromInt(89), Side: model.PostingCredit},
 			},
@@ -217,7 +217,7 @@ func (s *UnitTestSuite) TestPostJournalEntry_CurrencyBalancing() {
 	}
 	for name, test := range tests {
 		s.Run(name, func() {
-			_, err := s.Env.ExecuteActivity(s.ja.PostJournalEntry, lt.PostJournalEntryInput{IdempotencyKey: "currency-" + name, OccurredAt: time.Now().UTC(), Postings: test.postings})
+			_, err := s.Env.ExecuteActivity(s.ja.PostJournalEntry, jt.PostJournalEntryInput{IdempotencyKey: "currency-" + name, OccurredAt: time.Now().UTC(), Postings: test.postings})
 			if test.wantErr {
 				require.Error(s.T(), err)
 			} else {
@@ -229,17 +229,17 @@ func (s *UnitTestSuite) TestPostJournalEntry_CurrencyBalancing() {
 func (s *UnitTestSuite) TestPostJournalEntryValidation() {
 	tests := []struct {
 		name string
-		in   lt.PostJournalEntryInput
+		in   jt.PostJournalEntryInput
 	}{
 		{
 			name: "missing occurrence date",
-			in:   lt.PostJournalEntryInput{Postings: make([]lt.PostingInput, 2)},
+			in:   jt.PostJournalEntryInput{Postings: make([]jt.PostingInput, 2)},
 		},
 		{
 			name: "fewer than two postings",
-			in: lt.PostJournalEntryInput{
+			in: jt.PostJournalEntryInput{
 				OccurredAt: time.Now(),
-				Postings:   make([]lt.PostingInput, 1),
+				Postings:   make([]jt.PostingInput, 1),
 			},
 		},
 	}
@@ -257,11 +257,11 @@ func (s *UnitTestSuite) TestPostJournalEntry_UnknownCounterparty() {
 	debit := testLedgerAccount(s.T(), s.DB, euro.ID, "cash", model.LedgerAccountAsset)
 	credit := testLedgerAccount(s.T(), s.DB, euro.ID, "expense", model.LedgerAccountExpense)
 
-	_, err := s.Env.ExecuteActivity(s.ja.PostJournalEntry, lt.PostJournalEntryInput{
+	_, err := s.Env.ExecuteActivity(s.ja.PostJournalEntry, jt.PostJournalEntryInput{
 		IdempotencyKey: "unknown-counterparty",
 		OccurredAt:     time.Now().UTC(),
 		CounterpartyID: ptr.Int64(999999),
-		Postings: []lt.PostingInput{
+		Postings: []jt.PostingInput{
 			{LedgerAccountID: debit.ID, Amount: decimal.NewFromInt(10), Side: model.PostingDebit},
 			{LedgerAccountID: credit.ID, Amount: decimal.NewFromInt(10), Side: model.PostingCredit},
 		},

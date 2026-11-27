@@ -2,23 +2,23 @@ package counterparties
 
 import (
 	activity "github.com/logicorg/ivfs/finance/activities/ledger/counterparties"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	cpt "github.com/logicorg/ivfs/finance/common/types/counterpartytypes"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
 func (s *WorkflowUnitTestSuite) TestRenameCounterparty() {
-	input := lt.RenameCounterpartyInput{CounterpartyID: 4, Name: "Tesco Ltd"}
+	input := cpt.RenameCounterpartyInput{CounterpartyID: 4, Name: "Tesco Ltd"}
 
 	tests := []struct {
 		name    string
-		result  *lt.CounterpartyMutationResult
+		result  *cpt.CounterpartyMutationResult
 		err     error
 		wantID  int64
 		wantErr string
 	}{
-		{name: "success", result: &lt.CounterpartyMutationResult{CounterpartyID: 4}, wantID: 4},
+		{name: "success", result: &cpt.CounterpartyMutationResult{CounterpartyID: 4}, wantID: 4},
 		{name: "activity error", err: assert.AnError, wantErr: assert.AnError.Error()},
 	}
 	for _, tt := range tests {
@@ -34,7 +34,7 @@ func (s *WorkflowUnitTestSuite) TestRenameCounterparty() {
 				return
 			}
 			require.NoError(s.T(), env.GetWorkflowError())
-			var result *lt.CounterpartyMutationResult
+			var result *cpt.CounterpartyMutationResult
 			require.NoError(s.T(), env.GetWorkflowResult(&result))
 			assert.Equal(s.T(), tt.wantID, result.CounterpartyID)
 		})

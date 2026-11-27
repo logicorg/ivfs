@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	"slices"
 
 	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
@@ -32,7 +33,7 @@ type deletionTarget struct {
 
 // loadDeletionTargetTx loads the target, or returns nil when it does not
 // exist.
-func loadDeletionTargetTx(ctx context.Context, tx bun.Tx, target lt.DeletionTarget) (*deletionTarget, error) {
+func loadDeletionTargetTx(ctx context.Context, tx bun.Tx, target act.DeletionTarget) (*deletionTarget, error) {
 	t := &deletionTarget{ledgerAccounts: map[int64]*model.LedgerAccount{}, financialAccounts: map[int64]*model.FinancialAccount{}}
 	if target.LedgerAccountID != nil {
 		var account model.LedgerAccount

@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	pft "github.com/logicorg/ivfs/finance/common/types/portfoliotypes"
 	"github.com/stretchr/testify/require"
 )
 
@@ -16,11 +16,11 @@ func TestCursor(t *testing.T) {
 
 	tests := map[string]struct {
 		after string
-		want  *lt.PositionMovementCursor
+		want  *pft.PositionMovementCursor
 	}{
 		"a cursor": {
 			after: "2026-01-31T10:00:00Z_2026-02-03T09:30:00.123456Z_7",
-			want:  &lt.PositionMovementCursor{OccurredAt: occurredAt, CreatedAt: createdAt, ID: 7},
+			want:  &pft.PositionMovementCursor{OccurredAt: occurredAt, CreatedAt: createdAt, ID: 7},
 		},
 		"nothing":                       {after: ""},
 		"no creation time":              {after: "2026-01-31T10:00:00Z_7"},

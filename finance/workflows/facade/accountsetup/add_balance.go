@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	ast "github.com/logicorg/ivfs/finance/common/types/accountsetuptypes"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	it "github.com/logicorg/ivfs/finance/common/types/institutiontypes"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
 	institutionwf "github.com/logicorg/ivfs/finance/workflows/institution"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
 	internalerrors "github.com/logicorg/ivfs/internal/pkg/errors"
@@ -53,8 +53,8 @@ func AddBalance(ctx workflow.Context, input ast.AddBalanceInput) (*ast.AddBalanc
 // retrieveOpenFinancialAccount retrieves a financial account and its
 // institution, failing with ErrResourceClosed when either is closed.
 func retrieveOpenFinancialAccount(ctx workflow.Context, id int64) (*financialAccountRef, error) {
-	var account lt.RetrieveFinancialAccountResult
-	err := workflow.ExecuteChildWorkflow(ctx, ledgeraccountswf.RetrieveFinancialAccount, lt.RetrieveFinancialAccountParams{ID: id}).
+	var account act.RetrieveFinancialAccountResult
+	err := workflow.ExecuteChildWorkflow(ctx, ledgeraccountswf.RetrieveFinancialAccount, act.RetrieveFinancialAccountParams{ID: id}).
 		Get(ctx, &account)
 	if err != nil {
 		return nil, fmt.Errorf("retrieve financial account %d: %w", id, err)

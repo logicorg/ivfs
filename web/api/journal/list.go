@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	journalwf "github.com/logicorg/ivfs/finance/workflows/ledger/journal"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/logicorg/ivfs/web/api/gateway"
@@ -26,7 +26,7 @@ func registerList(api huma.API, c client.Client) {
 			return nil, huma.Error422UnprocessableEntity("after is not the next of a page",
 				&huma.ErrorDetail{Location: "query.after", Value: in.After, Message: "not the next of a page"})
 		}
-		params := lt.ListJournalEntriesParams{
+		params := jt.ListJournalEntriesParams{
 			LedgerAccountID: in.LedgerAccountID, CategoryIDs: in.CategoryIDs, CounterpartyID: in.CounterpartyID, From: in.From, To: in.To,
 			Descending: in.Descending, Limit: in.Limit, After: after,
 		}
@@ -34,7 +34,7 @@ func registerList(api huma.API, c client.Client) {
 			params.Statuses = append(params.Statuses, model.JournalEntryStatus(status))
 		}
 
-		result, err := gateway.RunWorkflow[lt.ListJournalEntriesResult](ctx, c, journalwf.ListJournalEntries, params)
+		result, err := gateway.RunWorkflow[jt.ListJournalEntriesResult](ctx, c, journalwf.ListJournalEntries, params)
 		if err != nil {
 			return nil, err
 		}

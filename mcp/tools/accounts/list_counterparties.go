@@ -1,7 +1,7 @@
 package accounts
 
 import (
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	cpt "github.com/logicorg/ivfs/finance/common/types/counterpartytypes"
 	counterpartieswf "github.com/logicorg/ivfs/finance/workflows/ledger/counterparties"
 	"github.com/logicorg/ivfs/mcp/mcptypes"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -14,7 +14,7 @@ func registerListCounterparties(server *mcp.Server, c client.Client) {
 		Name:        "list_counterparties",
 		Description: "Search counterparties (payees/payers referenced by journal entries) by a substring of their name.",
 	}, mcptypes.WorkflowWithResult[
-		func(workflow.Context, lt.ListCounterpartiesParams) (*lt.ListCounterpartiesResult, error),
-		lt.ListCounterpartiesParams, lt.ListCounterpartiesResult,
+		func(workflow.Context, cpt.ListCounterpartiesParams) (*cpt.ListCounterpartiesResult, error),
+		cpt.ListCounterpartiesParams, cpt.ListCounterpartiesResult,
 	](c, counterpartieswf.ListCounterparties))
 }
