@@ -35,6 +35,8 @@ export const zAsset = z.object({
         'bond',
         'crypto',
         'commodity',
+        'real_estate',
+        'vehicle',
         'other'
     ]),
     name: z.string(),
@@ -51,6 +53,8 @@ export const zAssetForm = z.object({
         'bond',
         'crypto',
         'commodity',
+        'real_estate',
+        'vehicle',
         'other'
     ]),
     name: z.string().min(1),
@@ -396,7 +400,9 @@ export const zAccountForm = z.object({
         'bank',
         'card',
         'brokerage',
-        'cash'
+        'cash',
+        'loan',
+        'real_asset'
     ])
 });
 

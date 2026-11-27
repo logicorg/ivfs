@@ -61,9 +61,9 @@ export type AccountForm = {
      */
     openingBalancesAt?: string;
     /**
-     * bank holds money, card a credit card's debt, brokerage assets and money, cash a wallet
+     * bank holds money, card a credit card's debt, brokerage assets and money, cash a wallet, loan a mortgage's or another loan's debt, real_asset a house or a car
      */
-    type: 'bank' | 'card' | 'brokerage' | 'cash';
+    type: 'bank' | 'card' | 'brokerage' | 'cash' | 'loan' | 'real_asset';
 };
 
 export type AccountName = {
@@ -94,14 +94,14 @@ export type Asset = {
      * ISO 6166 identifier
      */
     isin?: string;
-    kind: 'equity' | 'stock' | 'etf' | 'fund' | 'bond' | 'crypto' | 'commodity' | 'other';
+    kind: 'equity' | 'stock' | 'etf' | 'fund' | 'bond' | 'crypto' | 'commodity' | 'real_estate' | 'vehicle' | 'other';
     name: string;
     ticker?: string;
 };
 
 export type AssetForm = {
     description?: string;
-    kind: 'equity' | 'stock' | 'etf' | 'fund' | 'bond' | 'crypto' | 'commodity' | 'other';
+    kind: 'equity' | 'stock' | 'etf' | 'fund' | 'bond' | 'crypto' | 'commodity' | 'real_estate' | 'vehicle' | 'other';
     /**
      * the asset's name; an asset with this name already is returned as it is
      */

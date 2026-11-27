@@ -111,12 +111,14 @@
             "type": "string"
           },
           "type": {
-            "description": "bank holds money, card a credit card's debt, brokerage assets and money, cash a wallet",
+            "description": "bank holds money, card a credit card's debt, brokerage assets and money, cash a wallet, loan a mortgage's or another loan's debt, real_asset a house or a car",
             "enum": [
               "bank",
               "card",
               "brokerage",
-              "cash"
+              "cash",
+              "loan",
+              "real_asset"
             ],
             "type": "string"
           }
@@ -228,6 +230,8 @@
               "bond",
               "crypto",
               "commodity",
+              "real_estate",
+              "vehicle",
               "other"
             ],
             "type": "string"
@@ -261,6 +265,8 @@
               "bond",
               "crypto",
               "commodity",
+              "real_estate",
+              "vehicle",
               "other"
             ],
             "type": "string"

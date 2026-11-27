@@ -4,6 +4,7 @@ package accountsetup
 
 import (
 	"fmt"
+	"strings"
 
 	ast "github.com/logicorg/ivfs/finance/common/types/accountsetuptypes"
 	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
@@ -16,6 +17,7 @@ import (
 const (
 	cashBalance        = model.BrokerageCashBalance
 	cardBalance        = "Card balance"
+	principalBalance   = "Principal"
 	investmentsBalance = model.BrokerageInvestmentsBalance
 	openingBalances    = lt.OpeningBalancesAccountName
 	fxClearing         = lt.FXClearingAccountName
@@ -35,7 +37,11 @@ func scaffold(accountType ast.AccountType) []balanceSpec {
 	switch accountType {
 	case ast.AccountTypeCard:
 		return []balanceSpec{{cardBalance, model.LedgerAccountLiability}}
-	case ast.AccountTypeBrokerage:
+	case ast.AccountTypeLoan:
+		return []balanceSpec{{principalBalance, model.LedgerAccountLiability}}
+	case ast.AccountTypeBrokerage, ast.AccountTypeRealAsset:
+		// A real asset keeps a brokerage's names, so that its "Investments" is
+		// left out of net worth and its units are traded by the same rules.
 		return []balanceSpec{{cashBalance, model.LedgerAccountAsset}, {investmentsBalance, model.LedgerAccountAsset}}
 	default:
 		return []balanceSpec{{cashBalance, model.LedgerAccountAsset}}
@@ -59,18 +65,40 @@ func institutionKind(accountType ast.AccountType) string {
 		return "broker"
 	case ast.AccountTypeCash:
 		return "cash"
+	case ast.AccountTypeLoan:
+		return "lender"
+	case ast.AccountTypeRealAsset:
+		return "real assets"
 	default:
 		return "bank"
 	}
 }
 
 // institutionName is the institution the account belongs to: the one the
-// request names, or "Physical cash" for a cash account.
+// request names, "Physical cash" for a cash account, or "Real assets" for a
+// real asset account that names none.
 func institutionName(input ast.OpenAccountInput) string {
-	if input.Type == ast.AccountTypeCash {
+	switch {
+	case input.Type == ast.AccountTypeCash:
 		return ast.PhysicalCashInstitution
+	case unnamedRealAsset(input):
+		return ast.RealAssetsInstitution
+	default:
+		return input.InstitutionName
 	}
-	return input.InstitutionName
+}
+
+// builtInInstitution reports whether the account belongs to an institution
+// whose name is a constant, which is created without asking since it cannot
+// be misspelt.
+func builtInInstitution(input ast.OpenAccountInput) bool {
+	return input.Type == ast.AccountTypeCash || unnamedRealAsset(input)
+}
+
+// unnamedRealAsset reports whether the input is a real asset account that
+// names no institution, which validation allows.
+func unnamedRealAsset(input ast.OpenAccountInput) bool {
+	return input.Type == ast.AccountTypeRealAsset && strings.TrimSpace(input.InstitutionName) == ""
 }
 
 // accountName is the financial account's name: the one the request gives, or
@@ -82,7 +110,7 @@ func accountName(input ast.OpenAccountInput) string {
 	case input.Type == ast.AccountTypeCash:
 		return wallet
 	default:
-		return input.InstitutionName
+		return institutionName(input)
 	}
 }
 

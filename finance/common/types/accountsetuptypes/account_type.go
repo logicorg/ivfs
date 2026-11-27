@@ -20,15 +20,27 @@ const (
 	AccountTypeBrokerage AccountType = "brokerage"
 	// AccountTypeCash holds physical money, such as a wallet.
 	AccountTypeCash AccountType = "cash"
+	// AccountTypeLoan holds a debt with a contract: a mortgage, a car or
+	// personal loan, or a securities-backed credit line.
+	AccountTypeLoan AccountType = "loan"
+	// AccountTypeRealAsset holds tangible things, and money: a house, a share
+	// of one, or a car. It has a brokerage's balances, so its units are bought
+	// and sold as a brokerage's are, but is not listed as one.
+	AccountTypeRealAsset AccountType = "real_asset"
 )
 
 // AccountTypes are the valid account types.
-var AccountTypes = []AccountType{AccountTypeBank, AccountTypeCard, AccountTypeBrokerage, AccountTypeCash}
+var AccountTypes = []AccountType{AccountTypeBank, AccountTypeCard, AccountTypeBrokerage, AccountTypeCash, AccountTypeLoan, AccountTypeRealAsset}
 
 // PhysicalCashInstitution is the institution every cash account belongs to.
 // It is created on first use, without asking, since its name is a constant
 // and cannot be misspelt.
 const PhysicalCashInstitution = "Physical cash"
+
+// RealAssetsInstitution is the institution a real asset account belongs to
+// when the request names none, created on first use as "Physical cash" is:
+// a house or a car is usually held by nobody but its owner.
+const RealAssetsInstitution = "Real assets"
 
 // Outcome says what an account setup request did. Every outcome other than
 // OutcomeOpened asks the caller a question and writes nothing.
