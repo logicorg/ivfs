@@ -3,8 +3,8 @@
 import { type InfiniteData, infiniteQueryOptions, queryOptions, type UseMutationOptions } from '@tanstack/react-query';
 
 import { client } from '../client.gen';
-import { addBalance, applyPreset, buyAsset, closeCategory, closeFinancialAccount, closeInstitution, closeLedgerAccount, createAsset, createCategory, createCounterparty, createCurrency, createTag, deleteCategory, deleteCounterparty, deleteCurrency, deleteFinancialAccount, deleteInstitution, deleteJournalEntry, deleteLedgerAccount, deletePositionMovement, deleteTag, getAccountBalances, getCategoryTotals, getDefaultPreset, getHealth, getJournalEntry, getLedgerAccountBalance, getNetWorthSeries, listAssets, listAssetValues, listCategories, listConversionRates, listCounterparties, listCurrencies, listFinancialAccounts, listHoldingMovements, listHoldings, listJournalEntries, listTags, moveCategory, openAccount, type Options, previewCategoryDeletion, previewFinancialAccountDeletion, previewInstitutionDeletion, previewLedgerAccountDeletion, recordExpense, recordIncome, recordTransfer, renameCategory, renameCounterparty, renameFinancialAccount, renameLedgerAccount, retrieveUserSettings, sellAsset, setJournalEntryTags, updateCurrency, updateTag, updateUserSettings, vestAsset } from '../sdk.gen';
-import type { AddBalanceData, AddBalanceError, AddBalanceResponse, ApplyPresetData, ApplyPresetError, ApplyPresetResponse, BuyAssetData, BuyAssetError, BuyAssetResponse, CloseCategoryData, CloseCategoryError, CloseCategoryResponse, CloseFinancialAccountData, CloseFinancialAccountError, CloseFinancialAccountResponse, CloseInstitutionData, CloseInstitutionError, CloseInstitutionResponse, CloseLedgerAccountData, CloseLedgerAccountError, CloseLedgerAccountResponse, CreateAssetData, CreateAssetError, CreateAssetResponse, CreateCategoryData, CreateCategoryError, CreateCategoryResponse, CreateCounterpartyData, CreateCounterpartyError, CreateCounterpartyResponse, CreateCurrencyData, CreateCurrencyError, CreateCurrencyResponse, CreateTagData, CreateTagError, CreateTagResponse, DeleteCategoryData, DeleteCategoryError, DeleteCategoryResponse, DeleteCounterpartyData, DeleteCounterpartyError, DeleteCounterpartyResponse, DeleteCurrencyData, DeleteCurrencyError, DeleteCurrencyResponse, DeleteFinancialAccountData, DeleteFinancialAccountError, DeleteFinancialAccountResponse, DeleteInstitutionData, DeleteInstitutionError, DeleteInstitutionResponse, DeleteJournalEntryData, DeleteJournalEntryError, DeleteJournalEntryResponse, DeleteLedgerAccountData, DeleteLedgerAccountError, DeleteLedgerAccountResponse, DeletePositionMovementData, DeletePositionMovementError, DeletePositionMovementResponse, DeleteTagData, DeleteTagError, DeleteTagResponse, GetAccountBalancesData, GetAccountBalancesError, GetAccountBalancesResponse, GetCategoryTotalsData, GetCategoryTotalsError, GetCategoryTotalsResponse, GetDefaultPresetData, GetDefaultPresetError, GetDefaultPresetResponse, GetHealthData, GetHealthError, GetHealthResponse, GetJournalEntryData, GetJournalEntryError, GetJournalEntryResponse, GetLedgerAccountBalanceData, GetLedgerAccountBalanceError, GetLedgerAccountBalanceResponse, GetNetWorthSeriesData, GetNetWorthSeriesError, GetNetWorthSeriesResponse, ListAssetsData, ListAssetsError, ListAssetsResponse, ListAssetValuesData, ListAssetValuesError, ListAssetValuesResponse, ListCategoriesData, ListCategoriesError, ListCategoriesResponse, ListConversionRatesData, ListConversionRatesError, ListConversionRatesResponse, ListCounterpartiesData, ListCounterpartiesError, ListCounterpartiesResponse, ListCurrenciesData, ListCurrenciesError, ListCurrenciesResponse, ListFinancialAccountsData, ListFinancialAccountsError, ListFinancialAccountsResponse, ListHoldingMovementsData, ListHoldingMovementsError, ListHoldingMovementsResponse, ListHoldingsData, ListHoldingsError, ListHoldingsResponse, ListJournalEntriesData, ListJournalEntriesError, ListJournalEntriesResponse, ListTagsData, ListTagsError, ListTagsResponse, MoveCategoryData, MoveCategoryError, MoveCategoryResponse, OpenAccountData, OpenAccountError, OpenAccountResponse, PreviewCategoryDeletionData, PreviewCategoryDeletionError, PreviewCategoryDeletionResponse, PreviewFinancialAccountDeletionData, PreviewFinancialAccountDeletionError, PreviewFinancialAccountDeletionResponse, PreviewInstitutionDeletionData, PreviewInstitutionDeletionError, PreviewInstitutionDeletionResponse, PreviewLedgerAccountDeletionData, PreviewLedgerAccountDeletionError, PreviewLedgerAccountDeletionResponse, RecordExpenseData, RecordExpenseError, RecordExpenseResponse, RecordIncomeData, RecordIncomeError, RecordIncomeResponse, RecordTransferData, RecordTransferError, RecordTransferResponse, RenameCategoryData, RenameCategoryError, RenameCategoryResponse, RenameCounterpartyData, RenameCounterpartyError, RenameCounterpartyResponse, RenameFinancialAccountData, RenameFinancialAccountError, RenameFinancialAccountResponse, RenameLedgerAccountData, RenameLedgerAccountError, RenameLedgerAccountResponse, RetrieveUserSettingsData, RetrieveUserSettingsError, RetrieveUserSettingsResponse, SellAssetData, SellAssetError, SellAssetResponse, SetJournalEntryTagsData, SetJournalEntryTagsError, SetJournalEntryTagsResponse, UpdateCurrencyData, UpdateCurrencyError, UpdateCurrencyResponse, UpdateTagData, UpdateTagError, UpdateTagResponse, UpdateUserSettingsData, UpdateUserSettingsError, UpdateUserSettingsResponse, VestAssetData, VestAssetError, VestAssetResponse } from '../types.gen';
+import { addBalance, applyPreset, buyAsset, closeCategory, closeFinancialAccount, closeInstitution, closeLedgerAccount, createAsset, createCategory, createCounterparty, createCurrency, createTag, deleteCategory, deleteCounterparty, deleteCurrency, deleteFinancialAccount, deleteInstitution, deleteJournalEntry, deleteLedgerAccount, deletePositionMovement, deleteTag, getAccountBalances, getCategoryTotals, getDefaultPreset, getHealth, getJournalEntry, getLedgerAccountBalance, getNetWorthSeries, listAssets, listAssetValues, listCategories, listConversionRates, listCounterparties, listCurrencies, listFinancialAccounts, listHoldingMovements, listHoldings, listJournalEntries, listTags, moveCategory, openAccount, type Options, previewCategoryDeletion, previewFinancialAccountDeletion, previewInstitutionDeletion, previewLedgerAccountDeletion, recordExpense, recordIncome, recordTransfer, renameCategory, renameCounterparty, renameFinancialAccount, renameLedgerAccount, retrieveUserSettings, sellAsset, setJournalEntryTags, updateCurrency, updateExpense, updateIncome, updateTag, updateTransfer, updateUserSettings, vestAsset } from '../sdk.gen';
+import type { AddBalanceData, AddBalanceError, AddBalanceResponse, ApplyPresetData, ApplyPresetError, ApplyPresetResponse, BuyAssetData, BuyAssetError, BuyAssetResponse, CloseCategoryData, CloseCategoryError, CloseCategoryResponse, CloseFinancialAccountData, CloseFinancialAccountError, CloseFinancialAccountResponse, CloseInstitutionData, CloseInstitutionError, CloseInstitutionResponse, CloseLedgerAccountData, CloseLedgerAccountError, CloseLedgerAccountResponse, CreateAssetData, CreateAssetError, CreateAssetResponse, CreateCategoryData, CreateCategoryError, CreateCategoryResponse, CreateCounterpartyData, CreateCounterpartyError, CreateCounterpartyResponse, CreateCurrencyData, CreateCurrencyError, CreateCurrencyResponse, CreateTagData, CreateTagError, CreateTagResponse, DeleteCategoryData, DeleteCategoryError, DeleteCategoryResponse, DeleteCounterpartyData, DeleteCounterpartyError, DeleteCounterpartyResponse, DeleteCurrencyData, DeleteCurrencyError, DeleteCurrencyResponse, DeleteFinancialAccountData, DeleteFinancialAccountError, DeleteFinancialAccountResponse, DeleteInstitutionData, DeleteInstitutionError, DeleteInstitutionResponse, DeleteJournalEntryData, DeleteJournalEntryError, DeleteJournalEntryResponse, DeleteLedgerAccountData, DeleteLedgerAccountError, DeleteLedgerAccountResponse, DeletePositionMovementData, DeletePositionMovementError, DeletePositionMovementResponse, DeleteTagData, DeleteTagError, DeleteTagResponse, GetAccountBalancesData, GetAccountBalancesError, GetAccountBalancesResponse, GetCategoryTotalsData, GetCategoryTotalsError, GetCategoryTotalsResponse, GetDefaultPresetData, GetDefaultPresetError, GetDefaultPresetResponse, GetHealthData, GetHealthError, GetHealthResponse, GetJournalEntryData, GetJournalEntryError, GetJournalEntryResponse, GetLedgerAccountBalanceData, GetLedgerAccountBalanceError, GetLedgerAccountBalanceResponse, GetNetWorthSeriesData, GetNetWorthSeriesError, GetNetWorthSeriesResponse, ListAssetsData, ListAssetsError, ListAssetsResponse, ListAssetValuesData, ListAssetValuesError, ListAssetValuesResponse, ListCategoriesData, ListCategoriesError, ListCategoriesResponse, ListConversionRatesData, ListConversionRatesError, ListConversionRatesResponse, ListCounterpartiesData, ListCounterpartiesError, ListCounterpartiesResponse, ListCurrenciesData, ListCurrenciesError, ListCurrenciesResponse, ListFinancialAccountsData, ListFinancialAccountsError, ListFinancialAccountsResponse, ListHoldingMovementsData, ListHoldingMovementsError, ListHoldingMovementsResponse, ListHoldingsData, ListHoldingsError, ListHoldingsResponse, ListJournalEntriesData, ListJournalEntriesError, ListJournalEntriesResponse, ListTagsData, ListTagsError, ListTagsResponse, MoveCategoryData, MoveCategoryError, MoveCategoryResponse, OpenAccountData, OpenAccountError, OpenAccountResponse, PreviewCategoryDeletionData, PreviewCategoryDeletionError, PreviewCategoryDeletionResponse, PreviewFinancialAccountDeletionData, PreviewFinancialAccountDeletionError, PreviewFinancialAccountDeletionResponse, PreviewInstitutionDeletionData, PreviewInstitutionDeletionError, PreviewInstitutionDeletionResponse, PreviewLedgerAccountDeletionData, PreviewLedgerAccountDeletionError, PreviewLedgerAccountDeletionResponse, RecordExpenseData, RecordExpenseError, RecordExpenseResponse, RecordIncomeData, RecordIncomeError, RecordIncomeResponse, RecordTransferData, RecordTransferError, RecordTransferResponse, RenameCategoryData, RenameCategoryError, RenameCategoryResponse, RenameCounterpartyData, RenameCounterpartyError, RenameCounterpartyResponse, RenameFinancialAccountData, RenameFinancialAccountError, RenameFinancialAccountResponse, RenameLedgerAccountData, RenameLedgerAccountError, RenameLedgerAccountResponse, RetrieveUserSettingsData, RetrieveUserSettingsError, RetrieveUserSettingsResponse, SellAssetData, SellAssetError, SellAssetResponse, SetJournalEntryTagsData, SetJournalEntryTagsError, SetJournalEntryTagsResponse, UpdateCurrencyData, UpdateCurrencyError, UpdateCurrencyResponse, UpdateExpenseData, UpdateExpenseError, UpdateExpenseResponse, UpdateIncomeData, UpdateIncomeError, UpdateIncomeResponse, UpdateTagData, UpdateTagError, UpdateTagResponse, UpdateTransferData, UpdateTransferError, UpdateTransferResponse, UpdateUserSettingsData, UpdateUserSettingsError, UpdateUserSettingsResponse, VestAssetData, VestAssetError, VestAssetResponse } from '../types.gen';
 
 /**
  * Open a financial account with its balances
@@ -1205,6 +1205,25 @@ export const recordExpenseMutation = (options?: Partial<Options<RecordExpenseDat
 };
 
 /**
+ * Correct a journal entry to an expense
+ *
+ * The posted entry becomes this transaction whatever it was before, and keeps its id and its idempotency key; a draft is refused. It loses any position movement it had, and the holdings that leaves negative at some point in time are returned as warnings; the correction is made all the same.
+ */
+export const updateExpenseMutation = (options?: Partial<Options<UpdateExpenseData>>): UseMutationOptions<UpdateExpenseResponse, UpdateExpenseError, Options<UpdateExpenseData>> => {
+    const mutationOptions: UseMutationOptions<UpdateExpenseResponse, UpdateExpenseError, Options<UpdateExpenseData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await updateExpense({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
  * Record money earned on an income category into a balance
  *
  * A repeated idempotency key returns the entry first recorded with it, posting nothing.
@@ -1224,6 +1243,25 @@ export const recordIncomeMutation = (options?: Partial<Options<RecordIncomeData>
 };
 
 /**
+ * Correct a journal entry to an income
+ *
+ * The posted entry becomes this transaction whatever it was before, and keeps its id and its idempotency key; a draft is refused. It loses any position movement it had, and the holdings that leaves negative at some point in time are returned as warnings; the correction is made all the same.
+ */
+export const updateIncomeMutation = (options?: Partial<Options<UpdateIncomeData>>): UseMutationOptions<UpdateIncomeResponse, UpdateIncomeError, Options<UpdateIncomeData>> => {
+    const mutationOptions: UseMutationOptions<UpdateIncomeResponse, UpdateIncomeError, Options<UpdateIncomeData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await updateIncome({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
  * Record money moved from one balance to another, possibly into another currency
  *
  * Charges are booked as expenses out of the amount that leaves. Between currencies, toAmount is the amount that arrives, and the transfer is an exchange whose fee is the one charge allowed. A repeated idempotency key returns the entry first recorded with it, posting nothing.
@@ -1232,6 +1270,25 @@ export const recordTransferMutation = (options?: Partial<Options<RecordTransferD
     const mutationOptions: UseMutationOptions<RecordTransferResponse, RecordTransferError, Options<RecordTransferData>> = {
         mutationFn: async (fnOptions) => {
             const { data } = await recordTransfer({
+                ...options,
+                ...fnOptions,
+                throwOnError: true
+            });
+            return data;
+        }
+    };
+    return mutationOptions;
+};
+
+/**
+ * Correct a journal entry to a transfer, possibly into another currency
+ *
+ * Between currencies, the rate is worked out again from the amounts, and a provider reference the entry had is dropped. The posted entry becomes this transaction whatever it was before, and keeps its id and its idempotency key; a draft is refused. It loses any position movement it had, and the holdings that leaves negative at some point in time are returned as warnings; the correction is made all the same.
+ */
+export const updateTransferMutation = (options?: Partial<Options<UpdateTransferData>>): UseMutationOptions<UpdateTransferResponse, UpdateTransferError, Options<UpdateTransferData>> => {
+    const mutationOptions: UseMutationOptions<UpdateTransferResponse, UpdateTransferError, Options<UpdateTransferData>> = {
+        mutationFn: async (fnOptions) => {
+            const { data } = await updateTransfer({
                 ...options,
                 ...fnOptions,
                 throwOnError: true

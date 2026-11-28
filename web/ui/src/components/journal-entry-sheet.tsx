@@ -9,6 +9,7 @@ import {
   listCurrenciesOptions,
   setJournalEntryTagsMutation,
 } from "@/api/@tanstack/react-query.gen"
+import { CorrectTransactionDialog } from "@/components/correct-transaction-dialog"
 import { ProblemMessages } from "@/components/form-fields"
 import { TagPicker } from "@/components/tag-picker"
 import { NegativeHoldingWarnings } from "@/components/negative-holding-warnings"
@@ -37,7 +38,7 @@ type JournalEntrySheetProps = {
 }
 
 // JournalEntrySheet shows a journal entry with its postings, changes its tags,
-// and deletes it.
+// corrects it when a transaction posted it, and deletes it.
 export function JournalEntrySheet({ entryId, onSelect }: JournalEntrySheetProps) {
   // deleted is the entry just deleted along with the holdings that deletion left
   // negative, shown in place of the entry while the sheet still shows its id.
@@ -49,6 +50,10 @@ export function JournalEntrySheet({ entryId, onSelect }: JournalEntrySheetProps)
   })
   const currencies = useQuery(listCurrenciesOptions())
   const [deleting, setDeleting] = useState(false)
+  const [correcting, setCorrecting] = useState(false)
+  // corrected is the entry just corrected along with the holdings the
+  // correction left negative, shown above the entry while the sheet shows it.
+  const [corrected, setCorrected] = useState<{ entryId: number; warnings: NegativeHolding[] }>()
 
   return (
     <Sheet open={entryId !== undefined} onOpenChange={(open) => !open && onSelect(undefined)}>
@@ -76,13 +81,29 @@ export function JournalEntrySheet({ entryId, onSelect }: JournalEntrySheetProps)
               <SheetTitle>{entry.data.description ?? `Journal entry ${entry.data.id}`}</SheetTitle>
               <SheetDescription>{formatDate(entry.data.occurredAt, true)}</SheetDescription>
             </SheetHeader>
+            {corrected?.entryId === entry.data.id && (
+              <NegativeHoldingWarnings title="This correction leaves a holding negative" warnings={corrected.warnings} />
+            )}
             <EntryFacts entry={entry.data} />
             <Postings entry={entry.data} currencies={currencies.data?.currencies ?? []} />
             <SheetFooter>
+              {entry.data.transaction && (
+                <Button variant="outline" onClick={() => setCorrecting(true)}>
+                  Edit entry
+                </Button>
+              )}
               <Button variant="destructive" onClick={() => setDeleting(true)}>
                 Delete entry
               </Button>
             </SheetFooter>
+            <CorrectTransactionDialog
+              entry={correcting ? entry.data : null}
+              onOpenChange={setCorrecting}
+              onCorrected={(warnings) => {
+                setCorrecting(false)
+                setCorrected({ entryId: entry.data.id, warnings })
+              }}
+            />
             <DeleteEntryDialog
               entry={deleting ? entry.data : null}
               onOpenChange={setDeleting}

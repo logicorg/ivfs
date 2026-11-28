@@ -58,6 +58,9 @@ type EntryDetail struct {
 	CounterpartyName string     `json:"counterpartyName,omitempty"`
 	PostedAt         *time.Time `json:"postedAt,omitempty"`
 	CreatedAt        time.Time  `json:"createdAt"`
+	// Transaction is the entry as the endpoints that correct an entry take it,
+	// and is absent on one no transaction posts, such as a trade.
+	Transaction *EntryTransaction `json:"transaction,omitempty"`
 }
 
 // ListJournalEntriesInput is the request of GET /api/journal-entries.

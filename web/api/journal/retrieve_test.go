@@ -62,6 +62,29 @@ func TestRetrieve(t *testing.T) {
 			WantStatus: http.StatusOK,
 			WantBody:   `{"id":8,"occurredAt":"2026-01-31T10:00:00Z","status":"draft",` + postingsBody + `,"tags":[],"createdAt":"2026-01-31T10:00:00Z"}`,
 		},
+		"an entry a transaction posts": {
+			Method: http.MethodGet, Path: "/api/journal-entries/9",
+			Call: &apitest.WorkflowCall{
+				Workflow: journalwf.RetrieveJournalEntry,
+				Params:   jt.RetrieveJournalEntryParams{ID: 9},
+				Result: jt.RetrieveJournalEntryResult{JournalEntry: &model.JournalEntry{
+					ID: 9, OccurredAt: day, Status: model.JournalEntryPosted, CreatedAt: day,
+					Postings: []model.Posting{
+						{
+							ID: 72, LineNumber: 1, LedgerAccountID: 101, Amount: decimal.RequireFromString("2500"), Side: model.PostingDebit,
+							LedgerAccount: &model.LedgerAccount{ID: 101, Name: "Bank", Kind: model.LedgerAccountAsset, CurrencyID: 1, FinancialAccountID: ptr.Int64(10)},
+						},
+						postings[1],
+					},
+				}},
+			},
+			WantStatus: http.StatusOK,
+			WantBody: `{"id":9,"occurredAt":"2026-01-31T10:00:00Z","status":"posted","postings":[` +
+				`{"lineNumber":1,"ledgerAccountId":101,"ledgerAccountName":"Bank","kind":"asset","currencyId":1,"amount":"2500","side":"debit"},` +
+				`{"lineNumber":2,"ledgerAccountId":300,"ledgerAccountName":"Salary","kind":"income","currencyId":1,"amount":"2500","side":"credit","categoryId":40,"categoryName":"Wages"}]` +
+				`,"tags":[],"createdAt":"2026-01-31T10:00:00Z","transaction":{"income":{"balanceLedgerAccountId":101,"categoryId":40,` +
+				`"amount":"2500","occurredAt":"2026-01-31T10:00:00Z"}}}`,
+		},
 		"an entry that does not exist": {
 			Method: http.MethodGet, Path: "/api/journal-entries/99",
 			Call: &apitest.WorkflowCall{

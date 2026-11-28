@@ -994,6 +994,9 @@
               "$ref": "#/components/schemas/EntryTag"
             },
             "type": "array"
+          },
+          "transaction": {
+            "$ref": "#/components/schemas/EntryTransaction"
           }
         },
         "required": [
@@ -1072,6 +1075,21 @@
         ],
         "type": "object"
       },
+      "EntryTransaction": {
+        "additionalProperties": false,
+        "properties": {
+          "expense": {
+            "$ref": "#/components/schemas/Expense"
+          },
+          "income": {
+            "$ref": "#/components/schemas/Income"
+          },
+          "transfer": {
+            "$ref": "#/components/schemas/Transfer"
+          }
+        },
+        "type": "object"
+      },
       "ErrorDetail": {
         "additionalProperties": false,
         "properties": {
@@ -1138,6 +1156,58 @@
             "type": "string"
           }
         },
+        "type": "object"
+      },
+      "Expense": {
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "description": "the amount spent, greater than zero",
+            "examples": [
+              "1234.56"
+            ],
+            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+            "type": "string"
+          },
+          "balanceLedgerAccountId": {
+            "description": "the balance the money leaves",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "categoryId": {
+            "description": "the expense category it is spent on; omitted when lines are given",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "description": {
+            "description": "a note on the entry",
+            "type": "string"
+          },
+          "lines": {
+            "description": "what a payment spent on several things went on, adding up to amount, in place of categoryId",
+            "items": {
+              "$ref": "#/components/schemas/SplitForm"
+            },
+            "type": "array"
+          },
+          "occurredAt": {
+            "description": "the instant the money was spent",
+            "format": "date-time",
+            "type": "string"
+          },
+          "tagIds": {
+            "description": "the tags of the entry; a repeated id counts once",
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "balanceLedgerAccountId",
+          "amount",
+          "occurredAt"
+        ],
         "type": "object"
       },
       "ExpenseForm": {
@@ -1315,6 +1385,52 @@
         },
         "required": [
           "holdings"
+        ],
+        "type": "object"
+      },
+      "Income": {
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "description": "the amount earned, greater than zero",
+            "examples": [
+              "1234.56"
+            ],
+            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+            "type": "string"
+          },
+          "balanceLedgerAccountId": {
+            "description": "the balance the money reaches",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "categoryId": {
+            "description": "the income category it is earned on",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "description": {
+            "description": "a note on the entry",
+            "type": "string"
+          },
+          "occurredAt": {
+            "description": "the instant the money was earned",
+            "format": "date-time",
+            "type": "string"
+          },
+          "tagIds": {
+            "description": "the tags of the entry; a repeated id counts once",
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "balanceLedgerAccountId",
+          "categoryId",
+          "amount",
+          "occurredAt"
         ],
         "type": "object"
       },
@@ -2131,6 +2247,67 @@
         ],
         "type": "object"
       },
+      "Transfer": {
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "description": "the amount that leaves, greater than zero",
+            "examples": [
+              "1234.56"
+            ],
+            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+            "type": "string"
+          },
+          "charges": {
+            "description": "what moving the money cost, such as an instalment's interest, taken out of amount; at most one, the exchange fee, between currencies",
+            "items": {
+              "$ref": "#/components/schemas/SplitForm"
+            },
+            "type": "array"
+          },
+          "description": {
+            "description": "a note on the entry",
+            "type": "string"
+          },
+          "fromLedgerAccountId": {
+            "description": "the balance the money leaves",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "occurredAt": {
+            "description": "the instant the money moved",
+            "format": "date-time",
+            "type": "string"
+          },
+          "tagIds": {
+            "description": "the tags of the entry; a repeated id counts once",
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "toAmount": {
+            "description": "the amount that arrives: required between currencies, else omitted or equal to amount less the charges",
+            "examples": [
+              "1234.56"
+            ],
+            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+            "type": "string"
+          },
+          "toLedgerAccountId": {
+            "description": "the balance the money reaches",
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "fromLedgerAccountId",
+          "toLedgerAccountId",
+          "amount",
+          "occurredAt"
+        ],
+        "type": "object"
+      },
       "TransferForm": {
         "additionalProperties": false,
         "properties": {
@@ -2195,6 +2372,24 @@
           "toLedgerAccountId",
           "amount",
           "occurredAt"
+        ],
+        "type": "object"
+      },
+      "UpdatedTransaction": {
+        "additionalProperties": false,
+        "properties": {
+          "journalEntryId": {
+            "type": "integer"
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/components/schemas/NegativeHolding"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "journalEntryId"
         ],
         "type": "object"
       },
@@ -6103,6 +6298,91 @@
         ]
       }
     },
+    "/api/transactions/expenses/{id}": {
+      "put": {
+        "description": "The posted entry becomes this transaction whatever it was before, and keeps its id and its idempotency key; a draft is refused. It loses any position movement it had, and the holdings that leaves negative at some point in time are returned as warnings; the correction is made all the same.",
+        "operationId": "update-expense",
+        "parameters": [
+          {
+            "description": "the journal entry to correct",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "the journal entry to correct",
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Expense"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdatedTransaction"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Correct a journal entry to an expense",
+        "tags": [
+          "transactions"
+        ]
+      }
+    },
     "/api/transactions/incomes": {
       "post": {
         "description": "A repeated idempotency key returns the entry first recorded with it, posting nothing.",
@@ -6175,6 +6455,91 @@
         ]
       }
     },
+    "/api/transactions/incomes/{id}": {
+      "put": {
+        "description": "The posted entry becomes this transaction whatever it was before, and keeps its id and its idempotency key; a draft is refused. It loses any position movement it had, and the holdings that leaves negative at some point in time are returned as warnings; the correction is made all the same.",
+        "operationId": "update-income",
+        "parameters": [
+          {
+            "description": "the journal entry to correct",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "the journal entry to correct",
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Income"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdatedTransaction"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Correct a journal entry to an income",
+        "tags": [
+          "transactions"
+        ]
+      }
+    },
     "/api/transactions/transfers": {
       "post": {
         "description": "Charges are booked as expenses out of the amount that leaves. Between currencies, toAmount is the amount that arrives, and the transfer is an exchange whose fee is the one charge allowed. A repeated idempotency key returns the entry first recorded with it, posting nothing.",
@@ -6242,6 +6607,91 @@
           }
         },
         "summary": "Record money moved from one balance to another, possibly into another currency",
+        "tags": [
+          "transactions"
+        ]
+      }
+    },
+    "/api/transactions/transfers/{id}": {
+      "put": {
+        "description": "Between currencies, the rate is worked out again from the amounts, and a provider reference the entry had is dropped. The posted entry becomes this transaction whatever it was before, and keeps its id and its idempotency key; a draft is refused. It loses any position movement it had, and the holdings that leaves negative at some point in time are returned as warnings; the correction is made all the same.",
+        "operationId": "update-transfer",
+        "parameters": [
+          {
+            "description": "the journal entry to correct",
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "description": "the journal entry to correct",
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Transfer"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdatedTransaction"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "409": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Correct a journal entry to a transfer, possibly into another currency",
         "tags": [
           "transactions"
         ]

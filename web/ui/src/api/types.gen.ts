@@ -381,6 +381,7 @@ export type EntryDetail = {
     postings: Array<Posting>;
     status: 'draft' | 'posted';
     tags: Array<EntryTag>;
+    transaction?: EntryTransaction;
 };
 
 export type EntryPage = {
@@ -405,6 +406,12 @@ export type EntryTagsForm = {
      * the tags of the entry, replacing those it has; a repeated id counts once, and none clears them
      */
     tagIds: Array<number>;
+};
+
+export type EntryTransaction = {
+    expense?: Expense;
+    income?: Income;
+    transfer?: Transfer;
 };
 
 export type ErrorDetail = {
@@ -447,6 +454,37 @@ export type ErrorModel = {
      * A URI reference to human-readable documentation for the error.
      */
     type?: string;
+};
+
+export type Expense = {
+    /**
+     * the amount spent, greater than zero
+     */
+    amount: string;
+    /**
+     * the balance the money leaves
+     */
+    balanceLedgerAccountId: number;
+    /**
+     * the expense category it is spent on; omitted when lines are given
+     */
+    categoryId?: number;
+    /**
+     * a note on the entry
+     */
+    description?: string;
+    /**
+     * what a payment spent on several things went on, adding up to amount, in place of categoryId
+     */
+    lines?: Array<SplitForm>;
+    /**
+     * the instant the money was spent
+     */
+    occurredAt: string;
+    /**
+     * the tags of the entry; a repeated id counts once
+     */
+    tagIds?: Array<number>;
 };
 
 export type ExpenseForm = {
@@ -527,6 +565,33 @@ export type Holding = {
 
 export type HoldingList = {
     holdings: Array<Holding>;
+};
+
+export type Income = {
+    /**
+     * the amount earned, greater than zero
+     */
+    amount: string;
+    /**
+     * the balance the money reaches
+     */
+    balanceLedgerAccountId: number;
+    /**
+     * the income category it is earned on
+     */
+    categoryId: number;
+    /**
+     * a note on the entry
+     */
+    description?: string;
+    /**
+     * the instant the money was earned
+     */
+    occurredAt: string;
+    /**
+     * the tags of the entry; a repeated id counts once
+     */
+    tagIds?: Array<number>;
 };
 
 export type IncomeForm = {
@@ -842,6 +907,41 @@ export type TagList = {
     tags: Array<Tag>;
 };
 
+export type Transfer = {
+    /**
+     * the amount that leaves, greater than zero
+     */
+    amount: string;
+    /**
+     * what moving the money cost, such as an instalment's interest, taken out of amount; at most one, the exchange fee, between currencies
+     */
+    charges?: Array<SplitForm>;
+    /**
+     * a note on the entry
+     */
+    description?: string;
+    /**
+     * the balance the money leaves
+     */
+    fromLedgerAccountId: number;
+    /**
+     * the instant the money moved
+     */
+    occurredAt: string;
+    /**
+     * the tags of the entry; a repeated id counts once
+     */
+    tagIds?: Array<number>;
+    /**
+     * the amount that arrives: required between currencies, else omitted or equal to amount less the charges
+     */
+    toAmount?: string;
+    /**
+     * the balance the money reaches
+     */
+    toLedgerAccountId: number;
+};
+
 export type TransferForm = {
     /**
      * the amount that leaves, greater than zero
@@ -879,6 +979,11 @@ export type TransferForm = {
      * the balance the money reaches
      */
     toLedgerAccountId: number;
+};
+
+export type UpdatedTransaction = {
+    journalEntryId: number;
+    warnings?: Array<NegativeHolding>;
 };
 
 export type UserSettings = {
@@ -3033,6 +3138,48 @@ export type RecordExpenseResponses = {
 
 export type RecordExpenseResponse = RecordExpenseResponses[keyof RecordExpenseResponses];
 
+export type UpdateExpenseData = {
+    body: Expense;
+    path: {
+        /**
+         * the journal entry to correct
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/api/transactions/expenses/{id}';
+};
+
+export type UpdateExpenseErrors = {
+    /**
+     * Not Found
+     */
+    404: ErrorModel;
+    /**
+     * Conflict
+     */
+    409: ErrorModel;
+    /**
+     * Unprocessable Entity
+     */
+    422: ErrorModel;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorModel;
+};
+
+export type UpdateExpenseError = UpdateExpenseErrors[keyof UpdateExpenseErrors];
+
+export type UpdateExpenseResponses = {
+    /**
+     * OK
+     */
+    200: UpdatedTransaction;
+};
+
+export type UpdateExpenseResponse = UpdateExpenseResponses[keyof UpdateExpenseResponses];
+
 export type RecordIncomeData = {
     body: IncomeForm;
     path?: never;
@@ -3070,6 +3217,48 @@ export type RecordIncomeResponses = {
 
 export type RecordIncomeResponse = RecordIncomeResponses[keyof RecordIncomeResponses];
 
+export type UpdateIncomeData = {
+    body: Income;
+    path: {
+        /**
+         * the journal entry to correct
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/api/transactions/incomes/{id}';
+};
+
+export type UpdateIncomeErrors = {
+    /**
+     * Not Found
+     */
+    404: ErrorModel;
+    /**
+     * Conflict
+     */
+    409: ErrorModel;
+    /**
+     * Unprocessable Entity
+     */
+    422: ErrorModel;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorModel;
+};
+
+export type UpdateIncomeError = UpdateIncomeErrors[keyof UpdateIncomeErrors];
+
+export type UpdateIncomeResponses = {
+    /**
+     * OK
+     */
+    200: UpdatedTransaction;
+};
+
+export type UpdateIncomeResponse = UpdateIncomeResponses[keyof UpdateIncomeResponses];
+
 export type RecordTransferData = {
     body: TransferForm;
     path?: never;
@@ -3106,3 +3295,45 @@ export type RecordTransferResponses = {
 };
 
 export type RecordTransferResponse = RecordTransferResponses[keyof RecordTransferResponses];
+
+export type UpdateTransferData = {
+    body: Transfer;
+    path: {
+        /**
+         * the journal entry to correct
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/api/transactions/transfers/{id}';
+};
+
+export type UpdateTransferErrors = {
+    /**
+     * Not Found
+     */
+    404: ErrorModel;
+    /**
+     * Conflict
+     */
+    409: ErrorModel;
+    /**
+     * Unprocessable Entity
+     */
+    422: ErrorModel;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorModel;
+};
+
+export type UpdateTransferError = UpdateTransferErrors[keyof UpdateTransferErrors];
+
+export type UpdateTransferResponses = {
+    /**
+     * OK
+     */
+    200: UpdatedTransaction;
+};
+
+export type UpdateTransferResponse = UpdateTransferResponses[keyof UpdateTransferResponses];

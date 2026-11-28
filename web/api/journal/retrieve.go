@@ -37,6 +37,7 @@ func registerRetrieve(api huma.API, c client.Client) {
 		detail := EntryDetail{
 			Entry: entry, CounterpartyID: result.JournalEntry.CounterpartyID,
 			PostedAt: result.JournalEntry.PostedAt, CreatedAt: result.JournalEntry.CreatedAt,
+			Transaction: transactionOf(result.JournalEntry),
 		}
 		if result.JournalEntry.Counterparty != nil {
 			detail.CounterpartyName = result.JournalEntry.Counterparty.Name
