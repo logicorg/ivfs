@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AddBalanceData, AddBalanceErrors, AddBalanceResponses, ApplyPresetData, ApplyPresetErrors, ApplyPresetResponses, BuyAssetData, BuyAssetErrors, BuyAssetResponses, CloseCategoryData, CloseCategoryErrors, CloseCategoryResponses, CloseFinancialAccountData, CloseFinancialAccountErrors, CloseFinancialAccountResponses, CloseInstitutionData, CloseInstitutionErrors, CloseInstitutionResponses, CloseLedgerAccountData, CloseLedgerAccountErrors, CloseLedgerAccountResponses, CreateAssetData, CreateAssetErrors, CreateAssetResponses, CreateCategoryData, CreateCategoryErrors, CreateCategoryResponses, CreateCounterpartyData, CreateCounterpartyErrors, CreateCounterpartyResponses, CreateCurrencyData, CreateCurrencyErrors, CreateCurrencyResponses, CreateTagData, CreateTagErrors, CreateTagResponses, DeleteCategoryData, DeleteCategoryErrors, DeleteCategoryResponses, DeleteCounterpartyData, DeleteCounterpartyErrors, DeleteCounterpartyResponses, DeleteCurrencyData, DeleteCurrencyErrors, DeleteCurrencyResponses, DeleteFinancialAccountData, DeleteFinancialAccountErrors, DeleteFinancialAccountResponses, DeleteInstitutionData, DeleteInstitutionErrors, DeleteInstitutionResponses, DeleteJournalEntryData, DeleteJournalEntryErrors, DeleteJournalEntryResponses, DeleteLedgerAccountData, DeleteLedgerAccountErrors, DeleteLedgerAccountResponses, DeletePositionMovementData, DeletePositionMovementErrors, DeletePositionMovementResponses, DeleteTagData, DeleteTagErrors, DeleteTagResponses, GetAccountBalancesData, GetAccountBalancesErrors, GetAccountBalancesResponses, GetCategoryTotalsData, GetCategoryTotalsErrors, GetCategoryTotalsResponses, GetDefaultPresetData, GetDefaultPresetErrors, GetDefaultPresetResponses, GetHealthData, GetHealthErrors, GetHealthResponses, GetJournalEntryData, GetJournalEntryErrors, GetJournalEntryResponses, GetLedgerAccountBalanceData, GetLedgerAccountBalanceErrors, GetLedgerAccountBalanceResponses, GetNetWorthSeriesData, GetNetWorthSeriesErrors, GetNetWorthSeriesResponses, ListAssetsData, ListAssetsErrors, ListAssetsResponses, ListAssetValuesData, ListAssetValuesErrors, ListAssetValuesResponses, ListCategoriesData, ListCategoriesErrors, ListCategoriesResponses, ListConversionRatesData, ListConversionRatesErrors, ListConversionRatesResponses, ListCounterpartiesData, ListCounterpartiesErrors, ListCounterpartiesResponses, ListCurrenciesData, ListCurrenciesErrors, ListCurrenciesResponses, ListFinancialAccountsData, ListFinancialAccountsErrors, ListFinancialAccountsResponses, ListHoldingMovementsData, ListHoldingMovementsErrors, ListHoldingMovementsResponses, ListHoldingsData, ListHoldingsErrors, ListHoldingsResponses, ListJournalEntriesData, ListJournalEntriesErrors, ListJournalEntriesResponses, ListTagsData, ListTagsErrors, ListTagsResponses, MoveCategoryData, MoveCategoryErrors, MoveCategoryResponses, OpenAccountData, OpenAccountErrors, OpenAccountResponses, PreviewCategoryDeletionData, PreviewCategoryDeletionErrors, PreviewCategoryDeletionResponses, PreviewFinancialAccountDeletionData, PreviewFinancialAccountDeletionErrors, PreviewFinancialAccountDeletionResponses, PreviewInstitutionDeletionData, PreviewInstitutionDeletionErrors, PreviewInstitutionDeletionResponses, PreviewLedgerAccountDeletionData, PreviewLedgerAccountDeletionErrors, PreviewLedgerAccountDeletionResponses, RecordExpenseData, RecordExpenseErrors, RecordExpenseResponses, RecordIncomeData, RecordIncomeErrors, RecordIncomeResponses, RecordTransferData, RecordTransferErrors, RecordTransferResponses, RenameCategoryData, RenameCategoryErrors, RenameCategoryResponses, RenameCounterpartyData, RenameCounterpartyErrors, RenameCounterpartyResponses, RenameFinancialAccountData, RenameFinancialAccountErrors, RenameFinancialAccountResponses, RenameLedgerAccountData, RenameLedgerAccountErrors, RenameLedgerAccountResponses, RetrieveUserSettingsData, RetrieveUserSettingsErrors, RetrieveUserSettingsResponses, SellAssetData, SellAssetErrors, SellAssetResponses, SetJournalEntryTagsData, SetJournalEntryTagsErrors, SetJournalEntryTagsResponses, UpdateCurrencyData, UpdateCurrencyErrors, UpdateCurrencyResponses, UpdateTagData, UpdateTagErrors, UpdateTagResponses, UpdateUserSettingsData, UpdateUserSettingsErrors, UpdateUserSettingsResponses, VestAssetData, VestAssetErrors, VestAssetResponses } from './types.gen';
+import type { AddBalanceData, AddBalanceErrors, AddBalanceResponses, ApplyPresetData, ApplyPresetErrors, ApplyPresetResponses, BuyAssetData, BuyAssetErrors, BuyAssetResponses, CloseCategoryData, CloseCategoryErrors, CloseCategoryResponses, CloseFinancialAccountData, CloseFinancialAccountErrors, CloseFinancialAccountResponses, CloseInstitutionData, CloseInstitutionErrors, CloseInstitutionResponses, CloseLedgerAccountData, CloseLedgerAccountErrors, CloseLedgerAccountResponses, CreateAssetData, CreateAssetErrors, CreateAssetResponses, CreateCategoryData, CreateCategoryErrors, CreateCategoryResponses, CreateCounterpartyData, CreateCounterpartyErrors, CreateCounterpartyResponses, CreateCurrencyData, CreateCurrencyErrors, CreateCurrencyResponses, CreateTagData, CreateTagErrors, CreateTagResponses, DeleteCategoryData, DeleteCategoryErrors, DeleteCategoryResponses, DeleteCounterpartyData, DeleteCounterpartyErrors, DeleteCounterpartyResponses, DeleteCurrencyData, DeleteCurrencyErrors, DeleteCurrencyResponses, DeleteFinancialAccountData, DeleteFinancialAccountErrors, DeleteFinancialAccountResponses, DeleteInstitutionData, DeleteInstitutionErrors, DeleteInstitutionResponses, DeleteJournalEntryData, DeleteJournalEntryErrors, DeleteJournalEntryResponses, DeleteLedgerAccountData, DeleteLedgerAccountErrors, DeleteLedgerAccountResponses, DeletePositionMovementData, DeletePositionMovementErrors, DeletePositionMovementResponses, DeleteTagData, DeleteTagErrors, DeleteTagResponses, GetAccountBalancesData, GetAccountBalancesErrors, GetAccountBalancesResponses, GetCategoryTotalsData, GetCategoryTotalsErrors, GetCategoryTotalsResponses, GetDefaultPresetData, GetDefaultPresetErrors, GetDefaultPresetResponses, GetHealthData, GetHealthErrors, GetHealthResponses, GetJournalEntryData, GetJournalEntryErrors, GetJournalEntryResponses, GetLedgerAccountBalanceData, GetLedgerAccountBalanceErrors, GetLedgerAccountBalanceResponses, GetNetWorthSeriesData, GetNetWorthSeriesErrors, GetNetWorthSeriesResponses, ListAssetsData, ListAssetsErrors, ListAssetsResponses, ListAssetValuesData, ListAssetValuesErrors, ListAssetValuesResponses, ListCategoriesData, ListCategoriesErrors, ListCategoriesResponses, ListConversionRatesData, ListConversionRatesErrors, ListConversionRatesResponses, ListCounterpartiesData, ListCounterpartiesErrors, ListCounterpartiesResponses, ListCurrenciesData, ListCurrenciesErrors, ListCurrenciesResponses, ListFinancialAccountsData, ListFinancialAccountsErrors, ListFinancialAccountsResponses, ListHoldingMovementsData, ListHoldingMovementsErrors, ListHoldingMovementsResponses, ListHoldingsData, ListHoldingsErrors, ListHoldingsResponses, ListJournalEntriesData, ListJournalEntriesErrors, ListJournalEntriesResponses, ListTagsData, ListTagsErrors, ListTagsResponses, MoveCategoryData, MoveCategoryErrors, MoveCategoryResponses, OpenAccountData, OpenAccountErrors, OpenAccountResponses, PreviewCategoryDeletionData, PreviewCategoryDeletionErrors, PreviewCategoryDeletionResponses, PreviewFinancialAccountDeletionData, PreviewFinancialAccountDeletionErrors, PreviewFinancialAccountDeletionResponses, PreviewInstitutionDeletionData, PreviewInstitutionDeletionErrors, PreviewInstitutionDeletionResponses, PreviewLedgerAccountDeletionData, PreviewLedgerAccountDeletionErrors, PreviewLedgerAccountDeletionResponses, RecordExpenseData, RecordExpenseErrors, RecordExpenseResponses, RecordIncomeData, RecordIncomeErrors, RecordIncomeResponses, RecordTransferData, RecordTransferErrors, RecordTransferResponses, RenameCategoryData, RenameCategoryErrors, RenameCategoryResponses, RenameCounterpartyData, RenameCounterpartyErrors, RenameCounterpartyResponses, RenameFinancialAccountData, RenameFinancialAccountErrors, RenameFinancialAccountResponses, RenameLedgerAccountData, RenameLedgerAccountErrors, RenameLedgerAccountResponses, RetrieveUserSettingsData, RetrieveUserSettingsErrors, RetrieveUserSettingsResponses, SellAssetData, SellAssetErrors, SellAssetResponses, SetJournalEntryTagsData, SetJournalEntryTagsErrors, SetJournalEntryTagsResponses, UpdateCurrencyData, UpdateCurrencyErrors, UpdateCurrencyResponses, UpdateExpenseData, UpdateExpenseErrors, UpdateExpenseResponses, UpdateIncomeData, UpdateIncomeErrors, UpdateIncomeResponses, UpdateTagData, UpdateTagErrors, UpdateTagResponses, UpdateTransferData, UpdateTransferErrors, UpdateTransferResponses, UpdateUserSettingsData, UpdateUserSettingsErrors, UpdateUserSettingsResponses, VestAssetData, VestAssetErrors, VestAssetResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -533,6 +533,20 @@ export const recordExpense = <ThrowOnError extends boolean = false>(options: Opt
 });
 
 /**
+ * Correct a journal entry to an expense
+ *
+ * The posted entry becomes this transaction whatever it was before, and keeps its id and its idempotency key; a draft is refused. It loses any position movement it had, and the holdings that leaves negative at some point in time are returned as warnings; the correction is made all the same.
+ */
+export const updateExpense = <ThrowOnError extends boolean = false>(options: Options<UpdateExpenseData, ThrowOnError>): RequestResult<UpdateExpenseResponses, UpdateExpenseErrors, ThrowOnError> => (options.client ?? client).put<UpdateExpenseResponses, UpdateExpenseErrors, ThrowOnError>({
+    url: '/api/transactions/expenses/{id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
  * Record money earned on an income category into a balance
  *
  * A repeated idempotency key returns the entry first recorded with it, posting nothing.
@@ -547,12 +561,40 @@ export const recordIncome = <ThrowOnError extends boolean = false>(options: Opti
 });
 
 /**
+ * Correct a journal entry to an income
+ *
+ * The posted entry becomes this transaction whatever it was before, and keeps its id and its idempotency key; a draft is refused. It loses any position movement it had, and the holdings that leaves negative at some point in time are returned as warnings; the correction is made all the same.
+ */
+export const updateIncome = <ThrowOnError extends boolean = false>(options: Options<UpdateIncomeData, ThrowOnError>): RequestResult<UpdateIncomeResponses, UpdateIncomeErrors, ThrowOnError> => (options.client ?? client).put<UpdateIncomeResponses, UpdateIncomeErrors, ThrowOnError>({
+    url: '/api/transactions/incomes/{id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
  * Record money moved from one balance to another, possibly into another currency
  *
  * Charges are booked as expenses out of the amount that leaves. Between currencies, toAmount is the amount that arrives, and the transfer is an exchange whose fee is the one charge allowed. A repeated idempotency key returns the entry first recorded with it, posting nothing.
  */
 export const recordTransfer = <ThrowOnError extends boolean = false>(options: Options<RecordTransferData, ThrowOnError>): RequestResult<RecordTransferResponses, RecordTransferErrors, ThrowOnError> => (options.client ?? client).post<RecordTransferResponses, RecordTransferErrors, ThrowOnError>({
     url: '/api/transactions/transfers',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Correct a journal entry to a transfer, possibly into another currency
+ *
+ * Between currencies, the rate is worked out again from the amounts, and a provider reference the entry had is dropped. The posted entry becomes this transaction whatever it was before, and keeps its id and its idempotency key; a draft is refused. It loses any position movement it had, and the holdings that leaves negative at some point in time are returned as warnings; the correction is made all the same.
+ */
+export const updateTransfer = <ThrowOnError extends boolean = false>(options: Options<UpdateTransferData, ThrowOnError>): RequestResult<UpdateTransferResponses, UpdateTransferErrors, ThrowOnError> => (options.client ?? client).put<UpdateTransferResponses, UpdateTransferErrors, ThrowOnError>({
+    url: '/api/transactions/transfers/{id}',
     ...options,
     headers: {
         'Content-Type': 'application/json',

@@ -270,6 +270,15 @@ export const zHoldingList = z.object({
     holdings: z.array(zHolding)
 });
 
+export const zIncome = z.object({
+    amount: z.string().regex(/^-?[0-9]+(\.[0-9]+)?$/),
+    balanceLedgerAccountId: z.int().gte(1),
+    categoryId: z.int().gte(1),
+    description: z.string().optional(),
+    occurredAt: z.iso.datetime(),
+    tagIds: z.array(z.int()).optional()
+});
+
 export const zIncomeForm = z.object({
     amount: z.string().regex(/^-?[0-9]+(\.[0-9]+)?$/),
     balanceLedgerAccountId: z.int().gte(1),
@@ -513,6 +522,16 @@ export const zSplitForm = z.object({
     categoryId: z.int().gte(1)
 });
 
+export const zExpense = z.object({
+    amount: z.string().regex(/^-?[0-9]+(\.[0-9]+)?$/),
+    balanceLedgerAccountId: z.int().gte(1),
+    categoryId: z.int().gte(1).optional(),
+    description: z.string().optional(),
+    lines: z.array(zSplitForm).optional(),
+    occurredAt: z.iso.datetime(),
+    tagIds: z.array(z.int()).optional()
+});
+
 export const zExpenseForm = z.object({
     amount: z.string().regex(/^-?[0-9]+(\.[0-9]+)?$/),
     balanceLedgerAccountId: z.int().gte(1),
@@ -560,6 +579,17 @@ export const zTagList = z.object({
     tags: z.array(zTag)
 });
 
+export const zTransfer = z.object({
+    amount: z.string().regex(/^-?[0-9]+(\.[0-9]+)?$/),
+    charges: z.array(zSplitForm).optional(),
+    description: z.string().optional(),
+    fromLedgerAccountId: z.int().gte(1),
+    occurredAt: z.iso.datetime(),
+    tagIds: z.array(z.int()).optional(),
+    toAmount: z.string().regex(/^-?[0-9]+(\.[0-9]+)?$/).optional(),
+    toLedgerAccountId: z.int().gte(1)
+});
+
 export const zTransferForm = z.object({
     amount: z.string().regex(/^-?[0-9]+(\.[0-9]+)?$/),
     charges: z.array(zSplitForm).optional(),
@@ -570,6 +600,11 @@ export const zTransferForm = z.object({
     tagIds: z.array(z.int()).optional(),
     toAmount: z.string().regex(/^-?[0-9]+(\.[0-9]+)?$/).optional(),
     toLedgerAccountId: z.int().gte(1)
+});
+
+export const zUpdatedTransaction = z.object({
+    journalEntryId: z.int(),
+    warnings: z.array(zNegativeHolding).optional()
 });
 
 export const zUserSettings = z.object({
@@ -1145,6 +1180,17 @@ export const zRecordExpenseBody = zExpenseForm;
  */
 export const zRecordExpenseResponse = zRecordedTransaction;
 
+export const zUpdateExpenseBody = zExpense;
+
+export const zUpdateExpensePath = z.object({
+    id: z.int().gte(1)
+});
+
+/**
+ * OK
+ */
+export const zUpdateExpenseResponse = zUpdatedTransaction;
+
 export const zRecordIncomeBody = zIncomeForm;
 
 /**
@@ -1152,9 +1198,31 @@ export const zRecordIncomeBody = zIncomeForm;
  */
 export const zRecordIncomeResponse = zRecordedTransaction;
 
+export const zUpdateIncomeBody = zIncome;
+
+export const zUpdateIncomePath = z.object({
+    id: z.int().gte(1)
+});
+
+/**
+ * OK
+ */
+export const zUpdateIncomeResponse = zUpdatedTransaction;
+
 export const zRecordTransferBody = zTransferForm;
 
 /**
  * OK
  */
 export const zRecordTransferResponse = zRecordedTransaction;
+
+export const zUpdateTransferBody = zTransfer;
+
+export const zUpdateTransferPath = z.object({
+    id: z.int().gte(1)
+});
+
+/**
+ * OK
+ */
+export const zUpdateTransferResponse = zUpdatedTransaction;
