@@ -3,6 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Controller, useFieldArray, useForm } from "react-hook-form"
 
+import type { NegativeHolding, RecordedTransaction, UpdatedTransaction } from "@/api"
 import {
   getAccountBalancesOptions,
   listCategoriesOptions,
@@ -10,11 +11,15 @@ import {
   recordExpenseMutation,
   recordIncomeMutation,
   recordTransferMutation,
+  updateExpenseMutation,
+  updateIncomeMutation,
+  updateTransferMutation,
 } from "@/api/@tanstack/react-query.gen"
 import { ProblemMessages, SelectField, TextField, type SelectOption } from "@/components/form-fields"
 import { TagsField } from "@/components/tag-picker"
 import { Button } from "@/components/ui/button"
 import { FieldDescription, FieldGroup, FieldLegend, FieldSet } from "@/components/ui/field"
+import { correctionOf } from "@/lib/correct-transaction"
 import {
   balanceChoices,
   categoryChoices,
@@ -38,17 +43,24 @@ type RecordTransactionFormProps = {
   // type fixes the transaction's type and hides the select; the person
   // chooses it when it is omitted.
   type?: TransactionType
-  onRecorded: () => void
+  // correcting is the entry the form corrects, with the instant it occurred
+  // at and its values as the form shows them; the form records a new
+  // transaction without it.
+  correcting?: { entryId: number; occurredAt: string; values: RecordTransactionFormValues }
+  // onRecorded is given the holdings a correction left negative, none when
+  // recording.
+  onRecorded: (warnings: NegativeHolding[]) => void
   // Footer holds the submit button, laid out as the form's container lays
   // out its actions.
   Footer: ComponentType<{ children: ReactNode }>
 }
 
 // RecordTransactionForm records an expense, an income, or a transfer, the
-// type deciding which accounts each side offers (ADR 0008). It makes its
-// idempotency key when it mounts, so a submit sent twice records the
-// transaction once; remount it to record another.
-export function RecordTransactionForm({ type, onRecorded, Footer }: RecordTransactionFormProps) {
+// type deciding which accounts each side offers (ADR 0008), or corrects an
+// entry to one, whatever it was. It makes its idempotency key when it mounts,
+// so a submit sent twice records the transaction once; remount it to record
+// another. A correction sent twice makes the entry the same thing twice.
+export function RecordTransactionForm({ type, correcting, onRecorded, Footer }: RecordTransactionFormProps) {
   const [idempotencyKey] = useState(() => crypto.randomUUID())
   const queryClient = useQueryClient()
   const accounts = useQuery(listFinancialAccountsOptions())
@@ -60,20 +72,44 @@ export function RecordTransactionForm({ type, onRecorded, Footer }: RecordTransa
   const categories = useQuery(listCategoriesOptions())
   const form = useForm<RecordTransactionFormValues>({
     resolver: zodResolver(recordTransactionForm),
-    defaultValues: { type: type ?? "expense", fromId: "", toId: "", amount: "", toAmount: "", occurredOn: "", description: "", tagIds: [], splits: [] },
+    defaultValues: correcting?.values ?? {
+      type: type ?? "expense",
+      fromId: "",
+      toId: "",
+      amount: "",
+      toAmount: "",
+      occurredOn: "",
+      description: "",
+      tagIds: [],
+      splits: [],
+    },
   })
   const splits = useFieldArray({ control: form.control, name: "splits" })
 
-  const onSuccess = () => {
-    for (const _id of ["getAccountBalances", "getLedgerAccountBalance", "listJournalEntries", "getCategoryTotals"]) {
+  const onSuccess = (result: RecordedTransaction | UpdatedTransaction) => {
+    // A correction also takes the movements of an entry that was a trade.
+    for (const _id of [
+      "getAccountBalances",
+      "getLedgerAccountBalance",
+      "listJournalEntries",
+      "getJournalEntry",
+      "getCategoryTotals",
+      "listHoldings",
+      "listHoldingMovements",
+    ]) {
       void queryClient.invalidateQueries({ queryKey: [{ _id }] })
     }
-    onRecorded()
+    onRecorded("warnings" in result ? (result.warnings ?? []) : [])
   }
   const recordExpense = useMutation({ ...recordExpenseMutation(), onSuccess })
   const recordIncome = useMutation({ ...recordIncomeMutation(), onSuccess })
   const recordTransfer = useMutation({ ...recordTransferMutation(), onSuccess })
-  const recording = { expense: recordExpense, income: recordIncome, transfer: recordTransfer }
+  const updateExpense = useMutation({ ...updateExpenseMutation(), onSuccess })
+  const updateIncome = useMutation({ ...updateIncomeMutation(), onSuccess })
+  const updateTransfer = useMutation({ ...updateTransferMutation(), onSuccess })
+  const recording = correcting
+    ? { expense: updateExpense, income: updateIncome, transfer: updateTransfer }
+    : { expense: recordExpense, income: recordIncome, transfer: recordTransfer }
 
   const balances = balanceChoices(
     accounts.data?.financialAccounts ?? [],
@@ -90,6 +126,18 @@ export function RecordTransactionForm({ type, onRecorded, Footer }: RecordTransa
     if (crossing && submitted.toAmount === "") {
       form.setError("toAmount", { message: "The amount that arrives, in its currency" })
       return
+    }
+    if (correcting) {
+      const path = { id: correcting.entryId }
+      const correction = correctionOf(submitted, crossing, correcting.occurredAt)
+      switch (correction.type) {
+        case "expense":
+          return updateExpense.mutate({ path, body: correction.body })
+        case "income":
+          return updateIncome.mutate({ path, body: correction.body })
+        case "transfer":
+          return updateTransfer.mutate({ path, body: correction.body })
+      }
     }
     const request = newTransaction(submitted, idempotencyKey, crossing, new Date())
     switch (request.type) {
@@ -236,7 +284,7 @@ export function RecordTransactionForm({ type, onRecorded, Footer }: RecordTransa
         )}
         <TextField
           label="Date"
-          description="Now if left empty."
+          description={correcting ? "Unchanged if left empty." : "Now if left empty."}
           type="date"
           error={form.formState.errors.occurredOn}
           {...form.register("occurredOn")}
@@ -257,7 +305,7 @@ export function RecordTransactionForm({ type, onRecorded, Footer }: RecordTransa
       </FieldGroup>
       <Footer>
         <Button type="submit" disabled={mutation.isPending}>
-          Record
+          {correcting ? "Save" : "Record"}
         </Button>
       </Footer>
     </form>
