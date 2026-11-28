@@ -105,7 +105,7 @@ type OpeningCurrency struct {
 
 // AccountForm is the answers to the form that opens an account (ADR 0006).
 type AccountForm struct {
-	Type              string            `json:"type" enum:"bank,card,brokerage,cash" doc:"bank holds money, card a credit card's debt, brokerage assets and money, cash a wallet"`
+	Type              string            `json:"type" enum:"bank,card,brokerage,cash,loan,real_asset" doc:"bank holds money, card a credit card's debt, brokerage assets and money, cash a wallet, loan a mortgage's or another loan's debt, real_asset a house or a car"`
 	InstitutionName   string            `json:"institutionName,omitempty" doc:"the institution that holds the account, such as Revolut; left out for a cash account"`
 	CreateInstitution bool              `json:"createInstitution,omitempty" doc:"create the institution if it does not exist, once the person has confirmed its name"`
 	AccountName       string            `json:"accountName,omitempty" doc:"the account's name; the institution's name, or Wallet for cash, if omitted"`

@@ -19,6 +19,8 @@ export const assetKinds: { value: AssetForm["kind"]; label: string }[] = [
   { value: "bond", label: "Bond" },
   { value: "crypto", label: "Crypto" },
   { value: "commodity", label: "Commodity" },
+  { value: "real_estate", label: "Real estate" },
+  { value: "vehicle", label: "Vehicle" },
   { value: "other", label: "Other" },
 ]
 

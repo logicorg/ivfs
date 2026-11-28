@@ -10,7 +10,7 @@ import (
 type Asset struct {
 	ID          int64  `json:"id"`
 	Name        string `json:"name"`
-	Kind        string `json:"kind" enum:"equity,stock,etf,fund,bond,crypto,commodity,other"`
+	Kind        string `json:"kind" enum:"equity,stock,etf,fund,bond,crypto,commodity,real_estate,vehicle,other"`
 	Ticker      string `json:"ticker,omitempty"`
 	ISIN        string `json:"isin,omitempty" doc:"ISO 6166 identifier"`
 	Exchange    string `json:"exchange,omitempty"`
@@ -36,7 +36,7 @@ type ListAssetsOutput struct {
 // AssetForm is the answers to the form that creates an asset.
 type AssetForm struct {
 	Name        string `json:"name" minLength:"1" doc:"the asset's name; an asset with this name already is returned as it is"`
-	Kind        string `json:"kind" enum:"equity,stock,etf,fund,bond,crypto,commodity,other"`
+	Kind        string `json:"kind" enum:"equity,stock,etf,fund,bond,crypto,commodity,real_estate,vehicle,other"`
 	Ticker      string `json:"ticker" required:"false" doc:"the symbol it trades under, such as VWCE"`
 	Description string `json:"description" required:"false"`
 }

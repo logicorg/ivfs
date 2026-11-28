@@ -11,9 +11,9 @@ import (
 // negative are returned as warnings.
 //
 // The entry can switch between one currency and two. Between currencies it
-// takes the postings and the metadata of an FX conversion without a fee or a
-// provider reference, so the rate is worked out again from the new amounts, and
-// a fee or a reference the entry had is dropped.
+// takes the postings and the metadata of an FX conversion, with the charge as
+// its fee and no provider reference, so the rate is worked out again from the
+// new amounts, and a reference the entry had is dropped.
 func UpdateTransfer(ctx workflow.Context, input tt.UpdateTransferInput) (*tt.UpdateResult, error) {
 	if err := input.Validate(); err != nil {
 		return nil, err

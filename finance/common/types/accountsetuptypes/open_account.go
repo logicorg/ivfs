@@ -15,13 +15,14 @@ import (
 // (ADR 0006). Everything else, such as the balances' names and the
 // institution's kind, is derived from them.
 type OpenAccountInput struct {
-	Type AccountType `json:"type" jsonschema:"what the account holds: bank for money, card for a credit card's debt, brokerage for assets and money, cash for a wallet"`
+	Type AccountType `json:"type" jsonschema:"what the account holds: bank for money, card for a credit card's debt, brokerage for assets and money, cash for a wallet, loan for a mortgage or another loan's debt, real_asset for a house or a car"`
 	// InstitutionName is required, except for a cash account, which always
-	// belongs to the institution "Physical cash".
-	InstitutionName string `json:"institutionName,omitempty" jsonschema:"the institution that holds the account, such as Revolut; left out for a cash account"`
+	// belongs to the institution "Physical cash", and a real asset account,
+	// which belongs to "Real assets" when it is left out.
+	InstitutionName string `json:"institutionName,omitempty" jsonschema:"the institution that holds the account, such as Revolut; left out for a cash account, and optional for a real asset"`
 	// CreateInstitution confirms that a missing institution is to be created.
 	CreateInstitution bool   `json:"createInstitution,omitempty" jsonschema:"create the institution if it does not exist; set only after the person has confirmed its name"`
-	AccountName       string `json:"accountName,omitempty" jsonschema:"the account's name; the institution's name, or Wallet for cash, if omitted"`
+	AccountName       string `json:"accountName,omitempty" jsonschema:"the account's name, such as Home for a real asset; the institution's name, or Wallet for cash, if omitted"`
 	// Currencies are the currencies the account holds, each with its
 	// optional opening balance; at least one.
 	Currencies []CurrencyBalance `json:"currencies" jsonschema:"the currencies the account holds, at least one"`
@@ -40,7 +41,8 @@ type CurrencyBalance struct {
 
 // Validate checks the input against its CUE constraints, and the rules CUE
 // cannot express with a useful message: a known type, at least one currency,
-// none given twice, and the institution named for every type but cash.
+// none given twice, and the institution named for every type but cash and
+// real assets.
 func (i *OpenAccountInput) Validate() error {
 	if err := cuego.Validate(i); err != nil {
 		return errs.ValidationError{Err: err}
@@ -57,7 +59,7 @@ func (i *OpenAccountInput) Validate() error {
 	switch {
 	case i.Type == AccountTypeCash && named:
 		return errs.ValidationError{Err: fmt.Errorf("a cash account belongs to %q; leave the institution out", PhysicalCashInstitution)}
-	case i.Type != AccountTypeCash && !named:
+	case i.Type != AccountTypeCash && i.Type != AccountTypeRealAsset && !named:
 		return errs.ValidationError{Err: fmt.Errorf("the institution is required for a %s account", i.Type)}
 	}
 

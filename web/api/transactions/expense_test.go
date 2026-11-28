@@ -27,6 +27,10 @@ func TestRecordExpense(t *testing.T) {
 	withNote.Description = "weekly shop"
 	withTags := groceries
 	withTags.TagIDs = []int64{3, 4}
+	withLines := groceries
+	withLines.CategoryID, withLines.Lines = 0, []tt.Split{
+		{CategoryID: 200, Amount: decimal.NewFromInt(10)}, {CategoryID: 201, Amount: decimal.RequireFromString("2.5")},
+	}
 	record := func(params tt.RecordExpenseInput, err error) *apitest.WorkflowCall {
 		call := &apitest.WorkflowCall{Workflow: transactionswf.RecordExpense, Params: params, Err: err}
 		if err == nil {
@@ -50,6 +54,19 @@ func TestRecordExpense(t *testing.T) {
 			Method: http.MethodPost, Path: "/api/transactions/expenses", Body: form + `,"tagIds":[3,4]}`,
 			Call:       record(withTags, nil),
 			WantStatus: http.StatusOK, WantBody: `{"journalEntryId":42}`,
+		},
+		"with lines": {
+			Method: http.MethodPost, Path: "/api/transactions/expenses",
+			Body: `{"idempotencyKey":"9c1e","balanceLedgerAccountId":100,"amount":"12.50","occurredAt":"2026-10-03T10:00:00Z",` +
+				`"lines":[{"categoryId":200,"amount":"10"},{"categoryId":201,"amount":"2.50"}]}`,
+			Call:       record(withLines, nil),
+			WantStatus: http.StatusOK, WantBody: `{"journalEntryId":42}`,
+		},
+		"a line that is not a decimal": {
+			Method: http.MethodPost, Path: "/api/transactions/expenses",
+			Body: `{"idempotencyKey":"9c1e","balanceLedgerAccountId":100,"amount":"12.50","occurredAt":"2026-10-03T10:00:00Z",` +
+				`"lines":[{"categoryId":200,"amount":"ten"}]}`,
+			WantStatus: http.StatusUnprocessableEntity,
 		},
 		"a category of the wrong kind": {
 			Method: http.MethodPost, Path: "/api/transactions/expenses", Body: form + `}`,

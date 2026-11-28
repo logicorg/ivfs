@@ -82,7 +82,7 @@ func TestOpen(t *testing.T) {
 		},
 		"an unknown type": {
 			Method: http.MethodPost, Path: "/api/accounts/open",
-			Body:       `{"type":"loan","institutionName":"Revolut","currencies":[{"code":"EUR"}]}`,
+			Body:       `{"type":"lease","institutionName":"Revolut","currencies":[{"code":"EUR"}]}`,
 			WantStatus: http.StatusUnprocessableEntity,
 		},
 		"no currencies": {

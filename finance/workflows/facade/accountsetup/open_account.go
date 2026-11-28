@@ -45,7 +45,7 @@ func OpenAccount(ctx workflow.Context, input ast.OpenAccountInput) (*ast.OpenAcc
 		return nil, err
 	}
 	if institution == nil {
-		if input.Type != ast.AccountTypeCash && !input.CreateInstitution {
+		if !builtInInstitution(input) && !input.CreateInstitution {
 			return &ast.OpenAccountResult{Outcome: ast.OutcomeInstitutionNotFound, InstitutionName: name}, nil
 		}
 		if institution, err = insertInstitution(ctx, name, institutionKind(input.Type)); err != nil {

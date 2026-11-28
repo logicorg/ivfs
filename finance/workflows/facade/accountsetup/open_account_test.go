@@ -152,6 +152,10 @@ func (s *WorkflowUnitTestSuite) TestOpenAccount() {
 	amexGold := &model.FinancialAccount{ID: 12, InstitutionID: 4, Name: "Amex Gold"}
 	physicalCash := &model.Institution{ID: 5, Name: "Physical cash", Kind: "cash"}
 	wallet := &model.FinancialAccount{ID: 13, InstitutionID: 5, Name: "Wallet"}
+	intesa := &model.Institution{ID: 6, Name: "Intesa", Kind: "lender"}
+	mortgage := &model.FinancialAccount{ID: 14, InstitutionID: 6, Name: "Mortgage"}
+	realAssets := &model.Institution{ID: 7, Name: "Real assets", Kind: "real assets"}
+	home := &model.FinancialAccount{ID: 15, InstitutionID: 7, Name: "Home"}
 
 	revolutLedger := concat([]expectedLedgerAccount{balance(100, personal, euro, "Cash", model.LedgerAccountAsset)}, shared(200, euro))
 	ibkrLedger := concat(
@@ -162,6 +166,11 @@ func (s *WorkflowUnitTestSuite) TestOpenAccount() {
 	)
 	amexLedger := concat([]expectedLedgerAccount{balance(120, amexGold, euro, "Card balance", model.LedgerAccountLiability)}, shared(200, euro))
 	walletLedger := concat([]expectedLedgerAccount{balance(130, wallet, euro, "Cash", model.LedgerAccountAsset)}, shared(200, euro))
+	mortgageLedger := concat([]expectedLedgerAccount{balance(140, mortgage, euro, "Principal", model.LedgerAccountLiability)}, shared(200, euro))
+	homeLedger := concat(
+		[]expectedLedgerAccount{balance(150, home, euro, "Cash", model.LedgerAccountAsset), balance(151, home, euro, "Investments", model.LedgerAccountAsset)},
+		shared(200, euro),
+	)
 
 	tests := map[string]openAccountCase{
 		"a bank account at an existing institution, with an opening balance at the time of the request": {
@@ -229,6 +238,32 @@ func (s *WorkflowUnitTestSuite) TestOpenAccount() {
 			want: &ast.OpenAccountResult{
 				Outcome: ast.OutcomeOpened, InstitutionID: 5, InstitutionName: "Physical cash", FinancialAccountID: 13, FinancialAccountName: "Wallet",
 				Balances: ast.Balances{Balances: rows(physicalCash, wallet, walletLedger)},
+			},
+		},
+		"a mortgage already running, with what is still owed": {
+			input: ast.OpenAccountInput{
+				Type: ast.AccountTypeLoan, InstitutionName: "Intesa", AccountName: "Mortgage", CreateInstitution: true,
+				Currencies: []ast.CurrencyBalance{{Code: "EUR", OpeningBalance: decimal.NewFromInt(182000)}},
+			},
+			institution: intesa, account: mortgage, ledgerAccounts: mortgageLedger,
+			opening: &jt.PostJournalEntryInput{
+				IdempotencyKey: "opening-balance:140", OccurredAt: start, Description: ptr.NewPtr("Opening balance"),
+				Postings: []jt.PostingInput{
+					{LedgerAccountID: 140, Amount: decimal.NewFromInt(182000), Side: model.PostingCredit},
+					{LedgerAccountID: 200, Amount: decimal.NewFromInt(182000), Side: model.PostingDebit},
+				},
+			},
+			want: &ast.OpenAccountResult{
+				Outcome: ast.OutcomeOpened, InstitutionID: 6, InstitutionName: "Intesa", FinancialAccountID: 14, FinancialAccountName: "Mortgage",
+				Balances: ast.Balances{Balances: rows(intesa, mortgage, mortgageLedger), OpeningEntries: []ast.OpeningEntry{{LedgerAccountID: 140, JournalEntryID: 500}}},
+			},
+		},
+		"a home, whose institution is created without asking": {
+			input:       ast.OpenAccountInput{Type: ast.AccountTypeRealAsset, AccountName: "Home", Currencies: []ast.CurrencyBalance{{Code: "EUR"}}},
+			institution: realAssets, account: home, ledgerAccounts: homeLedger,
+			want: &ast.OpenAccountResult{
+				Outcome: ast.OutcomeOpened, InstitutionID: 7, InstitutionName: "Real assets", FinancialAccountID: 15, FinancialAccountName: "Home",
+				Balances: ast.Balances{Balances: rows(realAssets, home, homeLedger)},
 			},
 		},
 	}

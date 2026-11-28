@@ -111,12 +111,14 @@
             "type": "string"
           },
           "type": {
-            "description": "bank holds money, card a credit card's debt, brokerage assets and money, cash a wallet",
+            "description": "bank holds money, card a credit card's debt, brokerage assets and money, cash a wallet, loan a mortgage's or another loan's debt, real_asset a house or a car",
             "enum": [
               "bank",
               "card",
               "brokerage",
-              "cash"
+              "cash",
+              "loan",
+              "real_asset"
             ],
             "type": "string"
           }
@@ -228,6 +230,8 @@
               "bond",
               "crypto",
               "commodity",
+              "real_estate",
+              "vehicle",
               "other"
             ],
             "type": "string"
@@ -261,6 +265,8 @@
               "bond",
               "crypto",
               "commodity",
+              "real_estate",
+              "vehicle",
               "other"
             ],
             "type": "string"
@@ -1151,7 +1157,7 @@
             "type": "integer"
           },
           "categoryId": {
-            "description": "the expense category it is spent on",
+            "description": "the expense category it is spent on; omitted when lines are given",
             "minimum": 1,
             "type": "integer"
           },
@@ -1163,6 +1169,13 @@
             "description": "one per transaction meant, such as one per opening of the form; a repeated key returns the entry first recorded with it",
             "minLength": 1,
             "type": "string"
+          },
+          "lines": {
+            "description": "what a payment spent on several things went on, adding up to amount, in place of categoryId",
+            "items": {
+              "$ref": "#/components/schemas/SplitForm"
+            },
+            "type": "array"
           },
           "occurredAt": {
             "description": "the instant the money was spent",
@@ -1180,7 +1193,6 @@
         "required": [
           "idempotencyKey",
           "balanceLedgerAccountId",
-          "categoryId",
           "amount",
           "occurredAt"
         ],
@@ -2001,6 +2013,29 @@
         ],
         "type": "object"
       },
+      "SplitForm": {
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "description": "the part of the amount it takes, greater than zero",
+            "examples": [
+              "1234.56"
+            ],
+            "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+            "type": "string"
+          },
+          "categoryId": {
+            "description": "the expense category it is booked under",
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "categoryId",
+          "amount"
+        ],
+        "type": "object"
+      },
       "StrayAmount": {
         "additionalProperties": false,
         "properties": {
@@ -2107,6 +2142,13 @@
             "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
             "type": "string"
           },
+          "charges": {
+            "description": "what moving the money cost, such as an instalment's interest, taken out of amount; at most one, the exchange fee, between currencies",
+            "items": {
+              "$ref": "#/components/schemas/SplitForm"
+            },
+            "type": "array"
+          },
           "description": {
             "description": "a note on the entry",
             "type": "string"
@@ -2134,7 +2176,7 @@
             "type": "array"
           },
           "toAmount": {
-            "description": "the amount that arrives: required between currencies, else omitted or equal to amount",
+            "description": "the amount that arrives: required between currencies, else omitted or equal to amount less the charges",
             "examples": [
               "1234.56"
             ],
@@ -6135,7 +6177,7 @@
     },
     "/api/transactions/transfers": {
       "post": {
-        "description": "Between currencies, toAmount is the amount that arrives, and the transfer is an exchange with no fee. A repeated idempotency key returns the entry first recorded with it, posting nothing.",
+        "description": "Charges are booked as expenses out of the amount that leaves. Between currencies, toAmount is the amount that arrives, and the transfer is an exchange whose fee is the one charge allowed. A repeated idempotency key returns the entry first recorded with it, posting nothing.",
         "operationId": "record-transfer",
         "requestBody": {
           "content": {

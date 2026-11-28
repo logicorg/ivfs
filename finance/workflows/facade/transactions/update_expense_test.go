@@ -73,6 +73,61 @@ func (s *WorkflowUnitTestSuite) TestUpdateExpense() {
 	}
 }
 
+// TestUpdateExpense_Lines checks that an update to an expense with lines
+// replaces the entry with the postings RecordExpense would post for them.
+func (s *WorkflowUnitTestSuite) TestUpdateExpense_Lines() {
+	occurredAt := time.Date(2026, 10, 3, 10, 0, 0, 0, time.UTC)
+
+	tests := []struct {
+		name    string
+		balance *model.LedgerAccount
+		lines   []tt.Split
+		// account is the shared account the lines are booked on.
+		account *model.LedgerAccount
+	}{
+		{
+			name: "two lines", balance: cardBalance, account: expenses,
+			lines: []tt.Split{{CategoryID: groceries.ID, Amount: decimal.NewFromInt(10)}, {CategoryID: oldHobby.ID, Amount: decimal.RequireFromString("2.50")}},
+		},
+		{
+			name: "three lines in dollars, two of one category", balance: cashUSD, account: expensesUSD,
+			lines: []tt.Split{
+				{CategoryID: groceries.ID, Amount: decimal.NewFromInt(5)},
+				{CategoryID: interest.ID, Amount: decimal.NewFromInt(3)},
+				{CategoryID: groceries.ID, Amount: decimal.RequireFromString("4.50")},
+			},
+		},
+		{name: "one line", balance: cash, account: expenses, lines: []tt.Split{{CategoryID: groceries.ID, Amount: decimal.RequireFromString("12.50")}}},
+	}
+
+	for _, tc := range tests {
+		s.Run(tc.name, func() {
+			env := s.NewTestWorkflowEnvironment()
+			mockLedgerAccounts(env)
+			mockCategories(env)
+			postings := make([]jt.PostingInput, 0, len(tc.lines)+1)
+			for _, line := range tc.lines {
+				postings = append(postings, jt.PostingInput{LedgerAccountID: tc.account.ID, Amount: line.Amount, Side: model.PostingDebit, CategoryID: ptr.Int64(line.CategoryID)})
+			}
+			postings = append(postings, jt.PostingInput{LedgerAccountID: tc.balance.ID, Amount: decimal.RequireFromString("12.50"), Side: model.PostingCredit})
+			want := jt.ReplaceJournalEntryInput{JournalEntryID: 41, OccurredAt: occurredAt, Postings: postings}
+			env.OnWorkflow(journalwf.ReplaceJournalEntry, mock.Anything, replacement(want)).
+				Return(&jt.ReplaceJournalEntryResult{JournalEntryID: 41}, nil).Once()
+
+			env.ExecuteWorkflow(UpdateExpense, tt.UpdateExpenseInput{
+				JournalEntryID: 41, BalanceLedgerAccountID: tc.balance.ID,
+				Amount: decimal.RequireFromString("12.50"), OccurredAt: occurredAt, Lines: tc.lines,
+			})
+
+			require.NoError(s.T(), env.GetWorkflowError())
+			var got *tt.UpdateResult
+			require.NoError(s.T(), env.GetWorkflowResult(&got))
+			require.Equal(s.T(), &tt.UpdateResult{JournalEntryID: 41}, got)
+			env.AssertExpectations(s.T())
+		})
+	}
+}
+
 // TestUpdateExpense_Errors checks that an invalid request, or a balance or a
 // category that cannot play its role, fails before anything is replaced, since
 // ReplaceJournalEntry is mocked only where a case reaches it, and that a
@@ -82,6 +137,7 @@ func (s *WorkflowUnitTestSuite) TestUpdateExpense_Errors() {
 		name string
 		// entry, balance, and category are the ids the request names.
 		entry, balance, category int64
+		lines                    []tt.Split
 		// unknownAccount and unknownCategory make that retrieval fail.
 		unknownAccount, unknownCategory int64
 		// replaceErr is what ReplaceJournalEntry fails with, when reached.
@@ -92,6 +148,16 @@ func (s *WorkflowUnitTestSuite) TestUpdateExpense_Errors() {
 		{name: "a balance that is a shared account", entry: 41, balance: income.ID, category: groceries.ID, wantError: `invalid parameter: "Income" is not a balance`},
 		{name: "a balance of no financial account", entry: 41, balance: fxClearing.ID, category: groceries.ID, wantError: `invalid parameter: "FX clearing" is not a balance`},
 		{name: "a category of the other kind", entry: 41, balance: cash.ID, category: salary.ID, wantError: `invalid parameter: "Salary" is an income category, not an expense one`},
+		{
+			name: "a line of the other kind", entry: 41, balance: cash.ID,
+			lines:     []tt.Split{{CategoryID: groceries.ID, Amount: decimal.NewFromInt(10)}, {CategoryID: salary.ID, Amount: decimal.RequireFromString("2.50")}},
+			wantError: `invalid parameter: "Salary" is an income category, not an expense one`,
+		},
+		{
+			name: "a first line of the other kind", entry: 41, balance: cash.ID,
+			lines:     []tt.Split{{CategoryID: salary.ID, Amount: decimal.NewFromInt(10)}, {CategoryID: groceries.ID, Amount: decimal.RequireFromString("2.50")}},
+			wantError: `invalid parameter: "Salary" is an income category, not an expense one`,
+		},
 		{name: "an unknown category", entry: 41, balance: cash.ID, category: 999, unknownCategory: 999, wantError: "retrieve category 999"},
 		{name: "an unknown account", entry: 41, balance: 999, category: groceries.ID, unknownAccount: 999, wantError: "retrieve ledger account 999"},
 		{name: "an unknown entry", entry: 41, balance: cash.ID, category: groceries.ID, replaceErr: "resource JournalEntry not found with ID: 41", wantError: "update expense: "},
@@ -118,6 +184,7 @@ func (s *WorkflowUnitTestSuite) TestUpdateExpense_Errors() {
 			env.ExecuteWorkflow(UpdateExpense, tt.UpdateExpenseInput{
 				JournalEntryID: tc.entry, BalanceLedgerAccountID: tc.balance, CategoryID: tc.category,
 				Amount: decimal.RequireFromString("12.50"), OccurredAt: time.Date(2026, 10, 3, 10, 0, 0, 0, time.UTC),
+				Lines: tc.lines,
 			})
 
 			require.ErrorContains(s.T(), env.GetWorkflowError(), tc.wantError)

@@ -31,6 +31,14 @@ func TestScaffold(t *testing.T) {
 			want:            []balanceSpec{{"Cash", model.LedgerAccountAsset}},
 			institutionKind: "cash",
 		},
+		ast.AccountTypeLoan: {
+			want:            []balanceSpec{{"Principal", model.LedgerAccountLiability}},
+			institutionKind: "lender",
+		},
+		ast.AccountTypeRealAsset: {
+			want:            []balanceSpec{{"Cash", model.LedgerAccountAsset}, {"Investments", model.LedgerAccountAsset}},
+			institutionKind: "real assets",
+		},
 	}
 
 	require.Len(t, tests, len(ast.AccountTypes), "every account type has a case")
@@ -75,12 +83,52 @@ func TestInstitutionAndAccountName(t *testing.T) {
 			wantInstitution: "Physical cash",
 			wantAccount:     "Travel cash",
 		},
+		"a real asset without an institution": {
+			input:           ast.OpenAccountInput{Type: ast.AccountTypeRealAsset, AccountName: "Home"},
+			wantInstitution: "Real assets",
+			wantAccount:     "Home",
+		},
+		"an unnamed real asset without an institution": {
+			input:           ast.OpenAccountInput{Type: ast.AccountTypeRealAsset, InstitutionName: " "},
+			wantInstitution: "Real assets",
+			wantAccount:     "Real assets",
+		},
+		"a real asset at an institution": {
+			input:           ast.OpenAccountInput{Type: ast.AccountTypeRealAsset, InstitutionName: "Vault Co"},
+			wantInstitution: "Vault Co",
+			wantAccount:     "Vault Co",
+		},
+		"a loan": {
+			input:           ast.OpenAccountInput{Type: ast.AccountTypeLoan, InstitutionName: "Intesa", AccountName: "Mortgage"},
+			wantInstitution: "Intesa",
+			wantAccount:     "Mortgage",
+		},
 	}
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			require.Equal(t, tc.wantInstitution, institutionName(tc.input))
 			require.Equal(t, tc.wantAccount, accountName(tc.input))
+		})
+	}
+}
+
+func TestBuiltInInstitution(t *testing.T) {
+	tests := map[string]struct {
+		input ast.OpenAccountInput
+		want  bool
+	}{
+		"a cash account":                        {input: ast.OpenAccountInput{Type: ast.AccountTypeCash}, want: true},
+		"a real asset without an institution":   {input: ast.OpenAccountInput{Type: ast.AccountTypeRealAsset}, want: true},
+		"a real asset with a blank institution": {input: ast.OpenAccountInput{Type: ast.AccountTypeRealAsset, InstitutionName: "  "}, want: true},
+		"a real asset at an institution":        {input: ast.OpenAccountInput{Type: ast.AccountTypeRealAsset, InstitutionName: "Vault Co"}},
+		"a loan":                                {input: ast.OpenAccountInput{Type: ast.AccountTypeLoan, InstitutionName: "Intesa"}},
+		"a bank account":                        {input: ast.OpenAccountInput{Type: ast.AccountTypeBank, InstitutionName: "Revolut"}},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			require.Equal(t, tc.want, builtInInstitution(tc.input))
 		})
 	}
 }

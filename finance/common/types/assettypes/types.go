@@ -10,7 +10,7 @@ type InsertAssetParams struct {
 	// Name is the name of the asset.
 	Name string `json:"name" jsonschema:"name of the asset"`
 	// Kind is what the asset is, such as etf; a blank one is stored as other.
-	Kind model.AssetKind `json:"kind,omitempty" jsonschema:"what the asset is: equity, stock, etf, fund, bond, crypto, commodity, or other; other if omitted"`
+	Kind model.AssetKind `json:"kind,omitempty" jsonschema:"what the asset is: equity, stock, etf, fund, bond, crypto, commodity, real_estate, vehicle, or other; other if omitted"`
 	// Description is an optional description of the asset.
 	Description *string `json:"description" jsonschema:"optional description of the asset"`
 	// Ticker is an optional ticker symbol of the asset.

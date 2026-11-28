@@ -76,6 +76,62 @@ func (s *WorkflowUnitTestSuite) TestRecordExpense() {
 	}
 }
 
+// TestRecordExpense_Lines checks that an expense with lines is one entry
+// debiting "Expenses" once per line, in their order, under each line's
+// category, and crediting the balance the whole amount.
+func (s *WorkflowUnitTestSuite) TestRecordExpense_Lines() {
+	occurredAt := time.Date(2026, 10, 3, 10, 0, 0, 0, time.UTC)
+
+	tests := []struct {
+		name    string
+		balance *model.LedgerAccount
+		lines   []tt.Split
+		// account is the shared account the lines are booked on.
+		account *model.LedgerAccount
+	}{
+		{
+			name: "two lines", balance: cardBalance, account: expenses,
+			lines: []tt.Split{{CategoryID: groceries.ID, Amount: decimal.NewFromInt(10)}, {CategoryID: oldHobby.ID, Amount: decimal.RequireFromString("2.50")}},
+		},
+		{
+			name: "three lines in dollars, two of one category", balance: cashUSD, account: expensesUSD,
+			lines: []tt.Split{
+				{CategoryID: groceries.ID, Amount: decimal.NewFromInt(5)},
+				{CategoryID: interest.ID, Amount: decimal.NewFromInt(3)},
+				{CategoryID: groceries.ID, Amount: decimal.RequireFromString("4.50")},
+			},
+		},
+		{name: "one line", balance: cash, account: expenses, lines: []tt.Split{{CategoryID: groceries.ID, Amount: decimal.RequireFromString("12.50")}}},
+	}
+
+	for _, tc := range tests {
+		s.Run(tc.name, func() {
+			env := s.NewTestWorkflowEnvironment()
+			mockLedgerAccounts(env)
+			mockCategories(env)
+			postings := make([]jt.PostingInput, 0, len(tc.lines)+1)
+			for _, line := range tc.lines {
+				postings = append(postings, jt.PostingInput{LedgerAccountID: tc.account.ID, Amount: line.Amount, Side: model.PostingDebit, CategoryID: ptr.Int64(line.CategoryID)})
+			}
+			postings = append(postings, jt.PostingInput{LedgerAccountID: tc.balance.ID, Amount: decimal.RequireFromString("12.50"), Side: model.PostingCredit})
+			want := jt.PostJournalEntryInput{IdempotencyKey: "expense:3f2a", OccurredAt: occurredAt, Postings: postings}
+			env.OnWorkflow(journalwf.PostJournalEntry, mock.Anything, entry(want)).
+				Return(&jt.PostJournalEntryResult{JournalEntryID: 41}, nil).Once()
+
+			env.ExecuteWorkflow(RecordExpense, tt.RecordExpenseInput{
+				IdempotencyKey: "3f2a", BalanceLedgerAccountID: tc.balance.ID,
+				Amount: decimal.RequireFromString("12.50"), OccurredAt: occurredAt, Lines: tc.lines,
+			})
+
+			require.NoError(s.T(), env.GetWorkflowError())
+			var got *tt.RecordResult
+			require.NoError(s.T(), env.GetWorkflowResult(&got))
+			require.Equal(s.T(), &tt.RecordResult{JournalEntryID: 41}, got)
+			env.AssertExpectations(s.T())
+		})
+	}
+}
+
 // TestRecordExpense_Errors checks that an invalid request, or a balance or a
 // category that cannot play its role, fails before anything is posted, since
 // PostJournalEntry is mocked only where a case reaches it, and that a failing
@@ -86,6 +142,7 @@ func (s *WorkflowUnitTestSuite) TestRecordExpense_Errors() {
 		// key, balance, and category are what the request names.
 		key               string
 		balance, category int64
+		lines             []tt.Split
 		// unknownAccount and unknownCategory make that retrieval fail.
 		unknownAccount, unknownCategory int64
 		// accountErr and postErr are what CreateLedgerAccount and
@@ -97,6 +154,16 @@ func (s *WorkflowUnitTestSuite) TestRecordExpense_Errors() {
 		{name: "a balance that is a shared account", key: "3f2a", balance: income.ID, category: groceries.ID, wantError: `invalid parameter: "Income" is not a balance`},
 		{name: "a balance of no financial account", key: "3f2a", balance: fxClearing.ID, category: groceries.ID, wantError: `invalid parameter: "FX clearing" is not a balance`},
 		{name: "a category of the other kind", key: "3f2a", balance: cash.ID, category: salary.ID, wantError: `invalid parameter: "Salary" is an income category, not an expense one`},
+		{
+			name: "a line of the other kind", key: "3f2a", balance: cash.ID,
+			lines:     []tt.Split{{CategoryID: groceries.ID, Amount: decimal.NewFromInt(10)}, {CategoryID: salary.ID, Amount: decimal.RequireFromString("2.50")}},
+			wantError: `invalid parameter: "Salary" is an income category, not an expense one`,
+		},
+		{
+			name: "a first line of the other kind", key: "3f2a", balance: cash.ID,
+			lines:     []tt.Split{{CategoryID: salary.ID, Amount: decimal.NewFromInt(10)}, {CategoryID: groceries.ID, Amount: decimal.RequireFromString("2.50")}},
+			wantError: `invalid parameter: "Salary" is an income category, not an expense one`,
+		},
 		{name: "an unknown account", key: "3f2a", balance: 999, category: groceries.ID, unknownAccount: 999, wantError: "retrieve ledger account 999"},
 		{name: "an unknown category", key: "3f2a", balance: cash.ID, category: 999, unknownCategory: 999, wantError: "retrieve category 999"},
 		{name: "a shared account that cannot be found", key: "3f2a", balance: cash.ID, category: groceries.ID, accountErr: "resource Currency with ID: 1 is closed", wantError: "find the Expenses account of currency 1"},
@@ -126,6 +193,7 @@ func (s *WorkflowUnitTestSuite) TestRecordExpense_Errors() {
 			env.ExecuteWorkflow(RecordExpense, tt.RecordExpenseInput{
 				IdempotencyKey: tc.key, BalanceLedgerAccountID: tc.balance, CategoryID: tc.category,
 				Amount: decimal.RequireFromString("12.50"), OccurredAt: time.Date(2026, 10, 3, 10, 0, 0, 0, time.UTC),
+				Lines: tc.lines,
 			})
 
 			require.ErrorContains(s.T(), env.GetWorkflowError(), tc.wantError)

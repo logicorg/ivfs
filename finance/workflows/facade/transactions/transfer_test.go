@@ -36,8 +36,11 @@ func conversion(want fxt.RegisterFXConversionInput) any {
 	return mock.MatchedBy(func(got fxt.RegisterFXConversionInput) bool {
 		sameDescription := (got.Description == nil) == (want.Description == nil) &&
 			(got.Description == nil || *got.Description == *want.Description)
+		sameFee := (got.Fee == nil) == (want.Fee == nil) &&
+			(got.Fee == nil || got.Fee.CategoryID == want.Fee.CategoryID && got.Fee.Amount.Equal(want.Fee.Amount) &&
+				got.Fee.LedgerAccountID == want.Fee.LedgerAccountID)
 		return got.IdempotencyKey == want.IdempotencyKey && got.OccurredAt.Equal(want.OccurredAt) && sameDescription &&
-			got.CounterpartyID == nil && got.ExternalID == nil && got.ProviderReference == nil && got.Fee == nil &&
+			got.CounterpartyID == nil && got.ExternalID == nil && got.ProviderReference == nil && sameFee &&
 			got.SourceLedgerAccountID == want.SourceLedgerAccountID &&
 			got.SourceClearingLedgerAccountID == want.SourceClearingLedgerAccountID &&
 			got.SourceAmount.Equal(want.SourceAmount) &&
@@ -50,9 +53,10 @@ func conversion(want fxt.RegisterFXConversionInput) any {
 
 // TestRecordTransfer checks that a transfer in one currency credits the
 // balance the money leaves and debits the one it reaches, whatever their
-// kinds, and that a transfer between currencies is posted as an FX conversion
-// through the clearing account of each currency, both with the key prefixed
-// by the transaction's type.
+// kinds, with each charge debited on "Expenses" out of what it reaches, and
+// that a transfer between currencies is posted as an FX conversion through
+// the clearing account of each currency, its charge as the fee, both with the
+// key prefixed by the transaction's type.
 func (s *WorkflowUnitTestSuite) TestRecordTransfer() {
 	occurredAt := time.Date(2026, 10, 3, 10, 0, 0, 0, time.UTC)
 
@@ -117,6 +121,66 @@ func (s *WorkflowUnitTestSuite) TestRecordTransfer() {
 				})).Return(&fxt.RegisterFXConversionResult{JournalEntryID: 42}, nil).Once()
 			},
 		},
+		"a mortgage instalment, part of it interest": {
+			input: tt.RecordTransferInput{
+				IdempotencyKey: "9c1e", FromLedgerAccountID: cash.ID, ToLedgerAccountID: principal.ID,
+				Amount: decimal.RequireFromString("1200.00"), OccurredAt: occurredAt,
+				Charges: []tt.Split{{CategoryID: interest.ID, Amount: decimal.RequireFromString("800.00")}},
+			},
+			mock: func(env *testsuite.TestWorkflowEnvironment) {
+				env.OnWorkflow(journalwf.PostJournalEntry, mock.Anything, entry(jt.PostJournalEntryInput{
+					IdempotencyKey: "transfer:9c1e",
+					OccurredAt:     occurredAt,
+					Postings: []jt.PostingInput{
+						{LedgerAccountID: principal.ID, Amount: decimal.NewFromInt(400), Side: model.PostingDebit},
+						{LedgerAccountID: expenses.ID, Amount: decimal.NewFromInt(800), Side: model.PostingDebit, CategoryID: ptr.Int64(interest.ID)},
+						{LedgerAccountID: cash.ID, Amount: decimal.NewFromInt(1200), Side: model.PostingCredit},
+					},
+				})).Return(&jt.PostJournalEntryResult{JournalEntryID: 42}, nil).Once()
+			},
+		},
+		"two charges, with what arrives given": {
+			input: tt.RecordTransferInput{
+				IdempotencyKey: "9c1e", FromLedgerAccountID: cash.ID, ToLedgerAccountID: principal.ID,
+				Amount: decimal.NewFromInt(1200), ToAmount: decimal.RequireFromString("350.50"), OccurredAt: occurredAt,
+				Charges: []tt.Split{
+					{CategoryID: interest.ID, Amount: decimal.NewFromInt(800)},
+					{CategoryID: groceries.ID, Amount: decimal.RequireFromString("49.50")},
+				},
+			},
+			mock: func(env *testsuite.TestWorkflowEnvironment) {
+				env.OnWorkflow(journalwf.PostJournalEntry, mock.Anything, entry(jt.PostJournalEntryInput{
+					IdempotencyKey: "transfer:9c1e",
+					OccurredAt:     occurredAt,
+					Postings: []jt.PostingInput{
+						{LedgerAccountID: principal.ID, Amount: decimal.RequireFromString("350.50"), Side: model.PostingDebit},
+						{LedgerAccountID: expenses.ID, Amount: decimal.NewFromInt(800), Side: model.PostingDebit, CategoryID: ptr.Int64(interest.ID)},
+						{LedgerAccountID: expenses.ID, Amount: decimal.RequireFromString("49.50"), Side: model.PostingDebit, CategoryID: ptr.Int64(groceries.ID)},
+						{LedgerAccountID: cash.ID, Amount: decimal.NewFromInt(1200), Side: model.PostingCredit},
+					},
+				})).Return(&jt.PostJournalEntryResult{JournalEntryID: 42}, nil).Once()
+			},
+		},
+		"from euros to dollars, with a charge as the fee": {
+			input: tt.RecordTransferInput{
+				IdempotencyKey: "9c1e", FromLedgerAccountID: cash.ID, ToLedgerAccountID: cashUSD.ID,
+				Amount: decimal.RequireFromString("300.50"), ToAmount: decimal.RequireFromString("324.15"), OccurredAt: occurredAt,
+				Charges: []tt.Split{{CategoryID: groceries.ID, Amount: decimal.RequireFromString("1.50")}},
+			},
+			mock: func(env *testsuite.TestWorkflowEnvironment) {
+				env.OnWorkflow(ledgerfxwf.RegisterFXConversion, mock.Anything, conversion(fxt.RegisterFXConversionInput{
+					IdempotencyKey:                     "transfer:9c1e",
+					OccurredAt:                         occurredAt,
+					SourceLedgerAccountID:              cash.ID,
+					SourceClearingLedgerAccountID:      fxClearing.ID,
+					SourceAmount:                       decimal.RequireFromString("300.50"),
+					DestinationLedgerAccountID:         cashUSD.ID,
+					DestinationClearingLedgerAccountID: fxClearingUSD.ID,
+					DestinationAmount:                  decimal.RequireFromString("324.15"),
+					Fee:                                &fxt.FXFee{CategoryID: groceries.ID, Amount: decimal.RequireFromString("1.50"), LedgerAccountID: expenses.ID},
+				})).Return(&fxt.RegisterFXConversionResult{JournalEntryID: 42}, nil).Once()
+			},
+		},
 		"from dollars to euros, without a note": {
 			input: tt.RecordTransferInput{
 				IdempotencyKey: "9c1e", FromLedgerAccountID: cashUSD.ID, ToLedgerAccountID: cash.ID,
@@ -141,6 +205,7 @@ func (s *WorkflowUnitTestSuite) TestRecordTransfer() {
 		s.Run(name, func() {
 			env := s.NewTestWorkflowEnvironment()
 			mockLedgerAccounts(env)
+			mockCategories(env)
 			mockFXClearing(env)
 			tc.mock(env)
 
@@ -156,7 +221,8 @@ func (s *WorkflowUnitTestSuite) TestRecordTransfer() {
 }
 
 // TestRecordTransfer_Errors checks that an invalid request, accounts that are
-// not balances, or amounts that do not fit the balances' currencies fail
+// not balances, amounts or charges that do not fit the balances' currencies,
+// or a charge that is not an expense fail
 // before anything is posted, since neither PostJournalEntry nor
 // RegisterFXConversion is mocked unless a case reaches it, and that a failing
 // child workflow's error is returned.
@@ -193,6 +259,30 @@ func (s *WorkflowUnitTestSuite) TestRecordTransfer_Errors() {
 		"no amount arriving in another currency": {
 			input:     input(cash, cashUSD, "0"),
 			wantError: `invalid parameter: "Cash" and "Cash (USD)" are in different currencies; give the amount that arrives as toAmount`,
+		},
+		"what arrives not less the charges": {
+			input: func() tt.RecordTransferInput {
+				i := input(cash, principal, "300")
+				i.Charges = []tt.Split{{CategoryID: interest.ID, Amount: decimal.NewFromInt(100)}}
+				return i
+			}(),
+			wantError: `invalid parameter: "Cash" and "Principal" are in the same currency, so the amount that arrives is the amount that leaves less the charges, 200`,
+		},
+		"a charge under an income category": {
+			input: func() tt.RecordTransferInput {
+				i := input(cash, principal, "0")
+				i.Charges = []tt.Split{{CategoryID: salary.ID, Amount: decimal.NewFromInt(100)}}
+				return i
+			}(),
+			wantError: `invalid parameter: "Salary" is an income category, not an expense one`,
+		},
+		"two charges between currencies": {
+			input: func() tt.RecordTransferInput {
+				i := input(cash, cashUSD, "324.15")
+				i.Charges = []tt.Split{{CategoryID: interest.ID, Amount: decimal.NewFromInt(1)}, {CategoryID: groceries.ID, Amount: decimal.NewFromInt(1)}}
+				return i
+			}(),
+			wantError: `invalid parameter: "Cash" and "Cash (USD)" are in different currencies, so the transfer takes at most one charge, its exchange fee`,
 		},
 		"an unknown account": {
 			input: tt.RecordTransferInput{
@@ -239,6 +329,7 @@ func (s *WorkflowUnitTestSuite) TestRecordTransfer_Errors() {
 				tc.mock(env)
 			}
 			mockLedgerAccounts(env)
+			mockCategories(env)
 
 			env.ExecuteWorkflow(RecordTransfer, tc.input)
 

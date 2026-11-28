@@ -29,12 +29,14 @@ func TestWorkflowUnitTestSuite(t *testing.T) { suite.Run(t, new(WorkflowUnitTest
 
 // The ledger accounts the transactions are recorded between, as
 // RetrieveLedgerAccount reports them: the balances of Revolut Personal (10)
-// and the shared accounts, which belong to no financial account.
+// and of a mortgage (11), and the shared accounts, which belong to no
+// financial account.
 var (
 	cash           = &model.LedgerAccount{ID: 100, FinancialAccountID: ptr.Int64(10), CurrencyID: 1, Name: "Cash", Kind: model.LedgerAccountAsset}
 	cardBalance    = &model.LedgerAccount{ID: 101, FinancialAccountID: ptr.Int64(10), CurrencyID: 1, Name: "Card balance", Kind: model.LedgerAccountLiability}
 	savingsVault   = &model.LedgerAccount{ID: 102, FinancialAccountID: ptr.Int64(10), CurrencyID: 1, Name: "Savings vault", Kind: model.LedgerAccountAsset}
 	cashUSD        = &model.LedgerAccount{ID: 103, FinancialAccountID: ptr.Int64(10), CurrencyID: 2, Name: "Cash (USD)", Kind: model.LedgerAccountAsset}
+	principal      = &model.LedgerAccount{ID: 104, FinancialAccountID: ptr.Int64(11), CurrencyID: 1, Name: "Principal", Kind: model.LedgerAccountLiability}
 	expenses       = &model.LedgerAccount{ID: 200, CurrencyID: 1, Name: "Expenses", Kind: model.LedgerAccountExpense}
 	expensesUSD    = &model.LedgerAccount{ID: 201, CurrencyID: 2, Name: "Expenses", Kind: model.LedgerAccountExpense}
 	income         = &model.LedgerAccount{ID: 210, CurrencyID: 1, Name: "Income", Kind: model.LedgerAccountIncome}
@@ -49,6 +51,7 @@ var (
 var (
 	groceries = &model.Category{ID: 20, Name: "Groceries", Kind: model.LedgerAccountExpense}
 	oldHobby  = &model.Category{ID: 21, Name: "Old hobby", Kind: model.LedgerAccountExpense, ClosedAt: ptr.NewPtr(time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC))}
+	interest  = &model.Category{ID: 22, Name: "Mortgage interest", Kind: model.LedgerAccountExpense}
 	salary    = &model.Category{ID: 30, Name: "Salary", Kind: model.LedgerAccountIncome}
 )
 
@@ -57,7 +60,7 @@ var (
 // fixture currency. The mocks are optional, as each case uses only some.
 func mockLedgerAccounts(env *testsuite.TestWorkflowEnvironment) {
 	shared := []*model.LedgerAccount{expenses, expensesUSD, income, incomeUSD}
-	for _, account := range append([]*model.LedgerAccount{cash, cardBalance, savingsVault, cashUSD, openingBalance, fxClearing, fxClearingUSD}, shared...) {
+	for _, account := range append([]*model.LedgerAccount{cash, cardBalance, savingsVault, cashUSD, principal, openingBalance, fxClearing, fxClearingUSD}, shared...) {
 		env.OnWorkflow(ledgeraccountswf.RetrieveLedgerAccount, mock.Anything, act.RetrieveLedgerAccountParams{ID: account.ID}).
 			Return(&act.RetrieveLedgerAccountResult{LedgerAccount: account}, nil).Maybe()
 	}
@@ -70,7 +73,7 @@ func mockLedgerAccounts(env *testsuite.TestWorkflowEnvironment) {
 
 // mockCategories lets RetrieveCategory find every fixture category.
 func mockCategories(env *testsuite.TestWorkflowEnvironment) {
-	for _, category := range []*model.Category{groceries, oldHobby, salary} {
+	for _, category := range []*model.Category{groceries, oldHobby, interest, salary} {
 		env.OnWorkflow(categorieswf.RetrieveCategory, mock.Anything, ct.RetrieveCategoryParams{ID: category.ID}).
 			Return(&ct.RetrieveCategoryResult{Category: category}, nil).Maybe()
 	}
