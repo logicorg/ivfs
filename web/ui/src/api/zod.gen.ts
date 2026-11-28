@@ -433,20 +433,6 @@ export const zEntry = z.object({
     tags: z.array(zEntryTag)
 });
 
-export const zEntryDetail = z.object({
-    counterpartyId: z.int().optional(),
-    counterpartyName: z.string().optional(),
-    createdAt: z.iso.datetime(),
-    description: z.string().optional(),
-    externalId: z.string().optional(),
-    id: z.int(),
-    occurredAt: z.iso.datetime(),
-    postedAt: z.iso.datetime().optional(),
-    postings: z.array(zPosting),
-    status: z.enum(['draft', 'posted']),
-    tags: z.array(zEntryTag)
-});
-
 export const zEntryPage = z.object({
     entries: z.array(zEntry),
     next: z.string().optional()
@@ -588,6 +574,27 @@ export const zTransfer = z.object({
     tagIds: z.array(z.int()).optional(),
     toAmount: z.string().regex(/^-?[0-9]+(\.[0-9]+)?$/).optional(),
     toLedgerAccountId: z.int().gte(1)
+});
+
+export const zEntryTransaction = z.object({
+    expense: zExpense.optional(),
+    income: zIncome.optional(),
+    transfer: zTransfer.optional()
+});
+
+export const zEntryDetail = z.object({
+    counterpartyId: z.int().optional(),
+    counterpartyName: z.string().optional(),
+    createdAt: z.iso.datetime(),
+    description: z.string().optional(),
+    externalId: z.string().optional(),
+    id: z.int(),
+    occurredAt: z.iso.datetime(),
+    postedAt: z.iso.datetime().optional(),
+    postings: z.array(zPosting),
+    status: z.enum(['draft', 'posted']),
+    tags: z.array(zEntryTag),
+    transaction: zEntryTransaction.optional()
 });
 
 export const zTransferForm = z.object({

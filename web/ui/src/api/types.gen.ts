@@ -381,6 +381,7 @@ export type EntryDetail = {
     postings: Array<Posting>;
     status: 'draft' | 'posted';
     tags: Array<EntryTag>;
+    transaction?: EntryTransaction;
 };
 
 export type EntryPage = {
@@ -405,6 +406,12 @@ export type EntryTagsForm = {
      * the tags of the entry, replacing those it has; a repeated id counts once, and none clears them
      */
     tagIds: Array<number>;
+};
+
+export type EntryTransaction = {
+    expense?: Expense;
+    income?: Income;
+    transfer?: Transfer;
 };
 
 export type ErrorDetail = {

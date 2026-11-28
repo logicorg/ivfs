@@ -30,12 +30,12 @@ func splits(forms []SplitForm) []tt.Split {
 // as an entry is corrected to.
 type Expense struct {
 	BalanceLedgerAccountID int64          `json:"balanceLedgerAccountId" minimum:"1" doc:"the balance the money leaves"`
-	CategoryID             int64          `json:"categoryId" minimum:"1" required:"false" doc:"the expense category it is spent on; omitted when lines are given"`
+	CategoryID             int64          `json:"categoryId,omitempty" minimum:"1" required:"false" doc:"the expense category it is spent on; omitted when lines are given"`
 	Amount                 gateway.Amount `json:"amount" doc:"the amount spent, greater than zero"`
 	OccurredAt             time.Time      `json:"occurredAt" doc:"the instant the money was spent"`
-	Description            string         `json:"description" required:"false" doc:"a note on the entry"`
-	TagIDs                 []int64        `json:"tagIds" required:"false" doc:"the tags of the entry; a repeated id counts once"`
-	Lines                  []SplitForm    `json:"lines" required:"false" doc:"what a payment spent on several things went on, adding up to amount, in place of categoryId"`
+	Description            string         `json:"description,omitempty" required:"false" doc:"a note on the entry"`
+	TagIDs                 []int64        `json:"tagIds,omitempty" required:"false" doc:"the tags of the entry; a repeated id counts once"`
+	Lines                  []SplitForm    `json:"lines,omitempty" required:"false" doc:"what a payment spent on several things went on, adding up to amount, in place of categoryId"`
 }
 
 // Income is money earned on a category into a balance, as it is recorded or
@@ -45,8 +45,8 @@ type Income struct {
 	CategoryID             int64          `json:"categoryId" minimum:"1" doc:"the income category it is earned on"`
 	Amount                 gateway.Amount `json:"amount" doc:"the amount earned, greater than zero"`
 	OccurredAt             time.Time      `json:"occurredAt" doc:"the instant the money was earned"`
-	Description            string         `json:"description" required:"false" doc:"a note on the entry"`
-	TagIDs                 []int64        `json:"tagIds" required:"false" doc:"the tags of the entry; a repeated id counts once"`
+	Description            string         `json:"description,omitempty" required:"false" doc:"a note on the entry"`
+	TagIDs                 []int64        `json:"tagIds,omitempty" required:"false" doc:"the tags of the entry; a repeated id counts once"`
 }
 
 // Transfer is money moved from one balance to another, such as a card paid
@@ -56,11 +56,11 @@ type Transfer struct {
 	FromLedgerAccountID int64          `json:"fromLedgerAccountId" minimum:"1" doc:"the balance the money leaves"`
 	ToLedgerAccountID   int64          `json:"toLedgerAccountId" minimum:"1" doc:"the balance the money reaches"`
 	Amount              gateway.Amount `json:"amount" doc:"the amount that leaves, greater than zero"`
-	ToAmount            gateway.Amount `json:"toAmount" required:"false" doc:"the amount that arrives: required between currencies, else omitted or equal to amount less the charges"`
+	ToAmount            gateway.Amount `json:"toAmount,omitzero" required:"false" doc:"the amount that arrives: required between currencies, else omitted or equal to amount less the charges"`
 	OccurredAt          time.Time      `json:"occurredAt" doc:"the instant the money moved"`
-	Description         string         `json:"description" required:"false" doc:"a note on the entry"`
-	TagIDs              []int64        `json:"tagIds" required:"false" doc:"the tags of the entry; a repeated id counts once"`
-	Charges             []SplitForm    `json:"charges" required:"false" doc:"what moving the money cost, such as an instalment's interest, taken out of amount; at most one, the exchange fee, between currencies"`
+	Description         string         `json:"description,omitempty" required:"false" doc:"a note on the entry"`
+	TagIDs              []int64        `json:"tagIds,omitempty" required:"false" doc:"the tags of the entry; a repeated id counts once"`
+	Charges             []SplitForm    `json:"charges,omitempty" required:"false" doc:"what moving the money cost, such as an instalment's interest, taken out of amount; at most one, the exchange fee, between currencies"`
 }
 
 // ExpenseForm is the answers to the form that records an expense.

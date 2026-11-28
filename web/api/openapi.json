@@ -994,6 +994,9 @@
               "$ref": "#/components/schemas/EntryTag"
             },
             "type": "array"
+          },
+          "transaction": {
+            "$ref": "#/components/schemas/EntryTransaction"
           }
         },
         "required": [
@@ -1070,6 +1073,21 @@
         "required": [
           "tagIds"
         ],
+        "type": "object"
+      },
+      "EntryTransaction": {
+        "additionalProperties": false,
+        "properties": {
+          "expense": {
+            "$ref": "#/components/schemas/Expense"
+          },
+          "income": {
+            "$ref": "#/components/schemas/Income"
+          },
+          "transfer": {
+            "$ref": "#/components/schemas/Transfer"
+          }
+        },
         "type": "object"
       },
       "ErrorDetail": {
