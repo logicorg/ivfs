@@ -24,6 +24,8 @@ func TestBuyAsset(t *testing.T) {
 		IdempotencyKey: "5f2a", FinancialAccountID: 20, AssetID: 7, Units: decimal.NewFromInt(10),
 		Amount: decimal.RequireFromString("1050"), CurrencyCode: "EUR", OccurredAt: time.Date(2026, 10, 3, 10, 0, 0, 0, time.UTC),
 	}
+	withTags := vwce
+	withTags.TagIDs = []int64{3, 4}
 	withFeeAndNote := vwce
 	withFeeAndNote.Fee = decimal.RequireFromString("3")
 	withFeeAndNote.Description = "monthly plan"
@@ -39,6 +41,11 @@ func TestBuyAsset(t *testing.T) {
 		"record a buy": {
 			Method: http.MethodPost, Path: "/api/investments/buys", Body: form + `}`,
 			Call:       buy(vwce, recorded, nil),
+			WantStatus: http.StatusOK, WantBody: `{"journalEntryId":41,"positionMovementId":42}`,
+		},
+		"with tags": {
+			Method: http.MethodPost, Path: "/api/investments/buys", Body: form + `,"tagIds":[3,4]}`,
+			Call:       buy(withTags, recorded, nil),
 			WantStatus: http.StatusOK, WantBody: `{"journalEntryId":41,"positionMovementId":42}`,
 		},
 		"with a fee and a note": {

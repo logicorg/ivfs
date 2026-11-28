@@ -22,5 +22,6 @@ func buildBuy(in *it.BuyAssetInput, b *brokerage) trade {
 		currencyID:         b.currency.ID,
 		occurredAt:         in.OccurredAt,
 		description:        in.Description,
+		tagIDs:             in.TagIDs,
 	}
 }

@@ -25,7 +25,6 @@ func TestDeletionWorkflowIDs(t *testing.T) {
 		{name: "ledger account", got: DeleteLedgerAccountWorkflowID(7), want: "delete-ledger-account-7"},
 		{name: "financial account", got: DeleteFinancialAccountWorkflowID(7), want: "delete-financial-account-7"},
 		{name: "institution", got: DeleteInstitutionWorkflowID(7), want: "delete-institution-7"},
-		{name: "category", got: DeleteCategoryWorkflowID(7), want: "delete-category-7"},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {

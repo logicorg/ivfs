@@ -3,7 +3,7 @@ package accounts
 import (
 	"time"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	jt "github.com/logicorg/ivfs/finance/common/types/journaltypes"
 	"github.com/logicorg/ivfs/web/api/gateway"
 )
 
@@ -82,7 +82,7 @@ type LedgerAccountBalanceOutput struct {
 }
 
 // newBalance is balance as the API returns it.
-func newBalance(balance lt.LedgerAccountBalanceResult) Balance {
+func newBalance(balance jt.LedgerAccountBalanceResult) Balance {
 	return Balance{
 		LedgerAccountID: balance.LedgerAccountID, LedgerAccountName: balance.LedgerAccountName,
 		Kind: string(balance.Kind), CurrencyID: balance.CurrencyID, CurrencyCode: balance.CurrencyCode,
@@ -90,8 +90,8 @@ func newBalance(balance lt.LedgerAccountBalanceResult) Balance {
 	}
 }
 
-// CloseInput is the request of closing an institution, a financial account,
-// or a ledger account.
+// CloseInput is the request of closing a financial account or a ledger
+// account.
 type CloseInput struct {
 	ID int64 `path:"id" minimum:"1"`
 }
@@ -105,7 +105,7 @@ type OpeningCurrency struct {
 
 // AccountForm is the answers to the form that opens an account (ADR 0006).
 type AccountForm struct {
-	Type              string            `json:"type" enum:"bank,card,brokerage,cash" doc:"bank holds money, card a credit card's debt, brokerage assets and money, cash a wallet"`
+	Type              string            `json:"type" enum:"bank,card,brokerage,cash,loan,real_asset" doc:"bank holds money, card a credit card's debt, brokerage assets and money, cash a wallet, loan a mortgage's or another loan's debt, real_asset a house or a car"`
 	InstitutionName   string            `json:"institutionName,omitempty" doc:"the institution that holds the account, such as Revolut; left out for a cash account"`
 	CreateInstitution bool              `json:"createInstitution,omitempty" doc:"create the institution if it does not exist, once the person has confirmed its name"`
 	AccountName       string            `json:"accountName,omitempty" doc:"the account's name; the institution's name, or Wallet for cash, if omitted"`
@@ -183,10 +183,5 @@ type DeleteAccountInput struct {
 
 // DeletionPreviewInput is the request of GET .../{id}/deletion-preview.
 type DeletionPreviewInput struct {
-	ID int64 `path:"id" minimum:"1"`
-}
-
-// DeleteInstitutionInput is the request of DELETE /api/institutions/{id}.
-type DeleteInstitutionInput struct {
 	ID int64 `path:"id" minimum:"1"`
 }

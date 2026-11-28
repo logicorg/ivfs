@@ -2,7 +2,7 @@
 // facade, which opens accounts and adds balances to them (ADR 0006).
 package accountsetuptypes
 
-import lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+import act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 
 // AccountType says what a financial account holds, which decides the balances
 // it is opened with (ADR 0006).
@@ -20,15 +20,27 @@ const (
 	AccountTypeBrokerage AccountType = "brokerage"
 	// AccountTypeCash holds physical money, such as a wallet.
 	AccountTypeCash AccountType = "cash"
+	// AccountTypeLoan holds a debt with a contract: a mortgage, a car or
+	// personal loan, or a securities-backed credit line.
+	AccountTypeLoan AccountType = "loan"
+	// AccountTypeRealAsset holds tangible things, and money: a house, a share
+	// of one, or a car. It has a brokerage's balances, so its units are bought
+	// and sold as a brokerage's are, but is not listed as one.
+	AccountTypeRealAsset AccountType = "real_asset"
 )
 
 // AccountTypes are the valid account types.
-var AccountTypes = []AccountType{AccountTypeBank, AccountTypeCard, AccountTypeBrokerage, AccountTypeCash}
+var AccountTypes = []AccountType{AccountTypeBank, AccountTypeCard, AccountTypeBrokerage, AccountTypeCash, AccountTypeLoan, AccountTypeRealAsset}
 
 // PhysicalCashInstitution is the institution every cash account belongs to.
 // It is created on first use, without asking, since its name is a constant
 // and cannot be misspelt.
 const PhysicalCashInstitution = "Physical cash"
+
+// RealAssetsInstitution is the institution a real asset account belongs to
+// when the request names none, created on first use as "Physical cash" is:
+// a house or a car is usually held by nobody but its owner.
+const RealAssetsInstitution = "Real assets"
 
 // Outcome says what an account setup request did. Every outcome other than
 // OutcomeOpened asks the caller a question and writes nothing.
@@ -54,6 +66,6 @@ type OpeningEntry struct {
 // the shared accounts of their currencies, in the form ListAccounts returns,
 // and the entries of the opening balances that were given.
 type Balances struct {
-	Balances       []lt.AccountSummary `json:"balances"`
-	OpeningEntries []OpeningEntry      `json:"openingEntries,omitempty"`
+	Balances       []act.AccountSummary `json:"balances"`
+	OpeningEntries []OpeningEntry       `json:"openingEntries,omitempty"`
 }

@@ -8,14 +8,17 @@ import {
   listCategoriesOptions,
   listCurrenciesOptions,
   listFinancialAccountsOptions,
+  listTagsOptions,
 } from "@/api/@tanstack/react-query.gen"
 import { ProblemMessages } from "@/components/form-fields"
+import { PresetCard } from "@/components/preset-card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { formatAmount } from "@/lib/money"
 import { netWorth } from "@/lib/net-worth"
+import { offersPreset } from "@/lib/preset"
 import { addMonths, formatMonth, isMonth, monthOf, monthRange, periodTotals, type Month } from "@/lib/period-totals"
 
 // OverviewSearch is the month the income and expenses are of, kept in the
@@ -29,9 +32,16 @@ export const Route = createFileRoute("/")({
 })
 
 function Overview() {
+  // The same queries the cards below make, so they cost nothing more. Closed
+  // categories count: a user who closed everything is not a new one.
+  const currencies = useQuery(listCurrenciesOptions())
+  const categories = useQuery(listCategoriesOptions({ query: { includeClosed: true } }))
+  const tags = useQuery(listTagsOptions())
+
   return (
     <div className="flex max-w-3xl flex-col gap-6">
       <h1 className="text-2xl font-semibold">Overview</h1>
+      {offersPreset(currencies.data?.currencies, categories.data?.categories, tags.data?.tags) && <PresetCard />}
       <NetWorth />
       <IncomeAndExpenses />
     </div>
@@ -153,7 +163,7 @@ function IncomeAndExpenses() {
                 </TableHeader>
                 <TableBody>
                   {rows.map((row) => (
-                    <TableRow key={row.id}>
+                    <TableRow key={`${row.kind}-${row.id ?? "none"}`}>
                       <TableCell>
                         <span className="flex items-center gap-2">
                           {row.name}

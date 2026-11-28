@@ -61,9 +61,9 @@ export type AccountForm = {
      */
     openingBalancesAt?: string;
     /**
-     * bank holds money, card a credit card's debt, brokerage assets and money, cash a wallet
+     * bank holds money, card a credit card's debt, brokerage assets and money, cash a wallet, loan a mortgage's or another loan's debt, real_asset a house or a car
      */
-    type: 'bank' | 'card' | 'brokerage' | 'cash';
+    type: 'bank' | 'card' | 'brokerage' | 'cash' | 'loan' | 'real_asset';
 };
 
 export type AccountName = {
@@ -75,6 +75,17 @@ export type AddedBalance = {
     ledgerAccountName: string;
 };
 
+export type AppliedCategory = {
+    children?: Array<AppliedCategory>;
+    id: number;
+};
+
+export type AppliedPreset = {
+    categories: Array<AppliedCategory>;
+    currencyIds: Array<number>;
+    tagIds: Array<number>;
+};
+
 export type Asset = {
     description?: string;
     exchange?: string;
@@ -83,14 +94,14 @@ export type Asset = {
      * ISO 6166 identifier
      */
     isin?: string;
-    kind: 'equity' | 'stock' | 'etf' | 'fund' | 'bond' | 'crypto' | 'commodity' | 'other';
+    kind: 'equity' | 'stock' | 'etf' | 'fund' | 'bond' | 'crypto' | 'commodity' | 'real_estate' | 'vehicle' | 'other';
     name: string;
     ticker?: string;
 };
 
 export type AssetForm = {
     description?: string;
-    kind: 'equity' | 'stock' | 'etf' | 'fund' | 'bond' | 'crypto' | 'commodity' | 'other';
+    kind: 'equity' | 'stock' | 'etf' | 'fund' | 'bond' | 'crypto' | 'commodity' | 'real_estate' | 'vehicle' | 'other';
     /**
      * the asset's name; an asset with this name already is returned as it is
      */
@@ -189,22 +200,34 @@ export type BuyForm = {
      */
     occurredAt: string;
     /**
+     * the tags of the entry; a repeated id counts once
+     */
+    tagIds?: Array<number>;
+    /**
      * the units bought, greater than zero
      */
     units: string;
 };
 
 export type Category = {
+    /**
+     * no longer offered for new entries, which can still take it
+     */
     closed: boolean;
-    currencyCode: string;
-    currencyId: number;
     id: number;
     kind: 'income' | 'expense';
     name: string;
     /**
-     * the parent category, of the same kind and currency; none for a top-level one
+     * the parent category, of the same kind; none for a top-level one
      */
     parentId?: number;
+};
+
+export type CategoryDeletionPreview = {
+    /**
+     * journal entries that would lose the category, or take the replacement
+     */
+    entries: number;
 };
 
 export type CategoryList = {
@@ -217,22 +240,22 @@ export type CategoryName = {
 
 export type CategoryParent = {
     /**
-     * the new parent, of the same kind and currency; top level if omitted
+     * the new parent, of the same kind; top level if omitted
      */
     parentId?: number;
 };
 
 export type CategoryResult = {
-    ledgerAccountId: number;
+    categoryId: number;
 };
 
 export type CategoryTotal = {
+    /**
+     * the category; absent on the total of what has none, of its kind and currency
+     */
+    categoryId?: number;
     currencyCode: string;
     currencyId: number;
-    /**
-     * the category
-     */
-    id: number;
     kind: 'income' | 'expense';
     /**
      * earned for income, spent for an expense; negative when refunds outweigh the spending
@@ -343,6 +366,7 @@ export type Entry = {
     occurredAt: string;
     postings: Array<Posting>;
     status: 'draft' | 'posted';
+    tags: Array<EntryTag>;
 };
 
 export type EntryDetail = {
@@ -356,11 +380,31 @@ export type EntryDetail = {
     postedAt?: string;
     postings: Array<Posting>;
     status: 'draft' | 'posted';
+    tags: Array<EntryTag>;
 };
 
 export type EntryPage = {
     entries: Array<Entry>;
     next?: string;
+};
+
+export type EntryTag = {
+    id: number;
+    name: string;
+};
+
+export type EntryTagIds = {
+    /**
+     * the tags of the entry, each once, in ascending order
+     */
+    tagIds: Array<number>;
+};
+
+export type EntryTagsForm = {
+    /**
+     * the tags of the entry, replacing those it has; a repeated id counts once, and none clears them
+     */
+    tagIds: Array<number>;
 };
 
 export type ErrorDetail = {
@@ -415,9 +459,9 @@ export type ExpenseForm = {
      */
     balanceLedgerAccountId: number;
     /**
-     * the expense category it is spent on, in the balance's currency
+     * the expense category it is spent on; omitted when lines are given
      */
-    categoryLedgerAccountId: number;
+    categoryId?: number;
     /**
      * a note on the entry
      */
@@ -427,9 +471,17 @@ export type ExpenseForm = {
      */
     idempotencyKey: string;
     /**
+     * what a payment spent on several things went on, adding up to amount, in place of categoryId
+     */
+    lines?: Array<SplitForm>;
+    /**
      * the instant the money was spent
      */
     occurredAt: string;
+    /**
+     * the tags of the entry; a repeated id counts once
+     */
+    tagIds?: Array<number>;
 };
 
 export type FinancialAccount = {
@@ -487,9 +539,9 @@ export type IncomeForm = {
      */
     balanceLedgerAccountId: number;
     /**
-     * the income category it is earned on, in the balance's currency
+     * the income category it is earned on
      */
-    categoryLedgerAccountId: number;
+    categoryId: number;
     /**
      * a note on the entry
      */
@@ -502,6 +554,10 @@ export type IncomeForm = {
      * the instant the money was earned
      */
     occurredAt: string;
+    /**
+     * the tags of the entry; a repeated id counts once
+     */
+    tagIds?: Array<number>;
 };
 
 export type InsertCurrencyParams = {
@@ -585,11 +641,10 @@ export type NetWorthUnits = {
 };
 
 export type NewCategory = {
-    currencyId: number;
     kind: 'income' | 'expense';
     name: string;
     /**
-     * the parent category, of the same kind and currency; top level if omitted
+     * the parent category, of the same kind; top level if omitted
      */
     parentId?: number;
 };
@@ -631,12 +686,40 @@ export type Posting = {
      * a decimal amount, as a string so it stays exact
      */
     amount: string;
+    categoryId?: number;
+    categoryName?: string;
     currencyId: number;
     kind: 'asset' | 'liability' | 'equity' | 'income' | 'expense';
     ledgerAccountId: number;
     ledgerAccountName: string;
     lineNumber: number;
     side: 'debit' | 'credit';
+};
+
+export type Preset = {
+    /**
+     * at most 100, counting children
+     */
+    categories: Array<PresetCategory>;
+    currencies: Array<InsertCurrencyParams>;
+    tags: Array<PresetTag>;
+};
+
+export type PresetCategory = {
+    /**
+     * at most two levels below a top-level category
+     */
+    children?: Array<PresetCategory>;
+    /**
+     * required on a top-level category, left out on a child, which takes its parent's
+     */
+    kind?: 'income' | 'expense';
+    name: string;
+};
+
+export type PresetTag = {
+    description?: string;
+    name: string;
 };
 
 export type ProviderError = {
@@ -704,9 +787,24 @@ export type SellForm = {
      */
     occurredAt: string;
     /**
+     * the tags of the entry; a repeated id counts once
+     */
+    tagIds?: Array<number>;
+    /**
      * the units sold, greater than zero
      */
     units: string;
+};
+
+export type SplitForm = {
+    /**
+     * the part of the amount it takes, greater than zero
+     */
+    amount: string;
+    /**
+     * the expense category it is booked under
+     */
+    categoryId: number;
 };
 
 export type StrayAmount = {
@@ -715,8 +813,6 @@ export type StrayAmount = {
      */
     amount: string;
     currencyCode: string;
-    kind: string;
-    name: string;
 };
 
 export type StrayUnits = {
@@ -752,6 +848,10 @@ export type TransferForm = {
      */
     amount: string;
     /**
+     * what moving the money cost, such as an instalment's interest, taken out of amount; at most one, the exchange fee, between currencies
+     */
+    charges?: Array<SplitForm>;
+    /**
      * a note on the entry
      */
     description?: string;
@@ -768,7 +868,11 @@ export type TransferForm = {
      */
     occurredAt: string;
     /**
-     * the amount that arrives: required between currencies, else omitted or equal to amount
+     * the tags of the entry; a repeated id counts once
+     */
+    tagIds?: Array<number>;
+    /**
+     * the amount that arrives: required between currencies, else omitted or equal to amount less the charges
      */
     toAmount?: string;
     /**
@@ -794,7 +898,7 @@ export type VestForm = {
      */
     assetId: number;
     /**
-     * the currency of the value, such as EUR, in which the account has its Cash and Investments balances and the categories are
+     * the currency of the value, such as EUR, in which the account has its Cash and Investments balances
      */
     currencyCode: string;
     /**
@@ -814,17 +918,21 @@ export type VestForm = {
      */
     idempotencyKey: string;
     /**
-     * the income category credited with the value of the units vested
+     * the income category of the value of the units vested
      */
-    incomeCategoryLedgerAccountId: number;
+    incomeCategoryId: number;
     /**
      * the instant of the vest
      */
     occurredAt: string;
     /**
-     * the expense category debited with the value of the units withheld; required when units are withheld
+     * the tags of the entry; a repeated id counts once
      */
-    taxCategoryLedgerAccountId?: number;
+    tagIds?: Array<number>;
+    /**
+     * the expense category of the value of the units withheld; required when units are withheld
+     */
+    taxCategoryId?: number;
     /**
      * every unit vested, those withheld included, greater than zero
      */
@@ -1095,7 +1203,7 @@ export type DeleteCategoryData = {
     };
     query?: {
         /**
-         * the category to merge this one into; merging is not supported yet
+         * an open category of the same kind, with none under it, that the entries take instead of losing their category
          */
         replacementId?: number;
     };
@@ -1121,13 +1229,9 @@ export type DeleteCategoryError = DeleteCategoryErrors[keyof DeleteCategoryError
 
 export type DeleteCategoryResponses = {
     /**
-     * OK
+     * No Content
      */
-    200: AccountDeletion;
-    /**
-     * The deletion is still running; deleting again waits on it
-     */
-    202: AccountDeletion;
+    204: void;
 };
 
 export type DeleteCategoryResponse = DeleteCategoryResponses[keyof DeleteCategoryResponses];
@@ -1201,7 +1305,7 @@ export type PreviewCategoryDeletionResponses = {
     /**
      * OK
      */
-    200: AccountDeletionPreview;
+    200: CategoryDeletionPreview;
 };
 
 export type PreviewCategoryDeletionResponse = PreviewCategoryDeletionResponses[keyof PreviewCategoryDeletionResponses];
@@ -2228,6 +2332,10 @@ export type ListJournalEntriesData = {
          */
         ledgerAccountId?: number;
         /**
+         * only entries with a posting in any of these categories or in one under them
+         */
+        categoryId?: Array<number>;
+        /**
          * only entries with this counterparty
          */
         counterpartyId?: number;
@@ -2346,6 +2454,41 @@ export type GetJournalEntryResponses = {
 };
 
 export type GetJournalEntryResponse = GetJournalEntryResponses[keyof GetJournalEntryResponses];
+
+export type SetJournalEntryTagsData = {
+    body: EntryTagsForm;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/api/journal-entries/{id}/tags';
+};
+
+export type SetJournalEntryTagsErrors = {
+    /**
+     * Not Found
+     */
+    404: ErrorModel;
+    /**
+     * Unprocessable Entity
+     */
+    422: ErrorModel;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorModel;
+};
+
+export type SetJournalEntryTagsError = SetJournalEntryTagsErrors[keyof SetJournalEntryTagsErrors];
+
+export type SetJournalEntryTagsResponses = {
+    /**
+     * OK
+     */
+    200: EntryTagIds;
+};
+
+export type SetJournalEntryTagsResponse = SetJournalEntryTagsResponses[keyof SetJournalEntryTagsResponses];
 
 export type DeleteLedgerAccountData = {
     body?: never;
@@ -2612,6 +2755,64 @@ export type DeletePositionMovementResponses = {
 };
 
 export type DeletePositionMovementResponse = DeletePositionMovementResponses[keyof DeletePositionMovementResponses];
+
+export type ApplyPresetData = {
+    body: Preset;
+    path?: never;
+    query?: never;
+    url: '/api/presets/apply';
+};
+
+export type ApplyPresetErrors = {
+    /**
+     * Conflict
+     */
+    409: ErrorModel;
+    /**
+     * Unprocessable Entity
+     */
+    422: ErrorModel;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorModel;
+};
+
+export type ApplyPresetError = ApplyPresetErrors[keyof ApplyPresetErrors];
+
+export type ApplyPresetResponses = {
+    /**
+     * OK
+     */
+    200: AppliedPreset;
+};
+
+export type ApplyPresetResponse = ApplyPresetResponses[keyof ApplyPresetResponses];
+
+export type GetDefaultPresetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/presets/default';
+};
+
+export type GetDefaultPresetErrors = {
+    /**
+     * Error
+     */
+    default: ErrorModel;
+};
+
+export type GetDefaultPresetError = GetDefaultPresetErrors[keyof GetDefaultPresetErrors];
+
+export type GetDefaultPresetResponses = {
+    /**
+     * OK
+     */
+    200: Preset;
+};
+
+export type GetDefaultPresetResponse = GetDefaultPresetResponses[keyof GetDefaultPresetResponses];
 
 export type RetrieveUserSettingsData = {
     body?: never;

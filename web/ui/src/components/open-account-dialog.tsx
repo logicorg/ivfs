@@ -27,7 +27,13 @@ const accountTypes = [
   { value: "card", label: "Credit card" },
   { value: "brokerage", label: "Brokerage account" },
   { value: "cash", label: "Cash" },
+  { value: "loan", label: "Loan or mortgage" },
+  { value: "real_asset", label: "House, car, or other real asset" },
 ]
+
+// owesMoney reports whether the account's balance is a debt, so its opening
+// balance is what is owed.
+const owesMoney = (type: OpenAccountFormValues["type"]) => type === "card" || type === "loan"
 
 type DialogProps = {
   open: boolean
@@ -143,7 +149,8 @@ function OpenAccountForm({ onDone }: { onDone: () => void }) {
           <>
             <TextField
               label="Institution"
-              placeholder="Revolut"
+              placeholder={type === "loan" ? "Intesa" : "Revolut"}
+              description={type === "real_asset" ? "Real assets if left empty." : undefined}
               list="institutions"
               autoComplete="off"
               error={form.formState.errors.institutionName}
@@ -158,6 +165,7 @@ function OpenAccountForm({ onDone }: { onDone: () => void }) {
         )}
         <TextField
           label="Account name"
+          placeholder={type === "real_asset" ? "Home" : type === "loan" ? "Mortgage" : undefined}
           description={type === "cash" ? "Wallet if left empty." : "The institution's name if left empty."}
           error={form.formState.errors.accountName}
           {...form.register("accountName")}
@@ -185,7 +193,7 @@ function OpenAccountForm({ onDone }: { onDone: () => void }) {
               </div>
               <div className="flex-1">
                 <TextField
-                  label={type === "card" ? "Owed today" : "Balance today"}
+                  label={owesMoney(type) ? "Owed today" : "Balance today"}
                   placeholder="0"
                   inputMode="decimal"
                   error={form.formState.errors.currencies?.[index]?.openingBalance}

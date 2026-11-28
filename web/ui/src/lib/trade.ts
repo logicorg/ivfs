@@ -5,6 +5,7 @@ import type { Asset, AssetForm, Balance, BuyForm, Holding, SellForm } from "@/ap
 import { compareDecimals } from "./decimal"
 import { formatUnits } from "./holdings"
 import { startOfDay } from "./open-account"
+import { sentTagIds, tagIdsField } from "./tags"
 
 // newAsset is the asset choice that creates one from the name, ticker and kind
 // typed in, rather than picking one that exists.
@@ -18,6 +19,8 @@ export const assetKinds: { value: AssetForm["kind"]; label: string }[] = [
   { value: "bond", label: "Bond" },
   { value: "crypto", label: "Crypto" },
   { value: "commodity", label: "Commodity" },
+  { value: "real_estate", label: "Real estate" },
+  { value: "vehicle", label: "Vehicle" },
   { value: "other", label: "Other" },
 ]
 
@@ -78,6 +81,7 @@ export const tradeForm = z
     fee: optionalText("1.50"),
     occurredOn: z.string(),
     description: z.string().trim(),
+    tagIds: tagIdsField,
   })
   .superRefine(checkNewAsset)
 
@@ -166,5 +170,6 @@ function trade(values: TradeFormValues, assetId: number, idempotencyKey: string,
     fee: values.fee || undefined,
     occurredAt: startOfDay(values.occurredOn) ?? now.toISOString(),
     description: values.description || undefined,
+    tagIds: sentTagIds(values.tagIds),
   }
 }

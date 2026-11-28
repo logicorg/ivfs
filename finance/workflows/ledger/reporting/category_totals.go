@@ -4,17 +4,18 @@ import (
 	"fmt"
 
 	ledgeractivity "github.com/logicorg/ivfs/finance/activities/ledger/reporting"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	rpt "github.com/logicorg/ivfs/finance/common/types/reportingtypes"
 	"github.com/logicorg/ivfs/finance/workflows"
 	"go.temporal.io/sdk/workflow"
 )
 
-// CategoryTotals totals each income and expense category over a period.
-func CategoryTotals(ctx workflow.Context, params lt.CategoryTotalsParams) (*lt.CategoryTotalsResult, error) {
+// CategoryTotals totals each income and expense category, and what has
+// none, by currency over a period.
+func CategoryTotals(ctx workflow.Context, params rpt.CategoryTotalsParams) (*rpt.CategoryTotalsResult, error) {
 	ctx = workflow.WithActivityOptions(ctx, workflows.GetDefaultActivityOptions())
 	la := (*ledgeractivity.Activities)(nil)
 
-	var result lt.CategoryTotalsResult
+	var result rpt.CategoryTotalsResult
 	if err := workflow.ExecuteActivity(ctx, la.CategoryTotals, params).Get(ctx, &result); err != nil {
 		return nil, fmt.Errorf("total categories: %w", err)
 	}

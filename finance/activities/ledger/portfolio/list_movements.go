@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/logicorg/ivfs/finance/activities/ledger/internal/positions"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	pft "github.com/logicorg/ivfs/finance/common/types/portfoliotypes"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/uptrace/bun"
 )
@@ -15,7 +15,7 @@ import (
 // happened at the same instant are ordered by when they were recorded and then
 // by id, the order the holdings check uses, so a page boundary can fall between
 // them without skipping or repeating any.
-func (a *Activities) ListPositionMovements(ctx context.Context, params lt.ListPositionMovementsParams) (*lt.ListPositionMovementsResult, error) {
+func (a *Activities) ListPositionMovements(ctx context.Context, params pft.ListPositionMovementsParams) (*pft.ListPositionMovementsResult, error) {
 	db, err := a.Pools.For(ctx)
 	if err != nil {
 		return nil, err
@@ -53,11 +53,11 @@ func (a *Activities) ListPositionMovements(ctx context.Context, params lt.ListPo
 		return nil, fmt.Errorf("list position movements: %w", err)
 	}
 
-	result := &lt.ListPositionMovementsResult{Movements: movements}
+	result := &pft.ListPositionMovementsResult{Movements: movements}
 	if len(movements) > pageSize {
 		result.Movements = movements[:pageSize]
 		last := result.Movements[pageSize-1]
-		result.Next = &lt.PositionMovementCursor{OccurredAt: last.OccurredAt, CreatedAt: last.CreatedAt, ID: last.ID}
+		result.Next = &pft.PositionMovementCursor{OccurredAt: last.OccurredAt, CreatedAt: last.CreatedAt, ID: last.ID}
 	}
 	return result, nil
 }

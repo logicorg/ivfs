@@ -25,6 +25,8 @@ func TestBuyAssetInput_Validate(t *testing.T) {
 		"a buy with a fee":        {mutate: func(i *BuyAssetInput) { i.Fee = decimal.RequireFromString("3.00") }},
 		"a buy of a fraction":     {mutate: func(i *BuyAssetInput) { i.Units = decimal.RequireFromString("0.125") }},
 		"a buy with a note":       {mutate: func(i *BuyAssetInput) { i.Description = "monthly plan" }},
+		"with tags":               {mutate: func(i *BuyAssetInput) { i.TagIDs = []int64{3, 4} }},
+		"a tag id of zero":        {mutate: func(i *BuyAssetInput) { i.TagIDs = []int64{3, 0} }, wantError: "tag id 0"},
 		"a blank idempotency key": {mutate: func(i *BuyAssetInput) { i.IdempotencyKey = " " }, wantError: "validation error"},
 		"no financial account":    {mutate: func(i *BuyAssetInput) { i.FinancialAccountID = 0 }, wantError: "validation error"},
 		"no asset":                {mutate: func(i *BuyAssetInput) { i.AssetID = 0 }, wantError: "validation error"},

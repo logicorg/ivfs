@@ -25,9 +25,22 @@ func TestOpenAccountInput_Validate(t *testing.T) {
 		"a cash account without an institution": {
 			input: OpenAccountInput{Type: AccountTypeCash, Currencies: eur},
 		},
+		"a loan": {
+			input: OpenAccountInput{Type: AccountTypeLoan, InstitutionName: "Intesa", Currencies: []CurrencyBalance{{Code: "EUR", OpeningBalance: decimal.NewFromInt(182000)}}},
+		},
+		"a real asset without an institution": {
+			input: OpenAccountInput{Type: AccountTypeRealAsset, AccountName: "Home", Currencies: eur},
+		},
+		"a real asset at an institution": {
+			input: OpenAccountInput{Type: AccountTypeRealAsset, InstitutionName: "Vault Co", Currencies: eur},
+		},
 		"an unknown type": {
-			input:     OpenAccountInput{Type: "loan", InstitutionName: "Bank", Currencies: eur},
-			wantError: `unknown account type "loan" (must be one of ["bank" "card" "brokerage" "cash"])`,
+			input:     OpenAccountInput{Type: "lease", InstitutionName: "Bank", Currencies: eur},
+			wantError: `unknown account type "lease" (must be one of ["bank" "card" "brokerage" "cash" "loan" "real_asset"])`,
+		},
+		"a loan without an institution": {
+			input:     OpenAccountInput{Type: AccountTypeLoan, Currencies: eur},
+			wantError: "the institution is required for a loan account",
 		},
 		"no type": {
 			input:     OpenAccountInput{InstitutionName: "Bank", Currencies: eur},

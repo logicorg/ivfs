@@ -1,13 +1,12 @@
 package accounts
 
 import (
-	"net/http"
-	"testing"
-
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
 	"github.com/logicorg/ivfs/web/api/apitest"
 	"go.temporal.io/sdk/temporal"
+	"net/http"
+	"testing"
 )
 
 // TestRenameLedgerAccount checks that the path and body become
@@ -18,8 +17,8 @@ func TestRenameLedgerAccount(t *testing.T) {
 			Method: http.MethodPost, Path: "/api/ledger-accounts/7/rename", Body: `{"name":"Savings vault"}`,
 			Call: &apitest.WorkflowCall{
 				Workflow: ledgeraccountswf.RenameLedgerAccount,
-				Params:   lt.RenameLedgerAccountInput{LedgerAccountID: 7, Name: "Savings vault"},
-				Result:   lt.LedgerAccountMutationResult{LedgerAccountID: 7},
+				Params:   act.RenameLedgerAccountInput{LedgerAccountID: 7, Name: "Savings vault"},
+				Result:   act.LedgerAccountMutationResult{LedgerAccountID: 7},
 			},
 			WantStatus: http.StatusNoContent,
 		},
@@ -27,7 +26,7 @@ func TestRenameLedgerAccount(t *testing.T) {
 			Method: http.MethodPost, Path: "/api/ledger-accounts/7/rename", Body: `{"name":"Cash"}`,
 			Call: &apitest.WorkflowCall{
 				Workflow: ledgeraccountswf.RenameLedgerAccount,
-				Params:   lt.RenameLedgerAccountInput{LedgerAccountID: 7, Name: "Cash"},
+				Params:   act.RenameLedgerAccountInput{LedgerAccountID: 7, Name: "Cash"},
 				Err:      temporal.NewApplicationError("a LedgerAccount with this name already exists", "ErrResourceConflict"),
 			},
 			WantStatus: http.StatusConflict,
@@ -37,7 +36,7 @@ func TestRenameLedgerAccount(t *testing.T) {
 			Method: http.MethodPost, Path: "/api/ledger-accounts/99/rename", Body: `{"name":"Cash"}`,
 			Call: &apitest.WorkflowCall{
 				Workflow: ledgeraccountswf.RenameLedgerAccount,
-				Params:   lt.RenameLedgerAccountInput{LedgerAccountID: 99, Name: "Cash"},
+				Params:   act.RenameLedgerAccountInput{LedgerAccountID: 99, Name: "Cash"},
 				Err:      temporal.NewApplicationError("resource LedgerAccount not found with ID: 99", "ErrNotFound"),
 			},
 			WantStatus: http.StatusNotFound,

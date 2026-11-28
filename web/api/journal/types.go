@@ -19,16 +19,29 @@ type Posting struct {
 	CurrencyID int64          `json:"currencyId"`
 	Amount     gateway.Amount `json:"amount"`
 	Side       string         `json:"side" enum:"debit,credit"`
+	// CategoryID and CategoryName are absent on a posting without a category:
+	// one to an account that is neither income nor expense, or an
+	// uncategorized one.
+	CategoryID   *int64 `json:"categoryId,omitempty"`
+	CategoryName string `json:"categoryName,omitempty"`
 }
 
-// Entry is a journal entry with its postings, in line order.
+// EntryTag is a tag of a journal entry.
+type EntryTag struct {
+	ID   int64  `json:"id"`
+	Name string `json:"name"`
+}
+
+// Entry is a journal entry with its postings, in line order, and its tags, by
+// name.
 type Entry struct {
-	ID          int64     `json:"id"`
-	OccurredAt  time.Time `json:"occurredAt"`
-	Description string    `json:"description,omitempty"`
-	ExternalID  string    `json:"externalId,omitempty"`
-	Status      string    `json:"status" enum:"draft,posted"`
-	Postings    []Posting `json:"postings"`
+	ID          int64      `json:"id"`
+	OccurredAt  time.Time  `json:"occurredAt"`
+	Description string     `json:"description,omitempty"`
+	ExternalID  string     `json:"externalId,omitempty"`
+	Status      string     `json:"status" enum:"draft,posted"`
+	Postings    []Posting  `json:"postings"`
+	Tags        []EntryTag `json:"tags"`
 }
 
 // EntryPage is one page of journal entries.
@@ -50,6 +63,7 @@ type EntryDetail struct {
 // ListJournalEntriesInput is the request of GET /api/journal-entries.
 type ListJournalEntriesInput struct {
 	LedgerAccountID int64     `query:"ledgerAccountId" minimum:"1" doc:"only entries with a posting on this ledger account"`
+	CategoryIDs     []int64   `query:"categoryId,explode" doc:"only entries with a posting in any of these categories or in one under them"`
 	CounterpartyID  int64     `query:"counterpartyId" minimum:"1" doc:"only entries with this counterparty"`
 	Statuses        []string  `query:"status,explode" enum:"draft,posted" doc:"only entries in any of these states; every state if omitted"`
 	From            time.Time `query:"from" doc:"only entries that occurred at or after this instant"`
@@ -92,7 +106,10 @@ type DeleteJournalEntryOutput struct {
 func newEntry(entry *model.JournalEntry) (Entry, error) {
 	out := Entry{
 		ID: entry.ID, OccurredAt: entry.OccurredAt, Status: string(entry.Status),
-		Postings: make([]Posting, 0, len(entry.Postings)),
+		Postings: make([]Posting, 0, len(entry.Postings)), Tags: make([]EntryTag, 0, len(entry.Tags)),
+	}
+	for _, tag := range entry.Tags {
+		out.Tags = append(out.Tags, EntryTag{ID: tag.ID, Name: tag.Name})
 	}
 	if entry.Description != nil {
 		out.Description = *entry.Description
@@ -104,11 +121,41 @@ func newEntry(entry *model.JournalEntry) (Entry, error) {
 		if posting.LedgerAccount == nil {
 			return Entry{}, fmt.Errorf("posting %d of journal entry %d has no ledger account loaded", posting.ID, entry.ID)
 		}
-		out.Postings = append(out.Postings, Posting{
+		line := Posting{
 			LineNumber: posting.LineNumber, LedgerAccountID: posting.LedgerAccountID,
 			LedgerAccountName: posting.LedgerAccount.Name, Kind: string(posting.LedgerAccount.Kind),
 			CurrencyID: posting.LedgerAccount.CurrencyID, Amount: gateway.NewAmount(posting.Amount), Side: string(posting.Side),
-		})
+		}
+		if posting.CategoryID != nil {
+			if posting.Category == nil {
+				return Entry{}, fmt.Errorf("posting %d of journal entry %d has no category loaded", posting.ID, entry.ID)
+			}
+			line.CategoryID, line.CategoryName = posting.CategoryID, posting.Category.Name
+		}
+		out.Postings = append(out.Postings, line)
 	}
 	return out, nil
+}
+
+// EntryTagsForm is the whole set of tags an entry is to have.
+type EntryTagsForm struct {
+	TagIDs []int64 `json:"tagIds" doc:"the tags of the entry, replacing those it has; a repeated id counts once, and none clears them"`
+}
+
+// EntryTagIDs is the set of tags an entry has after a change.
+type EntryTagIDs struct {
+	TagIDs []int64 `json:"tagIds" doc:"the tags of the entry, each once, in ascending order"`
+}
+
+// SetJournalEntryTagsInput is the request of PUT
+// /api/journal-entries/{id}/tags.
+type SetJournalEntryTagsInput struct {
+	ID   int64 `path:"id" minimum:"1"`
+	Body EntryTagsForm
+}
+
+// SetJournalEntryTagsOutput is the response of PUT
+// /api/journal-entries/{id}/tags.
+type SetJournalEntryTagsOutput struct {
+	Body EntryTagIDs
 }

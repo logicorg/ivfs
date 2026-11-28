@@ -16,7 +16,7 @@ import (
 // written, and its negative holding comes back as a warning (ADR 0010). It
 // fails with ErrInvalidParameter, writing nothing, when the account has no
 // "Cash" and "Investments" balances in the currency, or a vest's category is
-// not of its kind or currency. A repeated idempotency key returns the entry and
+// not of its kind. A repeated idempotency key returns the entry and
 // movement first written with it.
 func RecordInvestment(ctx workflow.Context, input it.RecordInvestmentInput) (*it.TradeResult, error) {
 	if err := input.Validate(); err != nil {

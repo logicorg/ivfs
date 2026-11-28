@@ -1,7 +1,7 @@
 package accounts
 
 import (
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	act "github.com/logicorg/ivfs/finance/common/types/accounttypes"
 	"github.com/logicorg/ivfs/internal/pkg/temporaltesting"
 	"github.com/logicorg/ivfs/pkg/model"
 	"github.com/logicorg/ivfs/pkg/ptr"
@@ -13,30 +13,30 @@ func (s *UnitTestSuite) Test_UpdateFinancialAccountMetadata() {
 	temporaltesting.Insert(s.T(), s.DB, institution)
 
 	tests := map[string]struct {
-		params   lt.UpdateFinancialAccountMetadataInput
+		params   act.UpdateFinancialAccountMetadataInput
 		expErr   bool
 		expName  string
 		expExtID *string
 	}{
 		"rename": {
-			params:  lt.UpdateFinancialAccountMetadataInput{Name: ptr.NewPtr("Revolut EUR renamed")},
+			params:  act.UpdateFinancialAccountMetadataInput{Name: ptr.NewPtr("Revolut EUR renamed")},
 			expName: "Revolut EUR renamed",
 		},
 		"set external id": {
-			params:   lt.UpdateFinancialAccountMetadataInput{ExternalID: ptr.NewPtr("ext-1")},
+			params:   act.UpdateFinancialAccountMetadataInput{ExternalID: ptr.NewPtr("ext-1")},
 			expName:  "Revolut EUR",
 			expExtID: ptr.NewPtr("ext-1"),
 		},
 		"no-op": {
-			params:  lt.UpdateFinancialAccountMetadataInput{},
+			params:  act.UpdateFinancialAccountMetadataInput{},
 			expName: "Revolut EUR",
 		},
 		"blank name": {
-			params: lt.UpdateFinancialAccountMetadataInput{Name: ptr.NewPtr("   ")},
+			params: act.UpdateFinancialAccountMetadataInput{Name: ptr.NewPtr("   ")},
 			expErr: true,
 		},
 		"invalid id": {
-			params: lt.UpdateFinancialAccountMetadataInput{FinancialAccountID: 0, Name: ptr.NewPtr("x")},
+			params: act.UpdateFinancialAccountMetadataInput{FinancialAccountID: 0, Name: ptr.NewPtr("x")},
 			expErr: true,
 		},
 	}
@@ -71,7 +71,7 @@ func (s *UnitTestSuite) Test_UpdateFinancialAccountMetadata() {
 }
 
 func (s *UnitTestSuite) Test_UpdateFinancialAccountMetadata_NotFound() {
-	_, err := s.Env.ExecuteActivity(s.aa.UpdateFinancialAccountMetadata, lt.UpdateFinancialAccountMetadataInput{
+	_, err := s.Env.ExecuteActivity(s.aa.UpdateFinancialAccountMetadata, act.UpdateFinancialAccountMetadataInput{
 		FinancialAccountID: 999999,
 		Name:               ptr.NewPtr("x"),
 	})
@@ -84,7 +84,7 @@ func (s *UnitTestSuite) Test_UpdateFinancialAccountMetadata_Idempotency() {
 	account := &model.FinancialAccount{InstitutionID: institution.ID, Name: "Revolut EUR"}
 	temporaltesting.Insert(s.T(), s.DB, account)
 
-	params := lt.UpdateFinancialAccountMetadataInput{FinancialAccountID: account.ID, Name: ptr.NewPtr("Revolut EUR v2")}
+	params := act.UpdateFinancialAccountMetadataInput{FinancialAccountID: account.ID, Name: ptr.NewPtr("Revolut EUR v2")}
 
 	_, err := s.Env.ExecuteActivity(s.aa.UpdateFinancialAccountMetadata, params)
 	require.NoError(s.T(), err)
@@ -107,25 +107,25 @@ func (s *UnitTestSuite) Test_UpdateFinancialAccountMetadata_Taken() {
 	tests := map[string]struct {
 		// target picks the account to update, of Personal and Joint.
 		target func(personal, joint *model.FinancialAccount) *model.FinancialAccount
-		update lt.UpdateFinancialAccountMetadataInput
+		update act.UpdateFinancialAccountMetadataInput
 		errStr string
 		stored string
 	}{
 		"the name of another account": {
 			target: func(_, joint *model.FinancialAccount) *model.FinancialAccount { return joint },
-			update: lt.UpdateFinancialAccountMetadataInput{Name: ptr.NewPtr(" personal ")},
+			update: act.UpdateFinancialAccountMetadataInput{Name: ptr.NewPtr(" personal ")},
 			errStr: "resource FinancialAccount conflict",
 			stored: "Joint",
 		},
 		"the external id of another account": {
 			target: func(_, joint *model.FinancialAccount) *model.FinancialAccount { return joint },
-			update: lt.UpdateFinancialAccountMetadataInput{ExternalID: ptr.NewPtr("IBAN-1")},
+			update: act.UpdateFinancialAccountMetadataInput{ExternalID: ptr.NewPtr("IBAN-1")},
 			errStr: "resource FinancialAccount conflict",
 			stored: "Joint",
 		},
 		"its own name in another casing": {
 			target: func(personal, _ *model.FinancialAccount) *model.FinancialAccount { return personal },
-			update: lt.UpdateFinancialAccountMetadataInput{Name: ptr.NewPtr("PERSONAL")},
+			update: act.UpdateFinancialAccountMetadataInput{Name: ptr.NewPtr("PERSONAL")},
 			stored: "PERSONAL",
 		},
 	}

@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
-	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
+	cpt "github.com/logicorg/ivfs/finance/common/types/counterpartytypes"
+	counterpartieswf "github.com/logicorg/ivfs/finance/workflows/ledger/counterparties"
 	"github.com/logicorg/ivfs/web/api/gateway"
 	"go.temporal.io/sdk/client"
 )
@@ -19,8 +19,8 @@ func registerList(api huma.API, c client.Client) {
 		Summary:     "List the counterparties, sorted by name",
 		Tags:        tags,
 	}, func(ctx context.Context, in *ListCounterpartiesInput) (*ListCounterpartiesOutput, error) {
-		result, err := gateway.RunWorkflow[lt.ListCounterpartiesResult](ctx, c, ledgeraccountswf.ListCounterparties,
-			lt.ListCounterpartiesParams{NameContains: in.NameContains})
+		result, err := gateway.RunWorkflow[cpt.ListCounterpartiesResult](ctx, c, counterpartieswf.ListCounterparties,
+			cpt.ListCounterpartiesParams{NameContains: in.NameContains})
 		if err != nil {
 			return nil, err
 		}

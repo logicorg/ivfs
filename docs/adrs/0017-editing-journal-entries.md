@@ -8,6 +8,8 @@
   [ADR 0011](0011-deleting-journal-entries.md) (deleting journal entries)
 - Amends: ADR 0001, ADR 0002, ADR 0004, ADR 0006, ADR 0007, ADR 0008, ADR 0009,
   ADR 0010, ADR 0011, ADR 0012, ADR 0016
+- Amended by: [ADR 0019](0019-currency-neutral-categories.md) (the update workflows take
+  category ids)
 - Related: [ADR 0005](0005-uniqueness-and-idempotent-creation.md) (idempotent
   creation), [ADR 0012](0012-deleting-accounts.md) (deleting accounts)
 

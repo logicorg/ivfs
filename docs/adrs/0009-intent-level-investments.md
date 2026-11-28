@@ -5,6 +5,8 @@
 - Depends on: [ADR 0004](0004-position-subledger.md), [ADR 0006](0006-intent-level-account-setup.md), [ADR 0007](0007-web-ui-and-http-gateway.md), and [ADR 0008](0008-intent-level-transactions.md)
 - Amends: ADR 0004 and ADR 0010 (the basis a sale removes: a decrease without
   a basis now removes the average cost, worked out when read)
+- Amended by: [ADR 0019](0019-currency-neutral-categories.md) (a vest names its
+  categories by `incomeCategoryId` and `taxCategoryId`)
 
 ## Context
 

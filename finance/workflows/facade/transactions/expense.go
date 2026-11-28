@@ -7,10 +7,11 @@ import (
 )
 
 // RecordExpense records money paid from a balance for an expense category: the
-// balance is credited and the category debited (ADR 0008). Paying by card
-// credits a liability, so the amount owed grows. It fails with
-// ErrInvalidParameter, writing nothing, when the balance is not a balance, the
-// category is not an expense one, or the two are in different currencies. A
+// balance is credited and "Expenses" in its currency debited, with the
+// category on that posting (ADR 0008). A payment spent on several things gives
+// lines instead of a category, and "Expenses" is debited once per line, in the
+// one entry. Paying by card credits a liability, so the amount owed grows. It fails with ErrInvalidParameter, writing nothing,
+// when the balance is not a balance or the category is not an expense one. A
 // repeated idempotency key returns the entry first posted with it.
 func RecordExpense(ctx workflow.Context, input tt.RecordExpenseInput) (*tt.RecordResult, error) {
 	if err := input.Validate(); err != nil {
@@ -24,22 +25,21 @@ func RecordExpense(ctx workflow.Context, input tt.RecordExpenseInput) (*tt.Recor
 	return post(ctx, m)
 }
 
-// expenseMovement checks that the accounts can play their roles in an expense
-// and returns the movement it is, for recording it or for updating an entry
-// to it.
+// expenseMovement checks that the balance and the categories can play their
+// roles in an expense and returns the movement it is, for recording it or for
+// updating an entry to it. With lines, the first is the movement's own debit
+// and the others its splits.
 func expenseMovement(ctx workflow.Context, input tt.RecordExpenseInput) (movement, error) {
-	accounts, err := retrieveLedgerAccounts(ctx, input.BalanceLedgerAccountID, input.CategoryLedgerAccountID)
+	categoryID, others := input.CategoryID, input.Lines
+	if len(input.Lines) > 0 {
+		categoryID, others = input.Lines[0].CategoryID, input.Lines[1:]
+	}
+	balance, expenses, err := categorized(ctx, input.BalanceLedgerAccountID, categoryID, model.LedgerAccountExpense)
 	if err != nil {
 		return movement{}, err
 	}
-	balance, category := accounts[0], accounts[1]
-	if err := checkBalance(balance); err != nil {
-		return movement{}, err
-	}
-	if err := checkCategory(category, model.LedgerAccountExpense); err != nil {
-		return movement{}, err
-	}
-	if err := checkSameCurrency(balance, category); err != nil {
+	splits, err := expenseSplits(ctx, others, balance.CurrencyID)
+	if err != nil {
 		return movement{}, err
 	}
 
@@ -47,9 +47,12 @@ func expenseMovement(ctx workflow.Context, input tt.RecordExpenseInput) (movemen
 		kind:           "expense",
 		idempotencyKey: input.IdempotencyKey,
 		from:           balance.ID,
-		to:             category.ID,
+		to:             expenses,
+		toCategory:     categoryID,
+		splits:         splits,
 		amount:         input.Amount,
 		occurredAt:     input.OccurredAt,
 		description:    input.Description,
+		tagIDs:         input.TagIDs,
 	}, nil
 }

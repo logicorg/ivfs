@@ -17,7 +17,8 @@ func registerTransfer(api huma.API, c client.Client) {
 		Method:      http.MethodPost,
 		Path:        "/api/transactions/transfers",
 		Summary:     "Record money moved from one balance to another, possibly into another currency",
-		Description: "Between currencies, toAmount is the amount that arrives, and the transfer is an exchange with no fee. " +
+		Description: "Charges are booked as expenses out of the amount that leaves. " +
+			"Between currencies, toAmount is the amount that arrives, and the transfer is an exchange whose fee is the one charge allowed. " +
 			"A repeated idempotency key returns the entry first recorded with it, posting nothing.",
 		Tags:   tags,
 		Errors: []int{http.StatusUnprocessableEntity, http.StatusNotFound, http.StatusConflict},
@@ -30,6 +31,8 @@ func registerTransfer(api huma.API, c client.Client) {
 			ToAmount:            in.Body.ToAmount.Decimal,
 			OccurredAt:          in.Body.OccurredAt,
 			Description:         in.Body.Description,
+			TagIDs:              in.Body.TagIDs,
+			Charges:             splits(in.Body.Charges),
 		})
 		if err != nil {
 			return nil, err

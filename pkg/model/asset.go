@@ -17,7 +17,11 @@ const (
 	AssetKindBond      AssetKind = "bond"
 	AssetKindCrypto    AssetKind = "crypto"
 	AssetKindCommodity AssetKind = "commodity"
-	AssetKindOther     AssetKind = "other"
+	// AssetKindRealEstate and AssetKindVehicle are tangible things, held by a
+	// real asset account and valued by hand.
+	AssetKindRealEstate AssetKind = "real_estate"
+	AssetKindVehicle    AssetKind = "vehicle"
+	AssetKindOther      AssetKind = "other"
 )
 
 // Asset identifies an instrument, not a particular holding of that

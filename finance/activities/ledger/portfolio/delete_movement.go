@@ -5,7 +5,7 @@ import (
 
 	"github.com/logicorg/ivfs/finance/activities/ledger/internal/deletion"
 	"github.com/logicorg/ivfs/finance/activities/ledger/internal/positions"
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
+	pft "github.com/logicorg/ivfs/finance/common/types/portfoliotypes"
 	"github.com/uptrace/bun"
 )
 
@@ -17,7 +17,7 @@ import (
 //
 // The units are gone from the history afterwards, so the holdings that are
 // negative as a result are returned as warnings.
-func (a *Activities) DeletePositionMovement(ctx context.Context, input lt.DeletePositionMovementInput) (*lt.DeletePositionMovementResult, error) {
+func (a *Activities) DeletePositionMovement(ctx context.Context, input pft.DeletePositionMovementInput) (*pft.DeletePositionMovementResult, error) {
 	db, err := a.Pools.For(ctx)
 	if err != nil {
 		return nil, err
@@ -27,7 +27,7 @@ func (a *Activities) DeletePositionMovement(ctx context.Context, input lt.Delete
 		return nil, err
 	}
 
-	result := &lt.DeletePositionMovementResult{}
+	result := &pft.DeletePositionMovementResult{}
 	err = db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
 		group, err := deletion.MovementGroupTx(ctx, tx, input.MovementID)
 		if err != nil || len(group) == 0 {

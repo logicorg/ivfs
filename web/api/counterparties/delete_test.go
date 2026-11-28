@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"testing"
 
-	lt "github.com/logicorg/ivfs/finance/common/types/ledgertypes"
-	ledgeraccountswf "github.com/logicorg/ivfs/finance/workflows/ledger/accounts"
+	cpt "github.com/logicorg/ivfs/finance/common/types/counterpartytypes"
+	counterpartieswf "github.com/logicorg/ivfs/finance/workflows/ledger/counterparties"
 	"github.com/logicorg/ivfs/web/api/apitest"
 	"go.temporal.io/sdk/temporal"
 )
@@ -18,9 +18,9 @@ func TestDelete(t *testing.T) {
 		"delete a counterparty entries name": {
 			Method: http.MethodDelete, Path: "/api/counterparties/3",
 			Call: &apitest.WorkflowCall{
-				Workflow: ledgeraccountswf.DeleteCounterparty,
-				Params:   lt.DeleteCounterpartyInput{CounterpartyID: 3},
-				Result:   lt.DeleteCounterpartyResult{Cleared: 4},
+				Workflow: counterpartieswf.DeleteCounterparty,
+				Params:   cpt.DeleteCounterpartyInput{CounterpartyID: 3},
+				Result:   cpt.DeleteCounterpartyResult{Cleared: 4},
 			},
 			WantStatus: http.StatusOK,
 			WantBody:   `{"cleared":4}`,
@@ -28,9 +28,9 @@ func TestDelete(t *testing.T) {
 		"delete a counterparty that does not exist": {
 			Method: http.MethodDelete, Path: "/api/counterparties/9",
 			Call: &apitest.WorkflowCall{
-				Workflow: ledgeraccountswf.DeleteCounterparty,
-				Params:   lt.DeleteCounterpartyInput{CounterpartyID: 9},
-				Result:   lt.DeleteCounterpartyResult{},
+				Workflow: counterpartieswf.DeleteCounterparty,
+				Params:   cpt.DeleteCounterpartyInput{CounterpartyID: 9},
+				Result:   cpt.DeleteCounterpartyResult{},
 			},
 			WantStatus: http.StatusOK,
 			WantBody:   `{"cleared":0}`,
@@ -38,8 +38,8 @@ func TestDelete(t *testing.T) {
 		"delete a counterparty entries keep being recorded with": {
 			Method: http.MethodDelete, Path: "/api/counterparties/3",
 			Call: &apitest.WorkflowCall{
-				Workflow: ledgeraccountswf.DeleteCounterparty,
-				Params:   lt.DeleteCounterpartyInput{CounterpartyID: 3},
+				Workflow: counterpartieswf.DeleteCounterparty,
+				Params:   cpt.DeleteCounterpartyInput{CounterpartyID: 3},
 				Err:      temporal.NewApplicationError("resource Counterparty conflict: still referenced by ledger.journal_entry.counterparty_id", "ErrResourceConflict"),
 			},
 			WantStatus: http.StatusConflict,
